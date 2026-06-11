@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "cd ../.. && pnpm --filter @urban-renewal/portal build",
+  "installCommand": "cd ../.. && pnpm install",
+  "outputDirectory": ".next"
+}
