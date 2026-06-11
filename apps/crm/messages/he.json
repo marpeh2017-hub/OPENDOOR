@@ -1,0 +1,62 @@
+{
+  "nav": {
+    "dashboard":       "לוח בקרה",
+    "leads":           "לידים",
+    "projects":        "פרויקטים",
+    "residents":       "דיירים",
+    "buildings":       "מבנים",
+    "signatures":      "חתימות",
+    "documents":       "מסמכים",
+    "communications":  "תקשורת",
+    "tasks":           "משימות",
+    "automations":     "אוטומציות",
+    "gis":             "מפות",
+    "reports":         "דוחות",
+    "settings":        "הגדרות"
+  },
+  "dashboard": {
+    "title":                  "לוח בקרה",
+    "subtitle":               "סקירה כללית של כל הפרויקטים והפעילות",
+    "activeProjects":         "פרויקטים פעילים",
+    "activeResidents":        "דיירים פעילים",
+    "signaturePercentage":    "אחוז חתימות",
+    "newLeads":               "לידים חדשים החודש",
+    "vsLastMonth":            "לעומת החודש שעבר"
+  },
+  "stages": {
+    "DISCOVERY":             "גילוי",
+    "FEASIBILITY":           "היתכנות",
+    "RESIDENT_ORGANIZATION": "התארגנות דיירים",
+    "SIGNATURES":            "חתימות",
+    "DEVELOPER_SELECTION":   "בחירת יזם",
+    "PLANNING":              "תכנון",
+    "MUNICIPAL_APPROVAL":    "אישור עירוני",
+    "PERMIT":                "היתר בנייה",
+    "EVACUATION":            "פינוי",
+    "CONSTRUCTION":          "בנייה",
+    "DELIVERY":              "מסירה",
+    "POST_DELIVERY":         "לאחר מסירה"
+  },
+  "signatureStatus": {
+    "NOT_CONTACTED": "לא נוצר קשר",
+    "CONTACTED":     "נוצר קשר",
+    "INTERESTED":    "מעוניין",
+    "SIGNED":        "חתם",
+    "OBJECTING":     "מתנגד",
+    "UNDECIDED":     "לא מחליט",
+    "UNREACHABLE":   "לא ניתן להגיע"
+  },
+  "common": {
+    "save":     "שמור",
+    "cancel":   "ביטול",
+    "delete":   "מחיקה",
+    "edit":     "עריכה",
+    "add":      "הוספה",
+    "search":   "חיפוש",
+    "filter":   "סינון",
+    "export":   "ייצוא",
+    "loading":  "טוען...",
+    "noData":   "אין נתונים",
+    "required": "שדה חובה"
+  }
+}

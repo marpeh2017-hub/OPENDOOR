@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "crm",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@urban-renewal/crm", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "portal",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@urban-renewal/portal", "dev"],
+      "port": 3002
+    }
+  ]
+}

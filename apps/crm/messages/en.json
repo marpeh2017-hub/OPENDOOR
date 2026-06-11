@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "dashboard":       "Dashboard",
+    "leads":           "Leads",
+    "projects":        "Projects",
+    "residents":       "Residents",
+    "buildings":       "Buildings",
+    "signatures":      "Signatures",
+    "documents":       "Documents",
+    "communications":  "Communications",
+    "tasks":           "Tasks",
+    "automations":     "Automations",
+    "gis":             "GIS Maps",
+    "reports":         "Reports",
+    "settings":        "Settings"
+  },
+  "dashboard": {
+    "title":               "Dashboard",
+    "subtitle":            "Overview of all projects and activity",
+    "activeProjects":      "Active Projects",
+    "activeResidents":     "Active Residents",
+    "signaturePercentage": "Signature Rate",
+    "newLeads":            "New Leads This Month",
+    "vsLastMonth":         "vs last month"
+  },
+  "common": {
+    "save":     "Save",
+    "cancel":   "Cancel",
+    "delete":   "Delete",
+    "edit":     "Edit",
+    "add":      "Add",
+    "search":   "Search",
+    "filter":   "Filter",
+    "export":   "Export",
+    "loading":  "Loading...",
+    "noData":   "No data",
+    "required": "Required"
+  }
+}

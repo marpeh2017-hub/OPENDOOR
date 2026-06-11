@@ -1,0 +1,1223 @@
+// ============================================================
+// Urban Renewal OS – Prisma Schema
+// OpenDoor התחדשות עירונית
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  shadowDatabaseUrl = env("DATABASE_SHADOW_URL")
+  extensions = [pgcrypto, unaccent, pg_trgm]
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Language {
+  he
+  en
+  ru
+  ar
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  CEO
+  PROJECT_MANAGER
+  RESIDENT_RELATIONS_MANAGER
+  FIELD_AGENT
+  LAWYER
+  ARCHITECT
+  ENGINEER
+  DEVELOPER_REP
+  MUNICIPALITY_USER
+  EXTERNAL_CONSULTANT
+  RESIDENT
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ProjectStage {
+  DISCOVERY
+  FEASIBILITY
+  RESIDENT_ORGANIZATION
+  SIGNATURES
+  DEVELOPER_SELECTION
+  PLANNING
+  MUNICIPAL_APPROVAL
+  PERMIT
+  EVACUATION
+  CONSTRUCTION
+  DELIVERY
+  POST_DELIVERY
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  MEETING_SCHEDULED
+  INTERESTED
+  NEGOTIATION
+  SIGNED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  WHATSAPP
+  PHONE
+  SOCIAL_MEDIA
+  CAMPAIGN
+  DOOR_TO_DOOR
+  EVENT
+  PARTNER
+  OTHER
+}
+
+enum SignatureStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PENDING
+  SIGNED
+  REJECTED
+  EXPIRED
+}
+
+enum SignatureProvider {
+  DOCUSIGN
+  ADOBE_SIGN
+  SIGNNOW
+  COMSIGN
+  MANUAL
+}
+
+enum DocumentCategory {
+  CONTRACT
+  ID_DOCUMENT
+  LAND_REGISTRY
+  POWER_OF_ATTORNEY
+  PLANNING
+  ENGINEERING
+  FINANCIAL
+  MUNICIPALITY
+  MARKETING
+  MEETING_MINUTES
+  LEGAL
+  PERMIT
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+  ARCHIVED
+}
+
+enum TaskType {
+  CALL
+  MEETING
+  SITE_VISIT
+  SIGNATURE_FOLLOWUP
+  LEGAL_REVIEW
+  DOCUMENT_COLLECTION
+  APPROVAL
+  GENERAL
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  PUSH
+  IN_APP
+  PORTAL
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum ResidentSignatureStatus {
+  NOT_CONTACTED
+  CONTACTED
+  INTERESTED
+  SIGNED
+  OBJECTING
+  UNDECIDED
+  UNREACHABLE
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum VoteStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+enum AutomationTrigger {
+  LEAD_CREATED
+  RESIDENT_CREATED
+  MEETING_COMPLETED
+  SIGNATURE_SENT
+  SIGNATURE_SIGNED
+  PROJECT_STAGE_CHANGED
+  DOCUMENT_UPLOADED
+  DEADLINE_REACHED
+  TASK_OVERDUE
+  CUSTOM
+}
+
+enum AutomationActionType {
+  CREATE_TASK
+  SEND_WHATSAPP
+  SEND_SMS
+  SEND_EMAIL
+  GENERATE_REPORT
+  UPDATE_STATUS
+  CREATE_NOTIFICATION
+  WEBHOOK
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  EXPORT
+  DOWNLOAD
+  SIGN
+  APPROVE
+  REJECT
+  IMPERSONATE
+}
+
+// ============================================================
+// CORE: MULTI-TENANCY
+// ============================================================
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  domain      String?  @unique
+  logoUrl     String?
+  primaryColor String  @default("#2F9DA0")
+  website     String?
+  email       String?
+  phone       String?
+
+  // Settings (JSON blob for flexibility)
+  settings    Json     @default("{}")
+  features    Json     @default("{}")  // feature flags per tenant
+
+  isActive    Boolean  @default(true)
+  trialEndsAt DateTime?
+  plan        String   @default("starter") // starter | growth | enterprise
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  projects      Project[]
+  leads         Lead[]
+  documents     Document[]
+  workflows     Workflow[]
+  templates     CommunicationTemplate[]
+  auditLogs     AuditLog[]
+  campaigns     Campaign[]
+  reports       SavedReport[]
+  automations   Automation[]
+
+  @@index([slug])
+  @@map("tenants")
+}
+
+// ============================================================
+// USERS & AUTH
+// ============================================================
+
+model User {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  email       String?
+  phone       String?
+  nationalId  String?
+
+  firstName   String
+  lastName    String
+  avatarUrl   String?
+  role        UserRole
+  language    Language @default(he)
+
+  isActive    Boolean  @default(true)
+  isVerified  Boolean  @default(false)
+  lastLoginAt DateTime?
+
+  // Auth
+  passwordHash     String?
+  mfaEnabled       Boolean  @default(false)
+  mfaSecret        String?
+
+  // Preferences
+  notificationPrefs Json @default("{\"email\":true,\"sms\":true,\"whatsapp\":true,\"push\":true,\"inApp\":true}")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sessions            Session[]
+  assignedTasks       Task[]          @relation("TaskAssignee")
+  createdTasks        Task[]          @relation("TaskCreator")
+  meetings            MeetingAttendee[]
+  auditLogs           AuditLog[]
+  projectMemberships  ProjectMember[]
+  notifications       Notification[]
+  createdDocuments    Document[]      @relation("DocumentCreator")
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  refreshToken String   @unique
+  deviceInfo   Json?    // UA, IP, device type
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+// ============================================================
+// LEADS
+// ============================================================
+
+model Lead {
+  id          String     @id @default(cuid())
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  firstName   String
+  lastName    String
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+
+  source      LeadSource @default(OTHER)
+  campaignId  String?
+  campaign    Campaign?  @relation(fields: [campaignId], references: [id])
+
+  status      LeadStatus @default(NEW)
+  score       Int        @default(0)  // 0-100 AI-powered score
+  notes       String?
+  tags        String[]   @default([])
+
+  assignedToId String?
+  // Note: assignedTo is a User but without tenant constraint here
+  // Application layer enforces same-tenant assignment
+
+  // Converted to resident?
+  convertedToResidentId String? @unique
+  convertedAt DateTime?
+
+  language    Language   @default(he)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  activities  LeadActivity[]
+  tasks       Task[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, assignedToId])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String   // call | meeting | email | whatsapp | note | status_change
+  note      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  createdById String?
+
+  @@index([leadId])
+  @@map("lead_activities")
+}
+
+// ============================================================
+// PROJECTS & HIERARCHY
+// ============================================================
+
+model Project {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  code        String        // Internal code e.g. "TLV-001"
+  name        String
+  description String?
+
+  city        String
+  neighborhood String?
+  address     String?
+  coordinates Json?         // { lat, lng }
+
+  status      ProjectStatus @default(ACTIVE)
+  stage       ProjectStage  @default(DISCOVERY)
+
+  startDate   DateTime?
+  targetEndDate DateTime?
+  actualEndDate DateTime?
+
+  // Goals
+  signatureGoal   Int      @default(0)  // required % to proceed
+  signatureActual Float    @default(0)  // current %
+
+  // Team
+  projectManagerId String?
+  lawyerId         String?
+  architectId      String?
+  developerRep     String?
+
+  // Financial
+  estimatedBudget Decimal? @db.Decimal(15,2)
+  currency        String   @default("ILS")
+
+  settings    Json @default("{}")
+  tags        String[] @default([])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  complexes   Complex[]
+  members     ProjectMember[]
+  stages      ProjectStageHistory[]
+  tasks       Task[]
+  meetings    Meeting[]
+  documents   Document[]
+  campaigns   Campaign[]
+  reports     SavedReport[]
+  automations Automation[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, stage])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      UserRole
+  addedAt   DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model ProjectStageHistory {
+  id        String       @id @default(cuid())
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage     ProjectStage
+  enteredAt DateTime     @default(now())
+  exitedAt  DateTime?
+  notes     String?
+  changedById String?
+
+  @@index([projectId])
+  @@map("project_stage_history")
+}
+
+model Complex {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String
+  address     String?
+  coordinates Json?
+
+  status      String   @default("active")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  buildings   Building[]
+
+  @@index([projectId])
+  @@map("complexes")
+}
+
+model Building {
+  id              String   @id @default(cuid())
+  complexId       String
+  complex         Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  address         String
+  streetNumber    String?
+  city            String?
+  zipCode         String?
+  coordinates     Json?
+
+  floors          Int?
+  totalApartments Int?
+  constructionYear Int?
+  buildingClass   String?  // A | B | C
+
+  status          String   @default("active")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  apartments      Apartment[]
+
+  @@index([complexId])
+  @@map("buildings")
+}
+
+model Apartment {
+  id             String   @id @default(cuid())
+  buildingId     String
+  building       Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  apartmentNumber String
+  floor          Int?
+  sizeSqm        Float?
+  rooms          Float?   // 2.5, 3, 4 etc.
+  hasParking     Boolean  @default(false)
+  parkingSpots   Int      @default(0)
+  hasStorage     Boolean  @default(false)
+  storageCount   Int      @default(0)
+  hasBalcony     Boolean  @default(false)
+  balconySqm     Float?
+
+  notes          String?
+  status         String   @default("active")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  residents      Resident[]
+
+  @@unique([buildingId, apartmentNumber])
+  @@index([buildingId])
+  @@map("apartments")
+}
+
+// ============================================================
+// RESIDENTS
+// ============================================================
+
+model Resident {
+  id          String   @id @default(cuid())
+  tenantId    String
+  // Note: tenant relation enforced at app layer via apartmentId -> building -> complex -> project -> tenant
+
+  apartmentId String
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+
+  firstName   String
+  lastName    String
+  nationalId  String?  // תעודת זהות
+  phone       String?
+  phone2      String?
+  email       String?
+
+  // Ownership
+  ownershipPercentage Float @default(100)  // for jointly owned apartments
+  isPrimaryContact    Boolean @default(true)
+
+  // Engagement
+  signatureStatus   ResidentSignatureStatus @default(NOT_CONTACTED)
+  isObjecting       Boolean @default(false)
+  objectionReason   String?
+  riskScore         Int     @default(0)  // 0-100, AI computed
+
+  // Communication preferences
+  language              Language  @default(he)
+  preferredChannel      MessageChannel @default(WHATSAPP)
+  whatsappOptIn         Boolean   @default(false)
+  smsOptIn              Boolean   @default(true)
+  emailOptIn            Boolean   @default(true)
+  doNotContact          Boolean   @default(false)
+  doNotContactReason    String?
+
+  // Portal access
+  portalUserId  String?  @unique  // links to User with role=RESIDENT
+  portalEnabled Boolean  @default(false)
+
+  notes     String?
+  tags      String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  documents     ResidentDocument[]
+  signatures    SignatureRequest[]
+  meetings      MeetingAttendee[]
+  tasks         Task[]
+  messages      Message[]
+  activityLog   ResidentActivity[]
+  tickets       SupportTicket[]
+  voteResponses VoteResponse[]
+
+  @@index([apartmentId])
+  @@index([signatureStatus])
+  @@map("residents")
+}
+
+model ResidentActivity {
+  id         String   @id @default(cuid())
+  residentId String
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  type       String   // call | meeting | message | status_change | document | signature | note
+  title      String
+  note       String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  createdById String?
+
+  @@index([residentId])
+  @@map("resident_activities")
+}
+
+// ============================================================
+// SIGNATURES
+// ============================================================
+
+model SignatureRequest {
+  id          String           @id @default(cuid())
+  tenantId    String
+
+  residentId  String
+  resident    Resident         @relation(fields: [residentId], references: [id])
+
+  documentId  String?
+  document    Document?        @relation(fields: [documentId], references: [id])
+
+  provider    SignatureProvider @default(DOCUSIGN)
+  externalId  String?          // DocuSign envelope ID etc.
+
+  status      SignatureStatus  @default(DRAFT)
+
+  sentAt      DateTime?
+  viewedAt    DateTime?
+  signedAt    DateTime?
+  rejectedAt  DateTime?
+  expiresAt   DateTime?
+
+  rejectionReason String?
+  signatureImageUrl String?
+
+  metadata    Json?   // provider-specific data
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([residentId])
+  @@index([tenantId, status])
+  @@map("signature_requests")
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model Document {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  projectId   String?
+  project     Project?         @relation(fields: [projectId], references: [id])
+
+  category    DocumentCategory
+  status      DocumentStatus   @default(DRAFT)
+
+  title       String
+  description String?
+  fileName    String
+  fileSize    Int              // bytes
+  mimeType    String
+  s3Key       String           // AWS S3 object key
+  s3Bucket    String
+
+  // Version control
+  version     Int              @default(1)
+  parentId    String?          // previous version
+  parent      Document?        @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions    Document[]       @relation("DocumentVersions")
+
+  // OCR & Search
+  ocrText     String?          // extracted text for search
+  ocrStatus   String           @default("pending") // pending | processing | done | failed
+  language    Language         @default(he)
+
+  // Access
+  isPublic    Boolean          @default(false)
+  tags        String[]         @default([])
+
+  // Expiration
+  expiresAt   DateTime?
+
+  createdById String
+  createdBy   User             @relation("DocumentCreator", fields: [createdById], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  residentDocuments ResidentDocument[]
+  signatureRequests SignatureRequest[]
+
+  @@index([tenantId, category])
+  @@index([tenantId, projectId])
+  @@map("documents")
+}
+
+model ResidentDocument {
+  id         String   @id @default(cuid())
+  residentId String
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id])
+  addedAt    DateTime @default(now())
+
+  @@unique([residentId, documentId])
+  @@map("resident_documents")
+}
+
+// ============================================================
+// MEETINGS
+// ============================================================
+
+model Meeting {
+  id          String   @id @default(cuid())
+  tenantId    String
+
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  title       String
+  description String?
+  location    String?
+  isVirtual   Boolean  @default(false)
+  meetingUrl  String?
+
+  startTime   DateTime
+  endTime     DateTime?
+
+  // AI summary
+  aiSummary   String?
+  aiSummaryGeneratedAt DateTime?
+
+  notes       String?
+  status      String   @default("scheduled") // scheduled | completed | cancelled
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attendees   MeetingAttendee[]
+  tasks       Task[]
+
+  @@index([tenantId, projectId])
+  @@map("meetings")
+}
+
+model MeetingAttendee {
+  id         String    @id @default(cuid())
+  meetingId  String
+  meeting    Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  // Either an internal user or a resident
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  residentId String?
+  resident   Resident? @relation(fields: [residentId], references: [id])
+
+  attended   Boolean?
+  role       String?   // organizer | attendee | guest
+
+  @@unique([meetingId, userId])
+  @@unique([meetingId, residentId])
+  @@map("meeting_attendees")
+}
+
+// ============================================================
+// TASKS
+// ============================================================
+
+model Task {
+  id          String       @id @default(cuid())
+  tenantId    String
+
+  type        TaskType     @default(GENERAL)
+  title       String
+  description String?
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+
+  assigneeId  String?
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById String?
+  createdBy   User?        @relation("TaskCreator", fields: [createdById], references: [id])
+
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  // Context associations
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id])
+  leadId      String?
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  residentId  String?
+  resident    Resident? @relation(fields: [residentId], references: [id])
+  meetingId   String?
+  meeting     Meeting?  @relation(fields: [meetingId], references: [id])
+
+  // Dependencies
+  blockedById String?
+  blockedBy   Task?    @relation("TaskDependencies", fields: [blockedById], references: [id])
+  blocking    Task[]   @relation("TaskDependencies")
+
+  tags        String[] @default([])
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, assigneeId, status])
+  @@index([tenantId, projectId])
+  @@map("tasks")
+}
+
+// ============================================================
+// COMMUNICATIONS
+// ============================================================
+
+model Message {
+  id          String                 @id @default(cuid())
+  tenantId    String
+
+  channel     MessageChannel
+  direction   CommunicationDirection
+  status      MessageStatus          @default(QUEUED)
+
+  // Recipient
+  residentId  String?
+  resident    Resident?              @relation(fields: [residentId], references: [id])
+  toPhone     String?
+  toEmail     String?
+
+  subject     String?                // email subject
+  body        String
+  templateId  String?
+  template    CommunicationTemplate? @relation(fields: [templateId], references: [id])
+
+  // Tracking
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  failureReason String?
+
+  // External IDs
+  externalId  String?  // WhatsApp message ID, SES message ID etc.
+
+  metadata    Json?
+
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, residentId])
+  @@index([tenantId, channel, status])
+  @@map("messages")
+}
+
+model CommunicationTemplate {
+  id         String         @id @default(cuid())
+  tenantId   String
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name       String
+  channel    MessageChannel
+  language   Language       @default(he)
+
+  subject    String?        // email
+  body       String         // supports {{variable}} syntax
+  variables  String[]       @default([])  // list of supported vars
+
+  isActive   Boolean        @default(true)
+  isApproved Boolean        @default(false)  // WhatsApp templates need approval
+
+  // WhatsApp-specific
+  waTemplateName String?
+  waCategory     String?    // MARKETING | UTILITY | AUTHENTICATION
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  messages   Message[]
+
+  @@unique([tenantId, name, channel, language])
+  @@map("communication_templates")
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  name        String
+  description String?
+  channel     MessageChannel
+  status      String   @default("draft") // draft | scheduled | running | completed | cancelled
+
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Stats (denormalized for fast reads)
+  totalRecipients Int @default(0)
+  sent            Int @default(0)
+  delivered       Int @default(0)
+  read            Int @default(0)
+  failed          Int @default(0)
+
+  templateId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages    Message[]
+  leads       Lead[]
+
+  @@index([tenantId, status])
+  @@map("campaigns")
+}
+
+// ============================================================
+// SUPPORT TICKETS
+// ============================================================
+
+model SupportTicket {
+  id          String         @id @default(cuid())
+  tenantId    String
+
+  residentId  String?
+  resident    Resident?      @relation(fields: [residentId], references: [id])
+
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  category    String?
+
+  assigneeId  String?
+
+  resolvedAt  DateTime?
+  closedAt    DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  replies     TicketReply[]
+
+  @@index([tenantId, status])
+  @@map("support_tickets")
+}
+
+model TicketReply {
+  id       String       @id @default(cuid())
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String?   // internal user
+  authorResidentId String?  // or resident
+
+  body      String
+  isInternal Boolean @default(false)  // internal note vs public reply
+
+  createdAt DateTime @default(now())
+
+  @@map("ticket_replies")
+}
+
+// ============================================================
+// VOTING
+// ============================================================
+
+model Vote {
+  id          String     @id @default(cuid())
+  tenantId    String
+
+  projectId   String?
+  title       String
+  description String?
+  status      VoteStatus @default(DRAFT)
+
+  type        String     @default("single_choice") // single_choice | multiple_choice | approval
+  options     Json       // [{ id, label, description }]
+
+  // Quorum requirement
+  requiredParticipation Float @default(0.51) // 51% by default
+  requiredMajority      Float @default(0.51)
+
+  opensAt    DateTime?
+  closesAt   DateTime?
+
+  result     Json?  // computed after close
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  responses  VoteResponse[]
+
+  @@index([tenantId, status])
+  @@map("votes")
+}
+
+model VoteResponse {
+  id         String   @id @default(cuid())
+  voteId     String
+  vote       Vote     @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  residentId String
+  resident   Resident @relation(fields: [residentId], references: [id])
+
+  selectedOptions String[]  // option IDs
+  votedAt        DateTime  @default(now())
+  ipAddress      String?
+
+  @@unique([voteId, residentId])
+  @@map("vote_responses")
+}
+
+// ============================================================
+// AUTOMATION ENGINE
+// ============================================================
+
+model Automation {
+  id          String            @id @default(cuid())
+  tenantId    String
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  projectId   String?
+  project     Project?          @relation(fields: [projectId], references: [id])
+
+  name        String
+  description String?
+  isActive    Boolean           @default(true)
+
+  trigger     AutomationTrigger
+  triggerConfig Json            @default("{}")  // filter conditions
+
+  actions     AutomationAction[]
+
+  // Stats
+  runCount    Int @default(0)
+  lastRunAt   DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, trigger, isActive])
+  @@map("automations")
+}
+
+model AutomationAction {
+  id           String              @id @default(cuid())
+  automationId String
+  automation   Automation          @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  order        Int
+  type         AutomationActionType
+  config       Json                // action-specific config
+  delayMinutes Int                 @default(0)
+
+  @@index([automationId])
+  @@map("automation_actions")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title    String
+  body     String
+  type     String   // task | signature | message | project | system
+  link     String?  // deep link in app
+  isRead   Boolean  @default(false)
+  readAt   DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ============================================================
+// REPORTING
+// ============================================================
+
+model SavedReport {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  name      String
+  type      String   // project | signature | resident | team_performance | lead_sources | risk | financial
+  config    Json     // filters, date ranges, grouping
+  schedule  Json?    // cron schedule for auto-generation
+
+  lastGeneratedAt DateTime?
+  lastOutputUrl   String?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("saved_reports")
+}
+
+// ============================================================
+// WORKFLOWS (Visual builder state)
+// ============================================================
+
+model Workflow {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  stage     ProjectStage?  // which project stage this workflow applies to
+  isActive  Boolean  @default(true)
+  nodes     Json     // ReactFlow node graph JSON
+  edges     Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("workflows")
+}
+
+// ============================================================
+// AUDIT LOGS
+// ============================================================
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id])
+
+  action     AuditAction
+  entity     String      // e.g. "Resident", "Document", "SignatureRequest"
+  entityId   String?
+  changes    Json?       // { before, after }
+  metadata   Json?
+
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt  DateTime    @default(now())
+
+  @@index([tenantId, userId])
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}

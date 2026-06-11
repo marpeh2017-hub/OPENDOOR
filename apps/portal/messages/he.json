@@ -1,0 +1,10 @@
+{
+  "portal": {
+    "title": "פורטל דיירים",
+    "greeting": "שלום",
+    "projectStatus": "סטטוס פרויקט",
+    "documents": "מסמכים",
+    "messages": "הודעות",
+    "contact": "צור קשר"
+  }
+}

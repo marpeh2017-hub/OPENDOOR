@@ -1,0 +1,10 @@
+{
+  "portal": {
+    "title": "Resident Portal",
+    "greeting": "Hello",
+    "projectStatus": "Project Status",
+    "documents": "Documents",
+    "messages": "Messages",
+    "contact": "Contact"
+  }
+}
