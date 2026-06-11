@@ -443,7 +443,9 @@ model Project {
   actualEndDate DateTime?
 
   // Goals
-  signatureGoal   Int      @default(0)  // required % to proceed
+  totalUnits      Int      @default(0)
+  signedUnits     Int      @default(0)
+  signatureGoal   Int      @default(67) // required % to proceed
   signatureActual Float    @default(0)  // current %
 
   // Team

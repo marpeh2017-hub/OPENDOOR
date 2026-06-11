@@ -76,7 +76,7 @@ export class ProjectsService {
         neighborhood: dto.neighborhood,
         totalUnits:   Number(dto.totalUnits ?? 0),
         stage:        (dto.stage as any) ?? 'DISCOVERY',
-      },
+      } as any,
     })
   }
 

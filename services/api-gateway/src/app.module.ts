@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
+import { HealthController } from './health.controller'
 import { PrismaModule } from './prisma.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { AuthModule }           from './auth/auth.module'
@@ -34,6 +35,7 @@ import { DashboardModule }      from './dashboard/dashboard.module'
     CommunicationsModule,
     ReportsModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
