@@ -8,8 +8,7 @@ export class HealthController {
 
   @Get()
   @Public()
-  async check() {
-    await this.prisma.$queryRaw`SELECT 1`
+  check() {
     return { status: 'ok', timestamp: new Date().toISOString() }
   }
 }
