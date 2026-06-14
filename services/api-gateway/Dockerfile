@@ -19,14 +19,11 @@ COPY packages/db                ./packages/db
 COPY services/api-gateway       ./services/api-gateway
 COPY tsconfig.base.json         ./
 
-# Use PostgreSQL schema for production
-RUN cp packages/db/prisma/schema.postgres.prisma packages/db/prisma/schema.prisma
-
-# Generate Prisma client (linux binaries)
-RUN cd packages/db && npx prisma generate
-
-# Build NestJS
-RUN cd services/api-gateway && npx nest build
+# Use PostgreSQL schema for production, generate Prisma client, and build NestJS
+# Combined into a single RUN to prevent Docker layer caching from serving stale Prisma types
+RUN cp packages/db/prisma/schema.postgres.prisma packages/db/prisma/schema.prisma \
+    && cd packages/db && npx prisma generate \
+    && cd /app/services/api-gateway && npx nest build
 
 # ── Production runtime ────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
