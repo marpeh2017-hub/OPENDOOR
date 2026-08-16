@@ -578,10 +578,128 @@ model Apartment {
   updatedAt      DateTime @updatedAt
 
   residents      Resident[]
+  owners         OwnerApartment[]
 
   @@unique([buildingId, apartmentNumber])
   @@index([buildingId])
   @@map("apartments")
+}
+
+// ============================================================
+// OWNERSHIP REGISTRY
+// Signature validity is computed over ownership SHARES, not
+// resident head-count. An apartment can have multiple owners
+// (spouses, heirs); an owner can hold multiple apartments.
+// ============================================================
+
+model Owner {
+  id          String   @id @default(cuid())
+  tenantId    String
+
+  fullName    String
+  nationalId  String?  // encrypted at app layer before persist
+  phone       String?
+  email       String?
+  addressAbroad String?
+  isEstate    Boolean  @default(false) // עיזבון — inheritance not yet settled
+  guardianContact String?              // legal guardian / POA holder contact
+  notes       String?
+
+  residentId  String?  @unique
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  holdings    OwnerApartment[]
+  signatures  SignatureRecord[]
+
+  @@index([tenantId])
+  @@map("owners")
+}
+
+model OwnerApartment {
+  id             String    @id @default(cuid())
+  ownerId        String
+  owner          Owner     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  apartmentId    String
+  apartment      Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  shareNumerator   Int @default(1)
+  shareDenominator Int @default(1)
+
+  viaInheritance Boolean @default(false)
+  poaHolderId    String?
+  acquiredAt     DateTime?
+
+  createdAt      DateTime @default(now())
+
+  @@unique([ownerId, apartmentId])
+  @@index([apartmentId])
+  @@map("owner_apartments")
+}
+
+model SignaturePackage {
+  id           String   @id @default(cuid())
+  tenantId     String
+  projectId    String
+  version      Int      @default(1)
+  status       String   @default("DRAFT") // DRAFT | APPROVED | LOCKED
+  title        String
+  documentIds  String   @default("[]")
+  approvedById String?
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  records SignatureRecord[]
+
+  @@index([projectId])
+  @@map("signature_packages")
+}
+
+model SignatureRecord {
+  id          String   @id @default(cuid())
+  tenantId    String
+  packageId   String
+  package     SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  ownerId     String
+  owner       Owner    @relation(fields: [ownerId], references: [id])
+  apartmentId String
+
+  method      String   @default("DIGITAL") // DIGITAL | WET
+  status      String   @default("PENDING") // PENDING | SIGNED | REFUSED | REVOKED
+
+  signedAt      DateTime?
+  refusedAt     DateTime?
+  revokedAt     DateTime?
+  evidenceDocId String?
+  witnessName   String?
+  geoLat        Float?
+  geoLng        Float?
+  validatedById String?
+  notes         String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([packageId, ownerId, apartmentId])
+  @@index([apartmentId])
+  @@index([tenantId, status])
+  @@map("signature_records")
+}
+
+model ThresholdRule {
+  id          String  @id @default(cuid())
+  tenantId    String
+  projectId   String
+  scope       String  @default("PROJECT")  // PROJECT | BUILDING
+  buildingId  String?
+  requiredPct Float   @default(67)
+  basis       String  @default("SHARES")   // SHARES | UNITS
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, scope, buildingId])
+  @@map("threshold_rules")
 }
 
 // ============================================================

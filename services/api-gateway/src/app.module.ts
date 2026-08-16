@@ -14,6 +14,7 @@ import { ReportsModule }        from './reports/reports.module'
 import { TenantsModule }        from './tenants/tenants.module'
 import { UsersModule }          from './users/users.module'
 import { DashboardModule }      from './dashboard/dashboard.module'
+import { SignaturesModule }     from './signatures/signatures.module'
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DashboardModule }      from './dashboard/dashboard.module'
     LeadsModule,
     ProjectsModule,
     ResidentsModule,
+    SignaturesModule,
     DocumentsModule,
     TasksModule,
     CommunicationsModule,

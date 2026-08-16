@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { createHash, randomUUID } from 'crypto'
+import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 import { PrismaService } from '../prisma.service'
 import { LoginDto } from './dto/login.dto'
 import { SendOtpDto } from './dto/send-otp.dto'
@@ -13,8 +13,23 @@ import { VerifyOtpDto } from './dto/verify-otp.dto'
 // In-memory OTP store (replace with Redis in production)
 const otpStore = new Map<string, { otp: string; expires: number }>()
 
+// scrypt parameters: N=2^15, r=8, p=1, 32-byte key — OWASP-acceptable for interactive login
+const SCRYPT_N = 32768
+export function hashPassword(plain: string): string {
+  const salt = randomBytes(16)
+  const key = scryptSync(plain, salt, 32, { N: SCRYPT_N, r: 8, p: 1 })
+  return `$scrypt$${SCRYPT_N}$${salt.toString('base64')}$${key.toString('base64')}`
+}
+
 function checkPassword(plain: string, stored: string): boolean {
-  // Supports sha256 hashes (dev seed) and plain text (legacy dev)
+  if (stored.startsWith('$scrypt$')) {
+    const [, , n, saltB64, keyB64] = stored.split('$')
+    const salt = Buffer.from(saltB64, 'base64')
+    const expected = Buffer.from(keyB64, 'base64')
+    const actual = scryptSync(plain, salt, expected.length, { N: Number(n), r: 8, p: 1 })
+    return timingSafeEqual(actual, expected)
+  }
+  // Legacy dev-seed formats — verified then upgraded on login
   if (stored.startsWith('$sha256$')) {
     const hash = '$sha256$' + createHash('sha256').update(plain).digest('hex')
     return hash === stored
@@ -55,10 +70,15 @@ export class AuthService {
       { expiresIn: '30d' },
     )
 
-    // Update last login
+    // Update last login; transparently upgrade legacy hashes to scrypt
     await this.prisma.user.update({
       where: { id: user.id },
-      data:  { lastLoginAt: new Date() },
+      data:  {
+        lastLoginAt: new Date(),
+        ...(user.passwordHash.startsWith('$scrypt$')
+          ? {}
+          : { passwordHash: hashPassword(dto.password) }),
+      },
     })
 
     return {
