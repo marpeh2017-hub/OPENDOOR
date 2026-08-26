@@ -58,7 +58,7 @@ export class FeasibilityExcelExportService {
     if (report.status !== 'LOCKED') {
       throw DomainError.conflict('FEASIBILITY_EXPORT_REQUIRES_LOCKED_REPORT', 'ניתן לייצא רק גרסת דוח נעולה.')
     }
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const ExcelJS = require('exceljs') as any
     const workbook = new ExcelJS.Workbook()
     workbook.creator = 'OpenDoor Urban Renewal OS'
@@ -114,6 +114,9 @@ export class FeasibilityExcelExportService {
     table('02_Project', [
       { header: 'שדה', width: 30 }, { header: 'ערך', width: 36 }, { header: 'סיווג', width: 20 }, { header: 'צילום מקור', width: 28 },
     ], [
+      ['שם פרויקט', input.project?.name ?? '—', 'FACT', 'צילום פרויקט'],
+      ['קוד פרויקט', input.project?.code ?? '—', 'FACT', 'צילום פרויקט'],
+      ['כתובת פרויקט', [input.project?.address, input.project?.city].filter(Boolean).join(', ') || '—', 'FACT', 'צילום פרויקט'],
       ['סוג פרויקט', input.projectType ?? '—', 'FACT', 'פרופיל דוח אפס'],
       ['סוג דוח', input.reportType ?? '—', 'FACT', 'פרופיל דוח אפס'],
       ['מטרה', input.purpose ?? '—', 'FACT', 'פרופיל דוח אפס'],

@@ -115,6 +115,16 @@ async function bootstrap() {
   console.log(`Swagger docs: http://localhost:${port}/api/docs`)
 }
 
-bootstrap()
+/**
+ * Top-level entrypoint. The rejection handler is not decoration: without it a
+ * failure inside `bootstrap()` (a bad JWT_SECRET, an unreachable database, an
+ * invalid webhook allowlist) surfaces as an unhandled rejection, which Node
+ * reports without the exit code a supervisor needs to restart or fail a deploy.
+ */
+bootstrap().catch((err) => {
+   
+  console.error('Fatal: API Gateway failed to start:', err)
+  process.exit(1)
+})
 
 

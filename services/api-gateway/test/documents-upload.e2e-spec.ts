@@ -702,7 +702,7 @@ describe('Document upload (e2e)', () => {
 
       // Both objects still exist AND still hold their own distinct bytes.
       const storage = app.get(
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+         
         require('../src/storage/storage.service').StorageService,
         { strict: false },
       )
@@ -862,7 +862,7 @@ describe('Document upload (e2e)', () => {
 
       // Version 1's own object was NOT touched by the rollback.
       const storage = app.get(
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+         
         require('../src/storage/storage.service').StorageService,
         { strict: false },
       )

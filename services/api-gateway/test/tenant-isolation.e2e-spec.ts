@@ -247,6 +247,44 @@ describe('Tenant isolation (e2e)', () => {
       expect(res.status).toBe(404)
     })
 
+    /**
+     * Owners were the one entity with a tenant-B fixture (`bOwnerId`) and no
+     * assertion using it — the isolation suite created the row and then never
+     * tested it. ESLint's unused-variable rule is what surfaced that.
+     *
+     * This matters more than most: `OwnerApartment` carries the ownership
+     * fractions that decide the pinuy-binuy signature threshold, so a
+     * cross-tenant read or write here is not a privacy leak alone, it is a
+     * route to altering another tenant's legal threshold arithmetic.
+     */
+    it('GET /owners/:bId → 404', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/owners/${bOwnerId}`)
+        .set(asA())
+      expect(res.status).toBe(404)
+    })
+
+    it('PATCH /owners/:bId → 404, and the row is untouched', async () => {
+      const before = await prisma.owner.findUnique({ where: { id: bOwnerId } })
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/owners/${bOwnerId}`)
+        .set(asA())
+        .send({ fullName: 'נדרס על ידי דייר אחר' })
+      expect(res.status).toBe(404)
+
+      // A 404 that still wrote would be the worst outcome, so assert the row.
+      const after = await prisma.owner.findUnique({ where: { id: bOwnerId } })
+      expect(after?.fullName).toBe(before?.fullName)
+    })
+
+    it('DELETE /owners/:bId → 404, and the row still exists', async () => {
+      const res = await request(app.getHttpServer())
+        .delete(`/api/v1/owners/${bOwnerId}`)
+        .set(asA())
+      expect(res.status).toBe(404)
+      expect(await prisma.owner.count({ where: { id: bOwnerId } })).toBe(1)
+    })
+
     it('GET /buildings/:bId → 404', async () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/buildings/${bBuildingId}`)
@@ -350,6 +388,12 @@ describe('Tenant isolation (e2e)', () => {
       const res = await request(app.getHttpServer()).get('/api/v1/residents?limit=200').set(asA())
       expect(res.status).toBe(200)
       expect(rows(res.body).map((r: any) => r.id)).not.toContain(bResidentId)
+    })
+
+    it('GET /owners excludes tenant B', async () => {
+      const res = await request(app.getHttpServer()).get('/api/v1/owners?limit=200').set(asA())
+      expect(res.status).toBe(200)
+      expect(rows(res.body).map((o: any) => o.id)).not.toContain(bOwnerId)
     })
 
     it('GET /tasks excludes tenant B', async () => {

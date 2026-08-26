@@ -40,10 +40,18 @@ export function FeasibilityScenariosPanel({ projectId, scenarios, sources, canEd
   const duplicate = useDuplicateFeasibilityScenario(projectId)
   const calculate = useCalculateFeasibility(projectId)
   const [results, setResults] = useState<Record<string, FeasibilityCalculation>>({})
+  const [calculatingAll, setCalculatingAll] = useState(false)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     create.mutate({ name, kind }, { onSuccess: () => { setName(''); setKind('CUSTOM'); setCreateOpen(false) } })
+  }
+  const calculateAll = async () => {
+    setCalculatingAll(true)
+    try {
+      const entries = await Promise.all(scenarios.map(async (scenario) => [scenario.id, await calculate.mutateAsync(scenario.id)] as const))
+      setResults(Object.fromEntries(entries))
+    } catch { /* calculation.error is rendered below; keep the UI interactive */ } finally { setCalculatingAll(false) }
   }
 
   return <section className="card-surface p-5">
@@ -52,7 +60,7 @@ export function FeasibilityScenariosPanel({ projectId, scenarios, sources, canEd
         <h3 className="flex items-center gap-2 text-sm font-semibold"><TableProperties size={17} />תרחישי תכנון ותמהיל</h3>
         <p className="mt-1 text-xs text-muted-foreground">כל תרחיש עצמאי. שכפול יוצר עותק חדש ואינו משנה את המקור.</p>
       </div>
-      {canEdit && <Button variant="outline" size="sm" onClick={() => setCreateOpen((open) => !open)}><Plus size={14} className="ml-1" />תרחיש חדש</Button>}
+      {canEdit && <div className="flex gap-2"><Button variant="outline" size="sm" disabled={scenarios.length < 2 || calculatingAll} onClick={calculateAll}>{calculatingAll && <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin" />}חישוב כל התרחישים</Button><Button variant="outline" size="sm" onClick={() => setCreateOpen((open) => !open)}><Plus size={14} className="ml-1" />תרחיש חדש</Button></div>}
     </div>
 
     {createOpen && <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3 border-t pt-4 sm:grid-cols-[1fr_11rem_auto] sm:items-end">

@@ -16,7 +16,7 @@ export const REDIS = 'REDIS'
           return createMemoryFallback()
         }
         // Lazy import so ioredis is optional in dev without Redis
-        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+         
         const { Redis } = require('ioredis') as any
         if (process.env.NODE_ENV !== 'production') {
           // In dev: try to connect; fall back to in-memory if unreachable.

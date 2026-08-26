@@ -173,7 +173,7 @@ describe('Excel import performance', () => {
     }
     await app?.close()
 
-    // eslint-disable-next-line no-console
+     
     console.log(
       '\n  rows | parse+validate | commit   | preview Q | commit Q | created\n' +
       '  -----+----------------+----------+-----------+----------+--------\n' +

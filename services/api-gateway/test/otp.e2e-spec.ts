@@ -124,7 +124,7 @@ describe('OTP (e2e)', () => {
         .send({ phone })
 
       expect(res.status).toBe(400)
-      expect(res.body.message).toMatch(/OTP|׳ ׳™׳¡׳™׳•׳ ׳•׳×/)
+      expect(res.body.message).toMatch(/יותר מדי בקשות OTP/)
     })
   })
 })

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Param, Body, Request, UnauthorizedException, NotFoundException,
+  Param, Body, Request, NotFoundException,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'

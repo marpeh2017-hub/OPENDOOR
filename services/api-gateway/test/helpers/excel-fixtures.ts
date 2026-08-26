@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports */
+ 
 
 /**
  * Real `.xlsx` fixtures, generated at test time.

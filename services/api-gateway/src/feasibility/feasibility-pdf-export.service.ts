@@ -30,7 +30,7 @@ export class FeasibilityPdfExportService {
     const validation = Array.isArray(report.snapshot.validationSnapshot) ? report.snapshot.validationSnapshot as any[] : []
     const comparison = report.comparisonSnapshot as { scenarios?: any[]; capturedAt?: string } | null
     const sensitivity = report.snapshot.sensitivitySnapshot as { primaryVariable?: string; secondaryVariable?: string | null; rows?: any[]; notes?: string[] } | null
-    const html = this.html(report, input, output, validation, comparison, sensitivity)
+    const html = this.withCoverDetails(this.html(report, input, output, validation, comparison, sensitivity), input)
     const dir = await mkdtemp(join(tmpdir(), 'opendoor-zero-report-'))
     const htmlPath = join(dir, 'report.html')
     const pdfPath = join(dir, 'report.pdf')
@@ -44,6 +44,28 @@ export class FeasibilityPdfExportService {
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => {})
     }
+  }
+
+  /** Project/profile identifiers are frozen in inputSnapshot.  Enriching the
+   * already-rendered template here keeps the main financial body focused on
+   * the model while ensuring a locked report remains historically accurate. */
+  private withCoverDetails(html: string, input: any) {
+    const project = input?.project ?? {}
+    const projectType: Record<string, string> = {
+      TAMA_38_1: 'תמ״א 38/1', TAMA_38_2: 'תמ״א 38/2', PINUY_BINUY: 'פינוי־בינוי',
+      NEW_CONSTRUCTION: 'בנייה חדשה', COMBINATION: 'עסקת קומבינציה', LAND: 'קרקע', OTHER: 'אחר',
+    }
+    const date = (value: unknown) => value ? new Date(String(value)).toLocaleDateString('he-IL') : '—'
+    const value = (label: string, content: unknown) => `<div><b>${escapeHtml(label)}</b><span>${escapeHtml(content || '—')}</span></div>`
+    const details = `<div class="cover-details">${[
+      value('פרויקט', project.name), value('קוד פרויקט', project.code), value('כתובת', [project.address, project.city].filter(Boolean).join(', ')),
+      value('שכונה', input?.neighborhood), value('סוג פרויקט', projectType[input?.projectType] ?? input?.projectType), value('לקוח', input?.clientName),
+      value('יזם', input?.developerName), value('שמאי', input?.appraiserName), value('תאריך קובע', date(input?.valuationDate)), value('תאריך דוח', date(input?.reportDate)),
+    ].join('')}</div>`
+    const styles = '.cover-details{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 20px;margin-top:22px;padding-top:14px;border-top:1px solid #c9d7e5;font-size:10pt}.cover-details b{display:block;color:#526174;font-size:8.5pt}.cover-details span{display:block;font-weight:600}'
+    return html
+      .replace('</style>', `${styles}</style>`)
+      .replace(/<\/section>\s*<h2>תקציר מנהלים<\/h2>/, `${details}</section>\n    <h2>תקציר מנהלים</h2>`)
   }
 
   private html(report: any, input: any, output: any, validation: any[], comparison: { scenarios?: any[]; capturedAt?: string } | null, sensitivity: { primaryVariable?: string; secondaryVariable?: string | null; rows?: any[]; notes?: string[] } | null) {

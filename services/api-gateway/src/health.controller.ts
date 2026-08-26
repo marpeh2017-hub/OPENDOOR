@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, HttpCode, HttpStatus, Res } from '@nestjs/common'
+import { Controller, Get, Inject, HttpStatus, Res } from '@nestjs/common'
 import { Response } from 'express'
 import { Public } from './auth/decorators/public.decorator'
 import { PrismaService } from './prisma.service'

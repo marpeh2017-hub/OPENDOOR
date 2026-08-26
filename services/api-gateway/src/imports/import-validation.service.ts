@@ -3,7 +3,6 @@ import {
   ImportDecisionAction, ImportEntityType, ImportMode, ImportRowOutcome, ImportIssueSeverity,
 } from '@prisma/client'
 import { PrismaService } from '../prisma.service'
-import { TenantScopeService } from '../common/tenant/tenant-scope.service'
 import { NationalIdService } from '../common/pii/national-id.service'
 import {
   Fraction, fractionFromRatioString, percentStringToFraction,

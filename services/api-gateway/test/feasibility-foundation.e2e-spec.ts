@@ -26,6 +26,7 @@ describe('Feasibility foundation (e2e)', () => {
   let projectId: string
   let ownerId: string
   let ownerApartmentId: string
+  let documentId: string
 
   const http = () => request(app.getHttpServer())
   const auth = (value = token) => ({ Authorization: `Bearer ${value}` })
@@ -71,6 +72,21 @@ describe('Feasibility foundation (e2e)', () => {
     ownerId = owner.id
     const holding = await prisma.ownerApartment.create({ data: { ownerId, apartmentId: apartment.id } })
     ownerApartmentId = holding.id
+    const document = await prisma.document.create({
+      data: {
+        tenantId,
+        projectId,
+        category: 'PLANNING',
+        title: `${MARKER} נספח תכנוני`,
+        fileName: 'planning-appendix.pdf',
+        fileSize: 1,
+        mimeType: 'application/pdf',
+        s3Key: `${tenantId}/documents/${MARKER}.pdf`,
+        s3Bucket: 'urban-renewal',
+        createdById: userId,
+      },
+    })
+    documentId = document.id
   })
 
   afterAll(async () => {
@@ -108,6 +124,7 @@ describe('Feasibility foundation (e2e)', () => {
         await prisma.feasibilityReportVersion.deleteMany({ where: { feasibilityProfileId: profile.id } })
         await prisma.feasibilityProfile.delete({ where: { id: profile.id } })
       }
+      await prisma.document.deleteMany({ where: { id: documentId, tenantId } })
       await prisma.project.delete({ where: { id: projectId } })
       await prisma.owner.delete({ where: { id: ownerId } })
     }
@@ -130,7 +147,7 @@ describe('Feasibility foundation (e2e)', () => {
   })
 
   it('accepts sources, exact decimal areas and planning-right inputs', async () => {
-    const source = await http().post(`/api/v1/projects/${projectId}/feasibility/sources`).set(auth()).send({ type: 'PLANNING', title: 'תכנית תקפה', reliability: 'HIGH' })
+    const source = await http().post(`/api/v1/projects/${projectId}/feasibility/sources`).set(auth()).send({ type: 'PLANNING', title: 'תכנית תקפה', documentId, reliability: 'HIGH' })
     expect(source.status).toBe(201)
     const parcel = await http().post(`/api/v1/projects/${projectId}/feasibility/parcels`).set(auth()).send({ gush: '12345', chelka: '67', landAreaSqm: '500.0000', sourceId: source.body.id, classification: 'SOURCE_DATA' })
     expect(parcel.status).toBe(201)
@@ -373,12 +390,21 @@ describe('Feasibility foundation (e2e)', () => {
     const frozenReport = await http().get(`/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}`).set(auth())
     expect(frozenReport.status).toBe(200)
     expect(frozenReport.body.snapshot.outputSnapshot).toMatchObject({ engineVersion: '1.0.0', profitability: { profit: '41557000.00' } })
+    expect(frozenReport.body.snapshot.inputSnapshot.project).toMatchObject({ id: projectId, name: MARKER, code: MARKER, city: 'ירושלים' })
     expect(frozenReport.body.comparisonSnapshot).toMatchObject({
       scenarios: expect.arrayContaining([
         expect.objectContaining({ scenarioId, snapshotId: snapshot.body.id, engineVersion: '1.0.0', output: expect.objectContaining({ profitability: expect.objectContaining({ profit: '41557000.00' }) }) }),
       ]),
     })
     expect(frozenReport.body.snapshot.sensitivitySnapshot).toMatchObject({ primaryVariable: 'SALE_PRICE', secondaryVariable: 'CONSTRUCTION_COST' })
+    expect(frozenReport.body.snapshot.inputSnapshot.sources).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        documentId,
+        appendix: expect.objectContaining({ id: documentId, title: `${MARKER} נספח תכנוני`, category: 'PLANNING', version: 1 }),
+      }),
+    ]))
+    expect(JSON.stringify(frozenReport.body.snapshot.inputSnapshot.sources)).not.toContain('s3Key')
+    expect(JSON.stringify(frozenReport.body.snapshot.inputSnapshot.sources)).not.toContain('s3Bucket')
     for (const status of ['REVIEW', 'APPROVED', 'LOCKED']) {
       const transition = await http().patch(`/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}/status`).set(auth()).send({ status })
       expect(transition.status).toBe(200)
@@ -409,6 +435,8 @@ describe('Feasibility foundation (e2e)', () => {
     expect(exportedWorkbook.getWorksheet('01_Summary')?.getCell('B4').value).toMatchObject({ formula: "=SUM('07_Sales'!D2:D1000)" })
     expect(exportedWorkbook.getWorksheet('01_Summary')?.getCell('B6').value).toMatchObject({ formula: '=B4-B5' })
     expect(exportedWorkbook.getWorksheet('01_Summary')?.getCell('B7').value).toMatchObject({ formula: '=IFERROR(B6/B4,0)' })
+    expect(exportedWorkbook.getWorksheet('02_Project')?.getCell('A2').value).toBe('שם פרויקט')
+    expect(exportedWorkbook.getWorksheet('02_Project')?.getCell('B2').value).toBe(MARKER)
     expect(exportedWorkbook.getWorksheet('14_Profitability')?.getCell('B8').numFmt).toBe('0.00x')
     expect(exportedWorkbook.getWorksheet('15_Valuation')?.getCell('B4').numFmt).toBe('0.0%;[Red](0.0%);-')
     expect(exportedWorkbook.getWorksheet('15_Valuation')?.getCell('B6').numFmt).toBe('0.00')

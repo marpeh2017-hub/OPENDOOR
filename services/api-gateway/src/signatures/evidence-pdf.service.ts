@@ -6,7 +6,6 @@
  * (or stored as base64 in the database if S3 is not configured).
  */
 import { Injectable, Logger } from '@nestjs/common'
-import { createHash } from 'crypto'
 import { PrismaService } from '../prisma.service'
 import { StorageService } from '../storage/storage.service'
 
@@ -77,7 +76,7 @@ export class EvidencePdfService {
     // Dynamic import so the module is optional at startup
     let PDFDocument: any
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+       
       PDFDocument = require('pdfkit')
     } catch {
       throw new Error('pdfkit is not installed — run: pnpm add pdfkit @types/pdfkit in services/api-gateway')

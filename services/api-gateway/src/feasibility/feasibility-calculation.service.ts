@@ -524,6 +524,11 @@ export class FeasibilityCalculationService {
     const profile = await this.feasibility.find(projectId, actor.tenantId)
     if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים עדיין פרופיל דוח אפס לפרויקט')
     if (!profile.scenarios.some((scenario) => scenario.id === scenarioId)) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, tenantId: actor.tenantId },
+      select: { id: true, name: true, code: true, address: true, city: true },
+    })
+    if (!project) throw DomainError.notFound('PROJECT_NOT_FOUND', 'הפרויקט לא נמצא או אינו שייך ל־tenant')
     const output = await this.calculate(projectId, scenarioId, actor.tenantId)
     const sensitivity = dto?.sensitivity ? await this.sensitivity(projectId, scenarioId, dto.sensitivity, actor.tenantId) : null
     // Freeze appendix metadata with the input snapshot. File bytes stay in the
@@ -536,6 +541,9 @@ export class FeasibilityCalculationService {
     const documentsById = new Map(documents.map((document) => [document.id, document]))
     const snapshotInput = {
       ...profile,
+      // Keep the report cover reproducible as well: later project renames or
+      // address corrections must not rewrite a locked feasibility report.
+      project,
       sources: profile.sources.map((source) => ({
         ...source,
         appendix: source.documentId && documentsById.has(source.documentId)

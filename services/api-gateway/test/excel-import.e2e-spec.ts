@@ -928,7 +928,7 @@ describe('Excel import (e2e)', () => {
    * prove nothing — it decrypts, so it returns a valid workbook either way.
    */
   describe('workbook encryption at rest', () => {
-    /* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports */
+     
     const rawS3 = () => {
       const { S3Client } = require('@aws-sdk/client-s3')
       return new S3Client({
@@ -952,7 +952,7 @@ describe('Excel import (e2e)', () => {
       for await (const c of res.Body as AsyncIterable<Uint8Array>) chunks.push(Buffer.from(c))
       return Buffer.concat(chunks)
     }
-    /* eslint-enable @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports */
+     
 
     /** 'PK\x03\x04' — the local file header every ZIP, and so every .xlsx, opens with. */
     const ZIP_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04])
@@ -1025,7 +1025,7 @@ describe('Excel import (e2e)', () => {
     })
 
     it('a tampered encrypted object fails the auth tag instead of returning plaintext', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+       
       const { PutObjectCommand } = require('@aws-sdk/client-s3')
       const stored = await rawObject(key)
       const tampered = Buffer.from(stored)

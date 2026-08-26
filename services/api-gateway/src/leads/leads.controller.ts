@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Patch, Param, Body, Query, Request, UnauthorizedException,
 } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
+import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { STAFF_ROLES } from '../auth/roles.constants'
 import { LeadsService } from './leads.service'

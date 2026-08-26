@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { randomBytes } from 'crypto'
+import { AuditService } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { DomainError } from '../common/errors/domain-error'
 import { MessagingConfig } from '../messaging/messaging.config'
@@ -81,7 +82,10 @@ const ATTENDEE_LOAD = {
 export class MeetingAccessService {
   private readonly logger = new Logger(MeetingAccessService.name)
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Issues (or re-issues) the invitation token for a resident attendee.
@@ -241,10 +245,37 @@ export class MeetingAccessService {
       },
     })
 
-    // Audited without an actor: there is no `User` behind this, and inventing
-    // one would corrupt the audit trail. The attendee id and the meeting are
-    // the identity, and `respondedVia = 'token'` on the row records the
-    // provenance permanently.
+    /**
+     * Audited without an actor: there is no `User` behind a token RSVP, and
+     * inventing one would corrupt the audit trail. `recordAnonymous` is the
+     * established shape for that — the same one the public lead form uses.
+     *
+     * This block previously only wrote a LOG LINE while its comment claimed the
+     * action was audited, and `meta.ip` — which the controller has always
+     * passed — was silently discarded. A resident's RSVP is evidence about a
+     * legally consequential meeting; a log line rotates away, an audit row does
+     * not.
+     *
+     * The IP is recorded because the caller supplies it and `AuditLog` already
+     * carries `ipAddress` for every other action. No resident NAME or contact
+     * detail goes into the metadata — the attendee id is the identity, and it
+     * resolves to a person only for someone already inside the tenant.
+     */
+    await this.audit.recordAnonymous(
+      meeting.tenantId,
+      { ip: meta?.ip ?? null, userAgent: null },
+      {
+        action: 'UPDATE',
+        entity: 'MeetingAttendee',
+        entityId: row.attendee.id,
+        metadata: {
+          rsvpStatus,
+          respondedVia: 'token',
+          meetingId: meeting.id,
+        },
+      },
+    )
+
     this.logger.log(
       `Resident RSVP '${rsvpStatus}' recorded via invitation token ` +
       `(meeting ${meeting.id}, attendee ${row.attendee.id})`,

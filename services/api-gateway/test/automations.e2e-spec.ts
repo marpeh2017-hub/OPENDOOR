@@ -506,16 +506,28 @@ describe('Automations (e2e)', () => {
       expect(() => validateAllowlistConfiguration(['.hooks.example.com'])).not.toThrow()
     })
 
-    it('fails closed when no allowlist is configured', async () => {
-      const saved = process.env.AUTOMATION_WEBHOOK_ALLOWLIST
-      delete process.env.AUTOMATION_WEBHOOK_ALLOWLIST
-      try {
+    /**
+     * Nested so the env mutation happens in hooks rather than around an `await`
+     * inside the test body. Reading a value, awaiting, then writing it back is
+     * what `require-atomic-updates` objects to — and it is fragile in general,
+     * even though Jest runs these serially.
+     */
+    describe('with no allowlist configured', () => {
+      let saved: string | undefined
+      beforeEach(() => {
+        saved = process.env.AUTOMATION_WEBHOOK_ALLOWLIST
+        delete process.env.AUTOMATION_WEBHOOK_ALLOWLIST
+      })
+      afterEach(() => {
+        if (saved === undefined) delete process.env.AUTOMATION_WEBHOOK_ALLOWLIST
+        else process.env.AUTOMATION_WEBHOOK_ALLOWLIST = saved
+      })
+
+      it('fails closed', async () => {
         const res = await save('https://partner.test/hook')
         expect(res.status).toBe(400)
         expect(res.body.code).toBe('WEBHOOK_ALLOWLIST_EMPTY')
-      } finally {
-        process.env.AUTOMATION_WEBHOOK_ALLOWLIST = saved
-      }
+      })
     })
   })
 

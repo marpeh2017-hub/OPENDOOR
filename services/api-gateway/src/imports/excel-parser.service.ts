@@ -4,7 +4,7 @@ import {
   IMPORT_ERRORS, MAX_IMPORT_ROWS, looksLikeXlsx,
 } from './excel-import.constants'
 
-/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports */
+ 
 
 /**
  * Workbook reader.

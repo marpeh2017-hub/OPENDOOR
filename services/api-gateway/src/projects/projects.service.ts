@@ -599,7 +599,6 @@ export class ProjectsService {
       select: { id: true, firstName: true, lastName: true, signatureStatus: true, phone: true },
     })
 
-    const signed = residents.filter(r => r.signatureStatus === 'SIGNED').length
     return {
       totalUnits:  project.totalUnits,
       signedUnits: project.signedUnits,

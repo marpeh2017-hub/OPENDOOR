@@ -168,6 +168,7 @@ export function FeasibilitySensitivityMatrix({ result }: { result: FeasibilitySe
 
 function SensitivityCell({ value, irr, npv, equity }: { value: string; irr?: string | null; npv?: string | null; equity?: string }) {
   const numeric = toNumber(value)
-  const color = numeric < 0 ? 'bg-rose-100 text-rose-900' : numeric === 0 ? 'bg-slate-100 text-slate-800' : 'bg-emerald-100 text-emerald-900'
-  return <td className={`rounded-sm p-2 ${color}`}><span className="block">{compactCurrency(numeric)}</span><span className="mt-0.5 block text-[10px] opacity-80">{irr === null || irr === undefined ? 'IRR —' : `IRR ${percent.format(toNumber(irr))}`}</span>{(npv || equity) && <span className="sr-only">NPV {npv ?? 'לא זמין'}, הון עצמי נדרש {equity ?? 'לא זמין'}</span>}</td>
+  const npvValue = npv === null || npv === undefined ? null : toNumber(npv)
+  const color = numeric < 0 || (npvValue !== null && npvValue < 0) ? 'bg-rose-100 text-rose-900' : numeric === 0 ? 'bg-slate-100 text-slate-800' : 'bg-emerald-100 text-emerald-900'
+  return <td className={`rounded-sm p-2 ${color}`}><span className="block">{compactCurrency(numeric)}</span><span className="mt-0.5 block text-[10px] opacity-80">{irr === null || irr === undefined ? 'IRR —' : `IRR ${percent.format(toNumber(irr))}`}</span>{npvValue !== null && <span className="mt-0.5 block text-[10px] opacity-80">NPV {compactCurrency(npvValue)}</span>}{equity && <span className="mt-0.5 block text-[10px] opacity-80">הון {compactCurrency(toNumber(equity))}</span>}</td>
 }

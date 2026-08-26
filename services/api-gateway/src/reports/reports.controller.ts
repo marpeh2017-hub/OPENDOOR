@@ -1,8 +1,8 @@
 import {
   Controller, Get, Post, Delete,
-  Param, Body, Request, Query, UnauthorizedException, NotFoundException,
+  Param, Body, Request, UnauthorizedException, NotFoundException,
 } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { PrismaService } from '../prisma.service'
 

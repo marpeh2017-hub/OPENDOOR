@@ -6,7 +6,7 @@
 // would silently exercise an unconfigured storage layer instead of a real one.
 // `dotenv` never overrides variables that are already set, so an explicit
 // environment (e.g. CI) still wins.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 require('dotenv/config')
 
 process.env.NODE_ENV   = 'test'
