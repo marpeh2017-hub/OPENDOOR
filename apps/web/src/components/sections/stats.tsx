@@ -1,20 +1,28 @@
-const stats = [
-  { value: '50+',    label: 'פרויקטים פעילים',      desc: 'ברחבי ישראל' },
-  { value: '10,000+', label: 'דיירים מרוצים',        desc: 'מוסרו מפתחות' },
-  { value: '94%',    label: 'שביעות רצון',           desc: 'ממשוב דיירים' },
-  { value: '15+',    label: 'שנות ניסיון',           desc: 'בהתחדשות עירונית' },
-]
+// Trust bar / Logos section
 
 export function StatsSection() {
+  const companies = [
+    'קבוצת אשדר',
+    'גינדי החזקות',
+    'יובל גד',
+    'אמות השקעות',
+    'מבנה נדל"ן',
+    'מצלאוי',
+  ]
+
   return (
-    <section className="border-y border-border bg-white py-16">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-4xl font-black text-teal-500 mb-1">{s.value}</p>
-              <p className="text-base font-semibold text-gray-800">{s.label}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{s.desc}</p>
+    <section className="border-y border-gray-100 py-10 bg-gray-50/60">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 text-center">
+        <p className="text-sm font-medium text-gray-500 mb-6">
+          נבחר על ידי חברות פינוי-בינוי מובילות בישראל
+        </p>
+        <div className="flex flex-wrap justify-center gap-4">
+          {companies.map(name => (
+            <div
+              key={name}
+              className="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 shadow-sm"
+            >
+              {name}
             </div>
           ))}
         </div>

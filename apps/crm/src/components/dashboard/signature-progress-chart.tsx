@@ -9,23 +9,39 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-
-const data = [
-  { month: 'ינו', signatures: 42, target: 60 },
-  { month: 'פבר', signatures: 51, target: 60 },
-  { month: 'מרץ', signatures: 58, target: 65 },
-  { month: 'אפר', signatures: 61, target: 65 },
-  { month: 'מאי', signatures: 67, target: 70 },
-  { month: 'יונ', signatures: 73, target: 70 },
-]
+import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
+import { useDashboardStats } from '@/hooks/use-dashboard'
 
 export function SignatureProgressChart() {
+  const { data: stats, isLoading, isError, error, refetch } = useDashboardStats()
+
+  if (isLoading) {
+    return (
+      <div className="card-surface p-6">
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-gray-800">התקדמות חתימות</h3>
+          <p className="text-sm text-gray-500">אחוז חתימות ממוצע לאורך זמן</p>
+        </div>
+        <RowsSkeleton rows={5} />
+      </div>
+    )
+  }
+
+  if (isError || !stats) {
+    return <QueryError message="שגיאה בטעינת התקדמות החתימות" error={error} onRetry={() => refetch()} />
+  }
+
+  const data = stats.signatureTrend ?? []
+
   return (
     <div className="card-surface p-6">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-gray-800">התקדמות חתימות</h3>
         <p className="text-sm text-gray-500">אחוז חתימות ממוצע לאורך זמן</p>
       </div>
+      {data.length === 0 ? (
+        <EmptyState message="אין נתוני חתימות להצגה" hint="הנתונים יופיעו לאחר החתימות הראשונות" />
+      ) : (
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
           <defs>
@@ -62,6 +78,7 @@ export function SignatureProgressChart() {
           />
         </AreaChart>
       </ResponsiveContainer>
+      )}
     </div>
   )
 }

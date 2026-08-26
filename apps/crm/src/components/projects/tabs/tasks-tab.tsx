@@ -1,7 +1,10 @@
-import { Plus, CheckCircle2, Clock, AlertCircle, Circle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+'use client'
+
+import { CheckCircle2, Clock, AlertCircle, Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
+import { useTasks } from '@/hooks/use-tasks'
 
 const PRIORITY_CFG = {
   URGENT: { cls: 'text-red-600',    icon: AlertCircle },
@@ -14,6 +17,7 @@ const STATUS_CFG = {
   PENDING:     { cls: 'text-muted-foreground',  icon: Circle },
   IN_PROGRESS: { cls: 'text-blue-600',          icon: Clock },
   COMPLETED:   { cls: 'text-green-600',         icon: CheckCircle2 },
+  CANCELLED:   { cls: 'text-muted-foreground',  icon: Circle },
 } as const
 
 const TYPE_LABEL: Record<string, string> = {
@@ -26,29 +30,44 @@ const TYPE_LABEL: Record<string, string> = {
   GENERAL:            'כללי',
 }
 
-const mockTasks = [
-  { id: '1', title: 'פגישת דיירים – הצגת תוכנית',  type: 'MEETING',            priority: 'HIGH',   status: 'IN_PROGRESS', due: 'היום 14:00',  assignee: 'אבי ש׳' },
-  { id: '2', title: 'מעקב חתימות – דוד לוי',       type: 'SIGNATURE_FOLLOWUP', priority: 'URGENT', status: 'PENDING',     due: 'מחר',         assignee: 'שרה מ׳' },
-  { id: '3', title: 'קבלת נסח טאבו מעודכן',        type: 'DOCUMENT_COLLECTION',priority: 'MEDIUM', status: 'PENDING',     due: 'עוד 3 ימים',  assignee: 'אבי ש׳' },
-  { id: '4', title: 'שיחה עם עו"ד לוי',            type: 'CALL',               priority: 'LOW',    status: 'COMPLETED',   due: 'אתמול',       assignee: 'שרה מ׳' },
-]
+function formatDue(iso: string | null): string {
+  if (!iso) return 'ללא תאריך יעד'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? 'ללא תאריך יעד'
+    : d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
 
 export function ProjectTasksTab({ projectId }: { projectId: string }) {
+  const { data, isLoading, isError, error, refetch } = useTasks({ projectId })
+
+  if (isLoading) return <div className="card-surface"><RowsSkeleton rows={4} /></div>
+
+  if (isError || !data) {
+    return <QueryError message="שגיאה בטעינת המשימות" error={error} onRetry={() => refetch()} />
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="card-surface">
+        <EmptyState message="אין משימות בפרויקט" hint="משימות שייווצרו יופיעו כאן" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{mockTasks.length} משימות</p>
-        <Button size="sm" variant="outline" className="gap-2 h-8">
-          <Plus size={13} /> משימה חדשה
-        </Button>
-      </div>
+      <p className="text-sm text-muted-foreground">{data.length} משימות</p>
 
       <div className="card-surface divide-y divide-border overflow-hidden">
-        {mockTasks.map(task => {
-          const priority = PRIORITY_CFG[task.priority as keyof typeof PRIORITY_CFG]
-          const status = STATUS_CFG[task.status as keyof typeof STATUS_CFG]
+        {data.map(task => {
+          const priority = PRIORITY_CFG[task.priority as keyof typeof PRIORITY_CFG] ?? PRIORITY_CFG.MEDIUM
+          const status   = STATUS_CFG[task.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDING
           const StatusIcon = status.icon
           const PriorityIcon = priority.icon
+          const assigneeName = task.assignee
+            ? `${task.assignee.firstName} ${task.assignee.lastName}`
+            : null
           return (
             <div key={task.id} className="flex items-start gap-3 px-4 py-3.5 hover:bg-muted/20">
               <StatusIcon size={16} className={cn('flex-shrink-0 mt-0.5', status.cls)} />
@@ -57,20 +76,22 @@ export function ProjectTasksTab({ projectId }: { projectId: string }) {
                   {task.title}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-muted-foreground">{TYPE_LABEL[task.type]}</span>
+                  <span className="text-xs text-muted-foreground">{TYPE_LABEL[task.type] ?? task.type}</span>
                   <span className="text-muted-foreground/40">·</span>
                   <span className={cn('text-xs', task.status === 'COMPLETED' ? 'text-muted-foreground' : 'text-foreground/70')}>
-                    {task.due}
+                    {formatDue(task.dueDate)}
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <PriorityIcon size={13} className={priority.cls} />
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {task.assignee.slice(0,2)}
-                  </AvatarFallback>
-                </Avatar>
+                {assigneeName && (
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {task.assignee!.firstName.slice(0, 1)}{task.assignee!.lastName.slice(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
               </div>
             </div>
           )

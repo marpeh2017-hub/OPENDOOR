@@ -1,61 +1,76 @@
-import { Shield, Eye, Zap, Users, FileCheck, HeadphonesIcon } from 'lucide-react'
-
-const benefits = [
-  {
-    icon: Shield,
-    title: 'בטיחות ואמינות',
-    desc: 'עו"ד מומחים לליווי משפטי מלא, הגנה על זכויות הדיירים בכל שלב.',
-  },
-  {
-    icon: Eye,
-    title: 'שקיפות מלאה',
-    desc: 'פורטל דיירים דיגיטלי לעדכונים בזמן אמת על התקדמות הפרויקט.',
-  },
-  {
-    icon: Zap,
-    title: 'תהליך יעיל',
-    desc: 'מטכנולוגיה מתקדמת ועד ניסיון שטח – מזרזים את כל שלבי הפרויקט.',
-  },
-  {
-    icon: Users,
-    title: 'ליווי אישי',
-    desc: 'נציג ייעודי לכל פרויקט, זמין לדיירים בכל שאלה ובכל שלב.',
-  },
-  {
-    icon: FileCheck,
-    title: 'ניהול מסמכים',
-    desc: 'כל החתימות, ההסכמים והמסמכים המשפטיים במקום אחד, מאובטח.',
-  },
-  {
-    icon: HeadphonesIcon,
-    title: 'תמיכה מתמשכת',
-    desc: 'אנחנו לצדך גם לאחר קבלת המפתח, לכל שאלה ובעיה שתעלה.',
-  },
-]
+// Problem / Solution section
 
 export function BenefitsSection() {
   return (
-    <section className="py-20 bg-gray-50">
+    <section id="solutions" className="py-24 bg-white">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-black text-gray-900 mb-3">
-            למה OpenDoor?
+        <div className="text-center mb-16">
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            למה פינוי-בינוי צריך פלטפורמה ייעודית?
           </h2>
-          <p className="text-lg text-gray-600 max-w-xl mx-auto">
-            אנחנו לא סתם חברת התחדשות עירונית. אנחנו שותפים שלך לאורך כל הדרך.
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+            ניהול פרויקט פינוי-בינוי במאות בעלי דירות הוא מורכבות שאקסל ו-WhatsApp לא יכולים לפתור.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {benefits.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="card-surface p-6 hover:shadow-lg transition-shadow">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 mb-4">
-                <Icon size={24} className="text-teal-500" />
+        <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+          {/* Problem */}
+          <div className="rounded-2xl border border-red-100 bg-red-50/40 p-8 text-right">
+            <div className="flex items-center gap-3 mb-6 justify-end">
+              <h3 className="text-xl font-bold text-gray-900">האתגר</h3>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 3v8M10 14v1" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="10" cy="10" r="8" stroke="#EF4444" strokeWidth="1.5"/>
+                </svg>
               </div>
-              <h3 className="text-base font-semibold text-gray-800 mb-2">{title}</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
             </div>
-          ))}
+            <ul className="space-y-4">
+              {[
+                'עשרות גיליונות אקסל שמתנגשים זה עם זה',
+                'מעקב חתימות ב-WhatsApp — ללא תיעוד משפטי',
+                'אין ידיעה מיהו הבעלים האמיתי מול הדייר',
+                'מסמכים פזורים בין עורכי דין, אדריכלים ומנהלי פרויקט',
+                'אין יכולת לדעת בזמן אמת מה אחוז החתימות',
+                'טעויות נתונים שמתגלות רק בשלב חתימת החוזה',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-3 justify-end">
+                  <span className="text-gray-700">{item}</span>
+                  <span className="mt-0.5 shrink-0 text-red-400">✕</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Solution */}
+          <div
+            className="rounded-2xl p-8 text-right text-white"
+            style={{ background: 'linear-gradient(135deg, #22797D 0%, #2F9DA0 100%)' }}
+          >
+            <div className="flex items-center gap-3 mb-6 justify-end">
+              <h3 className="text-xl font-bold">הפתרון — OpenDoor</h3>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 10l4 4 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <ul className="space-y-4">
+              {[
+                'מרשם בעלים מדויק עם שיעורי בעלות כולל חלקים',
+                'חתימות דיגיטליות עם OTP, מעקב בזמן אמת וראיות משפטיות',
+                'קישור אוטומטי בין בעלים לדיירים לדירה לבניין',
+                'ניהול מסמכים מרכזי עם גרסאות ושמירת היסטוריה',
+                'דשבורד חי עם ציון חתימות, ציון בריאות, ו-NBA',
+                'מרכז איכות נתונים שמזהה בעיות לפני שהן הופכות לבעיה',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-3 justify-end">
+                  <span className="text-white/90">{item}</span>
+                  <span className="mt-0.5 shrink-0 text-white">✓</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </section>

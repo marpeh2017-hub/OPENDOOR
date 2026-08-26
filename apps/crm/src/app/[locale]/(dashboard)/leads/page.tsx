@@ -1,8 +1,36 @@
+'use client'
+
+import { useMemo } from 'react'
 import { Plus, LayoutGrid, List, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LeadsKanban } from '@/components/leads/leads-kanban'
+import { useLeads } from '@/hooks/use-leads'
+
+/** Stages that count as "still in the pipeline" (mirrors Prisma `LeadStatus`). */
+const OPEN_STAGES = new Set(['NEW', 'CONTACTED', 'MEETING_SCHEDULED', 'INTERESTED', 'NEGOTIATION'])
 
 export default function LeadsPage() {
+  // Same query key/params as LeadsKanban, so this is served from cache — the
+  // summary strip can never disagree with the board below it.
+  const { data, isLoading } = useLeads({ limit: 200 })
+
+  const stats = useMemo(() => {
+    const leads = data?.data ?? []
+    const open = leads.filter(l => OPEN_STAGES.has(l.status))
+    const meetings = leads.filter(l => l.status === 'MEETING_SCHEDULED')
+    const won = leads.filter(l => l.status === 'SIGNED')
+    const avgScore = open.length
+      ? Math.round(open.reduce((sum, l) => sum + (l.score ?? 0), 0) / open.length)
+      : 0
+
+    return [
+      { label: 'לידים פעילים', value: String(open.length),     sub: 'בכל השלבים הפתוחים', cls: 'text-blue-600' },
+      { label: 'ניקוד ממוצע',  value: String(avgScore),        sub: 'לידים פתוחים',       cls: 'text-green-600' },
+      { label: 'פגישות שנקבעו', value: String(meetings.length), sub: 'ממתינות לביצוע',     cls: 'text-amber-600' },
+      { label: 'לידים שנחתמו',  value: String(won.length),      sub: 'הומרו לפרויקט',      cls: 'text-primary' },
+    ]
+  }, [data])
+
   return (
     <div className="flex flex-col h-full space-y-5">
       {/* Header */}
@@ -28,20 +56,15 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* Pipeline summary strip */}
+      {/* Pipeline summary strip — derived from the live lead list, never hardcoded. */}
       <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        {[
-          { label: 'לידים פעילים',  value: '11', sub: 'בכל השלבים',   cls: 'text-blue-600' },
-          { label: 'שווי משוער',    value: '₪47M', sub: 'פוטנציאל צינור', cls: 'text-green-600' },
-          { label: 'פגישות הישבוע', value: '3',  sub: 'מתוכננות',     cls: 'text-amber-600' },
-          { label: 'זכו השנה',      value: '1',  sub: 'רמב"ם 3, רחובות', cls: 'text-primary' },
-        ].map(s => (
+        {stats.map(s => (
           <div key={s.label} className="kpi-card py-3.5">
             <div className="flex items-center gap-1.5">
               <TrendingUp size={13} className={s.cls} />
               <span className="text-xs text-muted-foreground">{s.label}</span>
             </div>
-            <p className={`text-2xl font-bold ${s.cls}`}>{s.value}</p>
+            <p className={`text-2xl font-bold ${s.cls}`}>{isLoading ? '—' : s.value}</p>
             <p className="text-xs text-muted-foreground">{s.sub}</p>
           </div>
         ))}

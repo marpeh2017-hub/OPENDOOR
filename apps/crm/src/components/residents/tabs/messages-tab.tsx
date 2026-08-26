@@ -1,91 +1,69 @@
 'use client'
 
-import { useState } from 'react'
-import { Send, Phone, MessageSquare, Mail } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { MessageSquare, Mail, Phone, Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
+import { useCommunications } from '@/hooks/use-communications'
 
-type MsgChannel = 'WHATSAPP' | 'SMS' | 'EMAIL' | 'CALL'
-
-const CHANNEL_CFG: Record<MsgChannel, { label: string; cls: string }> = {
-  WHATSAPP: { label: 'וואטסאפ', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  SMS:      { label: 'SMS',      cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  EMAIL:    { label: 'אימייל',   cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  CALL:     { label: 'שיחה',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+const CHANNEL_CFG: Record<string, { icon: React.ElementType; label: string; cls: string; bg: string }> = {
+  WHATSAPP: { icon: MessageSquare, label: 'וואטסאפ', cls: 'text-green-600', bg: 'bg-green-50' },
+  SMS:      { icon: Send,          label: 'SMS',     cls: 'text-blue-600',  bg: 'bg-blue-50' },
+  EMAIL:    { icon: Mail,          label: 'אימייל',  cls: 'text-purple-600', bg: 'bg-purple-50' },
+  PHONE:    { icon: Phone,         label: 'טלפון',   cls: 'text-teal-600',  bg: 'bg-teal-50' },
 }
 
-const mockMessages = [
-  { id: '1', channel: 'WHATSAPP' as MsgChannel, direction: 'OUT', text: 'שלום דוד, אנחנו מזמינים אותך לפגישת הצגת תוכנית הפינוי-בינוי ברחוב הרצל 45. האם יום שלישי ב-18:00 מתאים?', date: '10.01.2024 09:15', sender: 'אבי שמואלי' },
-  { id: '2', channel: 'WHATSAPP' as MsgChannel, direction: 'IN',  text: 'שלום, כן זה מתאים לי. אשמח לשמוע פרטים.', date: '10.01.2024 11:32', sender: 'דוד כהן' },
-  { id: '3', channel: 'EMAIL'    as MsgChannel, direction: 'OUT', text: 'שלום דוד, בהמשך לשיחתנו, מצורפת טיוטת ההסכם לעיונך. אנא עבור עליה ושלח שאלות אם יש.', date: '18.02.2024 14:00', sender: 'אבי שמואלי' },
-  { id: '4', channel: 'CALL'     as MsgChannel, direction: 'OUT', text: 'שיחת טלפון – דיון על סעיפי ההסכם. משך: 23 דקות.', date: '25.02.2024 10:45', sender: 'שרה מזרחי' },
-  { id: '5', channel: 'SMS'      as MsgChannel, direction: 'OUT', text: 'תזכורת: מחר ב-10:00 פגישת חתימה במשרד הנוטריון. כתובת: המלך ג\'ורג\' 12, רמת גן.', date: '14.03.2024 18:00', sender: 'מערכת' },
-]
-
 export function ResidentMessagesTab({ residentId }: { residentId: string }) {
-  const [message, setMessage] = useState('')
+  const { data, isLoading, isError, error, refetch } = useCommunications({ residentId })
+
+  if (isLoading) return <div className="card-surface"><RowsSkeleton rows={4} /></div>
+
+  if (isError || !data) {
+    return <QueryError message="שגיאה בטעינת התקשורת" error={error} onRetry={() => refetch()} />
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="card-surface">
+        <EmptyState message="אין תקשורת רשומה עם הדייר" hint="הודעות שיישלחו יתועדו כאן" />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Channel quick-actions */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-          <MessageSquare size={12} className="text-green-600" /> וואטסאפ
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-          <MessageSquare size={12} className="text-blue-600" /> SMS
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-          <Mail size={12} className="text-purple-600" /> אימייל
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
-          <Phone size={12} className="text-amber-600" /> רישום שיחה
-        </Button>
-      </div>
-
-      {/* Message thread */}
-      <div className="card-surface divide-y divide-border overflow-hidden">
-        {mockMessages.map(msg => {
-          const channel = CHANNEL_CFG[msg.channel]
-          const isOut = msg.direction === 'OUT'
-          return (
-            <div key={msg.id} className="px-4 py-3.5 hover:bg-muted/20">
-              <div className="flex items-center justify-between gap-4 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    'text-xs font-medium px-2 py-0.5 rounded-full',
-                    channel.cls
-                  )}>
-                    {channel.label}
-                  </span>
-                  <span className={cn(
-                    'text-xs',
-                    isOut ? 'text-primary' : 'text-muted-foreground'
-                  )}>
-                    {isOut ? `← ${msg.sender}` : `→ ${msg.sender}`}
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground flex-shrink-0">{msg.date}</span>
-              </div>
-              <p className="text-sm text-foreground/80 leading-relaxed">{msg.text}</p>
+    <div className="card-surface divide-y divide-border overflow-hidden">
+      {data.map(c => {
+        const cfg = CHANNEL_CFG[c.channel]
+          ?? { icon: MessageSquare, label: c.channel, cls: 'text-gray-500', bg: 'bg-gray-50' }
+        const Icon = cfg.icon
+        // Message.body is non-nullable in the schema; there is no `content` column.
+        const text = c.body ?? ''
+        const when = c.sentAt ?? c.createdAt
+        return (
+          <div key={c.id} className="flex items-start gap-3 px-4 py-3.5">
+            <div className={cn('flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0', cfg.bg)}>
+              <Icon size={14} className={cfg.cls} />
             </div>
-          )
-        })}
-      </div>
-
-      {/* Quick send */}
-      <div className="card-surface p-3 flex gap-2">
-        <input
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-          placeholder="כתוב הודעה..."
-          className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-          dir="rtl"
-        />
-        <Button size="sm" className="gap-1.5 h-8" disabled={!message.trim()}>
-          <Send size={13} /> שלח
-        </Button>
-      </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">{cfg.label}</span>
+                {c.direction && (
+                  <span className="text-xs text-muted-foreground">
+                    {c.direction === 'OUTBOUND' ? 'יוצא' : 'נכנס'}
+                  </span>
+                )}
+              </div>
+              {c.subject && <p className="text-sm font-medium text-foreground mt-0.5">{c.subject}</p>}
+              {text && <p className="text-sm text-muted-foreground mt-0.5 whitespace-pre-wrap">{text}</p>}
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                {new Date(when).toLocaleString('he-IL', {
+                  day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                })}
+                {c.status && ` · ${c.status}`}
+              </p>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
