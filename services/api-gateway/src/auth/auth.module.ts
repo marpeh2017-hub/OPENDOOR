@@ -7,12 +7,17 @@ import { AuthController } from './auth.controller'
 import { JwtStrategy }    from './strategies/jwt.strategy'
 import { JwtAuthGuard }   from './guards/jwt-auth.guard'
 import { RolesGuard }     from './guards/roles.guard'
+import { RedisModule }    from '../redis/redis.module'
 
 @Module({
   imports: [
+    RedisModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
+      secret: (() => {
+        if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET environment variable is required')
+        return process.env.JWT_SECRET
+      })(),
       signOptions: { expiresIn: '24h' },
     }),
   ],

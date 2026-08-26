@@ -2,31 +2,45 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 import { PrismaService } from '../prisma.service'
+import { SmsService } from '../sms/sms.service'
+import { REDIS } from '../redis/redis.module'
 import { LoginDto } from './dto/login.dto'
 import { SendOtpDto } from './dto/send-otp.dto'
 import { VerifyOtpDto } from './dto/verify-otp.dto'
 
-// In-memory OTP store (replace with Redis in production)
-const otpStore = new Map<string, { otp: string; expires: number }>()
+const OTP_TTL_SECONDS  = 300    // 5 minutes
+const RATE_TTL_SECONDS = 3600   // 1 hour
+const RATE_MAX         = 3      // max OTPs per hour
+
+// A revoked session must stay revoked for at least as long as the longest-lived
+// token that carries its sessionId. The refresh token lives 30 days, so a 24h
+// revocation window would let a stolen refresh token resurrect the session on
+// day 2. Keep these two constants in lockstep.
+const ACCESS_TOKEN_TTL   = '24h'
+const REFRESH_TOKEN_TTL  = '30d'
+const REVOCATION_TTL_SECONDS = 30 * 24 * 60 * 60  // 30 days — matches REFRESH_TOKEN_TTL
 
 // scrypt parameters: N=2^15, r=8, p=1, 32-byte key — OWASP-acceptable for interactive login
-const SCRYPT_N = 32768
+const SCRYPT_N  = 32768
+const SCRYPT_MEM = 128 * SCRYPT_N * 8 * 2  // 2× the theoretical minimum (64 MB)
+
 export function hashPassword(plain: string): string {
   const salt = randomBytes(16)
-  const key = scryptSync(plain, salt, 32, { N: SCRYPT_N, r: 8, p: 1 })
+  const key  = scryptSync(plain, salt, 32, { N: SCRYPT_N, r: 8, p: 1, maxmem: SCRYPT_MEM })
   return `$scrypt$${SCRYPT_N}$${salt.toString('base64')}$${key.toString('base64')}`
 }
 
 function checkPassword(plain: string, stored: string): boolean {
   if (stored.startsWith('$scrypt$')) {
     const [, , n, saltB64, keyB64] = stored.split('$')
-    const salt = Buffer.from(saltB64, 'base64')
+    const salt     = Buffer.from(saltB64, 'base64')
     const expected = Buffer.from(keyB64, 'base64')
-    const actual = scryptSync(plain, salt, expected.length, { N: Number(n), r: 8, p: 1 })
+    const actual   = scryptSync(plain, salt, expected.length, { N: Number(n), r: 8, p: 1, maxmem: SCRYPT_MEM })
     return timingSafeEqual(actual, expected)
   }
   // Legacy dev-seed formats — verified then upgraded on login
@@ -37,11 +51,17 @@ function checkPassword(plain: string, stored: string): boolean {
   return plain === stored
 }
 
+function hashOtp(otp: string): string {
+  return createHash('sha256').update(otp).digest('hex')
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly sms: SmsService,
+    @Inject(REDIS) private readonly redis: any,
   ) {}
 
   /* ─── Email / password login (CRM staff) ───────────────────────── */
@@ -64,10 +84,10 @@ export class AuthService {
       sessionId,
     }
 
-    const accessToken  = this.jwtService.sign(payload, { expiresIn: '24h' })
+    const accessToken  = this.jwtService.sign(payload, { expiresIn: ACCESS_TOKEN_TTL })
     const refreshToken = this.jwtService.sign(
       { sub: user.id, sessionId },
-      { expiresIn: '30d' },
+      { expiresIn: REFRESH_TOKEN_TTL },
     )
 
     // Update last login; transparently upgrade legacy hashes to scrypt
@@ -101,28 +121,38 @@ export class AuthService {
       throw new BadRequestException('מספר טלפון לא תקין — נדרש פורמט 05XXXXXXXX')
     }
 
+    // Rate limiting: max RATE_MAX sends per hour per phone
+    const rateKey = `otp:rate:${dto.phone}`
+    const count   = await this.redis.incr(rateKey)
+    if (count === 1) {
+      await this.redis.expire(rateKey, RATE_TTL_SECONDS)
+    }
+    if (count > RATE_MAX) {
+      throw new BadRequestException('יותר מדי בקשות OTP — נסה שוב בעוד שעה')
+    }
+
     const otp     = Math.floor(100000 + Math.random() * 900000).toString()
-    const expires = Date.now() + 5 * 60 * 1000
+    const otpKey  = `otp:${dto.phone}`
 
-    otpStore.set(dto.phone, { otp, expires })
+    // Store sha256(otp) — never plaintext
+    await this.redis.setex(otpKey, OTP_TTL_SECONDS, hashOtp(otp))
 
-    // Log to console in dev — wire Twilio/Vonage for production
-    console.log(`[DEV OTP] ${dto.phone} → ${otp}`)
+    // Send via configured SMS provider (never logs the OTP value)
+    await this.sms.sendOtp(dto.phone, otp)
 
-    return { message: 'קוד OTP נשלח', expiresIn: 300 }
+    return { message: 'קוד OTP נשלח', expiresIn: OTP_TTL_SECONDS }
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
-    const stored = otpStore.get(dto.phone)
+    const otpKey    = `otp:${dto.phone}`
+    const storedHash = await this.redis.get(otpKey)
 
-    if (!stored || stored.otp !== dto.code) {
+    if (!storedHash || storedHash !== hashOtp(dto.code)) {
       throw new UnauthorizedException('קוד OTP שגוי')
     }
-    if (Date.now() > stored.expires) {
-      otpStore.delete(dto.phone)
-      throw new UnauthorizedException('קוד OTP פג תוקף')
-    }
-    otpStore.delete(dto.phone)
+
+    // Delete on success — single-use
+    await this.redis.del(otpKey)
 
     // Look up resident by phone
     const resident = await this.prisma.resident.findFirst({
@@ -142,10 +172,10 @@ export class AuthService {
       sessionId,
     }
 
-    const accessToken  = this.jwtService.sign(payload, { expiresIn: '24h' })
+    const accessToken  = this.jwtService.sign(payload, { expiresIn: ACCESS_TOKEN_TTL })
     const refreshToken = this.jwtService.sign(
       { sub: resident.id, sessionId },
-      { expiresIn: '30d' },
+      { expiresIn: REFRESH_TOKEN_TTL },
     )
 
     return { accessToken, refreshToken, residentId: resident.id }
@@ -156,8 +186,19 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify<{ sub: string; sessionId: string }>(refreshToken)
 
+      // A refresh token must carry a sessionId, otherwise it can never be
+      // revoked. Reject legacy/forged tokens that omit it.
+      if (!payload.sessionId) throw new UnauthorizedException('Refresh token לא תקין')
+
+      // Logout revokes the whole session — the refresh token must not be able
+      // to mint a fresh access token for a session that was already revoked.
+      const revoked = await this.redis.exists(`jwt:revoked:${payload.sessionId}`)
+      if (revoked) throw new UnauthorizedException('הסשן בוטל — יש להתחבר מחדש')
+
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } })
       if (!user) throw new UnauthorizedException('משתמש לא נמצא')
+      // A deactivated user must not be able to keep refreshing access.
+      if (!user.isActive) throw new UnauthorizedException('החשבון אינו פעיל')
 
       const accessToken = this.jwtService.sign(
         {
@@ -167,17 +208,21 @@ export class AuthService {
           tenantId:  user.tenantId,
           sessionId: payload.sessionId,
         },
-        { expiresIn: '24h' },
+        { expiresIn: ACCESS_TOKEN_TTL },
       )
 
       return { accessToken }
-    } catch {
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err
       throw new UnauthorizedException('Refresh token לא תקין')
     }
   }
 
-  /* ─── Logout ────────────────────────────────────────────────────── */
-  async logout(_sessionId: string) {
-    // In production: delete session from Redis
+  /* ─── Logout — revoke session in Redis ─────────────────────────── */
+  async logout(sessionId: string) {
+    if (!sessionId) return
+    // Revoke for the full refresh-token lifetime, not just the access-token
+    // lifetime — otherwise the session resurrects once the marker expires.
+    await this.redis.setex(`jwt:revoked:${sessionId}`, REVOCATION_TTL_SECONDS, '1')
   }
 }

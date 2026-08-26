@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
+import { Fraction, compareToThreshold, ratio } from '../common/fractions'
 
 export interface ThresholdResult {
   scope: 'PROJECT' | 'BUILDING'
@@ -63,7 +64,7 @@ export class ThresholdService {
         ? apartments.filter(a => a.buildingId === rule.buildingId)
         : apartments
 
-      let signedWeight = 0
+      let signedWeight = Fraction.ZERO
       let totalWeight = 0
       let signedUnits = 0
 
@@ -73,30 +74,43 @@ export class ThresholdService {
           totalWeight += 1
           continue
         }
-        let aptSignedFraction = 0
+        // Exact rational sum of the signed owners' shares. No floats, no
+        // epsilon: an apartment is fully signed only when the signed shares
+        // sum to EXACTLY 1, so 999/1000 signed is NOT a signed unit.
+        let aptSignedFraction = Fraction.ZERO
         for (const o of apt.owners) {
-          const share = o.shareDenominator > 0 ? o.shareNumerator / o.shareDenominator : 0
-          if (signedOwners.has(`${o.ownerId}:${apt.id}`)) aptSignedFraction += share
+          if (!signedOwners.has(`${o.ownerId}:${apt.id}`)) continue
+          const share = Fraction.tryFrom(o.shareNumerator, o.shareDenominator)
+          if (share === null) continue
+          aptSignedFraction = aptSignedFraction.add(share)
         }
-        aptSignedFraction = Math.min(aptSignedFraction, 1)
+        // Over-registered ownership (sum > 1) is a Data Quality issue in its
+        // own right; clamp so it cannot inflate the threshold.
+        aptSignedFraction = aptSignedFraction.clamp01()
         totalWeight += 1
+        const fullySigned = aptSignedFraction.isOne()
         if (rule.basis === 'UNITS') {
           // Unit counts as signed only when ALL its shares are signed
-          if (aptSignedFraction >= 0.999) { signedWeight += 1; signedUnits += 1 }
+          if (fullySigned) { signedWeight = signedWeight.add(Fraction.ONE); signedUnits += 1 }
         } else {
-          signedWeight += aptSignedFraction
-          if (aptSignedFraction >= 0.999) signedUnits += 1
+          signedWeight = signedWeight.add(aptSignedFraction)
+          if (fullySigned) signedUnits += 1
         }
       }
 
-      const signedPct = totalWeight > 0 ? (signedWeight / totalWeight) * 100 : 0
+      // `reached` is decided by exact rational comparison; `signedPct` is
+      // derived from the SAME ratio and truncated toward the failing side, so
+      // the displayed number can never contradict the decision.
+      const achieved = ratio(signedWeight, totalWeight)
+      const { reached, displayPct } = compareToThreshold(achieved, rule.requiredPct)
+
       results.push({
         scope: rule.scope,
         buildingId: rule.buildingId ?? undefined,
         requiredPct: rule.requiredPct,
         basis: rule.basis,
-        signedPct: Math.round(signedPct * 10) / 10,
-        reached: signedPct >= rule.requiredPct,
+        signedPct: displayPct,
+        reached,
         totalUnits: scoped.length,
         signedUnits,
       })
