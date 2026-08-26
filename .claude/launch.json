@@ -2,16 +2,33 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "//": "All four apps require FIXED ports — autoPort must stay false. The CRM sets an httpOnly access_token cookie scoped to its own origin (localhost:3001) and reaches the API through a same-origin BFF proxy; the API's CORS allowlist names these exact origins (CRM_URL/PORTAL_URL/WEB_URL). On a reassigned port the cookie is not sent and CORS rejects the request, so auth breaks silently.",
+      "name": "api-gateway",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@urban-renewal/api-gateway", "dev"],
+      "port": 4000,
+      "autoPort": false
+    },
+    {
       "name": "crm",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@urban-renewal/crm", "dev"],
-      "port": 3001
+      "port": 3001,
+      "autoPort": false
     },
     {
       "name": "portal",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@urban-renewal/portal", "dev"],
-      "port": 3002
+      "port": 3002,
+      "autoPort": false
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@urban-renewal/web", "dev"],
+      "port": 3000,
+      "autoPort": false
     }
   ]
 }

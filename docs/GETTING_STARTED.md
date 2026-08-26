@@ -27,11 +27,52 @@ cp .env .env.local
 # ערוך .env.local לפי הצורך
 ```
 
-> ✅ ערכי ברירת המחדל ב-`.env` עובדים עם Docker Compose ללא שינוי.
+> ✅ ערכי ברירת המחדל ב-`.env` מתאימים להתקנת ה-Windows המתוארת בסעיף 3א.
 
 ---
 
-## 3 — הפעלת תשתית (Docker)
+## 3 — הפעלת תשתית
+
+> ⚠️ **מכונת הפיתוח הנוכחית אינה משתמשת ב-Docker.** PostgreSQL, Redis ו-MinIO
+> רצים ישירות על Windows. ההוראות ל-Docker נשמרו בהמשך למי שמריץ בסביבה אחרת,
+> אבל אינן משקפות את ההתקנה כאן.
+
+### 3א — Windows (ההתקנה בפועל)
+
+| שירות | פורט | הפעלה | נתיב נתונים |
+|---|---|---|---|
+| PostgreSQL 17 | 5432 | שירות Windows — עולה לבד בהפעלה | ברירת מחדל של ההתקנה |
+| Redis | 6379 | `scripts/dev-infra/start-redis.cmd` | `%LOCALAPPDATA%\redis-windows` |
+| MinIO | 9000 (API) / 9001 (קונסולה) | `scripts/dev-infra/start-minio.cmd` | `C:\Users\Me\minio` |
+
+**הפעלה אוטומטית בכניסה למערכת.** Redis ו-MinIO אינם שירותי Windows ואינם
+עולים לבד לאחר אתחול. הותקנו קיצורים בתיקיית ה-Startup שמפעילים אותם בכל
+כניסה למשתמש:
+
+```
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\UROS-start-minio.cmd
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\UROS-start-redis.cmd
+```
+
+זו הדרך שאינה דורשת הרשאות מנהל. אם יש גישת Administrator ורוצים שהם ירוצו
+כמשימות מתוזמנות מלאות (עם restart אוטומטי בכשל), יש להריץ מ-PowerShell מוגבה:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/dev-infra/register-dev-infra.ps1
+```
+
+**אימות שהכל עלה:**
+
+```bash
+curl http://127.0.0.1:9000/minio/health/live
+```
+
+> ⚠️ **MinIO ונתיב הנתונים.** אם MinIO עולה עם תיקיית נתונים ריקה הוא מאתחל
+> pool חדש ללא שום bucket — השרת יעלה בהצלחה אבל כל הורדת מסמך תיכשל בעוד
+> שורות ה-Document עדיין קיימות ב-DB. אם ה-bucket `urban-renewal` נעלם, יש
+> ליצור אותו מחדש בקונסולה שב-http://localhost:9001.
+
+### 3ב — Docker (סביבות אחרות בלבד)
 
 ```bash
 # הפעל PostgreSQL, Redis, RabbitMQ, MinIO
