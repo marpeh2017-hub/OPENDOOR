@@ -9,8 +9,17 @@ import { AppModule } from './app.module'
 import { PrismaExceptionFilter } from './filters/prisma-exception.filter'
 import { validateSignatureConfig } from './config/signature-config.validator'
 import { validateAllowlistConfiguration } from './automations/webhook-allowlist'
+import { validatePrismaEngine } from './config/prisma-engine.validator'
 
 async function bootstrap() {
+  /**
+   * Checked BEFORE Nest boots, so the failure is one clear message instead of a
+   * DI stack trace from PrismaService.onModuleInit. More than one tool works in
+   * this repository, and any `prisma generate` run with Accelerate flags
+   * silently rewrites the shared generated client under node_modules.
+   */
+  validatePrismaEngine()
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:  ['error', 'warn', 'log', 'debug'],
     rawBody: true, // enables req.rawBody for webhook HMAC verification

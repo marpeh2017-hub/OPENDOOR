@@ -47,6 +47,7 @@ describe('Signature Workflow (e2e)', () => {
   let storage: StorageService
   let adminToken: string
   let tenantId: string
+  let adminUserId: string
   let projectId: string
   let ownerId: string
   let apartmentId: string
@@ -139,6 +140,19 @@ describe('Signature Workflow (e2e)', () => {
         await prisma.signaturePackage.deleteMany({ where: { id: { in: packageIds } } })
       }
 
+      // The document-link regression test creates its own physical object.
+      // Remove only this run's clearly watermarked fixtures.
+      const documents = await prisma.document.findMany({
+        where: { title: { startsWith: 'E2E Signature Document ' }, createdAt: { gte: startedAt } },
+        select: { id: true, tenantId: true, s3Key: true },
+      })
+      for (const document of documents) {
+        // Best-effort teardown: the object may already be gone, and a storage
+        // failure here must not mask the result of the test that just ran.
+        try { await storage.delete(document.tenantId, document.s3Key) } catch { /* ignored */ }
+      }
+      if (documents.length) await prisma.document.deleteMany({ where: { id: { in: documents.map((document) => document.id) } } })
+
       // Belt and braces: some tests delete a record directly, which (again, no
       // FK) strands its session. Sweep any session created during this run
       // whose record no longer exists.
@@ -174,6 +188,7 @@ describe('Signature Workflow (e2e)', () => {
       expect(session).toBeTruthy()
       adminToken = session!.accessToken
       tenantId   = session!.user.tenantId
+      adminUserId = session!.user.id
 
       // Find a project
       const proj = await prisma.project.findFirst({ where: { tenantId } })
@@ -197,6 +212,29 @@ describe('Signature Workflow (e2e)', () => {
   })
 
   // ג”€ג”€ Full lifecycle ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
+
+  describe('Document integrity', () => {
+    it('binds a package to a tenant-scoped project document and stores its SHA-256 hash', async () => {
+      const bytes = Buffer.from('%PDF-1.4\nE2E signature document\n%%EOF')
+      const s3Key = await storage.upload(tenantId, 'documents', 'e2e-signature.pdf', bytes, 'application/pdf')
+      const document = await prisma.document.create({
+        data: {
+          tenantId, projectId, category: 'LEGAL', title: `E2E Signature Document ${Date.now()}`,
+          fileName: 'e2e-signature.pdf', fileSize: bytes.length, mimeType: 'application/pdf',
+          s3Key, s3Bucket: process.env.S3_BUCKET ?? 'urban-renewal', createdById: adminUserId,
+        },
+      })
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/signatures/packages')
+        .set(authHeader(adminToken))
+        .send({ projectId, title: 'E2E Document-bound Package', documentId: document.id, signers: [{ ownerId, apartmentId }] })
+        .expect(201)
+      const stored = await prisma.signaturePackage.findUniqueOrThrow({ where: { id: res.body.id } })
+      expect(JSON.parse(stored.documentIds)).toEqual([document.id])
+      expect(stored.documentHash).toBe(createHash('sha256').update(bytes).digest('hex'))
+      expect(JSON.stringify(res.body)).not.toContain(s3Key)
+    })
+  })
 
   describe('Package lifecycle', () => {
     let packageId: string
