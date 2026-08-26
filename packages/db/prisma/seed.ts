@@ -8,6 +8,11 @@ import {
 } from '@prisma/client'
 import { createHash } from 'crypto'
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('ERROR: Seed script must not run in production. Set NODE_ENV=development.')
+  process.exit(1)
+}
+
 const prisma = new PrismaClient()
 
 // Simple SHA-256 hash for demo purposes (not bcrypt — no external dep needed for seed)
@@ -152,7 +157,10 @@ async function main() {
     create: {
       id:              'bldg_001',
       complexId:       complex.id,
-      address:         'הרצל 45',
+      // CreateBuildingDto documents `address` as the street NAME only — the
+      // number belongs in streetNumber. Seeding 'הרצל 45' here made the UI
+      // render 'הרצל 45 45'.
+      address:         'הרצל',
       streetNumber:    '45',
       city:            'תל אביב',
       floors:          8,
@@ -215,6 +223,40 @@ async function main() {
     })
   }
   console.log('✅ Residents seeded')
+
+  // ── Owners + ownership registry ────────────────────────────────────────────
+  // Owners drive the digital-signature flow (SignaturePackage → SignatureRecord),
+  // so at least one owner must exist with a fractional holding in an apartment.
+  const ownersData = [
+    { id: 'own_01', fullName: 'דוד כהן',    phone: '0501234567', email: 'david.cohen@gmail.com',  residentId: 'res_01', aptId: 'apt_001', num: 1, den: 1 },
+    { id: 'own_02', fullName: 'רחל לוי',    phone: '0529876543', email: 'rachel.levi@gmail.com',  residentId: 'res_02', aptId: 'apt_002', num: 1, den: 2 },
+    { id: 'own_03', fullName: 'יוסי מזרחי', phone: '0523334455', email: 'yossi.m@gmail.com',      residentId: 'res_05', aptId: 'apt_005', num: 1, den: 1 },
+  ]
+  for (const o of ownersData) {
+    await prisma.owner.upsert({
+      where:  { id: o.id },
+      update: {},
+      create: {
+        id:         o.id,
+        tenantId:   tenant.id,
+        fullName:   o.fullName,
+        phone:      o.phone,
+        email:      o.email,
+        residentId: o.residentId,
+      },
+    })
+    await prisma.ownerApartment.upsert({
+      where:  { ownerId_apartmentId: { ownerId: o.id, apartmentId: o.aptId } },
+      update: {},
+      create: {
+        ownerId:          o.id,
+        apartmentId:      o.aptId,
+        shareNumerator:   o.num,
+        shareDenominator: o.den,
+      },
+    })
+  }
+  console.log('✅ Owners + ownership registry seeded')
 
   // ── Leads ──────────────────────────────────────────────────────────────────
   const leadsData = [

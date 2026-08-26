@@ -53,3 +53,10 @@ prisma/migrations/dev/
 *.tfstate.backup
 *.tfvars
 !*.tfvars.example
+
+# Build caches
+*.tsbuildinfo
+
+# Redis persistence snapshot. NEVER commit: it contains live runtime state —
+# `jwt:revoked:*` session identifiers and `otp:resend:*` counters.
+dump.rdb
