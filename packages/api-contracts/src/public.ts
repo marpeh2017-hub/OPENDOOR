@@ -73,11 +73,21 @@ export interface PublicProject {
   summary: string
   /** Full body, for the detail page. May contain safe inline markup. */
   description?: string
-  currentStage: ProjectStage
+  /**
+   * OPTIONAL, and this is a product rule rather than a data convenience.
+   *
+   * A project's stage is a factual claim about a real building's process. Where
+   * it has not been verified it must be ABSENT — not guessed, not defaulted to
+   * the first stage, not shown as "unknown". The card and detail page are
+   * required to look complete without it.
+   */
+  currentStage?: ProjectStage
   heroImage?: MediaAsset
   gallery?: MediaAsset[]
   videos?: MediaAsset[]
-  timeline: TimelineStage[]
+  /** Absent when no stage is verified — a timeline without a stage would be an
+   *  invented sequence. Empty and absent both mean "no verified progress". */
+  timeline?: TimelineStage[]
   featured: boolean
   visibility: Visibility
   publishState: PublishState
@@ -93,7 +103,8 @@ export interface PublicProjectSummary {
   type: ProjectType
   location: GeoContext
   summary: string
-  currentStage: ProjectStage
+  /** Optional for the same reason as on `PublicProject`. */
+  currentStage?: ProjectStage
   heroImage?: MediaAsset
   featured: boolean
 }

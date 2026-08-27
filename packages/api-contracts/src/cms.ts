@@ -1,4 +1,7 @@
-import type { IsoDateTime, Locale, MediaAsset, PublishState, SeoMetadata } from './common'
+import type {
+  IsoDateTime, Locale, LocalizedText, LocalizedTextOptional,
+  MediaAsset, PublishState, SeoMetadata,
+} from './common'
 
 /**
  * Website content management (§31–§33, §54).
@@ -24,20 +27,31 @@ import type { IsoDateTime, Locale, MediaAsset, PublishState, SeoMetadata } from 
  */
 export type BlockType =
   | 'HERO'
-  | 'WHY_ORGANIZER'
-  | 'SERVICES'
-  | 'HOW_WE_WORK'
+  | 'TEXT_SECTION'
+  | 'FEATURE_GRID'
+  | 'PROCESS'
   | 'PROJECTS'
   | 'PROJECT_TRANSPARENCY'
-  | 'TRUST_CENTER'
+  | 'TRUST'
   | 'KNOWLEDGE'
   | 'FAQ'
   | 'EXTERNAL_RESOURCES'
   | 'CTA'
-  | 'RICH_TEXT'
   | 'MEDIA'
 
+/**
+ * Ordered for the block picker. A closed list, deliberately: adding a block is
+ * a code change plus a design review, which is what stops this becoming an
+ * unrestricted builder that can break the design system.
+ */
+export const BLOCK_TYPES: readonly BlockType[] = [
+  'HERO', 'TEXT_SECTION', 'FEATURE_GRID', 'PROCESS', 'PROJECTS',
+  'PROJECT_TRANSPARENCY', 'TRUST', 'KNOWLEDGE', 'FAQ',
+  'EXTERNAL_RESOURCES', 'CTA', 'MEDIA',
+] as const
+
 export interface BlockBase {
+  /** Stable across edits and reorders, so a deep link to a section survives. */
   id: string
   type: BlockType
   order: number
@@ -45,86 +59,121 @@ export interface BlockBase {
   hidden: boolean
 }
 
+/**
+ * ── EVERY EDITORIAL STRING IS LOCALIZED ────────────────────────────────────
+ *
+ * Text fields are `LocalizedText`, not `string`. Two reasons, and the second is
+ * the one that would be expensive to retrofit:
+ *
+ *   1. A CMS editor needs both languages side by side to translate at all.
+ *   2. If blocks stored a single resolved string, adding English later would
+ *      mean migrating every stored page rather than filling in a key.
+ *
+ * The UI resolves once at the page boundary via `resolveLocalized`, so
+ * components below receive plain strings and never branch on language.
+ *
+ * Hrefs, ids and icon names are NOT localized — they are addresses, not copy.
+ */
+
 export interface HeroBlock extends BlockBase {
   type: 'HERO'
-  heading: string
-  subheading?: string
-  primaryCtaLabel: string
+  heading: LocalizedText
+  subheading?: LocalizedTextOptional
+  primaryCtaLabel: LocalizedText
   primaryCtaHref: string
-  secondaryCtaLabel?: string
+  secondaryCtaLabel?: LocalizedTextOptional
   secondaryCtaHref?: string
   media?: MediaAsset
 }
 
-export interface RichTextBlock extends BlockBase {
-  type: 'RICH_TEXT'
-  heading?: string
-  /** Constrained markup: headings, paragraphs, lists, links, emphasis.
-   *  No inline styles, no raw HTML, no script. */
-  body: string
+export interface TextSectionBlock extends BlockBase {
+  type: 'TEXT_SECTION'
+  heading?: LocalizedTextOptional
+  /**
+   * Constrained markup: headings, paragraphs, lists, links, emphasis. No inline
+   * styles, no raw HTML, no script — the design system supplies appearance, and
+   * an editor who can inject style can break every page.
+   */
+  body: LocalizedText
 }
 
 export interface CtaBlock extends BlockBase {
   type: 'CTA'
-  heading: string
-  body?: string
-  ctaLabel: string
+  heading: LocalizedText
+  body?: LocalizedTextOptional
+  ctaLabel: LocalizedText
   ctaHref: string
 }
 
 export interface MediaBlock extends BlockBase {
   type: 'MEDIA'
-  heading?: string
+  heading?: LocalizedTextOptional
   assets: MediaAsset[]
 }
 
 /**
  * Blocks that render server-driven collections.
  *
- * The editor chooses WHICH and HOW MANY, never the markup — a "featured
- * projects" block reads real projects rather than duplicating their content
- * into the page, so a project edited once is correct everywhere.
+ * The editor chooses WHICH and HOW MANY, never the markup. A featured-projects
+ * block REFERENCES projects rather than copying their content into the page, so
+ * a project edited once is correct everywhere it appears.
  */
 export interface CollectionBlock extends BlockBase {
   type: 'PROJECTS' | 'KNOWLEDGE' | 'FAQ' | 'EXTERNAL_RESOURCES'
-  heading?: string
-  intro?: string
+  heading?: LocalizedTextOptional
+  intro?: LocalizedTextOptional
   limit?: number
-  /** Explicit slugs, or empty for "latest/featured". */
+  /** Explicit slugs, or empty for "latest / featured". */
   itemSlugs?: string[]
 }
 
-/** Blocks whose content is editorial prose over a fixed layout. */
-export interface NarrativeBlock extends BlockBase {
-  type: 'WHY_ORGANIZER' | 'SERVICES' | 'HOW_WE_WORK' | 'PROJECT_TRANSPARENCY' | 'TRUST_CENTER'
-  heading: string
-  intro?: string
+/**
+ * Editorial prose over a fixed layout.
+ *
+ * One interface for four block types because they differ only in how the items
+ * are arranged — a grid, a numbered process, a stage timeline, a trust list.
+ * Four near-identical interfaces would drift, and the layout belongs to the
+ * renderer rather than to the content.
+ */
+export interface FeatureGridBlock extends BlockBase {
+  type: 'FEATURE_GRID' | 'PROCESS' | 'PROJECT_TRANSPARENCY' | 'TRUST'
+  heading: LocalizedText
+  intro?: LocalizedTextOptional
   items: NarrativeItem[]
 }
 
 export interface NarrativeItem {
   id: string
-  title: string
-  body: string
-  /** Icon name from a fixed set — not an arbitrary upload, so the visual
-   *  language stays consistent. */
+  title: LocalizedText
+  body: LocalizedText
+  /**
+   * Icon name from a fixed set, not an arbitrary upload. An editor who can
+   * upload an icon per item produces a page with eight visual languages.
+   */
   icon?: string
 }
 
 export type PageBlock =
-  | HeroBlock | RichTextBlock | CtaBlock | MediaBlock
-  | CollectionBlock | NarrativeBlock
+  | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
+  | CollectionBlock | FeatureGridBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 
+/**
+ * A page is ONE record serving every locale, not one record per language.
+ *
+ * Its blocks carry `LocalizedText`, so translating is editing a key rather than
+ * cloning a page — which also means the two languages cannot drift out of
+ * structural sync, the usual failure of per-locale page rows.
+ */
 export interface CmsPage {
   id: string
   slug: string
-  title: string
-  locale: Locale
+  title: LocalizedText
   publishState: PublishState
   blocks: PageBlock[]
-  seo: SeoMetadata
+  /** SEO is per-locale: titles and descriptions are copy, and differ. */
+  seo: Record<Locale, SeoMetadata>
   updatedAt: IsoDateTime
   updatedByName: string
 }
@@ -161,7 +210,7 @@ export interface RestoreVersionInput {
 
 export interface NavItem {
   id: string
-  label: string
+  label: LocalizedText
   href: string
   order: number
   children?: NavItem[]
@@ -169,7 +218,7 @@ export interface NavItem {
 
 export interface FooterGroup {
   id: string
-  title: string
+  title: LocalizedText
   order: number
   links: NavItem[]
 }

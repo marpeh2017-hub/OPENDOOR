@@ -329,3 +329,68 @@ client designed against mock data would be designed against guesses.
 | 13 | SEO · analytics events · PWA · error/empty states | |
 | 14 | Accessibility · keyboard · responsive · targeted tests | |
 | 15 | Phase 1 review report, then **STOP** | |
+
+---
+
+## 8. Open decision — production locale URL strategy
+
+**Not changed in Task 5. Recorded for review, and must be resolved before SEO
+canonical implementation and production cutover.**
+
+### Desired
+
+```
+Hebrew   odg.co.il/projects
+English  odg.co.il/en/projects
+```
+
+### Current
+
+`localePrefix: 'always'`, so Hebrew is `odg.co.il/he/projects`. Matches the CRM
+and Portal.
+
+### What switching would take
+
+next-intl's `localePrefix: 'as-needed'` produces exactly the desired shape: the
+default locale is unprefixed, others keep their prefix. It is a one-line change
+in `src/i18n/routing.ts`.
+
+### Why it is not being done now
+
+Three consequences that need deciding together, not discovered during a cutover:
+
+1. **Redirect strategy.** Every existing `/he/*` URL must 301 to `/*`, or the
+   two forms both resolve and split ranking. That is a middleware rule plus a
+   canonical tag, and it has to ship WITH the switch rather than after it.
+
+2. **Portal routing interaction.** The target places the Portal at
+   `odg.co.il/resident/*` while the Portal itself uses `localePrefix: 'always'`
+   with four locales. Under `as-needed` on the website, `/resident` and
+   `/resident/he` would both be reachable through the proxy unless the rewrite
+   is written carefully. The Portal's own `/sign/[token]` route is the resident
+   signing path and must not be disturbed.
+
+3. **Divergence from the rest of the monorepo.** The website would prefix
+   differently from the CRM and Portal. Defensible — a public marketing site has
+   SEO obligations an internal tool does not — but it should be a decision, not
+   an accident.
+
+### Recommendation
+
+Switch to `as-needed`, together with the 301 rule and canonical tags, as a
+single dedicated task before Task 13 (SEO). Doing it inside a page-building task
+risks breaking routing for reasons unrelated to that task's work.
+
+---
+
+## 9. Open item — logo asset
+
+Task 4 renders the brand as a **text wordmark**, because no logo file was
+available to the app. This is explicitly NOT the final brand implementation.
+
+The final site must use the official OpenDoor Group logo, preserving its aspect
+ratio, without cropping or masking, with a full-horizontal and an icon-only
+variant, and a light/white variant where the surface requires it.
+
+Needed to close: the asset itself (SVG preferred — it scales without a second
+file per density and keeps the mark crisp on the header at every breakpoint).

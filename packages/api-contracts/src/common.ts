@@ -50,6 +50,43 @@ export type ViewerRole = 'guest' | 'resident' | 'representative' | 'internal'
 /** Publication state, independent of visibility: a public page can be a draft. */
 export type PublishState = 'draft' | 'published' | 'archived'
 
+/**
+ * A string that exists in every supported locale.
+ *
+ * ── WHY A MAP RATHER THAN ONE FIELD PER LANGUAGE ───────────────────────────
+ *
+ * The alternative shapes both fail. `titleHe` / `titleEn` sibling fields mean
+ * every consumer writes a conditional, and adding a locale edits every model.
+ * A single `title` resolved server-side means the CMS cannot show an editor
+ * both languages side by side, which is exactly what translating requires.
+ *
+ * A map keyed by locale keeps both languages together in the content model and
+ * lets the UI resolve once, at the edge, via `resolveLocalized`. Components
+ * below that point receive plain strings and never branch on language — which
+ * is the requirement that component logic must not be duplicated per language.
+ */
+export type LocalizedText = Record<Locale, string>
+
+/** Optional localized text: absent means "not supplied in any language". */
+export type LocalizedTextOptional = Partial<Record<Locale, string>>
+
+/**
+ * Resolve a localized value for display.
+ *
+ * Falls back to Hebrew — the primary language — rather than to an empty string,
+ * so a page missing an English translation shows Hebrew rather than a blank
+ * region. A blank region reads as a broken page; Hebrew reads as untranslated,
+ * which is the truth.
+ */
+export function resolveLocalized(
+  value: LocalizedText | LocalizedTextOptional | undefined,
+  locale: Locale,
+  fallbackLocale: Locale = 'he',
+): string {
+  if (!value) return ''
+  return value[locale] ?? value[fallbackLocale] ?? ''
+}
+
 export interface Paginated<T> {
   items: T[]
   total: number
