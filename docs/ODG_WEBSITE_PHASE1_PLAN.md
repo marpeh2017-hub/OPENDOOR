@@ -252,8 +252,10 @@ projects with no updates · projects at stage 1 of 11.
 
 ### 5.1 Rules
 
-- **Types only.** No fetch, no Zod, no runtime dependency. It is shared
-  vocabulary, not a client.
+- **Types, plus one runtime constant.** No fetch, no Zod, no third-party
+  dependency. The exception is `PROJECT_STAGE_ORDER`: the eleven-stage sequence
+  is domain truth shared by three different timelines, and private copies would
+  drift. Everything else is `type`/`interface` and erases at compile time.
 - Mirrors the real gateway at `services/api-gateway` (the spec's `apps/api` does
   not exist here).
 - **Defines nothing the backend must change.** Where a contract describes data

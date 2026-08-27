@@ -1,0 +1,18 @@
+{
+  "name": "@urban-renewal/api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./common": "./src/common.ts",
+    "./public": "./src/public.ts",
+    "./auth": "./src/auth.ts",
+    "./resident": "./src/resident.ts",
+    "./representative": "./src/representative.ts",
+    "./cms": "./src/cms.ts"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}
