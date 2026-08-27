@@ -1,0 +1,86 @@
+{
+  "brand": {
+    "name": "OpenDoor Group",
+    "tagline": "Representing and organising apartment owners in urban renewal"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "whyOrganizer": "Why an organiser",
+    "howWeWork": "How we work",
+    "projects": "Projects",
+    "knowledge": "Knowledge",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "trust": "Trust",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skipToContent": "Skip to main content",
+    "primaryNavigation": "Primary navigation",
+    "languageSwitcher": "Select language"
+  },
+  "cta": {
+    "eligibility": "Check your building's suitability",
+    "residentPortal": "Resident portal"
+  },
+  "footer": {
+    "company": "Company",
+    "urbanRenewal": "Urban renewal",
+    "knowledge": "Knowledge",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "rights": "All rights reserved"
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The link may have changed or the page removed.",
+    "genericTitle": "Something went wrong",
+    "genericBody": "The page could not be loaded. You can try again.",
+    "retry": "Try again",
+    "backHome": "Back to home"
+  },
+  "pages": {
+    "about": {
+      "title": "About"
+    },
+    "whyOrganizer": {
+      "title": "Why an organising company"
+    },
+    "howWeWork": {
+      "title": "How we work"
+    },
+    "projects": {
+      "title": "Projects"
+    },
+    "trust": {
+      "title": "Trust"
+    },
+    "knowledge": {
+      "title": "Knowledge centre"
+    },
+    "faq": {
+      "title": "FAQ"
+    },
+    "contact": {
+      "title": "Contact"
+    },
+    "eligibility": {
+      "title": "Check your building's suitability"
+    },
+    "search": {
+      "title": "Search"
+    },
+    "privacy": {
+      "title": "Privacy policy"
+    },
+    "terms": {
+      "title": "Terms of use"
+    }
+  },
+  "common": {
+    "comingSoon": "Content for this page is being prepared.",
+    "placeholderNotice": "Page shell. Content is built in later tasks and will be editable through the CMS."
+  }
+}

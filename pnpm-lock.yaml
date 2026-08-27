@@ -309,6 +309,67 @@ importers:
         specifier: '*'
         version: 5.9.3
 
+  apps/website:
+    dependencies:
+      '@urban-renewal/api-contracts':
+        specifier: workspace:*
+        version: link:../../packages/api-contracts
+      '@urban-renewal/design-system':
+        specifier: workspace:*
+        version: link:../../packages/design-system
+      '@urban-renewal/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^0.469.0
+        version: 0.469.0(react@19.2.7)
+      next:
+        specifier: ^15.1.3
+        version: 15.5.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      next-intl:
+        specifier: ^3.26.3
+        version: 3.26.5(next@15.5.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.1
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 22.19.20
+      '@types/react':
+        specifier: ^19.0.2
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.2.3(@types/react@19.2.17)
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.5.0(postcss@8.5.15)
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.4(jiti@2.7.0)
+      eslint-config-next:
+        specifier: ^15.1.3
+        version: 15.5.19(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
+      postcss:
+        specifier: ^8.5.1
+        version: 8.5.15
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19(tsx@4.22.4)
+      typescript:
+        specifier: '*'
+        version: 5.9.3
+
   packages/ai-research-skills:
     devDependencies:
       typescript:
@@ -3751,7 +3812,6 @@ packages:
   eslint@9.39.4:
     resolution: {integrity: sha512-XoMjdBOwe/esVgEvLmNsD3IRHkm7fbKIUGvrleloJXUZgDHig2IPWNniv+GwjyJXzuNqVjlr5+4yVUZjycJwfQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -10819,7 +10879,7 @@ snapshots:
       '@babel/parser': 7.29.8
       '@istanbuljs/schema': 0.1.6
       istanbul-lib-coverage: 3.2.2
-      semver: 7.8.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
 
@@ -11115,7 +11175,7 @@ snapshots:
       jest-util: 29.7.0
       natural-compare: 1.4.0
       pretty-format: 29.7.0
-      semver: 7.8.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
 
@@ -11407,7 +11467,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.8.4
+      semver: 7.8.5
 
   make-error@1.3.6: {}
 
@@ -12246,7 +12306,7 @@ snapshots:
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
-      semver: 7.8.4
+      semver: 7.8.5
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5

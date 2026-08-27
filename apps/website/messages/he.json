@@ -1,0 +1,86 @@
+{
+  "brand": {
+    "name": "אופן־דור גרופ",
+    "tagline": "ייצוג וארגון בעלי דירות בהתחדשות עירונית"
+  },
+  "nav": {
+    "home": "ראשי",
+    "about": "מי אנחנו",
+    "whyOrganizer": "למה חברה מארגנת",
+    "howWeWork": "כך אנחנו עובדים",
+    "projects": "פרויקטים",
+    "knowledge": "מרכז ידע",
+    "faq": "שאלות ותשובות",
+    "contact": "צור קשר",
+    "trust": "שקיפות ואמון",
+    "openMenu": "פתיחת תפריט",
+    "closeMenu": "סגירת תפריט",
+    "skipToContent": "דילוג לתוכן הראשי",
+    "primaryNavigation": "ניווט ראשי",
+    "languageSwitcher": "בחירת שפה"
+  },
+  "cta": {
+    "eligibility": "בדיקת התאמה להתחדשות עירונית",
+    "residentPortal": "כניסה לתיק הדייר"
+  },
+  "footer": {
+    "company": "החברה",
+    "urbanRenewal": "התחדשות עירונית",
+    "knowledge": "ידע",
+    "contact": "יצירת קשר",
+    "legal": "מידע משפטי",
+    "privacy": "מדיניות פרטיות",
+    "terms": "תנאי שימוש",
+    "rights": "כל הזכויות שמורות"
+  },
+  "errors": {
+    "notFoundTitle": "הדף לא נמצא",
+    "notFoundBody": "ייתכן שהקישור השתנה או שהדף הוסר.",
+    "genericTitle": "משהו השתבש",
+    "genericBody": "אירעה תקלה בטעינת הדף. אפשר לנסות שוב.",
+    "retry": "נסו שוב",
+    "backHome": "חזרה לדף הראשי"
+  },
+  "pages": {
+    "about": {
+      "title": "מי אנחנו"
+    },
+    "whyOrganizer": {
+      "title": "למה חברה מארגנת"
+    },
+    "howWeWork": {
+      "title": "כך אנחנו עובדים"
+    },
+    "projects": {
+      "title": "פרויקטים"
+    },
+    "trust": {
+      "title": "שקיפות ואמון"
+    },
+    "knowledge": {
+      "title": "מרכז ידע"
+    },
+    "faq": {
+      "title": "שאלות ותשובות"
+    },
+    "contact": {
+      "title": "צור קשר"
+    },
+    "eligibility": {
+      "title": "בדיקת התאמה להתחדשות עירונית"
+    },
+    "search": {
+      "title": "חיפוש"
+    },
+    "privacy": {
+      "title": "מדיניות פרטיות"
+    },
+    "terms": {
+      "title": "תנאי שימוש"
+    }
+  },
+  "common": {
+    "comingSoon": "התוכן לדף זה נמצא בהכנה.",
+    "placeholderNotice": "שלד הדף. התוכן ייבנה בשלבים הבאים ויהיה ניתן לעריכה דרך מערכת הניהול."
+  }
+}
