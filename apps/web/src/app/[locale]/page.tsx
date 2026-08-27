@@ -1,5 +1,4 @@
 import { HeroSection }        from '@/components/sections/hero'
-import { StatsSection }       from '@/components/sections/stats'
 import { BenefitsSection }    from '@/components/sections/benefits'
 import { ProjectsSection }    from '@/components/sections/projects'
 import { TestimonialsSection } from '@/components/sections/testimonials'
@@ -13,7 +12,6 @@ export default function HomePage() {
       <Header />
       <main>
         <HeroSection />
-        <StatsSection />
         <BenefitsSection />
         <ProjectsSection />
         <TestimonialsSection />
