@@ -1,7 +1,8 @@
 {
   "brand": {
     "name": "OpenDoor Group",
-    "tagline": "Representing and organising apartment owners in urban renewal"
+    "tagline": "Representing and organising apartment owners in urban renewal",
+    "wordmarkTagline": "Urban renewal"
   },
   "nav": {
     "home": "Home",
@@ -82,5 +83,25 @@
   "common": {
     "comingSoon": "Content for this page is being prepared.",
     "placeholderNotice": "Page shell. Content is built in later tasks and will be editable through the CMS."
+  },
+  "links": {
+    "allProjects": "All projects",
+    "knowledgeCentre": "Knowledge centre",
+    "allQuestions": "All questions",
+    "contact": "Contact us",
+    "whyOrganizer": "Why work with an organising company?"
+  },
+  "stages": {
+    "INITIAL_REVIEW": "Initial review",
+    "FEASIBILITY": "Feasibility",
+    "OWNER_ORGANIZATION": "Owner organisation",
+    "REPRESENTATION_FORMED": "Representation formed",
+    "PROFESSIONAL_SELECTION": "Professional selection",
+    "DEVELOPER_TENDER": "Developer tender",
+    "DEVELOPER_SELECTED": "Developer selected",
+    "AGREEMENTS": "Agreements",
+    "PLANNING": "Planning",
+    "PERMIT_AND_BUILD": "Permit and construction",
+    "DELIVERY": "Delivery"
   }
 }

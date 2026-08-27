@@ -33,6 +33,7 @@ export type BlockType =
   | 'PROJECTS'
   | 'PROJECT_TRANSPARENCY'
   | 'TRUST'
+  | 'PORTAL'
   | 'KNOWLEDGE'
   | 'FAQ'
   | 'EXTERNAL_RESOURCES'
@@ -46,7 +47,7 @@ export type BlockType =
  */
 export const BLOCK_TYPES: readonly BlockType[] = [
   'HERO', 'TEXT_SECTION', 'FEATURE_GRID', 'PROCESS', 'PROJECTS',
-  'PROJECT_TRANSPARENCY', 'TRUST', 'KNOWLEDGE', 'FAQ',
+  'PROJECT_TRANSPARENCY', 'TRUST', 'PORTAL', 'KNOWLEDGE', 'FAQ',
   'EXTERNAL_RESOURCES', 'CTA', 'MEDIA',
 ] as const
 
@@ -77,12 +78,18 @@ export interface BlockBase {
 
 export interface HeroBlock extends BlockBase {
   type: 'HERO'
+  /** Short qualifier above the headline. Company messaging, so it is content —
+   *  not a string a component owns. */
+  eyebrow?: LocalizedTextOptional
   heading: LocalizedText
   subheading?: LocalizedTextOptional
   primaryCtaLabel: LocalizedText
   primaryCtaHref: string
   secondaryCtaLabel?: LocalizedTextOptional
   secondaryCtaHref?: string
+  /** A single reassurance under the buttons (e.g. that the service carries no
+   *  direct cost). Content, for the same reason as `eyebrow`. */
+  note?: LocalizedTextOptional
   media?: MediaAsset
 }
 
@@ -153,9 +160,38 @@ export interface NarrativeItem {
   icon?: string
 }
 
+/**
+ * Two audiences, side by side.
+ *
+ * Its own type rather than a FEATURE_GRID because the content is genuinely
+ * two GROUPS of short items, not a flat list — every resident gets one set,
+ * representatives get an additional set. Flattening it into a grid would lose
+ * the distinction that is the entire point of the section.
+ */
+export interface PortalBlock extends BlockBase {
+  type: 'PORTAL'
+  heading: LocalizedText
+  intro?: LocalizedTextOptional
+  groups: PortalAudienceGroup[]
+  ctaLabel?: LocalizedTextOptional
+  ctaHref?: string
+  /** Rendered as a qualifier near the heading when the capability is not yet
+   *  live, so the section can describe what is being built without claiming it
+   *  already works. */
+  buildNotice?: LocalizedTextOptional
+}
+
+export interface PortalAudienceGroup {
+  id: string
+  title: LocalizedText
+  /** Who this group is for, e.g. "לכל בעלי הדירות". */
+  audience: LocalizedText
+  items: LocalizedText[]
+}
+
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
-  | CollectionBlock | FeatureGridBlock
+  | CollectionBlock | FeatureGridBlock | PortalBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 

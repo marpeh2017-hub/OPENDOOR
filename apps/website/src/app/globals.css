@@ -1,0 +1,34 @@
+/**
+ * Website-scoped style corrections.
+ *
+ * Imported AFTER the shared design-system globals, so these win.
+ *
+ * ── WHY THIS FILE EXISTS RATHER THAN AN EDIT UPSTREAM ──────────────────────
+ *
+ * `packages/design-system/src/globals.css` sets every anchor to `teal-500`.
+ * Measured, that is 3.26:1 on white — it FAILS the WCAG 2.1 AA minimum of
+ * 4.5:1 for body text. It is a real defect, and it affects the CRM and the
+ * Portal as much as this site.
+ *
+ * It is corrected HERE rather than upstream because changing a global link
+ * colour would restyle every link in two shipped applications, and that visual
+ * change has not been reviewed. The upstream fix is flagged for its own
+ * decision.
+ *
+ * ── PLAIN CSS, NOT @apply ──────────────────────────────────────────────────
+ *
+ * Next processes each imported stylesheet independently, so `@layer base` here
+ * errors with "no matching @tailwind base directive". Literal hex also removes
+ * any dependency on the utility class surviving a Tailwind config change — a
+ * contrast fix should not be able to regress silently.
+ *
+ * Measured: teal-700 is 7.34:1 on white, 7.15:1 on the page surface.
+ * `body a` rather than `a` so this beats the base-layer rule regardless of the
+ * order the two sheets end up in.
+ */
+body a {
+  color: #1b5f62;
+}
+body a:hover {
+  color: #164a4c;
+}

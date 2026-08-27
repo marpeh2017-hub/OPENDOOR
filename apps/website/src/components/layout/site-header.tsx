@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation'
 import { NAV_ITEMS } from '@/lib/navigation'
 import { MobileNav } from './mobile-nav'
 import { LanguageSwitcher } from './language-switcher'
+import { BrandMark } from '@/components/brand/brand-mark'
 
 /**
  * Site header.
@@ -36,12 +37,8 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-header border-b border-gray-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 lg:px-8">
-        <Link
-          href="/"
-          className="shrink-0 text-lg font-bold text-teal-700"
-          aria-label={tBrand('name')}
-        >
-          {tBrand('name')}
+        <Link href="/" className="shrink-0" aria-label={tBrand('name')}>
+          <BrandMark name={tBrand('name')} tagline={tBrand('wordmarkTagline')} />
         </Link>
 
         {/* `aria-label` distinguishes this from the footer's nav landmark. */}

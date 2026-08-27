@@ -1,7 +1,8 @@
 {
   "brand": {
     "name": "אופן־דור גרופ",
-    "tagline": "ייצוג וארגון בעלי דירות בהתחדשות עירונית"
+    "tagline": "ייצוג וארגון בעלי דירות בהתחדשות עירונית",
+    "wordmarkTagline": "התחדשות עירונית"
   },
   "nav": {
     "home": "ראשי",
@@ -82,5 +83,25 @@
   "common": {
     "comingSoon": "התוכן לדף זה נמצא בהכנה.",
     "placeholderNotice": "שלד הדף. התוכן ייבנה בשלבים הבאים ויהיה ניתן לעריכה דרך מערכת הניהול."
+  },
+  "links": {
+    "allProjects": "לכל הפרויקטים",
+    "knowledgeCentre": "למרכז הידע",
+    "allQuestions": "לכל השאלות",
+    "contact": "צור קשר",
+    "whyOrganizer": "למה חשוב לעבוד עם חברה מארגנת?"
+  },
+  "stages": {
+    "INITIAL_REVIEW": "בדיקה ראשונית",
+    "FEASIBILITY": "בדיקת היתכנות",
+    "OWNER_ORGANIZATION": "התארגנות בעלי הדירות",
+    "REPRESENTATION_FORMED": "הקמת נציגות",
+    "PROFESSIONAL_SELECTION": "בחירת אנשי מקצוע",
+    "DEVELOPER_TENDER": "בחינת יזמים",
+    "DEVELOPER_SELECTED": "בחירת יזם",
+    "AGREEMENTS": "הסכמים",
+    "PLANNING": "תכנון",
+    "PERMIT_AND_BUILD": "היתר וביצוע",
+    "DELIVERY": "מסירה ואכלוס"
   }
 }

@@ -8,6 +8,8 @@ import { SiteHeader } from '@/components/layout/site-header'
 import { SiteFooter } from '@/components/layout/site-footer'
 import { SkipLink } from '@/components/layout/skip-link'
 import '@urban-renewal/design-system/src/globals.css'
+// Imported after the shared sheet so its corrections win. See the file.
+import '../globals.css'
 
 /**
  * Heebo, loaded through `next/font` so it is self-hosted and preloaded rather
