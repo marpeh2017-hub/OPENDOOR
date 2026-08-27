@@ -178,3 +178,73 @@
     @apply flex items-center justify-between mb-6 pb-4 border-b border-border;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * PHASE 1 ADDITIONS — accessibility baseline
+ *
+ * Appended, not edited. Nothing above changes, so no existing screen shifts.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Visible focus on every interactive element (WCAG 2.1 AA, 2.4.7).
+ *
+ * `:focus-visible` rather than `:focus`, so a mouse click does not leave a ring
+ * behind while keyboard navigation still shows one.
+ *
+ * An OUTLINE, not a box-shadow: an outline is drawn outside the element's box
+ * and survives an ancestor with `overflow: hidden`, which is the usual reason a
+ * focus ring silently disappears inside cards and scroll containers.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #22797D;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* On the dark inverse surface the teal ring loses contrast; use white there. */
+.bg-surface-inverse :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: #FFFFFF;
+}
+
+/**
+ * Respect prefers-reduced-motion.
+ *
+ * Motion is reduced to a near-zero duration rather than removed outright:
+ * `animation: none` can leave an element stuck at frame zero of an entrance
+ * animation and therefore invisible. Collapsing the duration lets the animation
+ * complete instantly, so the end state is always reached.
+ *
+ * `scroll-behavior` is included because smooth scrolling is a common trigger
+ * for vestibular discomfort and is easy to forget.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/**
+ * Skip link.
+ *
+ * Off-screen until focused. Required so a keyboard user is not forced through
+ * the whole navigation on every page.
+ */
+.skip-link {
+  position: absolute;
+  inset-inline-start: 0;
+  top: -100%;
+  z-index: 90;
+  padding: 0.75rem 1.25rem;
+  background: #FFFFFF;
+  color: #1b5f62;
+  font-weight: 600;
+  border-radius: 0 0 0.5rem 0;
+}
+.skip-link:focus {
+  top: 0;
+}

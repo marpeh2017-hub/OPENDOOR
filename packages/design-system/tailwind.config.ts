@@ -1,5 +1,8 @@
 import type { Config } from 'tailwindcss'
-import { colors, typography, borderRadius, shadows } from './src/tokens'
+import {
+  colors, typography, borderRadius, shadows,
+  breakpoints, surface, zIndex, displayType, measure,
+} from './src/tokens'
 
 const config: Config = {
   darkMode: ['class'],
@@ -12,6 +15,11 @@ const config: Config = {
     './src/**/*.{ts,tsx}',
   ],
   theme: {
+    // Outside `extend` on purpose: these REPLACE Tailwind's default five
+    // screens. Merging would leave both sets active and make `lg:` ambiguous.
+    // The shared values are identical to Tailwind's, so no existing utility
+    // class in the CRM changes meaning; only `xs` and `3xl` are new.
+    screens: breakpoints,
     extend: {
       colors: {
         // ── OpenDoor Brand ──
@@ -61,6 +69,10 @@ const config: Config = {
 
         // ── Grays ──
         gray: colors.gray,
+
+        // ── Website surfaces (Phase 1) ──
+        // Separate names rather than re-tinting gray.50, so no CRM card moves.
+        surface,
       },
 
       fontFamily: {
@@ -68,9 +80,6 @@ const config: Config = {
         hebrew: typography.fontFamily.hebrew,
         mono:   typography.fontFamily.mono,
       },
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      fontSize: typography.fontSize as any,
 
       borderRadius: {
         ...borderRadius,
@@ -81,6 +90,27 @@ const config: Config = {
       },
 
       boxShadow: shadows,
+
+      // Tokens stay NUMERIC so application code can compare them; Tailwind's
+      // config wants strings, so convert here rather than weakening the token.
+      zIndex: Object.fromEntries(
+        Object.entries(zIndex).map(([name, value]) => [name, String(value)]),
+      ),
+
+      // Body scale plus marketing display sizes. Named `display-*` so they
+      // cannot collide with the numeric body scale.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fontSize: {
+        ...typography.fontSize,
+        'display-sm': displayType.sm,
+        'display-md': displayType.md,
+        'display-lg': displayType.lg,
+      } as any,
+
+      maxWidth: {
+        prose: measure.prose,
+        narrow: measure.narrow,
+      },
 
       keyframes: {
         'accordion-down': {
