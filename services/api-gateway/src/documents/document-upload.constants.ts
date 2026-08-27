@@ -283,26 +283,23 @@ export const DOCUMENT_FILE_TYPES: FileTypeSpec[] = [
  * export; the reference it used to hold now lives on the registry entries
  * themselves and on `looksLikeDxf`, next to the code that implements it.
  *
- * TODO(security): NO MALWARE SCANNING EXISTS ANYWHERE ON THE UPLOAD PATH.
- * Validation is magic-byte / structural probe + MIME allow-list + size cap
- * only. That establishes "these bytes really are the format they claim to be";
- * it says NOTHING about whether the content is malicious. A DWG carrying an
- * AutoLISP payload, or a macro-bearing .doc, passes every check here.
+ * MALWARE SCANNING: format validation here establishes "these bytes really are
+ * the format they claim to be". It says NOTHING about whether the content is
+ * malicious — a DWG carrying an AutoLISP payload, or a macro-bearing .doc,
+ * passes every check in this file.
  *
- * This is an ACCEPTED risk, and it is accepted on one specific condition:
- * every uploader today is authenticated STAFF. Verified at the time of this
- * change — the resident portal (`apps/portal`) has no upload capability at
- * all: no file input, no FormData, no multipart request anywhere in its
- * source. The only upload entry points are POST /documents/upload and
- * POST /documents/:id/versions, both gated by DOCUMENT_WRITE_ROLES.
+ * That gap is now closed by `MalwareScanService` (see `./malware/`), which the
+ * controller calls immediately before storing bytes at BOTH upload sites. It
+ * scans through clamd and, in production, fails CLOSED — an unscannable file is
+ * refused rather than stored unexamined.
  *
- * MUST BE REVISITED BEFORE any of the following ships:
- *   - resident-facing upload in the portal,
- *   - developer/consultant upload by a less-trusted external role,
- *   - any public or token-authenticated upload link.
- * At that point an AV/scanning step (ClamAV sidecar or an object-storage scan
- * hook) becomes a prerequisite, not an enhancement. Until then: keep the
- * validation here strict, and do not widen the allow-list casually.
+ * The checks in THIS file remain the first gate, and deliberately so: they are
+ * synchronous and cheap, and reject obviously wrong input before anything pays
+ * for a network round trip to the scanner.
+ *
+ * Scanning is off by default outside production (MALWARE_SCAN_ENABLED), so a
+ * contributor without a clamd container is not blocked. That is announced with
+ * a warning on every boot rather than being silent.
  */
 export const PROFESSIONAL_FORMATS_NOTE = 'DWG/DXF enabled; see looksLikeDxf'
 

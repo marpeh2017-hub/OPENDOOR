@@ -10,6 +10,7 @@ import {
 } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { PrismaService } from '../prisma.service'
+import { MalwareScanService } from './malware/malware-scan.service'
 import { StorageService } from '../storage/storage.service'
 import { STAFF_ROLES, MANAGER_ROLES, DOCUMENT_WRITE_ROLES } from '../auth/roles.constants'
 import { DocumentCategory } from '@prisma/client'
@@ -65,6 +66,7 @@ export class DocumentsController {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly audit: AuditService,
+    private readonly malware: MalwareScanService,
   ) {}
 
   private tenantId(req: any): string {
@@ -108,13 +110,16 @@ export class DocumentsController {
    * direct-to-S3 upload that bypasses both hops is the proper fix and is not
    * built yet.
    *
-   * TODO(security): NO MALWARE SCANNING. Everything below is format
-   * validation — size, MIME allow-list, real byte signature / structural probe.
-   * It proves the bytes ARE the declared format; it does not prove they are
-   * safe. Accepted only because every uploader is authenticated staff
-   * (DOCUMENT_WRITE_ROLES) and the resident portal has no upload capability —
-   * verified, see the TODO(security) block in `document-upload.constants.ts`,
-   * which also lists the changes that make scanning a prerequisite.
+   * FORMAT validation only — size, MIME allow-list, real byte signature and a
+   * structural probe. It proves the bytes ARE the declared format; it does not
+   * prove they are safe.
+   *
+   * CONTENT safety is a separate step: `MalwareScanService.assertClean` runs at
+   * each upload site immediately before the bytes are stored. It is kept apart
+   * from this method deliberately — this one is synchronous and cheap and
+   * rejects obvious garbage before anything expensive happens, while scanning
+   * is a network round trip to clamd that only makes sense once the file looks
+   * like a real document.
    */
   private assertAcceptableFile(file: UploadedFileLike | undefined): asserts file is UploadedFileLike {
     if (!file)                          throw new BadRequestException(UPLOAD_ERRORS.missingFile)
@@ -341,6 +346,11 @@ export class DocumentsController {
 
     // StorageService.upload always prefixes the key with `${tenantId}/`, which
     // is the same prefix `getSignedUrl`/`delete` verify before acting.
+    // Scanned BEFORE the bytes reach storage. Scanning after upload would mean
+    // an infected object exists in the bucket, reachable by presigned URL, for
+    // as long as the cleanup takes.
+    await this.malware.assertClean(file.buffer, file.originalname ?? fileName)
+
     const s3Key = await this.storage.upload(
       tenantId, 'documents', fileName, file.buffer, file.mimetype,
     )
@@ -459,6 +469,11 @@ export class DocumentsController {
 
     // Its OWN key — `randomBytes` in StorageService.upload guarantees it does
     // not collide with the previous version's object even for the same filename.
+    // Scanned BEFORE the bytes reach storage. Scanning after upload would mean
+    // an infected object exists in the bucket, reachable by presigned URL, for
+    // as long as the cleanup takes.
+    await this.malware.assertClean(file.buffer, file.originalname ?? fileName)
+
     const s3Key = await this.storage.upload(
       tenantId, 'documents', fileName, file.buffer, file.mimetype,
     )
