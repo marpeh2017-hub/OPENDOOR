@@ -1,9 +1,11 @@
+import { Fragment } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { Locale } from '@urban-renewal/api-contracts'
 import { getHomePage, getFeaturedProjects, getKnowledgeArticles, getFaqItems } from '@/mock'
 import { makeLocalizer } from '@/lib/localize'
+import { SectionConnector } from '@/components/brand/architecture'
 import { HeroBlockView } from '@/components/blocks/hero-block'
 import { FeatureGridBlockView } from '@/components/blocks/feature-grid-block'
 import { TextSectionBlockView } from '@/components/blocks/text-section-block'
@@ -19,16 +21,36 @@ import { CtaBlockView } from '@/components/blocks/cta-block'
  * ── THE PAGE OWNS NO COPY ──────────────────────────────────────────────────
  *
  * Every sentence a visitor reads comes from `getHomePage()` — the CMS-shaped
- * mock. This file decides ORDER, SURFACE and which data each block needs; it
- * decides nothing about what the company says. That separation is what makes
- * the CMS a swap rather than a rewrite later.
+ * mock. This file decides ORDER and which data each block needs; it decides
+ * nothing about what the company says. That separation is what makes the CMS a
+ * swap rather than a rewrite later, and V2 did not weaken it: the new visual
+ * work added components, not copy.
  *
- * ── SURFACE RHYTHM ─────────────────────────────────────────────────────────
+ * ── SURFACE RHYTHM: WHAT V2 CHANGED ────────────────────────────────────────
  *
- * Alternating page / raised / sunken bands give the long page structure without
- * putting each section in a card. The pattern is decided HERE, once, so section
- * components cannot each invent their own background and produce a page that
- * feels uneven for reasons nobody can name.
+ * V1 alternated page / raised / sunken bands, assigned here by position. It was
+ * tidy, and it was the main reason the page read as eleven separate slides —
+ * every section announced its own edge.
+ *
+ * V2 keeps one continuous surface. Three sections deviate, and each deviation
+ * means something: the process sits on the sunken band as the page's first
+ * change of ground, trust is the single dark moment, and knowledge returns to
+ * sunken to close the editorial run. Because the exceptions are rare, they
+ * register as emphasis rather than as a pattern.
+ *
+ * That decision now lives in each section's own component rather than in a
+ * positional table here. A positional table was right while every section was
+ * interchangeable; it is wrong once the surface is part of what a section
+ * MEANS, because inserting one block in the CMS would silently restyle three
+ * others.
+ *
+ * ── CONNECTORS ─────────────────────────────────────────────────────────────
+ *
+ * A hairline with a marker straddles the seams where the page changes subject.
+ * The eye follows a line through the boundary instead of stopping at it, which
+ * is what turns eleven sections into one journey. Decorative, `aria-hidden`,
+ * and used at three seams rather than at all ten — a device used everywhere is
+ * just a divider, and dividers are what V2 removed.
  *
  * ── COLLECTION DATA ────────────────────────────────────────────────────────
  *
@@ -53,6 +75,12 @@ export async function generateMetadata({
   }
 }
 
+/**
+ * Seams that get a connector, keyed by the block the connector follows.
+ * Chosen where the page changes subject.
+ */
+const CONNECT_AFTER = new Set(['home-hero', 'home-process', 'home-transparency'])
+
 export default async function HomePage({
   params,
 }: {
@@ -73,83 +101,71 @@ export default async function HomePage({
 
   if (!page) notFound()
 
-  /** Alternating surfaces, assigned by position among the non-hero blocks. */
-  const tones = ['page', 'raised', 'sunken', 'page', 'raised', 'sunken'] as const
-  let bandIndex = 0
-  const nextTone = () => tones[bandIndex++ % tones.length]
-
   return (
     <>
       {page.blocks.map((block) => {
+        let rendered: React.ReactNode = null
+
         switch (block.type) {
           case 'HERO':
-            return <HeroBlockView key={block.id} block={block} t={t} />
+            rendered = <HeroBlockView block={block} t={t} />
+            break
 
           case 'FEATURE_GRID':
           case 'PROCESS':
           case 'PROJECT_TRANSPARENCY':
           case 'TRUST':
-            return (
-              <FeatureGridBlockView key={block.id} block={block} t={t} tone={nextTone()} />
-            )
+            rendered = <FeatureGridBlockView block={block} t={t} />
+            break
 
           case 'TEXT_SECTION':
-            return (
+            rendered = (
               <TextSectionBlockView
-                key={block.id}
                 block={block}
                 t={t}
-                tone={nextTone()}
                 cta={{ label: tLinks('whyOrganizer'), href: '/why-organizer' }}
               />
             )
+            break
 
           case 'PROJECTS':
-            return (
-              <ProjectsBlockView
-                key={block.id}
-                block={block}
-                projects={projects}
-                t={t}
-                tone={nextTone()}
-              />
-            )
+            rendered = <ProjectsBlockView block={block} projects={projects} t={t} />
+            break
 
           case 'PORTAL':
-            return <PortalBlockView key={block.id} block={block} t={t} tone={nextTone()} />
+            rendered = <PortalBlockView block={block} t={t} />
+            break
 
           case 'KNOWLEDGE':
-            return (
-              <KnowledgeBlockView
-                key={block.id}
-                block={block}
-                articles={articles.items}
-                t={t}
-                tone={nextTone()}
-              />
-            )
+            rendered = <KnowledgeBlockView block={block} articles={articles.items} t={t} />
+            break
 
           case 'FAQ':
-            return (
-              <FaqBlockView
-                key={block.id}
-                block={block}
-                items={faqItems.slice(0, block.limit ?? 5)}
-                t={t}
-                tone={nextTone()}
-              />
+            rendered = (
+              <FaqBlockView block={block} items={faqItems.slice(0, block.limit ?? 5)} t={t} />
             )
+            break
 
           case 'CTA':
-            return <CtaBlockView key={block.id} block={block} t={t} />
+            rendered = <CtaBlockView block={block} t={t} />
+            break
 
           default:
             // An unknown block type renders nothing rather than crashing the
             // page. Once the CMS is real, a block added by a newer deploy can
             // reach an older client, and a blank gap is a better outcome than a
             // white screen.
-            return null
+            rendered = null
         }
+
+        if (!rendered) return null
+
+        return (
+          <Fragment key={block.id}>
+            {rendered}
+            {CONNECT_AFTER.has(block.id) && <SectionConnector />}
+          </Fragment>
+        )
       })}
     </>
   )

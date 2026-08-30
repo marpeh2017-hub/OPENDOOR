@@ -1,126 +1,131 @@
 import type { HeroBlock } from '@urban-renewal/api-contracts'
 import { Link } from '@/i18n/navigation'
 import type { Localizer } from '@/lib/localize'
+import {
+  ArchitecturalGrid,
+  HeroComposition,
+  HeroMarkCompact,
+  STROKE,
+} from '@/components/brand/architecture'
 
 /**
  * Hero.
  *
- * ── THE VISUAL ─────────────────────────────────────────────────────────────
+ * ── WHAT CHANGED FROM V1 ───────────────────────────────────────────────────
  *
- * No photograph. There is no verified OpenDoor project photography, and a stock
- * building beside "our projects" implies the building IS one — a factual claim
- * made in pictures. So the visual is an abstract architectural line drawing:
- * stacked residential volumes with an open doorway cut through them, echoing
- * the brand's shield-and-door idea without redrawing the logo.
+ * V1's hero was a two-column grid with a small line icon on the right. It was
+ * correct and inert. Three things changed:
  *
- * It is drawn in strokes rather than fills so it reads as a diagram, not as a
- * rendering of a real place, and so it costs nothing to load.
+ *   SCALE      the headline runs to `display-lg` on desktop, roughly a third
+ *              larger, and the measure is held near 20 characters per line so
+ *              it breaks into a shape rather than a paragraph.
+ *   LAYERS     the drawing is now four depths on a planning grid and it bleeds
+ *              past the container edge, so the composition continues off-screen
+ *              instead of sitting in a box.
+ *   CONTINUITY the process line leaves the drawing at the bottom and is picked
+ *              up by the connector below the hero — the page's journey starts
+ *              inside the graphic.
  *
- * ── RESTRAINT ──────────────────────────────────────────────────────────────
+ * ── THE POSITIONING CUE ────────────────────────────────────────────────────
  *
- * No teal background field. The surface stays warm off-white; teal appears only
- * on the primary button and as thin strokes. The hero is deliberately not
- * full-height — the first section below it should be visible on a laptop, so a
- * visitor sees there is substance under the headline.
+ * "חברה מארגנת — לא יזם" is the most important sentence on the page and V1
+ * rendered it as a pill badge, which is the visual language of a status chip.
+ * It is now set as a rule-and-caps line: quieter, more editorial, and it reads
+ * as a statement of what the company IS rather than as a label stuck on it.
+ *
+ * ── MOBILE ─────────────────────────────────────────────────────────────────
+ *
+ * V1 hid the graphic entirely below `lg`, so a phone visitor met no brand
+ * identity at all on the first screen. A separate compact mark now runs full
+ * width under the CTAs — same grammar, fewer layers, no shrunken desktop art.
  */
 export function HeroBlockView({ block, t }: { block: HeroBlock; t: Localizer }) {
   return (
-    <section className="border-b border-gray-200 bg-white">
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 lg:grid-cols-[1.15fr_1fr] lg:gap-16 lg:px-8 lg:py-24">
-        <div>
-          {/* Positioning line: the single most important clarification on the
-              page — OpenDoor is not the developer. */}
+    <section className="relative overflow-hidden bg-white">
+      <ArchitecturalGrid size={48} opacity={0.7} />
+
+      {/* A single teal hairline running the height of the hero, offset from the
+          text column. It is the first stroke of the process line, and it is why
+          the section has a vertical axis instead of just a background. */}
+      <span
+        aria-hidden="true"
+        className="absolute bottom-0 top-0 hidden w-px lg:block"
+        style={{
+          insetInlineStart: '58%',
+          background: `linear-gradient(to bottom, transparent, ${STROKE.hair} 20%, ${STROKE.faint} 100%)`,
+        }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:px-8 lg:pb-24 lg:pt-20">
+        <div className="odg-hero-enter">
           {block.eyebrow && (
-            <p className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50/60 px-3 py-1 text-xs font-semibold text-teal-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-teal-600" aria-hidden="true" />
+            <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-teal-800">
+              <span aria-hidden="true" className="h-px w-8 bg-teal-600" />
               {t(block.eyebrow)}
             </p>
           )}
 
-          <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-gray-900 sm:text-display-sm lg:text-display-md">
+          {/* `text-balance` keeps the Hebrew from leaving one orphaned word on
+              the last line, which at this size is very visible. */}
+          <h1 className="mt-6 max-w-[19ch] text-[2rem] font-bold leading-[1.1] tracking-tight text-gray-900 text-balance sm:text-display-sm lg:text-display-lg">
             {t(block.heading)}
           </h1>
 
           {block.subheading && (
-            <p className="mt-6 max-w-prose text-lg leading-relaxed text-gray-600">
+            <p className="mt-7 max-w-xl text-lg leading-relaxed text-gray-600 sm:text-xl sm:leading-relaxed">
               {t(block.subheading)}
             </p>
           )}
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
               href={block.primaryCtaHref}
-              className="inline-flex items-center justify-center rounded-md bg-teal-600 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-teal-700"
+              className="group inline-flex items-center justify-center gap-2.5 rounded-md bg-teal-600 px-7 py-4 text-base font-semibold text-white transition-colors hover:bg-teal-700"
             >
               {t(block.primaryCtaLabel)}
+              {/* `rtl:rotate-180` mirrors the glyph, because "forward" is left
+                  in Hebrew and an unmirrored → points backwards. Rotating also
+                  reverses the hover translate for free: Tailwind composes the
+                  translate before the rotation, so +3px moves it visually left
+                  in RTL without a second direction-specific class. */}
+              <span
+                aria-hidden="true"
+                className="inline-block transition-transform duration-200 group-hover:translate-x-[3px] rtl:rotate-180"
+              >
+                →
+              </span>
             </Link>
+
             {block.secondaryCtaLabel && block.secondaryCtaHref && (
               <Link
                 href={block.secondaryCtaHref}
-                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3.5 text-base font-semibold text-gray-800 transition-colors hover:border-gray-400 hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-7 py-4 text-base font-semibold text-gray-800 transition-colors hover:border-teal-600 hover:text-teal-800"
               >
                 {t(block.secondaryCtaLabel)}
               </Link>
             )}
           </div>
 
-          {block.note && <p className="mt-6 text-sm text-gray-600">{t(block.note)}</p>}
+          {block.note && (
+            <p className="mt-7 flex items-start gap-3 border-s-2 border-teal-200 ps-4 text-sm leading-relaxed text-gray-600">
+              {t(block.note)}
+            </p>
+          )}
         </div>
 
-        <div className="hidden lg:block">
-          <ArchitecturalMark />
+        {/* Desktop composition. Bleeds past the container so it reads as a
+            drawing the page is sitting on, not a picture in a slot. */}
+        <div className="relative mt-12 hidden lg:mt-0 lg:block">
+          <div className="lg:-me-16 xl:-me-24">
+            <HeroComposition />
+          </div>
+        </div>
+
+        {/* Phone and tablet: the same idea, drawn for the width available. */}
+        <div className="mt-12 lg:hidden">
+          <HeroMarkCompact />
         </div>
       </div>
     </section>
-  )
-}
-
-/**
- * Abstract architectural mark.
- *
- * Decorative, so `aria-hidden` — it carries no information the headline does
- * not already state, and announcing "diagram" to a screen-reader user would be
- * noise. Strokes use `currentColor`-adjacent literals rather than the brand
- * token classes because an SVG's stroke is not a Tailwind text colour.
- */
-function ArchitecturalMark() {
-  return (
-    <svg
-      viewBox="0 0 420 340"
-      className="h-auto w-full"
-      role="presentation"
-      aria-hidden="true"
-      fill="none"
-    >
-      {/* Ground line */}
-      <path d="M20 300h380" stroke="#d5d8db" strokeWidth="1.5" />
-
-      {/* Rear volumes — lighter, to build depth without a photograph */}
-      <path d="M60 300V150h70v150" stroke="#d5d8db" strokeWidth="1.5" />
-      <path d="M310 300V180h60v120" stroke="#d5d8db" strokeWidth="1.5" />
-      {[170, 200, 230, 260].map((y) => (
-        <path key={`r-${y}`} d={`M60 ${y}h70`} stroke="#eaecee" strokeWidth="1" />
-      ))}
-      {[200, 230, 260].map((y) => (
-        <path key={`l-${y}`} d={`M310 ${y}h60`} stroke="#eaecee" strokeWidth="1" />
-      ))}
-
-      {/* Foreground volume — the subject */}
-      <path d="M150 300V90h130v210" stroke="#6D7378" strokeWidth="2" />
-      {[130, 170, 210, 250].map((y) => (
-        <path key={`f-${y}`} d={`M150 ${y}h130`} stroke="#d5d8db" strokeWidth="1.25" />
-      ))}
-      {[183, 216, 249].map((x) => (
-        <path key={`v-${x}`} d={`M${x} 90v210`} stroke="#eaecee" strokeWidth="1" />
-      ))}
-
-      {/* The open doorway — the brand idea, drawn rather than borrowed */}
-      <path d="M196 300v-72h38v72" stroke="#2F9DA0" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M234 228l16-14v72l-16 14" stroke="#2F9DA0" strokeWidth="2" strokeLinejoin="round" />
-      <circle cx="204" cy="266" r="2.5" fill="#2F9DA0" />
-
-      {/* A single teal accent line at roof height, tying the composition */}
-      <path d="M150 90h130" stroke="#2F9DA0" strokeWidth="2.5" />
-    </svg>
   )
 }

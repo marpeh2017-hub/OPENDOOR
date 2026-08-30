@@ -1,26 +1,27 @@
 /**
- * Website-scoped style corrections.
+ * Website-scoped styles.
  *
  * Imported AFTER the shared design-system globals, so these win.
  *
- * ── WHY THIS FILE EXISTS RATHER THAN AN EDIT UPSTREAM ──────────────────────
+ * ── PLAIN CSS, NOT @apply / @layer ─────────────────────────────────────────
+ *
+ * Next processes each imported stylesheet independently, so `@layer base` here
+ * errors with "no matching @tailwind base directive". Literal values also
+ * remove any dependency on a utility class surviving a Tailwind config change.
+ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 1 · LINK CONTRAST CORRECTION
+ * ══════════════════════════════════════════════════════════════════════════
  *
  * `packages/design-system/src/globals.css` sets every anchor to `teal-500`.
  * Measured, that is 3.26:1 on white — it FAILS the WCAG 2.1 AA minimum of
  * 4.5:1 for body text. It is a real defect, and it affects the CRM and the
  * Portal as much as this site.
  *
- * It is corrected HERE rather than upstream because changing a global link
- * colour would restyle every link in two shipped applications, and that visual
- * change has not been reviewed. The upstream fix is flagged for its own
- * decision.
- *
- * ── PLAIN CSS, NOT @apply ──────────────────────────────────────────────────
- *
- * Next processes each imported stylesheet independently, so `@layer base` here
- * errors with "no matching @tailwind base directive". Literal hex also removes
- * any dependency on the utility class surviving a Tailwind config change — a
- * contrast fix should not be able to regress silently.
+ * Corrected HERE rather than upstream because changing a global link colour
+ * would restyle every link in two shipped applications, and that visual change
+ * has not been reviewed. The upstream fix is flagged for its own decision.
  *
  * Measured: teal-700 is 7.34:1 on white, 7.15:1 on the page surface.
  * `body a` rather than `a` so this beats the base-layer rule regardless of the
@@ -31,4 +32,141 @@ body a {
 }
 body a:hover {
   color: #164a4c;
+}
+
+/* The dark trust section inverts the ground, so the corrected link colour would
+   be unreadable inside it. Scoped to that surface only. */
+.bg-surface-inverse a {
+  color: #7dd0d2;
+}
+.bg-surface-inverse a:hover {
+  color: #aee4e5;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 2 · TYPOGRAPHY
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * `text-wrap: balance` on display headings, declared here rather than relying
+ * on the utility existing in whichever Tailwind version the preset pins. At
+ * hero scale an orphaned final word is very visible in both scripts.
+ */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 3 · MOTION
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * ── THE RULE ───────────────────────────────────────────────────────────────
+ *
+ * The revealed state is the DEFAULT. `.odg-reveal-out` is applied only by
+ * JavaScript, and only after it has confirmed it can also remove it. If the
+ * script never runs, the observer is unsupported, or the browser never fires
+ * the callback, the content is simply visible — which is the correct outcome
+ * and also what a crawler and reader mode get.
+ *
+ * Every transform here is small (12px or less) and every duration is short.
+ * Motion in this design is punctuation; the composition is what carries the
+ * page, and it must all still work with motion off — see the reduced-motion
+ * block at the end, which is not a courtesy but the reference rendering.
+ */
+.odg-reveal {
+  transition:
+    opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.odg-reveal-in {
+  opacity: 1;
+  transform: none;
+}
+.odg-reveal-out {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+/* Hero entrance: one restrained stagger on first paint, not a scroll effect.
+   `backwards` so the element is not visible for a frame before it starts. */
+.odg-hero-enter > * {
+  animation: odg-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.odg-hero-enter > *:nth-child(1) { animation-delay: 60ms; }
+.odg-hero-enter > *:nth-child(2) { animation-delay: 130ms; }
+.odg-hero-enter > *:nth-child(3) { animation-delay: 200ms; }
+.odg-hero-enter > *:nth-child(4) { animation-delay: 270ms; }
+.odg-hero-enter > *:nth-child(5) { animation-delay: 340ms; }
+
+@keyframes odg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* The hero drawing settles in behind the text: the far layer a touch later
+   than the near one, which reads as depth rather than as a slide-in. */
+.odg-layer-far {
+  animation: odg-fade 900ms ease-out 260ms backwards;
+}
+.odg-layer-near {
+  animation: odg-fade 900ms ease-out 160ms backwards;
+}
+.odg-portal {
+  animation: odg-fade 700ms ease-out 620ms backwards;
+}
+
+@keyframes odg-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── FAQ disclosure ────────────────────────────────────────────────────────
+ *
+ * Animating to an unknown content height is only possible in CSS by
+ * transitioning `grid-template-rows` between `0fr` and `1fr`. `max-height`
+ * guesses a number that is wrong for long answers, and JS height measurement
+ * is exactly the reimplementation that native <details> exists to avoid.
+ */
+.odg-faq-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.odg-faq[open] .odg-faq-body {
+  grid-template-rows: 1fr;
+}
+.odg-faq-body > * {
+  min-height: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 4 · REDUCED MOTION
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Everything above is removed, not merely shortened. `.odg-reveal-out` is
+ * neutralised too — a user with reduced motion must never be left with content
+ * stuck at zero opacity because the reveal was disabled but the hidden state
+ * was not.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .odg-reveal,
+  .odg-reveal-out,
+  .odg-reveal-in {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .odg-hero-enter > *,
+  .odg-layer-far,
+  .odg-layer-near,
+  .odg-portal {
+    animation: none !important;
+  }
+
+  .odg-faq-body {
+    transition: none;
+  }
 }

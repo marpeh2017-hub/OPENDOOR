@@ -22,7 +22,8 @@
   },
   "cta": {
     "eligibility": "בדיקת התאמה להתחדשות עירונית",
-    "residentPortal": "כניסה לתיק הדייר"
+    "residentPortal": "כניסה לתיק הדייר",
+    "eligibilityShort": "בדיקת התאמה"
   },
   "footer": {
     "company": "החברה",
@@ -103,5 +104,11 @@
     "PLANNING": "תכנון",
     "PERMIT_AND_BUILD": "היתר וביצוע",
     "DELIVERY": "מסירה ואכלוס"
+  },
+  "ui": {
+    "demonstration": "תצוגה להמחשה",
+    "currentStage": "השלב הנוכחי",
+    "transparencyEyebrow": "השקיפות בפועל",
+    "menu": "תפריט"
   }
 }

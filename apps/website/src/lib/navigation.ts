@@ -10,6 +10,19 @@ export interface NavItem {
   href: string
 }
 
+/**
+ * PRIMARY navigation — what the desktop header shows.
+ *
+ * Five items. V1 showed seven, which at Hebrew label lengths crowded the bar
+ * against the two persistent actions and the language switcher, leaving the
+ * header with no breathing room at 1024px.
+ *
+ * FAQ and contact are NOT removed as routes — they remain in `NAV_ITEMS`, in
+ * the mobile menu, in the footer, and as in-page links from the FAQ and CTA
+ * sections. This reduces top-level density; it does not reduce reachability.
+ */
+export const PRIMARY_NAV_KEYS = ['about', 'whyOrganizer', 'howWeWork', 'projects', 'knowledge'] as const
+
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'about',        href: '/about' },
   { key: 'whyOrganizer', href: '/why-organizer' },

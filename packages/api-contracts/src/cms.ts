@@ -102,6 +102,44 @@ export interface TextSectionBlock extends BlockBase {
    * an editor who can inject style can break every page.
    */
   body: LocalizedText
+  /**
+   * Optional relationship map explaining who is who in the process.
+   *
+   * ADDITIVE and OPTIONAL: a TEXT_SECTION without it renders as plain prose,
+   * exactly as before. It lives in the content model rather than in the
+   * component because every string in it is company messaging — the roles and
+   * what each one does — and components must not own messaging.
+   */
+  roleMap?: RoleMap
+}
+
+/**
+ * Who sits where in an urban-renewal process.
+ *
+ * ── WHAT THIS MAY AND MAY NOT SAY ──────────────────────────────────────────
+ *
+ * It explains ROLES. It must not be used to imply that the listed
+ * professionals work for OpenDoor, or that any partnership exists — no named
+ * firms, no logos, no "our team". `side` states only which side of the table a
+ * party sits on, which is a description of the structure and not a claim about
+ * any particular lawyer or developer.
+ */
+export interface RoleMap {
+  /** Who OpenDoor stands with. Rendered as the top of the relationship. */
+  principal: RoleNode
+  /** OpenDoor's own node — kept explicit so its position is content, not code. */
+  organiser: RoleNode
+  /** The parties the process brings to the table. */
+  parties: RoleNode[]
+}
+
+export interface RoleNode {
+  id: string
+  label: LocalizedText
+  /** One line, revealed on hover or focus. Never the only place a fact lives. */
+  detail: LocalizedText
+  /** Which side of the table. Used for grouping and colour, not for a claim. */
+  side?: 'owners' | 'process'
 }
 
 export interface CtaBlock extends BlockBase {
@@ -179,6 +217,43 @@ export interface PortalBlock extends BlockBase {
    *  live, so the section can describe what is being built without claiming it
    *  already works. */
   buildNotice?: LocalizedTextOptional
+  /**
+   * Content for the interface DEMONSTRATION rendered beside the two audience
+   * groups. Optional and additive.
+   *
+   * ── WHY THE DEMO IS CONTENT, NOT A COMPONENT CONSTANT ──────────────────
+   *
+   * Every string a visitor sees inside the preview is copy an editor must be
+   * able to change and translate, so it belongs here. It also has to be
+   * possible to audit the demo's honesty by reading the content file — which
+   * is impossible if the strings are buried in JSX.
+   *
+   * ── WHAT IT MUST NOT CONTAIN ────────────────────────────────────────────
+   *
+   * No real project name, no real address, no real resident. The demo shows a
+   * SHAPE. `label` is required and must mark it as a demonstration wherever it
+   * is rendered, so the frame can never be mistaken for a live account.
+   */
+  demo?: PortalDemo
+}
+
+export interface PortalDemo {
+  /** Rendered as a persistent badge on the preview, e.g. "תצוגה לדוגמה". */
+  label: LocalizedText
+  /** Generic stand-in for the project name inside the demo, e.g. "הפרויקט שלי". */
+  projectLabel: LocalizedText
+  /** The demo timeline. `state` drives the shared MilestoneMarker. */
+  stages: { id: string; title: LocalizedText; state: 'completed' | 'current' | 'upcoming' }[]
+  /** Named panels — what changed, what is next, what is asked. */
+  panels: { id: string; label: LocalizedText; value: LocalizedText }[]
+  /** Tabs along the bottom of the frame. Labels only; the demo is not clickable
+   *  through to anything, and must not pretend to be. */
+  tabs: LocalizedText[]
+  /** The representation layer, shown as a second view of the same frame. */
+  representation?: {
+    label: LocalizedText
+    items: { id: string; label: LocalizedText; value: LocalizedText }[]
+  }
 }
 
 export interface PortalAudienceGroup {

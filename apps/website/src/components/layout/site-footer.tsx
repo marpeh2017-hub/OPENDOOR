@@ -45,14 +45,14 @@ export async function SiteFooter() {
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-600">
             © {new Date().getFullYear()} {tBrand('name')} · {tFooter('rights')} · odg.co.il
           </p>
           <nav aria-label={tFooter('legal')} className="flex gap-4">
-            <Link href="/privacy" className="text-xs text-gray-500 hover:text-teal-700">
+            <Link href="/privacy" className="text-xs text-gray-600 hover:text-teal-700">
               {tFooter('privacy')}
             </Link>
-            <Link href="/terms" className="text-xs text-gray-500 hover:text-teal-700">
+            <Link href="/terms" className="text-xs text-gray-600 hover:text-teal-700">
               {tFooter('terms')}
             </Link>
           </nav>

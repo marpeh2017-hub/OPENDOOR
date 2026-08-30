@@ -22,7 +22,8 @@
   },
   "cta": {
     "eligibility": "Check your building's suitability",
-    "residentPortal": "Resident portal"
+    "residentPortal": "Resident portal",
+    "eligibilityShort": "Check suitability"
   },
   "footer": {
     "company": "Company",
@@ -103,5 +104,11 @@
     "PLANNING": "Planning",
     "PERMIT_AND_BUILD": "Permit and construction",
     "DELIVERY": "Delivery"
+  },
+  "ui": {
+    "demonstration": "Illustrative",
+    "currentStage": "Current stage",
+    "transparencyEyebrow": "Transparency in practice",
+    "menu": "Menu"
   }
 }

@@ -112,6 +112,82 @@ const homepageBlocks: PageBlock[] = [
       he: 'תהליך התחדשות עירונית מפגיש בעלי דירות עם יזמים, עורכי דין, שמאים, אדריכלים ורשויות התכנון. לכל אחד מהם תפקיד מוגדר, וכולם נדרשים כדי שפרויקט יצא לפועל.\n\nחברה מארגנת אינה יזם ואינה מבצעת את הבנייה. תפקידה הוא לארגן את בעלי הדירות, לרכז את העבודה מול אנשי המקצוע, ולנהל את התהליך לאורך זמן — מהעמדה של בעלי הדירות.\n\nהשירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
       en: 'An urban-renewal process brings together apartment owners, developers, lawyers, appraisers, architects and planning authorities. Each has a defined role, and all of them are needed for a project to happen.\n\nAn organising company is not the developer and does not carry out the construction. Its role is to organise the owners, coordinate the work with the professionals, and manage the process over time — from the owners\u2019 side of the table.\n\nThe service involves no direct cost to the apartment owners.',
     },
+
+    /**
+     * The relationship map.
+     *
+     * Note what is NOT here: no firm names, no logos, no "our partners", no
+     * count of professionals. Each entry describes what a ROLE does. That is
+     * the difference between explaining a structure and claiming a
+     * relationship, and only the first is true.
+     */
+    roleMap: {
+      principal: {
+        id: 'rm-owners',
+        side: 'owners',
+        label: { he: 'בעלי הדירות', en: 'The apartment owners' },
+        detail: {
+          he: 'בעלי הזכויות בנכס. ההחלטות המהותיות בתהליך הן שלהם.',
+          en: 'The rights holders. The substantive decisions in the process are theirs.',
+        },
+      },
+      organiser: {
+        id: 'rm-opendoor',
+        side: 'owners',
+        label: { he: 'אופן־דור גרופ', en: 'OpenDoor Group' },
+        detail: {
+          he: 'מארגנת את בעלי הדירות ומרכזת את העבודה מול הגורמים בתהליך — מהצד של בעלי הדירות.',
+          en: 'Organises the owners and coordinates the work with the other parties — from the owners’ side.',
+        },
+      },
+      parties: [
+        {
+          id: 'rm-lawyer',
+          side: 'process',
+          label: { he: 'עורך דין', en: 'Lawyer' },
+          detail: {
+            he: 'מייצג את בעלי הדירות בהסכמים. נבחר על ידם.',
+            en: 'Represents the owners in the agreements. Chosen by them.',
+          },
+        },
+        {
+          id: 'rm-appraiser',
+          side: 'process',
+          label: { he: 'שמאי', en: 'Appraiser' },
+          detail: {
+            he: 'בוחן את הכדאיות והתמורות מנקודת המבט של בעלי הדירות.',
+            en: 'Examines viability and consideration from the owners’ point of view.',
+          },
+        },
+        {
+          id: 'rm-architect',
+          side: 'process',
+          label: { he: 'אדריכל', en: 'Architect' },
+          detail: {
+            he: 'אחראי לתכנון הפרויקט מול מוסדות התכנון.',
+            en: 'Responsible for the project design before the planning institutions.',
+          },
+        },
+        {
+          id: 'rm-developer',
+          side: 'process',
+          label: { he: 'יזם', en: 'Developer' },
+          detail: {
+            he: 'מבצע את הפרויקט ונושא בעלויות הבנייה. צד נפרד, עם אינטרס נפרד.',
+            en: 'Carries out the project and bears the construction costs. A separate party, with a separate interest.',
+          },
+        },
+        {
+          id: 'rm-authority',
+          side: 'process',
+          label: { he: 'הרשויות', en: 'The authorities' },
+          detail: {
+            he: 'הרשות המקומית ומוסדות התכנון, שמאשרים את התוכנית.',
+            en: 'The municipality and the planning institutions, which approve the plan.',
+          },
+        },
+      ],
+    },
   },
 
   /* 4 ── HOW WE WORK ──────────────────────────────────────────────────── */
@@ -243,6 +319,80 @@ const homepageBlocks: PageBlock[] = [
       he: 'הסביבה הדיגיטלית נמצאת בבנייה. חלק מהיכולות המתוארות כאן טרם זמינות.',
       en: 'The digital environment is under construction. Some of the capabilities described here are not yet available.',
     },
+    /**
+     * The interface demonstration.
+     *
+     * ── EVERY STRING HERE IS DELIBERATELY GENERIC ─────────────────────────
+     *
+     * "הפרויקט שלי" instead of a project name. No address, no building, no
+     * resident, no date, no number. The demo shows the SHAPE of the resident's
+     * view — which is a truthful thing to show about software being built —
+     * and it carries a permanent "תצוגה לדוגמה" badge so the frame cannot be
+     * read as a live account belonging to a real project.
+     *
+     * The stage list matches the public process above it on purpose: a visitor
+     * should recognise the same five stages they just read about, now as the
+     * thing they would personally follow.
+     */
+    demo: {
+      label: { he: 'תצוגה לדוגמה', en: 'Illustrative view' },
+      projectLabel: { he: 'הפרויקט שלי', en: 'My project' },
+      stages: [
+        { id: 'd-1', state: 'completed', title: { he: 'התארגנות', en: 'Organising' } },
+        { id: 'd-2', state: 'completed', title: { he: 'נציגות', en: 'Representation' } },
+        { id: 'd-3', state: 'current', title: { he: 'בחינת חלופות', en: 'Reviewing alternatives' } },
+        { id: 'd-4', state: 'upcoming', title: { he: 'בחירת יזם', en: 'Selecting a developer' } },
+        { id: 'd-5', state: 'upcoming', title: { he: 'תכנון', en: 'Planning' } },
+      ],
+      panels: [
+        {
+          id: 'd-latest',
+          label: { he: 'העדכון האחרון', en: 'Latest update' },
+          value: { he: 'נוסף סיכום פגישת נציגות', en: 'A representation meeting summary was added' },
+        },
+        {
+          id: 'd-next',
+          label: { he: 'השלב הבא', en: 'Next stage' },
+          value: { he: 'בחינת ההצעות שהתקבלו', en: 'Reviewing the proposals received' },
+        },
+        {
+          id: 'd-action',
+          label: { he: 'נדרשת פעולה מכם?', en: 'Anything asked of you?' },
+          value: { he: 'לא נדרשת פעולה כרגע', en: 'Nothing is required right now' },
+        },
+      ],
+      tabs: [
+        { he: 'מסמכים', en: 'Documents' },
+        { he: 'עדכונים', en: 'Updates' },
+        { he: 'פגישות', en: 'Meetings' },
+      ],
+      representation: {
+        label: { he: 'תצוגת נציגות', en: 'Representation view' },
+        items: [
+          {
+            id: 'dr-decisions',
+            label: { he: 'החלטות פתוחות', en: 'Open decisions' },
+            value: { he: 'ממתינות להכרעת הנציגות', en: 'Awaiting the representation’s resolution' },
+          },
+          {
+            id: 'dr-tasks',
+            label: { he: 'משימות', en: 'Tasks' },
+            value: { he: 'מחולקות בין חברי הנציגות', en: 'Divided among representation members' },
+          },
+          {
+            id: 'dr-milestones',
+            label: { he: 'אבני דרך', en: 'Milestones' },
+            value: { he: 'מה הושלם ומה לפנינו', en: 'What is complete and what lies ahead' },
+          },
+          {
+            id: 'dr-items',
+            label: { he: 'נושאים פתוחים', en: 'Open items' },
+            value: { he: 'נושאים שטרם נסגרו', en: 'Matters not yet closed' },
+          },
+        ],
+      },
+    },
+
     groups: [
       {
         id: 'pg-resident',
