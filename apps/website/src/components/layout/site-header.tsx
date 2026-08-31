@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { NAV_ITEMS, PRIMARY_NAV_KEYS } from '@/lib/navigation'
+import { NAV_ITEMS, PRIMARY_NAV_KEYS, RESIDENT_PORTAL_HREF } from '@/lib/navigation'
 import { MobileNav } from './mobile-nav'
 import { LanguageSwitcher } from './language-switcher'
 import { HeaderShell } from './header-shell'
@@ -80,7 +80,7 @@ export async function SiteHeader() {
           <LanguageSwitcher />
 
           <Link
-            href="/resident-portal"
+            href={RESIDENT_PORTAL_HREF}
             className="hidden rounded-md px-3 py-2 text-sm font-medium text-teal-800 transition-colors hover:bg-teal-50 sm:inline-flex"
           >
             {tCta('residentPortal')}

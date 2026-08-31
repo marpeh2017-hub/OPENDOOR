@@ -37,14 +37,14 @@ const homepageBlocks: PageBlock[] = [
     type: 'HERO',
     order: 0,
     hidden: false,
-    eyebrow: { he: 'חברה מארגנת — לא יזם', en: 'An organising company — not the developer' },
+    eyebrow: { he: 'חברה מארגנת, לא יזם', en: 'An organising company, not the developer' },
     heading: {
-      he: 'אופן־דור גרופ מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית',
+      he: 'אופן-דור גרופ מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית',
       en: 'OpenDoor Group represents and organises apartment owners in urban-renewal processes',
     },
     subheading: {
-      he: 'מהבדיקה הראשונית, דרך ניהול התהליך ובחירת היזם המתאים, ועד למימוש הפרויקט — בליווי מקצועי ובשקיפות מלאה.',
-      en: 'From the initial review, through managing the process and selecting the right developer, to realising the project — with professional guidance and full transparency.',
+      he: 'מהבדיקה הראשונית, דרך ניהול התהליך ובחירת היזם המתאים, ועד למימוש הפרויקט, בליווי מקצועי ובשקיפות מלאה.',
+      en: 'From the initial review, through managing the process and selecting the right developer, to realising the project, with professional guidance and full transparency.',
     },
     primaryCtaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: "Check your building's suitability" },
     primaryCtaHref: '/eligibility',
@@ -67,8 +67,8 @@ const homepageBlocks: PageBlock[] = [
       en: 'You are the owners. We manage the way through.',
     },
     intro: {
-      he: 'בתהליך התחדשות עירונית לכל צד יש תפקיד אחר ואינטרס אחר — וזה טבעי. אופן־דור מארגנת ומייצגת את הצד של בעלי הדירות.',
-      en: 'In an urban-renewal process each side has a different role and a different interest — which is natural. OpenDoor organises and represents the owners\u2019 side.',
+      he: 'בתהליך התחדשות עירונית לכל צד יש תפקיד אחר ואינטרס אחר, וזה טבעי. אופן-דור מארגנת ומייצגת את הצד של בעלי הדירות.',
+      en: 'In an urban-renewal process each side has a different role and a different interest, which is natural. OpenDoor organises and represents the owners\u2019 side.',
     },
     items: [
       {
@@ -109,8 +109,8 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'מה זו חברה מארגנת?', en: 'What is an organising company?' },
     body: {
-      he: 'תהליך התחדשות עירונית מפגיש בעלי דירות עם יזמים, עורכי דין, שמאים, אדריכלים ורשויות התכנון. לכל אחד מהם תפקיד מוגדר, וכולם נדרשים כדי שפרויקט יצא לפועל.\n\nחברה מארגנת אינה יזם ואינה מבצעת את הבנייה. תפקידה הוא לארגן את בעלי הדירות, לרכז את העבודה מול אנשי המקצוע, ולנהל את התהליך לאורך זמן — מהעמדה של בעלי הדירות.\n\nהשירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
-      en: 'An urban-renewal process brings together apartment owners, developers, lawyers, appraisers, architects and planning authorities. Each has a defined role, and all of them are needed for a project to happen.\n\nAn organising company is not the developer and does not carry out the construction. Its role is to organise the owners, coordinate the work with the professionals, and manage the process over time — from the owners\u2019 side of the table.\n\nThe service involves no direct cost to the apartment owners.',
+      he: 'תהליך התחדשות עירונית מפגיש בעלי דירות עם יזמים, עורכי דין, שמאים, אדריכלים ורשויות התכנון. לכל אחד מהם תפקיד מוגדר, וכולם נדרשים כדי שפרויקט יצא לפועל.\n\nחברה מארגנת אינה יזם ואינה מבצעת את הבנייה. תפקידה הוא לארגן את בעלי הדירות, לרכז את העבודה מול אנשי המקצוע, ולנהל את התהליך לאורך זמן, מהעמדה של בעלי הדירות.\n\nהשירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
+      en: 'An urban-renewal process brings together apartment owners, developers, lawyers, appraisers, architects and planning authorities. Each has a defined role, and all of them are needed for a project to happen.\n\nAn organising company is not the developer and does not carry out the construction. Its role is to organise the owners, coordinate the work with the professionals, and manage the process over time, from the owners\u2019 side of the table.\n\nThe service involves no direct cost to the apartment owners.',
     },
 
     /**
@@ -134,10 +134,10 @@ const homepageBlocks: PageBlock[] = [
       organiser: {
         id: 'rm-opendoor',
         side: 'owners',
-        label: { he: 'אופן־דור גרופ', en: 'OpenDoor Group' },
+        label: { he: 'אופן-דור גרופ', en: 'OpenDoor Group' },
         detail: {
-          he: 'מארגנת את בעלי הדירות ומרכזת את העבודה מול הגורמים בתהליך — מהצד של בעלי הדירות.',
-          en: 'Organises the owners and coordinates the work with the other parties — from the owners’ side.',
+          he: 'מארגנת את בעלי הדירות ומרכזת את העבודה מול הגורמים בתהליך, מהצד של בעלי הדירות.',
+          en: 'Organises the owners and coordinates the work with the other parties, from the owners’ side.',
         },
       },
       parties: [
@@ -198,7 +198,7 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'כך אנחנו עובדים', en: 'How we work' },
     intro: {
-      he: 'התהליך המלא מורכב מאחד־עשר שלבים. כך הוא נראה מלמעלה.',
+      he: 'התהליך המלא מורכב מאחד עשר שלבים. כך הוא נראה מלמעלה.',
       en: 'The full process has eleven stages. This is how it looks from above.',
     },
     items: [
@@ -255,8 +255,8 @@ const homepageBlocks: PageBlock[] = [
     slotId: 'JERUSALEM_LIGHT_RAIL',
     assets: [],
     caption: {
-      he: 'ירושלים משתנה — תשתיות, תחבורה ומרקם מגורים. אופן־דור פועלת בתוך העיר הזאת, ואינה קשורה לפרויקטים העירוניים שבתמונה.',
-      en: 'Jerusalem is changing — infrastructure, transport and residential fabric. OpenDoor works inside this city, and is not connected to the municipal projects pictured.',
+      he: 'ירושלים משתנה: תשתיות, תחבורה ומרקם מגורים. אופן-דור פועלת בתוך העיר הזאת, ואינה קשורה לפרויקטים העירוניים שבתמונה.',
+      en: 'Jerusalem is changing: infrastructure, transport and residential fabric. OpenDoor works inside this city, and is not connected to the municipal projects pictured.',
     },
   },
 
@@ -268,7 +268,7 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
-      he: 'מתחמים שאופן־דור מלווה ומארגנת.',
+      he: 'מתחמים שאופן-דור מלווה ומארגנת.',
       en: 'Complexes OpenDoor accompanies and organises.',
     },
     limit: 3,
@@ -281,11 +281,11 @@ const homepageBlocks: PageBlock[] = [
     order: 6,
     hidden: false,
     heading: {
-      he: 'לדעת איפה הפרויקט עומד — ומה השלב הבא',
-      en: 'Knowing where the project stands — and what comes next',
+      he: 'לדעת איפה הפרויקט עומד, ומה השלב הבא',
+      en: 'Knowing where the project stands, and what comes next',
     },
     intro: {
-      he: 'המערכת הדיגיטלית של אופן־דור נבנית כדי שבעלי הדירות יוכלו לעקוב אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות — בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
+      he: 'המערכת הדיגיטלית של אופן-דור נבנית כדי שבעלי הדירות יוכלו לעקוב אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
       en: 'OpenDoor\u2019s digital system is being built so owners can follow the project\u2019s progress, documents, updates and meetings without waiting for a phone call. The view below demonstrates the structure and does not describe an existing project.',
     },
     items: [
@@ -489,8 +489,8 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'מרכז ידע', en: 'Knowledge centre' },
     intro: {
-      he: 'הסברים על התהליך, התפקידים והזכויות — בשפה ברורה, בלי הבטחות.',
-      en: 'Explanations of the process, the roles and the rights — in plain language, without promises.',
+      he: 'הסברים על התהליך, התפקידים והזכויות, בשפה ברורה, בלי הבטחות.',
+      en: 'Explanations of the process, the roles and the rights, in plain language, without promises.',
     },
     limit: 3,
   },
@@ -528,17 +528,17 @@ export const MOCK_PAGES: readonly CmsPage[] = [
   {
     id: 'page-home',
     slug: 'home',
-    title: { he: 'אופן־דור גרופ', en: 'OpenDoor Group' },
+    title: { he: 'אופן-דור גרופ', en: 'OpenDoor Group' },
     publishState: 'published',
     blocks: homepageBlocks,
     seo: {
       he: {
-        title: 'אופן־דור גרופ — ייצוג וארגון בעלי דירות בהתחדשות עירונית',
+        title: 'אופן-דור גרופ: ייצוג וארגון בעלי דירות בהתחדשות עירונית',
         description:
-          'אופן־דור גרופ מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית — מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'אופן-דור גרופ מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
       },
       en: {
-        title: 'OpenDoor Group — representing apartment owners in urban renewal',
+        title: 'OpenDoor Group: representing apartment owners in urban renewal',
         description:
           'OpenDoor Group represents and organises apartment owners through urban-renewal processes, from the initial review to realising the project.',
       },

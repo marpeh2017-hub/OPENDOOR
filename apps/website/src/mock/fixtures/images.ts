@@ -66,7 +66,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     mobileRatio: '16 / 10',
     minResolution: '1600 × 2133 (desktop 2×); a separate 1200 × 750 crop for mobile',
     altIntent:
-      'Describe the residential fabric shown — stone-faced apartment buildings on a Jerusalem hillside — without naming a project or implying OpenDoor involvement.',
+      'Describe the residential fabric shown: stone-faced apartment buildings on a Jerusalem hillside, without naming a project or implying OpenDoor involvement.',
     claim: 'EDITORIAL_CONTEXT',
     direction:
       'Contemporary Jerusalem RESIDENTIAL architecture: stone-faced apartment blocks, balconies, the stepped hillside density. Daylight, flat or overcast, no golden hour. Must NOT be: the Old City, a tourist viewpoint, a luxury tower, a construction site with cranes, or a CGI render. The subject is where people live, not what a visitor photographs.',
@@ -84,7 +84,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     mobileRatio: '3 / 2',
     minResolution: '2400 × 1030',
     altIntent:
-      'The light rail running along a Jerusalem street between residential buildings — city context, explicitly not an OpenDoor project.',
+      'The light rail running along a Jerusalem street between residential buildings: city context, explicitly not an OpenDoor project.',
     claim: 'EDITORIAL_CONTEXT',
     direction:
       'The tram IN ITS STREET: track, catenary, residential frontage either side, ordinary people. The train should occupy a small part of the frame. Must NOT be a promotional close-up of a tram, an empty platform, or anything that reads as a transport advertisement.',
@@ -96,13 +96,13 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
   JERUSALEM_CHORDS_BRIDGE: {
     id: 'JERUSALEM_CHORDS_BRIDGE',
     purpose:
-      'Seen through the closing threshold — the city on the other side of the process. The page’s one landmark, used once.',
+      'Seen through the closing threshold: the city on the other side of the process. The page’s one landmark, used once.',
     orientation: 'landscape',
     desktopRatio: '2 / 1',
     mobileRatio: '4 / 3',
     minResolution: '2000 × 1000',
     altIntent:
-      'The Chords Bridge as structure — mast and cables — as a Jerusalem landmark. Must not suggest OpenDoor built, designed or manages it.',
+      'The Chords Bridge as structure (mast and cables) as a Jerusalem landmark. Must not suggest OpenDoor built, designed or manages it.',
     claim: 'EDITORIAL_CONTEXT',
     direction:
       'ARCHITECTURAL photography: the mast, the cable geometry, the deck, ideally with the city behind it. Overcast or blue-hour flat light. Must NOT be a sunset postcard, a long-exposure light-trail shot, or a symmetrical centred monument portrait. Emphasis on structure and infrastructure, not on spectacle.',
@@ -119,7 +119,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     desktopRatio: '16 / 9',
     mobileRatio: '4 / 3',
     minResolution: '1800 × 1013',
-    altIntent: 'An ordinary Jerusalem residential street — the everyday fabric of the city.',
+    altIntent: 'An ordinary Jerusalem residential street, the everyday fabric of the city.',
     claim: 'EDITORIAL_CONTEXT',
     direction:
       'A residential street: entrances, balconies, parked cars, stone. Deliberately unglamorous. Must NOT be styled, staged or emptied of people.',
@@ -131,7 +131,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
   ARCHITECTURAL_DETAIL: {
     id: 'ARCHITECTURAL_DETAIL',
     purpose:
-      'A close material note — where Jerusalem stone meets contemporary construction. Reserved for an interior page.',
+      'A close material note: where Jerusalem stone meets contemporary construction. Reserved for an interior page.',
     orientation: 'portrait',
     desktopRatio: '3 / 4',
     mobileRatio: '1 / 1',

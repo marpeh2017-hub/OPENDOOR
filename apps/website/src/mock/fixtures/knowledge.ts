@@ -27,7 +27,7 @@ export const MOCK_CATEGORIES: readonly KnowledgeCategory[] = [
   {
     id: 'c-pinuy-binuy',
     slug: 'pinuy-binuy',
-    name: 'פינוי־בינוי',
+    name: 'פינוי בינוי',
     description: 'תהליך שבו מבנים קיימים נהרסים ונבנים מחדש בהיקף גדול יותר.',
     articleCount: 2,
   },
@@ -60,17 +60,17 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
   {
     id: 'a-what-is-pinuy-binuy',
     slug: 'what-is-pinuy-binuy',
-    title: 'מהו פינוי־בינוי?',
+    title: 'מהו פינוי בינוי?',
     summary: 'הסבר קצר על מהות התהליך, מי המשתתפים בו ומה סדר הפעולות הכללי.',
     body:
-      'פינוי־בינוי הוא תהליך שבו מתחם מגורים קיים נהרס ונבנה מחדש, בדרך כלל בהיקף בנייה גדול יותר. ' +
+      'פינוי בינוי הוא תהליך שבו מתחם מגורים קיים נהרס ונבנה מחדש, בדרך כלל בהיקף בנייה גדול יותר. ' +
       'התהליך מערב בעלי דירות, נציגות דיירים, חברה מארגנת, אנשי מקצוע כמו עורכי דין ושמאים, יזם, ורשויות התכנון.\n\n' +
       'לכל אחד מהגורמים תפקיד שונה. בעלי הדירות הם בעלי הנכס ומקבלי ההחלטות. הנציגות מייצגת אותם מול שאר הגורמים. ' +
       'החברה המארגנת מנהלת את התהליך ומרכזת את העבודה מול אנשי המקצוע. היזם הוא מי שמבצע את הפרויקט בפועל.\n\n' +
       'התהליך אורך זמן ואינו מובטח: פרויקטים עשויים להתקדם בקצב שונה, ולעיתים אינם יוצאים לפועל.',
     category: byId['c-pinuy-binuy']!,
-    tags: ['פינוי־בינוי', 'תהליך'],
-    attribution: 'אופן־דור גרופ',
+    tags: ['פינוי בינוי', 'תהליך'],
+    attribution: 'אופן-דור גרופ',
     publishedAt: '2026-06-01T00:00:00.000Z',
     updatedAt: '2026-08-01T00:00:00.000Z',
     relatedArticleSlugs: ['what-does-an-organizing-company-do', 'what-is-a-residents-representation'],
@@ -80,7 +80,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
     id: 'a-organizing-company',
     slug: 'what-does-an-organizing-company-do',
     title: 'מה עושה חברה מארגנת?',
-    summary: 'ההבדל בין חברה מארגנת, יזם ואנשי מקצוע — ומדוע ההפרדה חשובה.',
+    summary: 'ההבדל בין חברה מארגנת, יזם ואנשי מקצוע, ומדוע ההפרדה חשובה.',
     body:
       'חברה מארגנת מייצגת ומארגנת את בעלי הדירות. היא אינה היזם ואינה מבצעת את הבנייה.\n\n' +
       'תפקידה כולל ארגון בעלי הדירות, ליווי הקמת נציגות, ריכוז העבודה מול אנשי המקצוע, ' +
@@ -90,7 +90,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
       'השירות לבעלי הדירות אינו כרוך בעלות ישירה מצדם.',
     category: byId['c-representation']!,
     tags: ['חברה מארגנת', 'נציגות'],
-    attribution: 'אופן־דור גרופ',
+    attribution: 'אופן-דור גרופ',
     publishedAt: '2026-06-10T00:00:00.000Z',
     updatedAt: '2026-08-05T00:00:00.000Z',
     relatedArticleSlugs: ['what-is-a-residents-representation', 'what-is-pinuy-binuy'],
@@ -108,7 +108,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
       'עבודה מסודרת של נציגות דורשת מידע זמין, סדר יום ברור ותיעוד. זה חלק ממה שחברה מארגנת אמורה לספק.',
     category: byId['c-representation']!,
     tags: ['נציגות'],
-    attribution: 'אופן־דור גרופ',
+    attribution: 'אופן-דור גרופ',
     publishedAt: '2026-06-15T00:00:00.000Z',
     updatedAt: '2026-08-05T00:00:00.000Z',
     relatedArticleSlugs: ['what-does-an-organizing-company-do'],
@@ -117,7 +117,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
   {
     id: 'a-tama-38',
     slug: 'tama-38-explained',
-    title: 'תמ״א 38 — חיזוק מול הריסה ובנייה',
+    title: 'תמ״א 38: חיזוק מול הריסה ובנייה',
     summary: 'שני המסלולים המרכזיים וההבדל המעשי ביניהם עבור בעלי דירות.',
     body:
       'תמ״א 38 כוללת שני מסלולים עיקריים: חיזוק המבנה הקיים, או הריסתו ובנייתו מחדש.\n\n' +
@@ -126,7 +126,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
       'לכל מסלול השלכות שונות על לוחות זמנים, על התמורות ועל חיי הדיירים בתקופת הביצוע.',
     category: byId['c-tama-38']!,
     tags: ['תמ״א 38'],
-    attribution: 'אופן־דור גרופ',
+    attribution: 'אופן-דור גרופ',
     publishedAt: '2026-06-20T00:00:00.000Z',
     updatedAt: '2026-08-05T00:00:00.000Z',
     locale: 'he',
@@ -134,7 +134,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
   {
     id: 'a-before-you-sign',
     slug: 'before-you-sign',
-    title: 'לפני שחותמים — מה חשוב לבדוק',
+    title: 'לפני שחותמים: מה חשוב לבדוק',
     summary: 'שאלות שכדאי לבעלי דירות לשאול לפני חתימה על מסמך כלשהו בתהליך.',
     body:
       'חתימה על מסמך בתהליך התחדשות עירונית היא פעולה משפטית. לפני חתימה כדאי לוודא שהמסמך הוסבר, ' +
@@ -143,7 +143,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
       'המידע כאן הוא כללי ואינו מהווה ייעוץ משפטי.',
     category: byId['c-owner-rights']!,
     tags: ['זכויות', 'הסכמים'],
-    attribution: 'אופן־דור גרופ',
+    attribution: 'אופן-דור גרופ',
     publishedAt: '2026-07-01T00:00:00.000Z',
     updatedAt: '2026-08-10T00:00:00.000Z',
     relatedArticleSlugs: ['what-does-an-organizing-company-do'],
@@ -161,7 +161,7 @@ export const MOCK_ARTICLES: readonly KnowledgeArticle[] = [
       'לדעת באיזה שלב הפרויקט נמצא, מה הפעולה הבאה, ומי אחראי עליה.',
     category: byId['c-owner-rights']!,
     tags: ['לוחות זמנים'],
-    attribution: 'אופן־דור גרופ',
+    attribution: 'אופן-דור גרופ',
     publishedAt: '2026-07-10T00:00:00.000Z',
     updatedAt: '2026-08-12T00:00:00.000Z',
     locale: 'he',
@@ -178,9 +178,9 @@ export const MOCK_FAQ: readonly FaqItem[] = [
   },
   {
     id: 'q-are-you-developer',
-    question: 'האם אופן־דור היא יזם?',
+    question: 'האם אופן-דור היא יזם?',
     answer:
-      'לא. אופן־דור גרופ מייצגת ומארגנת בעלי דירות. היא אינה יזם ואינה מבצעת את הבנייה. ' +
+      'לא. אופן-דור גרופ מייצגת ומארגנת בעלי דירות. היא אינה יזם ואינה מבצעת את הבנייה. ' +
       'בחירת היזם נעשית על ידי בעלי הדירות, בליווי החברה.',
     category: 'כללי',
     order: 2,

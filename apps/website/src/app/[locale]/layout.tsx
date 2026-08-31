@@ -55,6 +55,16 @@ export async function generateMetadata({
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'brand' })
 
+  /**
+   * Open Graph / Twitter: the STRUCTURE only, no image.
+   *
+   * `og:image` needs a real 1200×630 asset, and none exists — see
+   * `ODG_IMAGE_REQUIREMENTS.md`. Shipping the surrounding fields now means
+   * that asset is a one-line addition later rather than a second metadata
+   * pass; a share card with no image today is a worse but honest fallback,
+   * where a placeholder image would be a small lie about the brand shipped to
+   * every social preview.
+   */
   return {
     // `%s` is filled by each page's own title; the brand suffix is defined once.
     title: { default: t('name'), template: `%s | ${t('name')}` },
@@ -63,6 +73,18 @@ export async function generateMetadata({
     metadataBase: process.env['NEXT_PUBLIC_SITE_URL']
       ? new URL(process.env['NEXT_PUBLIC_SITE_URL'])
       : undefined,
+    openGraph: {
+      type: 'website',
+      siteName: t('name'),
+      locale: locale === 'he' ? 'he_IL' : 'en_US',
+      title: t('name'),
+      description: t('tagline'),
+    },
+    twitter: {
+      card: 'summary',
+      title: t('name'),
+      description: t('tagline'),
+    },
   }
 }
 

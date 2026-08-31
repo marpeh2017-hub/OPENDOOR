@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { PageShell } from '@/components/layout/page-shell'
+import { STUB_ROBOTS } from '@/lib/seo'
 
 /**
  * Eligibility
@@ -15,7 +16,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'pages.eligibility' })
-  return { title: t('title') }
+  return { title: t('title'), robots: STUB_ROBOTS }
 }
 
 export default async function Page({
