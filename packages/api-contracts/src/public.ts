@@ -1,7 +1,8 @@
 import type {
-  GeoContext, IsoDate, IsoDateTime, Locale, MediaAsset,
+  GeoContext, IsoDate, IsoDateTime, Locale, LocalizedText, MediaAsset,
   Paginated, PublishState, SeoMetadata, Visibility,
 } from './common'
+import type { VerifiedFact } from './verification'
 
 /**
  * Unauthenticated surface: everything odg.co.il serves to a visitor.
@@ -64,6 +65,10 @@ export interface TimelineStage {
  * "87% signed" to look finished creates pressure to invent the number.
  */
 export interface PublicProject {
+  /* ── Identity and editorial content ──────────────────────────────────────
+   * These carry no factual assertion a reader could be misled by, so they use
+   * the ordinary DRAFT → REVIEW → PUBLISHED workflow rather than structured
+   * verification. See `verification.ts` for why the two are kept apart. */
   id: string
   slug: string
   name: string
@@ -73,26 +78,157 @@ export interface PublicProject {
   summary: string
   /** Full body, for the detail page. May contain safe inline markup. */
   description?: string
+  /** How organised the owners are. Editorial rather than verified: it
+   *  describes OpenDoor's own working relationship with the complex, which
+   *  OpenDoor is the authority on, not a fact about the building. */
+  organizingStatus?: OrganizingStatus
+
+  /* ── Media ───────────────────────────────────────────────────────────────
+   * Only an asset whose `imageType` is VERIFIED_PROJECT_PHOTO may be used as
+   * this project's own image. The renderer enforces it; see `EditorialImage`. */
+  heroImage?: MediaAsset
+  gallery?: MediaAsset[]
+  /** The complex as it stands today. Distinct from `gallery` because a
+   *  "before" image makes a claim about a moment in time. */
+  beforeImages?: MediaAsset[]
+  videos?: MediaAsset[]
+  documents?: ProjectDocument[]
+
+  /* ── MATERIAL FACTUAL CLAIMS ─────────────────────────────────────────────
+   *
+   * Every field below is a statement a resident might act on, and every one
+   * is wrapped so it cannot exist without a name and a date attached.
+   * ABSENT IS THE NORMAL STATE and the UI must be complete without any of
+   * them. Absent never means zero, unknown or pending — it means nobody has
+   * checked, and so the site says nothing. */
+
   /**
    * OPTIONAL, and this is a product rule rather than a data convenience.
    *
-   * A project's stage is a factual claim about a real building's process. Where
-   * it has not been verified it must be ABSENT — not guessed, not defaulted to
-   * the first stage, not shown as "unknown". The card and detail page are
-   * required to look complete without it.
+   * A project's stage is a factual claim about a real building's process.
+   * Where it has not been verified it must be ABSENT — not guessed, not
+   * defaulted to the first stage, not shown as "unknown". The card and detail
+   * page are required to look complete without it.
    */
-  currentStage?: ProjectStage
-  heroImage?: MediaAsset
-  gallery?: MediaAsset[]
-  videos?: MediaAsset[]
+  currentStage?: VerifiedFact<ProjectStage>
+  existingUnits?: VerifiedFact<number>
+  proposedUnits?: VerifiedFact<number>
+  buildingCount?: VerifiedFact<number>
+  planningStatus?: VerifiedFact<PlanningStatus>
+  /** A named commercial party. Never rendered without verification, because
+   *  naming the wrong developer is both a factual error and a commercial one. */
+  developer?: VerifiedFact<ProjectParty>
+  /** Lawyers, appraisers, architects. Same rule as `developer`, and never
+   *  rendered in a way that implies they work for OpenDoor. */
+  professionals?: VerifiedFact<ProjectParty[]>
+  approvals?: VerifiedFact<ProjectApproval[]>
+  permits?: VerifiedFact<ProjectApproval[]>
+  /** Dates a resident might plan around. Wrapped for the same reason as the
+   *  counts: a wrong date here is not a typo, it is a broken expectation. */
+  materialDates?: VerifiedFact<ProjectDateRecord[]>
+
+  /* ── Progress ────────────────────────────────────────────────────────────
+   * Milestones carry their own per-entry verification: a project can have
+   * three confirmed milestones and two unconfirmed ones, and only the
+   * confirmed ones render. */
+  milestones?: ProjectMilestone[]
   /** Absent when no stage is verified — a timeline without a stage would be an
    *  invented sequence. Empty and absent both mean "no verified progress". */
   timeline?: TimelineStage[]
+
+  /* ── Control ─────────────────────────────────────────────────────────── */
+  /** Whether residents of this project see updates in the portal. Not public
+   *  information; it governs the portal, not this page. */
+  residentUpdatesVisible?: boolean
   featured: boolean
   visibility: Visibility
   publishState: PublishState
   seo?: SeoMetadata
   updatedAt: IsoDateTime
+}
+
+/** How far the owners have organised themselves. Editorial, not verified. */
+export type OrganizingStatus =
+  | 'NOT_STARTED'
+  | 'EARLY_CONVERSATION'
+  | 'REPRESENTATION_FORMED'
+  | 'PROCESS_ACTIVE'
+
+/** Where the project stands with the planning system. A material claim. */
+export type PlanningStatus =
+  | 'PRE_PLANNING'
+  | 'PLAN_SUBMITTED'
+  | 'PLAN_DEPOSITED'
+  | 'PLAN_APPROVED'
+  | 'PERMIT_STAGE'
+  | 'UNDER_CONSTRUCTION'
+
+/**
+ * A named party in the process.
+ *
+ * Deliberately carries no logo, no link and no description. This type exists
+ * to state a role and a name; anything richer starts to read as an endorsement
+ * or a partnership, and §16 forbids implying either.
+ */
+export interface ProjectParty {
+  role: 'DEVELOPER' | 'LAWYER' | 'APPRAISER' | 'ARCHITECT' | 'SUPERVISOR' | 'OTHER'
+  name: string
+}
+
+/** An approval or permit granted by an authority. */
+export interface ProjectApproval {
+  id: string
+  /** What was granted, in plain language. */
+  label: LocalizedText
+  /** Which body granted it. */
+  authority?: string
+  grantedOn?: IsoDate
+  /** Public decision or file number, where one exists and is already public. */
+  reference?: string
+}
+
+/** A date that matters to a resident's planning. */
+export interface ProjectDateRecord {
+  id: string
+  label: LocalizedText
+  occursOn: IsoDate
+  /** True when the date is a target rather than a commitment. The UI must
+   *  render the distinction; an estimate shown as a commitment is the most
+   *  common way a timeline becomes a broken promise. */
+  isEstimate: boolean
+}
+
+/**
+ * One step in a project's history.
+ *
+ * `verification` is per-milestone rather than on the whole list, because a
+ * project realistically has some confirmed history and some pending entries.
+ * The renderer shows only the verified ones.
+ */
+export interface ProjectMilestone {
+  id: string
+  title: LocalizedText
+  state: 'completed' | 'current' | 'upcoming'
+  note?: LocalizedText
+  occurredAt?: IsoDate
+  verification?: VerifiedFact<true>
+}
+
+/**
+ * A document attached to a project.
+ *
+ * `url` is a signed, expiring URL issued per request. It is NEVER a storage
+ * key: the frontend must not be able to construct a path into object storage,
+ * which is a rule this codebase already holds elsewhere.
+ */
+export interface ProjectDocument {
+  id: string
+  title: LocalizedText
+  kind: 'PLAN' | 'PERMIT' | 'SUMMARY' | 'OTHER'
+  url: string
+  visibility: Visibility
+  mimeType?: string
+  sizeBytes?: number
 }
 
 /** Card projection. Everything a grid needs and nothing it does not. */
@@ -103,8 +239,10 @@ export interface PublicProjectSummary {
   type: ProjectType
   location: GeoContext
   summary: string
-  /** Optional for the same reason as on `PublicProject`. */
-  currentStage?: ProjectStage
+  /** Optional for the same reason as on `PublicProject`, and verification
+   *  travels with it: a card that renders a stage must be able to say who
+   *  confirmed it, even though the card itself does not display that. */
+  currentStage?: VerifiedFact<ProjectStage>
   heroImage?: MediaAsset
   featured: boolean
 }

@@ -1,3 +1,5 @@
+import { MATERIAL_CLAIM_FIELDS } from '@urban-renewal/api-contracts'
+
 /**
  * MOCK DATA — replaced by the API in Phase 2. Contains no verified project,
  * resident or commercial information.
@@ -46,19 +48,26 @@ export interface WithProvenance {
 /**
  * Fields that constitute a factual claim about a real project.
  *
- * Listed once so the guard below and any future reviewer work from the same
- * definition. Everything here was explicitly forbidden from being invented.
+ * ── WHY THIS DERIVES FROM THE CONTRACT ─────────────────────────────────────
+ *
+ * `MATERIAL_CLAIM_FIELDS` in `@urban-renewal/api-contracts` is the
+ * authoritative definition of what counts as a material claim — it is what the
+ * `VerifiedFact` wrapper is applied to, and what a future CMS drives its
+ * verification UI from. Restating that list here by hand would create two
+ * definitions that drift, and the one that drifts is always the one nobody
+ * looks at.
+ *
+ * The extra entries below are fields this guard has always checked that are
+ * not part of the project contract (`timeline` is derived; the rest are names
+ * a fixture author might reach for). Keeping them costs nothing and closes the
+ * gap between "what the type forbids" and "what a person might type".
  */
 export const CLAIM_FIELDS = [
-  'currentStage',
+  ...MATERIAL_CLAIM_FIELDS,
   'timeline',
   'unitCount',
   'signaturePercentage',
-  'developer',
-  'approvals',
-  'permits',
   'municipalDecision',
-  'planningStatus',
   'financials',
   'residentCount',
   'professionalTeam',

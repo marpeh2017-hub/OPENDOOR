@@ -53,6 +53,20 @@ export async function ProjectsBlockView({
     getTranslations('stages'),
   ])
 
+  /**
+   * Nothing published → render nothing at all.
+   *
+   * Not an empty grid, not a "0 projects" line, not a skeleton. The homepage
+   * is a continuous argument, and a section that announces its own emptiness
+   * interrupts it to say something the visitor did not ask about. `/projects`
+   * has a designed empty state because someone who navigated there is owed an
+   * explanation; someone scrolling the homepage is not.
+   *
+   * This is also the correct behaviour the day a real project is unpublished,
+   * which is why it lives here rather than in a temporary flag.
+   */
+  if (projects.length === 0) return null
+
   const leadIndex = Math.max(0, projects.findIndex((p) => p.featured))
   const lead = projects[leadIndex]
   const rest = projects.filter((_, index) => index !== leadIndex)
@@ -160,10 +174,14 @@ function ProjectCard({
         </p>
 
         {/* Only when a stage is actually verified. Absent is the norm. */}
+        {/* `.value` unwraps the VerifiedFact. The wrapper travels this far so
+            that a stage can never be displayed without a verification record
+            existing behind it — reading `.value` is the deliberate act of
+            saying "this has been confirmed". */}
         {project.currentStage && (
           <p className="mt-5 inline-flex w-fit items-center gap-2 border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700">
             <span aria-hidden="true" className="h-1.5 w-1.5 rotate-45 bg-teal-600" />
-            {stageLabel(project.currentStage)}
+            {stageLabel(project.currentStage.value)}
           </p>
         )}
       </div>

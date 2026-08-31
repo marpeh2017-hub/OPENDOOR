@@ -47,8 +47,33 @@ export type Visibility =
 /** Audience the current viewer belongs to. Mirrors Visibility, minus 'public'. */
 export type ViewerRole = 'guest' | 'resident' | 'representative' | 'internal'
 
-/** Publication state, independent of visibility: a public page can be a draft. */
-export type PublishState = 'draft' | 'published' | 'archived'
+/**
+ * Publication state, independent of visibility: a public page can be a draft.
+ *
+ * ── THE EDITORIAL WORKFLOW ─────────────────────────────────────────────────
+ *
+ *   draft  →  review  →  published        (and published → archived)
+ *
+ * `review` exists so that "somebody other than the author has read this"
+ * is a recorded state rather than a habit. It is the mechanism for ordinary
+ * editorial correctness — typos, clumsy sentences, bad crops — and it is
+ * deliberately the ONLY mechanism most fields need.
+ *
+ * Material factual claims do not use this workflow. They carry their own
+ * verification, which the type system enforces separately; see
+ * `VerifiedFact` in `verification.ts` for why the two are kept apart.
+ *
+ * ── ONLY `published` IS PUBLIC ─────────────────────────────────────────────
+ *
+ * `draft`, `review` and `archived` all render nowhere on the public site.
+ * A record in `review` is finished content awaiting a second pair of eyes,
+ * not a soft-launched one.
+ */
+export type PublishState = 'draft' | 'review' | 'published' | 'archived'
+
+/** The states that never reach a public page. Exported so the filter that
+ *  enforces it cannot drift from the type. */
+export const NON_PUBLIC_STATES: readonly PublishState[] = ['draft', 'review', 'archived']
 
 /**
  * A string that exists in every supported locale.

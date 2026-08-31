@@ -39,7 +39,7 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     eyebrow: { he: 'חברה מארגנת, לא יזם', en: 'An organising company, not the developer' },
     heading: {
-      he: 'אופן-דור גרופ מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית',
+      he: 'OpenDoor Group מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית',
       en: 'OpenDoor Group represents and organises apartment owners in urban-renewal processes',
     },
     subheading: {
@@ -67,7 +67,7 @@ const homepageBlocks: PageBlock[] = [
       en: 'You are the owners. We manage the way through.',
     },
     intro: {
-      he: 'בתהליך התחדשות עירונית לכל צד יש תפקיד אחר ואינטרס אחר, וזה טבעי. אופן-דור מארגנת ומייצגת את הצד של בעלי הדירות.',
+      he: 'בתהליך התחדשות עירונית לכל צד יש תפקיד אחר ואינטרס אחר, וזה טבעי. OpenDoor Group מארגנת ומייצגת את הצד של בעלי הדירות.',
       en: 'In an urban-renewal process each side has a different role and a different interest, which is natural. OpenDoor organises and represents the owners\u2019 side.',
     },
     items: [
@@ -134,7 +134,7 @@ const homepageBlocks: PageBlock[] = [
       organiser: {
         id: 'rm-opendoor',
         side: 'owners',
-        label: { he: 'אופן-דור גרופ', en: 'OpenDoor Group' },
+        label: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
         detail: {
           he: 'מארגנת את בעלי הדירות ומרכזת את העבודה מול הגורמים בתהליך, מהצד של בעלי הדירות.',
           en: 'Organises the owners and coordinates the work with the other parties, from the owners’ side.',
@@ -255,7 +255,7 @@ const homepageBlocks: PageBlock[] = [
     slotId: 'JERUSALEM_LIGHT_RAIL',
     assets: [],
     caption: {
-      he: 'ירושלים משתנה: תשתיות, תחבורה ומרקם מגורים. אופן-דור פועלת בתוך העיר הזאת, ואינה קשורה לפרויקטים העירוניים שבתמונה.',
+      he: 'ירושלים משתנה: תשתיות, תחבורה ומרקם מגורים. OpenDoor Group פועלת בתוך העיר הזאת, ואינה קשורה לפרויקטים העירוניים שבתמונה.',
       en: 'Jerusalem is changing: infrastructure, transport and residential fabric. OpenDoor works inside this city, and is not connected to the municipal projects pictured.',
     },
   },
@@ -268,7 +268,7 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
-      he: 'מתחמים שאופן-דור מלווה ומארגנת.',
+      he: 'מתחמים שOpenDoor Group מלווה ומארגנת.',
       en: 'Complexes OpenDoor accompanies and organises.',
     },
     limit: 3,
@@ -285,7 +285,7 @@ const homepageBlocks: PageBlock[] = [
       en: 'Knowing where the project stands, and what comes next',
     },
     intro: {
-      he: 'המערכת הדיגיטלית של אופן-דור נבנית כדי שבעלי הדירות יוכלו לעקוב אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
+      he: 'המערכת הדיגיטלית של OpenDoor Group נבנית כדי שבעלי הדירות יוכלו לעקוב אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
       en: 'OpenDoor\u2019s digital system is being built so owners can follow the project\u2019s progress, documents, updates and meetings without waiting for a phone call. The view below demonstrates the structure and does not describe an existing project.',
     },
     items: [
@@ -528,14 +528,14 @@ export const MOCK_PAGES: readonly CmsPage[] = [
   {
     id: 'page-home',
     slug: 'home',
-    title: { he: 'אופן-דור גרופ', en: 'OpenDoor Group' },
+    title: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
     publishState: 'published',
     blocks: homepageBlocks,
     seo: {
       he: {
-        title: 'אופן-דור גרופ: ייצוג וארגון בעלי דירות בהתחדשות עירונית',
+        title: 'OpenDoor Group: ייצוג וארגון בעלי דירות בהתחדשות עירונית',
         description:
-          'אופן-דור גרופ מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'OpenDoor Group מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
       },
       en: {
         title: 'OpenDoor Group: representing apartment owners in urban renewal',

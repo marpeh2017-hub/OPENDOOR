@@ -18,7 +18,8 @@
     "closeMenu": "Close menu",
     "skipToContent": "Skip to main content",
     "primaryNavigation": "Primary navigation",
-    "languageSwitcher": "Select language"
+    "languageSwitcher": "Select language",
+    "breadcrumb": "Breadcrumb"
   },
   "cta": {
     "eligibility": "Check your building's suitability",
@@ -93,7 +94,8 @@
     "knowledgeCentre": "Knowledge centre",
     "allQuestions": "All questions",
     "contact": "Contact us",
-    "whyOrganizer": "Why work with an organising company?"
+    "whyOrganizer": "Why work with an organising company?",
+    "howWeWork": "How we work"
   },
   "stages": {
     "INITIAL_REVIEW": "Initial review",
@@ -121,5 +123,9 @@
     "project": "The project",
     "transparency": "Transparency",
     "portal": "Resident area"
+  },
+  "projects": {
+    "emptyTitle": "Projects will be published here once the owners have approved.",
+    "emptyBody": "We publish a complex only when the information is verified and agreed with the owners. In the meantime, if you want to understand the options for your building, you can start with a suitability check."
   }
 }

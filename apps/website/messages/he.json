@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "אופן-דור גרופ",
+    "name": "OpenDoor Group",
     "tagline": "ייצוג וארגון בעלי דירות בהתחדשות עירונית",
     "wordmarkTagline": "התחדשות עירונית"
   },
@@ -18,7 +18,8 @@
     "closeMenu": "סגירת תפריט",
     "skipToContent": "דילוג לתוכן הראשי",
     "primaryNavigation": "ניווט ראשי",
-    "languageSwitcher": "בחירת שפה"
+    "languageSwitcher": "בחירת שפה",
+    "breadcrumb": "מסלול ניווט"
   },
   "cta": {
     "eligibility": "בדיקת התאמה להתחדשות עירונית",
@@ -93,7 +94,8 @@
     "knowledgeCentre": "למרכז הידע",
     "allQuestions": "לכל השאלות",
     "contact": "צור קשר",
-    "whyOrganizer": "למה חשוב לעבוד עם חברה מארגנת?"
+    "whyOrganizer": "למה חשוב לעבוד עם חברה מארגנת?",
+    "howWeWork": "כך אנחנו עובדים"
   },
   "stages": {
     "INITIAL_REVIEW": "בדיקה ראשונית",
@@ -121,5 +123,9 @@
     "project": "הפרויקט",
     "transparency": "שקיפות",
     "portal": "תיק הדייר"
+  },
+  "projects": {
+    "emptyTitle": "פרויקטים יפורסמו כאן לאחר אישור בעלי הדירות.",
+    "emptyBody": "אנחנו מפרסמים מתחם רק כשהמידע מאומת ומוסכם עם בעלי הדירות. בינתיים, אם אתם רוצים להבין מה האפשרויות בבניין שלכם, אפשר להתחיל בבדיקת התאמה."
   }
 }

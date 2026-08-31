@@ -30,7 +30,15 @@ import { assertNoInventedClaims, stripProvenance } from '../provenance'
  * redundant rather than load-bearing.
  */
 
-/** Published AND publicly visible. Both, because they are independent. */
+/**
+ * Published AND publicly visible. Both, because they are independent.
+ *
+ * `publishState` gained a `review` value in Pass 1. This check is written as
+ * an explicit equality against `published` rather than as an exclusion list,
+ * so a state added later is non-public by DEFAULT: a new workflow state can
+ * never accidentally start rendering on the public site because somebody
+ * forgot to add it to a blocklist.
+ */
 function isPubliclyVisible(project: MockProject): boolean {
   return project.publishState === 'published' && project.visibility === 'public'
 }
@@ -49,8 +57,10 @@ function toSummary(project: PublicProject): PublicProjectSummary {
     type: project.type,
     location: project.location,
     summary: project.summary,
-    // Optional on purpose: a realistic placeholder has no stage, and the card
-    // must render without one.
+    // Optional on purpose: most projects have no verified stage, and the card
+    // must render without one. The whole `VerifiedFact` wrapper travels with
+    // it rather than just the value, so a consumer that wants to show "who
+    // confirmed this" can, and one that unwraps it has to do so deliberately.
     ...(project.currentStage ? { currentStage: project.currentStage } : {}),
     ...(project.heroImage ? { heroImage: project.heroImage } : {}),
     featured: project.featured,
@@ -67,7 +77,7 @@ export async function getProjects(
     .map(toPublic)
     .filter((p) => (city ? p.location.city === city : true))
     .filter((p) => (type ? p.type === type : true))
-    .filter((p) => (stage ? p.currentStage === stage : true))
+    .filter((p) => (stage ? p.currentStage?.value === stage : true))
     .filter((p) => (featured === undefined ? true : p.featured === featured))
     .filter((p) =>
       search

@@ -25,6 +25,10 @@ export {
   type FieldProps,
 } from './primitives/field'
 export {
+  Checkbox, RadioGroup,
+  type CheckboxProps, type RadioGroupProps, type RadioOption,
+} from './primitives/choice'
+export {
   Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,
 } from './primitives/card'
 export { Badge, badgeVariants, type BadgeProps } from './primitives/badge'

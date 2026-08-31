@@ -3,10 +3,41 @@ import { PROJECT_STAGE_ORDER } from '@urban-renewal/api-contracts'
 import type { WithProvenance } from '../provenance'
 
 /**
- * MOCK DATA — replaced by the API in Phase 2.
+ * MOCK DATA — replaced by the CMS in Phase 2.
  *
- * See `../provenance.ts` for the rule separating realistic placeholders from
- * fictional UI fixtures, and for the guard that enforces it.
+ * ══════════════════════════════════════════════════════════════════════════
+ *  THERE ARE NO PUBLISHED PROJECTS, AND THAT IS THE CORRECT STATE
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * This file previously carried three realistic-looking project names with real
+ * streets and cities. They were placeholders, but a real street name under a
+ * company's "our projects" heading is read as a claim by every visitor, and no
+ * disclaimer in a code comment reaches them. They are gone.
+ *
+ * They have NOT been replaced with invented projects. The public site now
+ * publishes nothing in this collection, which is honest, and the UI is built
+ * to handle it: `/projects` renders a designed empty state and the homepage's
+ * projects block hides itself. That behaviour is not a stopgap — it is what
+ * the site must do correctly whenever the list is empty, including on the day
+ * a real project is unpublished.
+ *
+ * ── WHAT IS HERE INSTEAD ───────────────────────────────────────────────────
+ *
+ * TEMPLATES: draft, internal-only records that exist so the SHAPE is ready to
+ * fill. They carry no name, no address and no facts. They never render
+ * publicly — `isPubliclyVisible` filters on publishState AND visibility, and
+ * these fail both — and they are what a future CMS "new project" form starts
+ * from.
+ *
+ * FIXTURES: unmistakably fictional records ("מתחם הדוגמה") that exercise UI
+ * states a template cannot. Also internal-only. Also never public.
+ *
+ * ── ADDING A REAL PROJECT ──────────────────────────────────────────────────
+ *
+ * Copy a template, fill name / city / summary, set `publishState: 'published'`
+ * and `visibility: 'public'`. Nothing else is required: the card and the
+ * detail page are built to look finished with only those. Every factual field
+ * stays absent until somebody verifies it — see `VerifiedFact`.
  */
 
 export type MockProject = PublicProject & WithProvenance
@@ -29,58 +60,66 @@ function timelineAt(stageIndex: number): TimelineStage[] {
 }
 
 /**
- * ── REALISTIC PLACEHOLDERS ─────────────────────────────────────────────────
+ * Verification stamp for the fictional fixtures only.
  *
- * Real OpenDoor project names and locations, so the grid and detail page can be
- * judged against believable content.
- *
- * Every one of these has NO `currentStage` and NO `timeline`. That is not an
- * omission to fill in later — it is the point. Assigning a stage to a real
- * named building would publish an unverified claim about that building's
- * process, which is precisely what was forbidden.
- *
- * The UI must therefore look complete without a stage. If a card or detail page
- * only reads well once a stage is present, the layout is wrong, not the data.
+ * It names itself as a fixture inside the verification record, so even the
+ * audit trail cannot be mistaken for a real one. Never use this for a real
+ * project: a real fact is verified by a person, and the point of the type is
+ * that there is someone to ask.
  */
-const REALISTIC: MockProject[] = [
+function fixtureVerification() {
+  return { verifiedAt: '2026-08-20', verifiedByName: 'UI fixture' } as const
+}
+
+/**
+ * ── EMPTY TEMPLATES ────────────────────────────────────────────────────────
+ *
+ * Three, because a CMS "new project" flow benefits from a starting point that
+ * matches the track: the applicable stages and the language differ between
+ * pinuy-binuy and the two TAMA routes.
+ *
+ * Every one is `draft` + `internal`. Structurally complete, factually empty —
+ * which is exactly the state a new record should be in.
+ */
+const TEMPLATES: MockProject[] = [
   {
-    provenance: 'REALISTIC_PLACEHOLDER',
-    id: 'p-brlin-39-40',
-    slug: 'haim-berlin-39-40',
-    name: 'חיים ברלין 39–40',
+    provenance: 'UI_FIXTURE',
+    id: 'tpl-pinuy-binuy',
+    slug: 'template-pinuy-binuy',
+    name: '',
     type: 'PINUY_BINUY',
-    location: { city: 'ירושלים' },
-    summary: 'פרויקט התחדשות עירונית בשכונת קטמון, ירושלים.',
-    featured: true,
-    visibility: 'public',
-    publishState: 'published',
-    updatedAt: '2026-08-01T00:00:00.000Z',
-  },
-  {
-    provenance: 'REALISTIC_PLACEHOLDER',
-    id: 'p-ben-gurion-8',
-    slug: 'ben-gurion-8-ramat-gan',
-    name: 'בן גוריון 8, רמת גן',
-    type: 'PINUY_BINUY',
-    location: { city: 'רמת גן' },
-    summary: 'התארגנות בעלי דירות בפרויקט התחדשות עירונית ברמת גן.',
-    featured: true,
-    visibility: 'public',
-    publishState: 'published',
-    updatedAt: '2026-08-01T00:00:00.000Z',
-  },
-  {
-    provenance: 'REALISTIC_PLACEHOLDER',
-    id: 'p-herzl-45',
-    slug: 'herzl-45-tel-aviv',
-    name: 'הרצל 45, תל אביב',
-    type: 'PINUY_BINUY',
-    location: { city: 'תל אביב' },
-    summary: 'ליווי וארגון בעלי דירות בתהליך התחדשות עירונית בתל אביב.',
+    location: { city: '' },
+    summary: '',
     featured: false,
-    visibility: 'public',
-    publishState: 'published',
-    updatedAt: '2026-08-01T00:00:00.000Z',
+    visibility: 'internal',
+    publishState: 'draft',
+    updatedAt: '2026-08-30T00:00:00.000Z',
+  },
+  {
+    provenance: 'UI_FIXTURE',
+    id: 'tpl-tama-38-2',
+    slug: 'template-tama-38-2',
+    name: '',
+    type: 'TAMA_38_2',
+    location: { city: '' },
+    summary: '',
+    featured: false,
+    visibility: 'internal',
+    publishState: 'draft',
+    updatedAt: '2026-08-30T00:00:00.000Z',
+  },
+  {
+    provenance: 'UI_FIXTURE',
+    id: 'tpl-combined',
+    slug: 'template-combined',
+    name: '',
+    type: 'COMBINED',
+    location: { city: '' },
+    summary: '',
+    featured: false,
+    visibility: 'internal',
+    publishState: 'draft',
+    updatedAt: '2026-08-30T00:00:00.000Z',
   },
 ]
 
@@ -88,12 +127,13 @@ const REALISTIC: MockProject[] = [
  * ── FICTIONAL UI FIXTURES ──────────────────────────────────────────────────
  *
  * Invented names, chosen to be unmistakably not-real ("מתחם הדוגמה"). These
- * exercise the states a placeholder cannot: a project mid-process, a project
- * near completion, an early-stage project with almost no content, and an
- * unpublished one.
+ * exercise the states a template cannot: a project mid-process, an early-stage
+ * project with almost no content, and one held in editorial review.
  *
- * They carry stages and timelines because there is no real building whose
- * process could be misstated.
+ * They carry verified facts because there is no real building whose process
+ * could be misstated.
+ *
+ * ALL are internal-only. None reaches a public page.
  */
 const FIXTURES: MockProject[] = [
   {
@@ -106,11 +146,16 @@ const FIXTURES: MockProject[] = [
     summary: 'פרויקט בדיקה לממשק. אינו פרויקט אמיתי.',
     description:
       'רשומת בדיקה המשמשת לפיתוח הממשק בלבד. התוכן כאן אינו מתאר פרויקט קיים.',
-    currentStage: 'DEVELOPER_TENDER',
+    organizingStatus: 'PROCESS_ACTIVE',
+    currentStage: { value: 'DEVELOPER_TENDER', ...fixtureVerification() },
+    existingUnits: { value: 48, ...fixtureVerification() },
+    proposedUnits: { value: 132, ...fixtureVerification() },
+    buildingCount: { value: 4, ...fixtureVerification() },
+    planningStatus: { value: 'PLAN_SUBMITTED', ...fixtureVerification() },
     timeline: timelineAt(5),
-    featured: true,
-    visibility: 'public',
-    publishState: 'published',
+    featured: false,
+    visibility: 'internal',
+    publishState: 'draft',
     updatedAt: '2026-08-20T00:00:00.000Z',
   },
   {
@@ -123,30 +168,27 @@ const FIXTURES: MockProject[] = [
     // Deliberately sparse: proves the card and detail page hold up with the
     // minimum a real early-stage project would have.
     summary: 'פרויקט בדיקה בשלב מוקדם, עם מעט מאוד תוכן.',
-    currentStage: 'INITIAL_REVIEW',
-    timeline: timelineAt(0),
+    organizingStatus: 'EARLY_CONVERSATION',
     featured: false,
-    visibility: 'public',
-    publishState: 'published',
+    visibility: 'internal',
+    publishState: 'draft',
     updatedAt: '2026-08-25T00:00:00.000Z',
   },
   {
     provenance: 'UI_FIXTURE',
-    id: 'f-demo-draft',
-    slug: 'demo-complex-draft',
-    name: 'מתחם הדוגמה, טיוטה',
+    id: 'f-demo-review',
+    slug: 'demo-complex-review',
+    name: 'מתחם הדוגמה, בבדיקה עורכית',
     type: 'COMBINED',
     location: { city: 'עיר לדוגמה' },
-    summary: 'רשומת טיוטה. אינה אמורה להופיע לציבור.',
-    currentStage: 'FEASIBILITY',
-    timeline: timelineAt(1),
+    summary: 'רשומה שממתינה לאישור עורכי. אינה אמורה להופיע לציבור.',
+    // Exists so the `review` state introduced in Pass 1 is exercised by real
+    // data rather than only asserted in a type.
     featured: false,
-    // Exists so the repository's publish filter is exercised by real data
-    // rather than only asserted in a test.
     visibility: 'internal',
-    publishState: 'draft',
+    publishState: 'review',
     updatedAt: '2026-08-26T00:00:00.000Z',
   },
 ]
 
-export const MOCK_PROJECTS: readonly MockProject[] = [...REALISTIC, ...FIXTURES]
+export const MOCK_PROJECTS: readonly MockProject[] = [...TEMPLATES, ...FIXTURES]
