@@ -127,5 +127,74 @@
   "projects": {
     "emptyTitle": "Projects will be published here once the owners have approved.",
     "emptyBody": "We publish a complex only when the information is verified and agreed with the owners. In the meantime, if you want to understand the options for your building, you can start with a suitability check."
+  },
+  "forms": {
+    "optionalDivider": "Want to tell us more? The fields below are optional.",
+    "required": "Required",
+    "optional": "Optional",
+    "submitting": "Sending",
+    "consentLabel": "I have read and accept the privacy policy.",
+    "consentLinkText": "privacy policy",
+    "errorSummaryTitle": "We could not send this. Some details are missing or need fixing.",
+    "failureTitle": "Your details were not sent.",
+    "failureBody": "Everything you entered is still here. You can try again.",
+    "retry": "Try again",
+    "noCost": "The service involves no direct cost to the apartment owners.",
+    "errors": {
+      "addressRequired": "We need the building address to look at the complex.",
+      "nameRequired": "We need a name so we know who to contact.",
+      "phoneRequired": "We need a phone number to get back to you.",
+      "phoneInvalid": "That phone number looks incomplete. Hyphens and spaces are fine.",
+      "emailInvalid": "That email address does not look right.",
+      "apartmentsInvalid": "An approximate number is fine, for example 24.",
+      "messageRequired": "Tell us how we can help.",
+      "consentRequired": "Please accept the privacy policy to send this."
+    },
+    "loadingLabel": "Loading"
+  },
+  "eligibility": {
+    "title": "Urban renewal suitability check",
+    "heading": "Let us look at the options for your building.",
+    "standfirst": "Three details are all we need to start. The rest can wait for a conversation.",
+    "addressLabel": "Building or complex address",
+    "addressHint": "Street and city is enough. No block or parcel number needed.",
+    "nameLabel": "Full name",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
+    "apartmentsLabel": "Approximate number of apartments",
+    "apartmentsHint": "A rough estimate is fine.",
+    "organizingLabel": "How organised are the owners?",
+    "notesLabel": "Anything else",
+    "submit": "Send my details",
+    "successTitle": "Thank you, we have your details.",
+    "successBody": "We will carry out an initial review and contact you about the next steps.",
+    "successLinkIntro": "In the meantime, you can read how the process works, from the first review to completion.",
+    "asideTitle": "What happens next",
+    "aside1": "We carry out an initial review of the complex.",
+    "aside2": "We contact you about the next steps.",
+    "aside3": "The check commits you to nothing.",
+    "privacyTitle": "Your details",
+    "privacyBody": "Your details come to us only. We do not pass them to developers.",
+    "org": {
+      "NOT_STARTED": "We have not started organising",
+      "EARLY_CONVERSATION": "Neighbours have started talking",
+      "REPRESENTATION_FORMED": "We have a residents' committee",
+      "PROCESS_ACTIVE": "A process is already under way"
+    }
+  },
+  "contactPage": {
+    "title": "Contact us",
+    "heading": "Contact us",
+    "standfirst": "For a general question, a professional enquiry, or anything other than a suitability check for a specific building.",
+    "nameLabel": "Full name",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
+    "messageLabel": "How can we help?",
+    "submit": "Send enquiry",
+    "successTitle": "Thank you, we have your message.",
+    "successBody": "We will be in touch.",
+    "asideEyebrow": "Most people are looking for this",
+    "asideTitle": "Want to check the options for your building?",
+    "asideBody": "The suitability check has its own shorter form, which goes straight to the team that reviews complexes."
   }
 }

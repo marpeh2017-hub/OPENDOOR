@@ -324,6 +324,56 @@ export interface ExternalResource {
   description?: string
 }
 
+/* ── Lead submissions ──────────────────────────────────────────────────── */
+
+/**
+ * ══════════════════════════════════════════════════════════════════════════
+ *  WHAT THE WEBSITE COLLECTS, AND NOTHING ELSE
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * These two types describe exactly the fields the public forms ask for. They
+ * are deliberately NOT the shape of a CRM lead record.
+ *
+ * The distinction matters because the boundary is:
+ *
+ *     website  ->  submission adapter  ->  API  ->  CRM  ->  automation
+ *
+ * The CRM is the system of record and owns concepts the website has no
+ * business knowing: owner, pipeline stage, assignment, score, dedup key,
+ * activity history. Modelling any of those here would leak CRM structure into
+ * a public form and make the eventual integration a translation exercise in
+ * both directions rather than one.
+ *
+ * So: add a field here only when the form actually asks a visitor for it.
+ */
+
+/**
+ * Attribution that travels with every submission.
+ *
+ * ── WHY THESE FOUR AND NOTHING MORE ────────────────────────────────────────
+ *
+ * Each one answers a question the business will genuinely ask ("which page
+ * converts", "which language do they read", "when did this arrive"), and each
+ * is either already known to the server or trivially derived from the URL.
+ *
+ * There is no fingerprint, no session id, no referrer chain, no IP, no device
+ * profile and no third-party identifier. A visitor filling in a form about
+ * their home is not consenting to be profiled, and collecting more than this
+ * would need a privacy policy that does not exist yet.
+ */
+export interface SubmissionMetadata {
+  /** The route the form was submitted from, e.g. "/he/eligibility". */
+  sourcePage: string
+  locale: Locale
+  submittedAt: IsoDateTime
+  /**
+   * Campaign tag, only if one is present in the URL when campaigns start.
+   * Absent today: nothing on the site sets it, and inventing a default would
+   * make every organic lead look like a campaign lead.
+   */
+  campaign?: string
+}
+
 /* ── Contact ───────────────────────────────────────────────────────────── */
 
 export interface ContactSubmission {
@@ -331,57 +381,87 @@ export interface ContactSubmission {
   phone: string
   email?: string
   message: string
-  /** Explicit, unticked-by-default consent. */
+  /** Explicit, unticked-by-default consent. Typed as the literal `true` so a
+   *  submission cannot be constructed without it. */
   consent: true
+  metadata: SubmissionMetadata
 }
 
 export interface ContactSubmissionResult {
   received: true
+  /** Present only when the CRM issues one. The website must never invent a
+   *  reference number to make a confirmation screen look official. */
   reference?: string
 }
 
-/* ── Eligibility funnel (§18) ──────────────────────────────────────────── */
+/* ── Eligibility (§18) ─────────────────────────────────────────────────── */
 
-export type RepresentationStatus = 'NONE' | 'FORMING' | 'EXISTS' | 'UNKNOWN'
-export type DeveloperApproachStatus = 'NONE' | 'APPROACHED' | 'IN_TALKS' | 'SIGNED' | 'UNKNOWN'
-export type ApartmentCountBand = 'UNDER_10' | 'FROM_10_TO_24' | 'FROM_25_TO_49' | 'FROM_50_TO_99' | 'OVER_100'
+/**
+ * How far along the owners are, as the visitor reports it.
+ *
+ * ── AN ALIAS, NOT A SECOND ENUM ────────────────────────────────────────────
+ *
+ * The values are identical to `OrganizingStatus` on a project, and that is not
+ * a coincidence worth preserving as duplication: a visitor saying "קיימת
+ * נציגות" and a project record saying the same thing mean the same thing, and
+ * the CRM will eventually compare them. Two enums that must stay in sync are
+ * two enums that will not.
+ *
+ * The alias exists to name the distinction that DOES matter: this value is
+ * self-reported and unverified, where the project's is recorded by OpenDoor.
+ * `UNKNOWN` is deliberately absent — the field is optional, so "I would rather
+ * not say" is expressed by leaving it blank.
+ */
+export type OrganizingStatusAnswer = OrganizingStatus
 
 /**
  * The primary conversion.
  *
- * Bands rather than an exact apartment count: a resident answering a website
- * form does not reliably know the exact number, and an invented precise figure
- * would flow into the CRM as though it were verified.
+ * ── THREE REQUIRED FIELDS ──────────────────────────────────────────────────
+ *
+ * Address, name, phone. Everything else is optional, because every additional
+ * required field costs completions and none of the others is needed to start a
+ * conversation.
+ *
+ * ── WHAT IS DELIBERATELY NOT ASKED ─────────────────────────────────────────
+ *
+ * No gush/helka, no planning rights, no lawyer or developer details, no legal
+ * questions. Those belong to CRM follow-up: they need a person to explain
+ * them, most owners do not know the answers from memory, and asking makes a
+ * short form feel like a government questionnaire.
  */
 export interface EligibilitySubmission {
+  /** Street and city, one free-text field. Parsing is the CRM's job. */
   address: string
-  location?: Pick<GeoContext, 'city' | 'neighborhood' | 'street'>
-  apartmentCount: ApartmentCountBand
-  representation: RepresentationStatus
-  developerApproach: DeveloperApproachStatus
-  /** Free text: whatever the resident wants to say about where things stand. */
-  currentStatus?: string
   fullName: string
   phone: string
+
   email?: string
+  /**
+   * APPROXIMATE, and the form says so. Stored as a plain number rather than a
+   * band because the visitor is told to estimate; the CRM should treat it as
+   * the rough figure it is and never as a verified count.
+   */
+  approximateApartmentCount?: number
+  organizingStatus?: OrganizingStatusAnswer
+  notes?: string
+
   consent: true
-  locale?: Locale
+  metadata: SubmissionMetadata
 }
 
 /**
  * Deliberately says nothing about outcome.
  *
  * No score, no "your building qualifies", no estimated value. The company must
- * not imply a feasibility verdict from six form answers, and §3 forbids
- * inventing commercial claims. The honest response is an acknowledgement and a
- * clear next step.
+ * not imply a feasibility verdict from a handful of form answers, and §3
+ * forbids inventing commercial claims. The honest response is an
+ * acknowledgement and a clear next step.
  */
 export interface EligibilitySubmissionResult {
   received: true
-  reference: string
-  /** What happens next, in plain Hebrew. Never a promise or a timeframe
-   *  commitment unless the business supplies approved copy. */
-  nextStep: string
+  /** Present only when the CRM issues one. Never invented client-side. */
+  reference?: string
 }
 
 /* ── Site-wide search (§48) ────────────────────────────────────────────── */

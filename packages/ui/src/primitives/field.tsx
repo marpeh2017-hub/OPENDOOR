@@ -69,8 +69,21 @@ export function Field({ id, required = false, error, children, className }: Fiel
 }
 
 export function FieldLabel({
-  className, children, ...props
-}: React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>) {
+  className, children, requiredLabel = 'שדה חובה', ...props
+}: React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+  /**
+   * Screen-reader text for the required marker.
+   *
+   * ── WHY THIS IS A PROP ─────────────────────────────────────────────────
+   *
+   * It used to be a hardcoded Hebrew string, which meant an English page
+   * announced "Full name, (שדה חובה)" to a screen reader — visually invisible,
+   * so it survived every visual review. The default stays Hebrew so the CRM,
+   * which is Hebrew-only, renders exactly as before; the website passes its
+   * own translated string.
+   */
+  requiredLabel?: string
+}) {
   const field = useField('FieldLabel')
   return (
     <LabelPrimitive.Root
@@ -84,7 +97,7 @@ export function FieldLabel({
           {/* The asterisk is decorative; the requirement itself is conveyed by
               `required` on the control, which is what assistive tech reads. */}
           <span aria-hidden="true" className="ms-1 text-red-600">*</span>
-          <span className="sr-only"> (שדה חובה)</span>
+          <span className="sr-only"> ({requiredLabel})</span>
         </>
       )}
     </LabelPrimitive.Root>
@@ -137,22 +150,74 @@ const controlBase =
   'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 ' +
   'aria-[invalid]:border-red-500 border-gray-300'
 
+/**
+ * Control height.
+ *
+ * ── WHY THIS IS A VARIANT RATHER THAN A NEW DEFAULT ────────────────────────
+ *
+ * `default` is 40px, which is right for the CRM: a dense internal tool where
+ * an operator fills the same form many times a day with a mouse and keyboard,
+ * and vertical space is the scarce resource.
+ *
+ * `comfortable` is 44px, which is what a PUBLIC form on a phone needs — a
+ * visitor filling it once, with a thumb, possibly one-handed on a bus. 40px is
+ * under the comfortable touch target and it shows.
+ *
+ * Both exist because neither is wrong; they serve different users. Making
+ * `comfortable` the default would silently change every CRM form, which is a
+ * visual change nobody asked for and nobody would have reviewed. Opting in is
+ * one prop at the call site and leaves the CRM byte-identical.
+ */
+export type ControlSize = 'default' | 'comfortable'
+
+const controlHeight: Record<ControlSize, string> = {
+  default: 'h-10',
+  // 44px everywhere, plus 16px text below `sm`: iOS zooms the whole page when
+  // a focused input's text is under 16px, which throws the visitor out of the
+  // layout mid-form. The `sm:text-sm` restores the normal scale on desktop.
+  comfortable: 'h-11 text-base sm:h-10 sm:text-sm',
+}
+
+export interface ControlProps {
+  /** See `ControlSize`. Defaults to `default` so existing callers are unchanged. */
+  controlSize?: ControlSize
+}
+
 export const Input = React.forwardRef<
   HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...props }, ref) => {
+  React.InputHTMLAttributes<HTMLInputElement> & ControlProps
+>(({ className, controlSize = 'default', ...props }, ref) => {
   const control = useControlProps()
-  return <input ref={ref} className={cn(controlBase, 'h-10', className)} {...control} {...props} />
+  return (
+    <input
+      ref={ref}
+      className={cn(controlBase, controlHeight[controlSize], className)}
+      {...control}
+      {...props}
+    />
+  )
 })
 Input.displayName = 'Input'
 
 export const Textarea = React.forwardRef<
   HTMLTextAreaElement,
-  React.TextareaHTMLAttributes<HTMLTextAreaElement>
->(({ className, ...props }, ref) => {
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> & ControlProps
+>(({ className, controlSize = 'default', ...props }, ref) => {
   const control = useControlProps()
   return (
-    <textarea ref={ref} className={cn(controlBase, 'py-2 min-h-24', className)} {...control} {...props} />
+    <textarea
+      ref={ref}
+      className={cn(
+        controlBase,
+        'py-2 min-h-24',
+        // A textarea has no fixed height to grow, so `comfortable` only needs
+        // the 16px text that stops iOS zooming on focus.
+        controlSize === 'comfortable' && 'text-base sm:text-sm',
+        className,
+      )}
+      {...control}
+      {...props}
+    />
   )
 })
 Textarea.displayName = 'Textarea'
@@ -167,11 +232,16 @@ Textarea.displayName = 'Textarea'
  */
 export const Select = React.forwardRef<
   HTMLSelectElement,
-  React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className, children, ...props }, ref) => {
+  React.SelectHTMLAttributes<HTMLSelectElement> & ControlProps
+>(({ className, children, controlSize = 'default', ...props }, ref) => {
   const control = useControlProps()
   return (
-    <select ref={ref} className={cn(controlBase, 'h-10', className)} {...control} {...props}>
+    <select
+      ref={ref}
+      className={cn(controlBase, controlHeight[controlSize], className)}
+      {...control}
+      {...props}
+    >
       {children}
     </select>
   )

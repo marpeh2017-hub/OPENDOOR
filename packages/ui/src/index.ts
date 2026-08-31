@@ -22,7 +22,7 @@ export { Button, Spinner, buttonVariants, type ButtonProps } from './primitives/
 export {
   Field, FieldLabel, FieldDescription, FieldError,
   Input, Textarea, Select,
-  type FieldProps,
+  type FieldProps, type ControlProps, type ControlSize,
 } from './primitives/field'
 export {
   Checkbox, RadioGroup,
