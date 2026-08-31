@@ -6,6 +6,8 @@ import type { Locale } from '@urban-renewal/api-contracts'
 import { getHomePage, getFeaturedProjects, getKnowledgeArticles, getFaqItems } from '@/mock'
 import { makeLocalizer } from '@/lib/localize'
 import { SectionConnector } from '@/components/brand/architecture'
+import { JourneyThread } from '@/components/brand/journey-thread'
+import { CityBandBlockView } from '@/components/blocks/city-band-block'
 import { HeroBlockView } from '@/components/blocks/hero-block'
 import { FeatureGridBlockView } from '@/components/blocks/feature-grid-block'
 import { TextSectionBlockView } from '@/components/blocks/text-section-block'
@@ -90,7 +92,10 @@ export default async function HomePage({
   setRequestLocale(locale)
 
   const t = makeLocalizer(locale as Locale)
-  const tLinks = await getTranslations('links')
+  const [tLinks, tJourney] = await Promise.all([
+    getTranslations('links'),
+    getTranslations('journey'),
+  ])
 
   const [page, projects, articles, faqItems] = await Promise.all([
     getHomePage(),
@@ -101,8 +106,20 @@ export default async function HomePage({
 
   if (!page) notFound()
 
+  /**
+   * The journey's waypoints. Content, so they come from the catalogue rather
+   * than this file — and they are the same six beats the page argues in prose,
+   * which is what makes the thread a summary of the page rather than an
+   * ornament running beside it.
+   */
+  const waypoints = ['city', 'threshold', 'process', 'project', 'transparency', 'portal'].map(
+    (key) => tJourney(key),
+  )
+
   return (
-    <>
+    <div className="relative">
+      <JourneyThread waypoints={waypoints} />
+
       {page.blocks.map((block) => {
         let rendered: React.ReactNode = null
 
@@ -146,6 +163,10 @@ export default async function HomePage({
             )
             break
 
+          case 'MEDIA':
+            rendered = <CityBandBlockView block={block} t={t} />
+            break
+
           case 'CTA':
             rendered = <CtaBlockView block={block} t={t} />
             break
@@ -167,6 +188,6 @@ export default async function HomePage({
           </Fragment>
         )
       })}
-    </>
+    </div>
   )
 }

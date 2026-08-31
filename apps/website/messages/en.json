@@ -110,5 +110,13 @@
     "currentStage": "Current stage",
     "transparencyEyebrow": "Transparency in practice",
     "menu": "Menu"
+  },
+  "journey": {
+    "city": "The city",
+    "threshold": "The threshold",
+    "process": "The process",
+    "project": "The project",
+    "transparency": "Transparency",
+    "portal": "Resident area"
   }
 }

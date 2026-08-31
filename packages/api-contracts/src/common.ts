@@ -123,6 +123,36 @@ export interface SeoMetadata {
   noIndex?: boolean
 }
 
+/**
+ * What an image is ALLOWED TO CLAIM.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  THIS IS A TRUTH CONTROL, NOT A STYLE HINT
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * A photograph placed under a project's name asserts, in pictures, that the
+ * photograph IS that project. It is the easiest untrue claim to publish by
+ * accident and the hardest for a reader to detect — nobody fact-checks a
+ * picture. So the claim an image makes is made explicit and required, and the
+ * renderer treats each value differently:
+ *
+ *   VERIFIED_PROJECT_PHOTO   Depicts the specific project it appears with, and
+ *                            somebody has confirmed that. ONLY this value may
+ *                            be shown as a project's own image.
+ *   EDITORIAL_CONTEXT        A real photograph of a real place that is NOT the
+ *                            subject it appears beside — city fabric, the
+ *                            Chords Bridge, the light rail. It must never sit
+ *                            inside a project card, and it is always rendered
+ *                            with a visible caption saying what it actually
+ *                            shows, so the reader is never left to assume.
+ *   ARCHITECTURAL_PATTERN    A generated OpenDoor graphic. Claims nothing,
+ *                            because it is visibly not a photograph.
+ *
+ * A missing `imageType` is not a default — it is a bug, and the renderer
+ * refuses to present such an image as project-specific.
+ */
+export type ImageClaim = 'VERIFIED_PROJECT_PHOTO' | 'EDITORIAL_CONTEXT' | 'ARCHITECTURAL_PATTERN'
+
 export interface MediaAsset {
   id: string
   kind: 'image' | 'video'
@@ -135,6 +165,24 @@ export interface MediaAsset {
   height?: number
   /** Poster frame for video. Videos must never autoplay with sound. */
   posterUrl?: string
+  /**
+   * What this image is permitted to claim. See `ImageClaim`.
+   *
+   * Optional on the type only because `MediaAsset` predates it and video has
+   * no use for it; every IMAGE the website renders must carry one, and the
+   * renderer degrades to the non-claiming presentation when it is absent.
+   */
+  imageType?: ImageClaim
+  /** Photographer or licence attribution, rendered wherever the licence
+   *  requires it. Separate from `caption`: a credit is a legal obligation,
+   *  a caption is editorial. */
+  credit?: string
+  /**
+   * Subject position as percentages, for `object-position`. Urban photography
+   * cropped to a wide band loses its subject to a centre crop far more often
+   * than not — a building's entrance is rarely in the middle of the frame.
+   */
+  focalPoint?: { x: number; y: number }
 }
 
 /** A place, used by projects and by local SEO. */

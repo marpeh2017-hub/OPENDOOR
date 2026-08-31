@@ -245,11 +245,26 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
+
+  /* 4.5 ── CITY BAND — the light rail ─────────────────────────────────── */
+  {
+    id: 'home-city-rail',
+    type: 'MEDIA',
+    order: 4,
+    hidden: false,
+    slotId: 'JERUSALEM_LIGHT_RAIL',
+    assets: [],
+    caption: {
+      he: 'ירושלים משתנה — תשתיות, תחבורה ומרקם מגורים. אופן־דור פועלת בתוך העיר הזאת, ואינה קשורה לפרויקטים העירוניים שבתמונה.',
+      en: 'Jerusalem is changing — infrastructure, transport and residential fabric. OpenDoor works inside this city, and is not connected to the municipal projects pictured.',
+    },
+  },
+
   /* 5 ── PROJECTS ─────────────────────────────────────────────────────── */
   {
     id: 'home-projects',
     type: 'PROJECTS',
-    order: 4,
+    order: 5,
     hidden: false,
     heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
@@ -263,7 +278,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-transparency',
     type: 'PROJECT_TRANSPARENCY',
-    order: 5,
+    order: 6,
     hidden: false,
     heading: {
       he: 'לדעת איפה הפרויקט עומד — ומה השלב הבא',
@@ -305,7 +320,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-portal',
     type: 'PORTAL',
-    order: 6,
+    order: 7,
     hidden: false,
     heading: {
       he: 'שקיפות שממשיכה גם אחרי האתר',
@@ -425,7 +440,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-trust',
     type: 'TRUST',
-    order: 7,
+    order: 8,
     hidden: false,
     heading: { he: 'איך אנחנו עובדים בפועל', en: 'How we actually work' },
     intro: {
@@ -470,7 +485,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-knowledge',
     type: 'KNOWLEDGE',
-    order: 8,
+    order: 9,
     hidden: false,
     heading: { he: 'מרכז ידע', en: 'Knowledge centre' },
     intro: {
@@ -484,7 +499,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-faq',
     type: 'FAQ',
-    order: 9,
+    order: 10,
     hidden: false,
     heading: { he: 'שאלות שחוזרות', en: 'Questions we are asked' },
     limit: 5,
@@ -494,7 +509,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-cta',
     type: 'CTA',
-    order: 10,
+    order: 11,
     hidden: false,
     heading: {
       he: 'רוצים להבין מה האפשרויות בבניין שלכם?',

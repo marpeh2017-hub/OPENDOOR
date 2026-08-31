@@ -154,6 +154,25 @@ export interface MediaBlock extends BlockBase {
   type: 'MEDIA'
   heading?: LocalizedTextOptional
   assets: MediaAsset[]
+  /**
+   * Reference to a named slot in the site's image inventory.
+   *
+   * ── WHY A SLOT REFERENCE AND NOT JUST AN ASSET ─────────────────────────
+   *
+   * A slot carries the specification — ratio, crops, minimum resolution, what
+   * the image may claim, what to avoid — independently of whether an asset
+   * exists yet. That lets the page be designed, reviewed and shipped before
+   * the photography is commissioned, and it means the eventual asset is
+   * checked against a written brief rather than dropped in and hoped for.
+   *
+   * `assets` stays the direct-attachment path for images an editor uploads.
+   * When both are present the slot wins, because the slot is the one with the
+   * claim rules attached.
+   */
+  slotId?: string
+  /** A short line rendered beside the band. Editorial framing for the image —
+   *  never a caption substitute; the caption belongs to the asset. */
+  caption?: LocalizedTextOptional
 }
 
 /**

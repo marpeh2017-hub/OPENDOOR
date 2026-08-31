@@ -110,5 +110,13 @@
     "currentStage": "השלב הנוכחי",
     "transparencyEyebrow": "השקיפות בפועל",
     "menu": "תפריט"
+  },
+  "journey": {
+    "city": "העיר",
+    "threshold": "הסף",
+    "process": "התהליך",
+    "project": "הפרויקט",
+    "transparency": "שקיפות",
+    "portal": "תיק הדייר"
   }
 }
