@@ -314,14 +314,25 @@ export interface FaqItem {
 /**
  * A pointer to an authoritative outside source.
  *
- * These are NOT partners and must never be rendered as such — no logos, text
+ * These are NOT partners and must never be rendered as such: no logos, text
  * only, `target="_blank"`, no affiliate parameters.
+ *
+ * ── LABEL AND DESCRIPTION ARE LOCALISED, THE URL IS NOT ────────────────────
+ *
+ * The bodies referenced here are Israeli, so their names arrive in Hebrew. A
+ * plain `string` therefore renders Hebrew organisation names on the English
+ * site, which is what a plain `string` did before this type was corrected.
+ *
+ * The `url` stays single. A published English-language equivalent cannot be
+ * derived from a Hebrew one by pattern, and linking to a guessed address is
+ * worse than linking an English label to the authoritative page. When a body
+ * publishes a genuine English URL, this becomes a localised field too.
  */
 export interface ExternalResource {
   id: string
-  label: string
+  label: LocalizedText
   url: string
-  description?: string
+  description?: LocalizedText
 }
 
 /* ── Lead submissions ──────────────────────────────────────────────────── */

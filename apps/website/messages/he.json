@@ -114,7 +114,8 @@
     "demonstration": "תצוגה להמחשה",
     "currentStage": "השלב הנוכחי",
     "transparencyEyebrow": "השקיפות בפועל",
-    "menu": "תפריט"
+    "menu": "תפריט",
+    "opensInNewTab": "נפתח בלשונית חדשה"
   },
   "journey": {
     "city": "העיר",
@@ -196,5 +197,8 @@
     "asideEyebrow": "רוב הפונים מחפשים את זה",
     "asideTitle": "רוצים לבדוק מה האפשרויות בבניין שלכם?",
     "asideBody": "לבדיקת התאמה יש טופס משלה, קצר יותר, שמגיע ישירות לצוות שבודק מתחמים."
+  },
+  "journeyPage": {
+    "asksLabel": "מה נדרש מכם:"
   }
 }

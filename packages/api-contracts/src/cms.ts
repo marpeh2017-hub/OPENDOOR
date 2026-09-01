@@ -27,7 +27,13 @@ import type {
  */
 export type BlockType =
   | 'HERO'
+  | 'PAGE_HEADER'
+  | 'STATEMENT'
+  | 'PROSE'
   | 'TEXT_SECTION'
+  | 'COMPARISON'
+  | 'ROLE_MAP'
+  | 'JOURNEY'
   | 'FEATURE_GRID'
   | 'PROCESS'
   | 'PROJECTS'
@@ -46,9 +52,16 @@ export type BlockType =
  * unrestricted builder that can break the design system.
  */
 export const BLOCK_TYPES: readonly BlockType[] = [
-  'HERO', 'TEXT_SECTION', 'FEATURE_GRID', 'PROCESS', 'PROJECTS',
-  'PROJECT_TRANSPARENCY', 'TRUST', 'PORTAL', 'KNOWLEDGE', 'FAQ',
-  'EXTERNAL_RESOURCES', 'CTA', 'MEDIA',
+  // Openings
+  'HERO', 'PAGE_HEADER',
+  // Editorial
+  'STATEMENT', 'PROSE', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
+  // Process
+  'JOURNEY', 'PROCESS', 'PROJECT_TRANSPARENCY',
+  // Lists and collections
+  'FEATURE_GRID', 'TRUST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
+  // Other
+  'PORTAL', 'MEDIA', 'CTA',
 ] as const
 
 export interface BlockBase {
@@ -148,6 +161,163 @@ export interface CtaBlock extends BlockBase {
   body?: LocalizedTextOptional
   ctaLabel: LocalizedText
   ctaHref: string
+}
+
+/* ── Internal-page blocks (Pass 3A) ────────────────────────────────────── */
+
+/**
+ * The opening of an internal page.
+ *
+ * ── WHY THIS IS NOT `HERO` ─────────────────────────────────────────────────
+ *
+ * A hero holds someone who has just arrived and decided nothing: it carries a
+ * portrait image slot, display-scale type and a pair of calls to action. A
+ * visitor on /about has already chosen to be there. Reusing HERO would cost a
+ * screen of scrolling before the page begins, and would make every internal
+ * page look like a shorter homepage.
+ *
+ * Same grammar, quieter volume: one h1, one supporting line, no CTA pair.
+ */
+export interface PageHeaderBlock extends BlockBase {
+  type: 'PAGE_HEADER'
+  eyebrow?: LocalizedTextOptional
+  heading: LocalizedText
+  /** One or two sentences. Sets the page up; never restates the heading. */
+  standfirst?: LocalizedTextOptional
+}
+
+/**
+ * One large editorial sentence.
+ *
+ * The "אתם בעלי הדירות" moment, generalised. Rendered at display scale beside
+ * the content it introduces rather than above it, which is what makes it read
+ * as a position rather than as a section heading.
+ */
+export interface StatementBlock extends BlockBase {
+  type: 'STATEMENT'
+  statement: LocalizedText
+  /** Optional supporting line under the rule. Keep it short. */
+  support?: LocalizedTextOptional
+}
+
+/**
+ * Long-form body copy.
+ *
+ * ── PLAIN TEXT, SPLIT ON BLANK LINES ───────────────────────────────────────
+ *
+ * Not markup. The body is editor-supplied, and interpreting HTML in it would
+ * be an injection surface for whoever edits the CMS later. `lead` is rendered
+ * one step larger as a standfirst, because the first paragraph of an
+ * explanation is doing more work than the ones after it.
+ */
+export interface ProseBlock extends BlockBase {
+  type: 'PROSE'
+  heading?: LocalizedTextOptional
+  /** Set larger than the body. Optional: not every prose block needs one. */
+  lead?: LocalizedTextOptional
+  body: LocalizedText
+}
+
+/**
+ * Two columns, side by side.
+ *
+ * ── THE POSITIONING RULE THIS TYPE ENCODES ─────────────────────────────────
+ *
+ * Built for "without an organised process / with one". Note what the shape
+ * does NOT provide: no `negative` flag, no severity, no colour control. The
+ * renderer styles the second column as the emphasised one and leaves the first
+ * entirely neutral, so the comparison cannot become an accusation. The
+ * developer is a necessary partner who represents themselves; that is a
+ * description of a structure, not a warning about a villain.
+ */
+export interface ComparisonBlock extends BlockBase {
+  type: 'COMPARISON'
+  heading?: LocalizedTextOptional
+  intro?: LocalizedTextOptional
+  /** Rendered first, neutrally. */
+  baseline: ComparisonColumn
+  /** Rendered second, with the teal rule. */
+  organised: ComparisonColumn
+  /** A closing line under the two columns. Used to state that the comparison
+   *  describes a structure rather than assigning blame. */
+  note?: LocalizedTextOptional
+}
+
+export interface ComparisonColumn {
+  label: LocalizedText
+  points: { id: string; title: LocalizedText; body: LocalizedText }[]
+}
+
+/**
+ * Who is who in the process.
+ *
+ * Promoted from a field on `TextSectionBlock` to a block of its own, because
+ * /why-organizer makes it the subject of a section rather than an aside.
+ *
+ * ── WHAT THE SHAPE FORBIDS ─────────────────────────────────────────────────
+ *
+ * `side` records which side of the table a party sits on. It is NOT a rank,
+ * and the renderer must not draw an arrow from OpenDoor to any other party:
+ * OpenDoor neither employs nor directs the lawyer, appraiser, architect or
+ * developer, and a directional line would say it does.
+ *
+ * There is no field for a firm name, a logo or a link, because none of those
+ * can appear without implying a relationship that does not exist.
+ */
+export interface RoleMapBlock extends BlockBase {
+  type: 'ROLE_MAP'
+  heading?: LocalizedTextOptional
+  intro?: LocalizedTextOptional
+  /** The owners and their representation. Rendered above the table line. */
+  ownersSide: RoleNode[]
+  /** OpenDoor. Rendered on the line itself. */
+  organiser: RoleNode
+  /** The other parties. Rendered below, as peers of one another. */
+  parties: RoleNode[]
+  /** Required note stating that OpenDoor does not replace independent
+   *  professional advice. Not optional: the map invites exactly that
+   *  misreading, and the correction belongs beside it rather than in a
+   *  policy nobody opens. */
+  independenceNote: LocalizedText
+}
+
+/**
+ * One stage of the process, at page scale.
+ *
+ * ── `asks` IS WHY THIS TYPE EXISTS ─────────────────────────────────────────
+ *
+ * A process page that only says what the company does reads as a service
+ * brochure. What an apartment owner actually wants to know is what THEY will
+ * have to do. Every stage can state it, and the ones that ask nothing say so
+ * by omitting the field rather than by inventing a task.
+ *
+ * ── NO PROGRESS, EVER ──────────────────────────────────────────────────────
+ *
+ * There is no `state` field. This is the company's process, not any project's
+ * status, and marking a stage "current" here would be a claim about a real
+ * building that nobody verified.
+ */
+export interface JourneyBlock extends BlockBase {
+  type: 'JOURNEY'
+  heading?: LocalizedTextOptional
+  intro?: LocalizedTextOptional
+  /**
+   * REQUIRED. Stated before the stages, saying that projects differ in
+   * planning route, ownership structure and timing, and that stages overlap.
+   * Without it a numbered list of eight reads as a fixed statutory sequence.
+   */
+  variabilityNote: LocalizedText
+  stages: JourneyStage[]
+}
+
+export interface JourneyStage {
+  id: string
+  title: LocalizedText
+  body: LocalizedText
+  /** What is asked of the owners at this stage. Absent where nothing is. */
+  asks?: LocalizedTextOptional
+  /** Slot id for a per-stage graphic. Falls back to the architectural mark. */
+  slotId?: string
 }
 
 export interface MediaBlock extends BlockBase {
@@ -286,6 +456,8 @@ export interface PortalAudienceGroup {
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
+  | PageHeaderBlock | StatementBlock | ProseBlock
+  | ComparisonBlock | RoleMapBlock | JourneyBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 

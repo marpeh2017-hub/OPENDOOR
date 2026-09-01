@@ -110,7 +110,43 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     asset: null,
   },
 
-  /* ── 4 ── OPTIONAL, currently unused on the homepage ─────────────────── */
+  /* ── 4 ── /about ─────────────────────────────────────────────────────── */
+  ABOUT_ISRAELI_RESIDENTIAL: {
+    id: 'ABOUT_ISRAELI_RESIDENTIAL',
+    purpose:
+      'Gives the company page physical reality. /about with no image at all reads as a policy document rather than as a company that works on real buildings.',
+    orientation: 'landscape',
+    desktopRatio: '3 / 2',
+    mobileRatio: '4 / 3',
+    minResolution: '1800 × 1200',
+    altIntent:
+      'Contemporary Israeli residential buildings. Describe the fabric shown without naming a place, a project, or implying OpenDoor involvement.',
+    claim: 'EDITORIAL_CONTEXT',
+    direction:
+      'Contemporary ISRAELI residential architecture, deliberately NOT city-specific: apartment blocks, balconies, ordinary urban density. This slot exists to carry the national positioning, so anything unmistakably Jerusalem belongs in the homepage slots instead. Daylight, flat or overcast. Must NOT be: a luxury tower, a marketing render, a construction site, or an empty styled street.',
+    fallback: 'hillside',
+    asset: null,
+  },
+
+  /* ── 5 ── /how-we-work ───────────────────────────────────────────────── */
+  RENEWED_ALONGSIDE_EXISTING: {
+    id: 'RENEWED_ALONGSIDE_EXISTING',
+    purpose:
+      'Closes the process journey. The one subject that actually depicts urban renewal rather than merely a building: what the eight stages lead to.',
+    orientation: 'panoramic',
+    desktopRatio: '21 / 9',
+    mobileRatio: '3 / 2',
+    minResolution: '2400 × 1030',
+    altIntent:
+      'Existing residential buildings beside newer construction, showing a neighbourhood partway through renewal. City context, not an OpenDoor project.',
+    claim: 'EDITORIAL_CONTEXT',
+    direction:
+      'Existing and renewed construction IN THE SAME FRAME, with the seam between them visible. That contrast is the whole subject. Must NOT be a finished development photographed alone, a before-and-after pair, or a render. Ordinary daylight; residents and parked cars are welcome.',
+    fallback: 'pattern',
+    asset: null,
+  },
+
+  /* ── 6 ── RESERVE, not placed on any page yet ────────────────────────── */
   JERUSALEM_URBAN_FABRIC: {
     id: 'JERUSALEM_URBAN_FABRIC',
     purpose:
@@ -127,7 +163,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     asset: null,
   },
 
-  /* ── 5 ── OPTIONAL DETAIL, currently unused ──────────────────────────── */
+  /* ── 7 ── RESERVE DETAIL, not placed on any page yet ─────────────────── */
   ARCHITECTURAL_DETAIL: {
     id: 'ARCHITECTURAL_DETAIL',
     purpose:

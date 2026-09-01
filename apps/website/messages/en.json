@@ -114,7 +114,8 @@
     "demonstration": "Illustrative",
     "currentStage": "Current stage",
     "transparencyEyebrow": "Transparency in practice",
-    "menu": "Menu"
+    "menu": "Menu",
+    "opensInNewTab": "opens in a new tab"
   },
   "journey": {
     "city": "The city",
@@ -196,5 +197,8 @@
     "asideEyebrow": "Most people are looking for this",
     "asideTitle": "Want to check the options for your building?",
     "asideBody": "The suitability check has its own shorter form, which goes straight to the team that reviews complexes."
+  },
+  "journeyPage": {
+    "asksLabel": "What is asked of you:"
   }
 }

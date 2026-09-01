@@ -1,31 +1,50 @@
 import type { Metadata } from 'next'
-import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { PageShell } from '@/components/layout/page-shell'
-import { STUB_ROBOTS } from '@/lib/seo'
+import { notFound } from 'next/navigation'
+import { setRequestLocale } from 'next-intl/server'
+import type { Locale } from '@urban-renewal/api-contracts'
+import { getPageBySlug } from '@/mock'
+import { makeLocalizer } from '@/lib/localize'
+import { PageBlocks } from '@/components/blocks/page-blocks'
 
 /**
- * Why Organizer
+ * Why an organising company.
  *
- * Phase 1 route skeleton. Content is built in a later task and will be editable
- * through the CMS, so nothing here hardcodes copy beyond the page title.
+ * ── THIS ROUTE OWNS NO COPY AND NO COMPOSITION ─────────────────────────────
+ *
+ * It resolves the locale, fetches the page and hands the blocks to
+ * `PageBlocks`. Every sentence, every section and the order they appear in
+ * live in `src/mock/fixtures/core-pages.ts`, which is what makes the eventual
+ * CMS a swap rather than a rewrite.
+ *
+ * The page looks different from its three siblings because it uses different
+ * blocks in a different order, not because this file lays anything out.
  */
+const SLUG = 'why-organizer'
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'pages.whyOrganizer' })
-  return { title: t('title'), robots: STUB_ROBOTS }
+  const page = await getPageBySlug(SLUG)
+  const seo = page?.seo[locale as Locale]
+  if (!seo) return {}
+  return { title: seo.title, description: seo.description }
 }
 
-export default async function Page({
+export default async function WhyOrganizerPage({
   params,
 }: {
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
   setRequestLocale(locale)
-  const t = await getTranslations('pages.whyOrganizer')
-  return <PageShell title={t('title')} />
+
+  const t = makeLocalizer(locale as Locale)
+  const page = await getPageBySlug(SLUG)
+
+  if (!page) notFound()
+
+  return <PageBlocks blocks={page.blocks} t={t} />
 }

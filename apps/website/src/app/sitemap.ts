@@ -30,7 +30,14 @@ import { getProjects, getKnowledgeArticles } from '@/mock'
  * change that removes its `STUB_ROBOTS`.
  */
 
-const SITE_ROUTES = ['/'] as const
+/**
+ * Routes with real content, which are therefore indexable and belong here.
+ *
+ * A route joins this list in the same change that removes its `STUB_ROBOTS` —
+ * the two must move together, or the sitemap invites a crawler to a page whose
+ * own metadata tells it to stay away.
+ */
+const SITE_ROUTES = ['/', '/about', '/why-organizer', '/how-we-work', '/trust'] as const
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env['NEXT_PUBLIC_SITE_URL']

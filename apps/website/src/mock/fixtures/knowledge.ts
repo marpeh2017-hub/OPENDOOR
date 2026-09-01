@@ -225,20 +225,33 @@ export const MOCK_FAQ: readonly FaqItem[] = [
 export const MOCK_EXTERNAL_RESOURCES: readonly ExternalResource[] = [
   {
     id: 'r-hitchadshut',
-    label: 'הרשות הממשלתית להתחדשות עירונית',
+    label: {
+      he: 'הרשות הממשלתית להתחדשות עירונית',
+      // The body's own published English name, not a translation of ours.
+      en: 'Government Authority for Urban Renewal',
+    },
     url: 'https://www.gov.il/he/departments/urban_renewal_authority',
-    description: 'מידע רשמי על מסלולי התחדשות עירונית וזכויות בעלי דירות.',
+    description: {
+      he: 'מידע רשמי על מסלולי התחדשות עירונית וזכויות בעלי דירות.',
+      en: 'Official information on urban renewal routes and owners’ rights.',
+    },
   },
   {
     id: 'r-gov-planning',
-    label: 'מינהל התכנון',
+    label: { he: 'מינהל התכנון', en: 'Planning Administration' },
     url: 'https://www.gov.il/he/departments/iplan',
-    description: 'מידע על הליכי תכנון ורישוי.',
+    description: {
+      he: 'מידע על הליכי תכנון ורישוי.',
+      en: 'Information on planning and permitting procedures.',
+    },
   },
   {
     id: 'r-consumer',
-    label: 'המועצה הישראלית לצרכנות',
+    label: { he: 'המועצה הישראלית לצרכנות', en: 'Israel Consumer Council' },
     url: 'https://www.consumers.org.il',
-    description: 'מידע צרכני כללי.',
+    description: {
+      he: 'מידע צרכני כללי.',
+      en: 'General consumer information.',
+    },
   },
 ] as const
