@@ -358,3 +358,130 @@ Two are enough: **Editor** (everything except publishing and settings) and
 5. Navigation, SEO, settings
 
 Steps 1 and 2 are the ones worth doing properly. The rest is CRUD.
+
+---
+
+# Appendix A. Editing a verified fact
+
+*Added during Real Project Pilot 1. This is a requirement on the future CMS,
+not something built yet.*
+
+## The rule
+
+**A changed value must never inherit the verification of the value it
+replaced.**
+
+When an editor changes a material fact, the new value is unverified from the
+moment it is saved, whatever the old one was. Verification attaches to a
+*specific value checked on a specific date*, not to the field it happens to
+live in.
+
+```
+verified fact  ──edit──▶  new value, UNVERIFIED
+                              │
+                              ▼
+                          verification  ──▶  publishable
+```
+
+## Why this is the whole point of the model
+
+The failure it prevents is quiet and total. Somebody corrects a unit count from
+84 to 96. The record still carries `verifiedAt: 2026-08-12` and a colleague's
+name. The page now publishes a number nobody checked, stamped with a date and a
+person that vouch for a *different* number — and the audit trail actively
+asserts that it was verified, so the mistake survives every subsequent review.
+
+That is worse than having no verification model at all, because the model's own
+metadata is what makes the wrong figure look trustworthy.
+
+## What this means in practice
+
+- **The unit of verification is the value, not the field.** Store the verified
+  value alongside the verification, so a comparison at save time can tell
+  whether the thing that was checked is still the thing being shown.
+- **Editing clears the verification.** `verifiedAt`, `verifiedByName` and
+  `source` are dropped, not preserved and not greyed out. A partially-filled
+  verification record invites somebody to complete it from memory.
+- **The public consequence is automatic and needs no extra rule.** An
+  unverified material fact does not render — that is already how every project
+  surface works. So a mid-edit figure disappears from the site until it is
+  re-verified, rather than sitting there wrong. The page is built to be
+  complete without any given field, which is what makes this safe.
+- **A no-op edit is still an edit.** If the value is saved unchanged, the
+  verification may stand; if the value differs by so much as a digit, it does
+  not. Do not offer "keep the existing verification" as a checkbox.
+- **Editorial fields are unaffected.** Name, summary, description, captions and
+  SEO use `DRAFT → REVIEW → PUBLISHED` and carry no verification to invalidate.
+  Only the fields in `MATERIAL_CLAIM_FIELDS` are in scope, plus per-milestone
+  verification.
+- **Verification is not a permission.** Whoever may edit a project need not be
+  whoever may verify a fact. Separating them is what makes the second signature
+  worth anything, and it is a natural fit for the existing RBAC groups.
+
+## Fields in scope
+
+Everything wrapped in `VerifiedFact` on `PublicProject`: `currentStage`,
+`currentPhase`, `existingUnits`, `proposedUnits`, `buildingCount`,
+`planningStatus`, `developer`, `professionals`, `approvals`, `permits`,
+`materialDates` — plus `ProjectMilestone.verification`.
+
+`MATERIAL_CLAIM_FIELDS` in `packages/api-contracts/src/verification.ts` is
+exported as data so the CMS can drive this from the contract rather than from a
+second hand-maintained list.
+
+---
+
+# Appendix B. Project content localisation
+
+*Added during Real Project Pilot 1, which is the first time real Hebrew project
+content rendered on the English site.*
+
+## Current state
+
+`CmsPage` content is fully localised: every editorial string is `LocalizedText`
+and resolved once at the page boundary. **Project records are not.** Several
+project fields are plain `string`, so a Hebrew value renders unchanged on
+`/en`.
+
+| Field | Type today | Should be |
+|---|---|---|
+| `name` | `string` | **stays `string`** — see below |
+| `location.city` | `string` | `LocalizedText` |
+| `location.neighborhood` | `string` | `LocalizedText` |
+| `location.street` | `string` | **stays `string`** |
+| `summary` | `string` | `LocalizedText` |
+| `description` | `string` | `LocalizedText` |
+| `seo` | `SeoMetadata` | per-locale, as `CmsPage.seo` already is |
+| `MediaAsset.caption` | `string` | `LocalizedText` |
+| `MediaAsset.alt` | `string` | `LocalizedText` |
+| `ProjectParty.name` | `string` | **stays `string`** |
+| `ProjectApproval.authority` | `string` | `LocalizedText` |
+
+## Why some fields deliberately stay single-language
+
+**Do not mechanically transliterate proper nouns.** A complex is called
+החיד"א 26 and a company is called what it is called. "HaHida 26" is not a
+translation; it is a spelling nobody uses, it matches no municipal record, no
+sign on the building and no search a resident would type. A single-language
+identity is correct, not a gap — the same reason a French address is not
+rewritten in an English document.
+
+Cities and neighbourhoods are different: ירושלים genuinely has an established
+English form, and a reader of the English site expects it.
+
+If an official English name for a complex is later adopted — by the
+representation, or in an English-language document — the right shape is an
+explicit optional field (`nameEn`, or `LocalizedText` with an optional `en`)
+that an editor fills deliberately. It is never derived.
+
+## Sequencing
+
+This is a breaking contract change touching the card projection, search, the
+sitemap and the CRM's own project shape. **It was deliberately not done during
+Pilot 1**, where the goal was to prove the sparse-data architecture against a
+real record. It should be a single planned migration rather than a field at a
+time, since each partial change leaves the English site in a differently mixed
+state.
+
+Until then the English project page correctly shows Hebrew identity with
+English UI chrome and English editorial framing, which is honest and readable.

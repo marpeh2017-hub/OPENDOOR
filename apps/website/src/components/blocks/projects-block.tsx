@@ -155,7 +155,7 @@ function ProjectCard({
       </div>
 
       <div className={`flex flex-1 flex-col ${lead ? 'p-6 lg:p-8' : 'p-5'}`}>
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
           {project.location.city}
         </p>
         <h3

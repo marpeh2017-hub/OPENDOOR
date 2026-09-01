@@ -1,4 +1,4 @@
-import type { ProjectStage } from '@urban-renewal/api-contracts'
+import type { ProjectPhase, ProjectStage } from '@urban-renewal/api-contracts'
 import { PROJECT_PHASE_ORDER, phaseStateFor } from '@urban-renewal/api-contracts'
 import { getTranslations } from 'next-intl/server'
 import { STROKE } from '@/components/brand/architecture'
@@ -31,13 +31,25 @@ import { STROKE } from '@/components/brand/architecture'
  * as a filled cell — the site's door motif at the scale of a process step.
  * Upcoming phases are drawn but not coloured: they are structure, not claim.
  *
- * ── ABSENT CURRENT STAGE MEANS NO RAIL ─────────────────────────────────────
+ * ── ABSENT STAGE AND PHASE MEAN NO RAIL ────────────────────────────────────
  *
- * The caller renders nothing when `currentStage` is unverified. There is no
- * default to the first phase: defaulting would state, in a graphic, that the
- * project is at the beginning, which is a factual claim nobody checked.
+ * The caller renders nothing when neither is verified. There is no default to
+ * the first phase: defaulting would state, in a graphic, that the project is
+ * at the beginning, which is a factual claim nobody checked. That is the state
+ * a brand new project record is in, and the page is built to look finished
+ * without this section.
+ *
+ * ── TWO WAYS IN ────────────────────────────────────────────────────────────
+ *
+ * `currentStage` is the normal one, and the phase is derived from it so the
+ * two cannot disagree. `currentPhase` covers the real case where the phase is
+ * known but the precise stage is unsettled: without it, an editor wanting to
+ * show where a project stands would have to pick a stage nobody verified,
+ * which is the invented precision the whole model exists to prevent.
  */
-export async function StageRail({ currentStage }: { currentStage: ProjectStage }) {
+export async function StageRail(
+  props: { currentStage: ProjectStage } | { currentPhase: ProjectPhase },
+) {
   const [tPhases, tPhaseState] = await Promise.all([
     getTranslations('phases'),
     getTranslations('phaseState'),
@@ -46,7 +58,10 @@ export async function StageRail({ currentStage }: { currentStage: ProjectStage }
   return (
     <ol className="mt-10 grid border-t border-gray-300 sm:grid-cols-2 lg:grid-cols-4">
       {PROJECT_PHASE_ORDER.map((phase, index) => {
-        const state = phaseStateFor(phase, currentStage)
+        const state =
+          'currentStage' in props
+            ? phaseStateFor(phase, props.currentStage)
+            : phaseStateForPhase(phase, props.currentPhase)
         const isCurrent = state === 'current'
         const done = state === 'completed'
 
@@ -100,4 +115,18 @@ export async function StageRail({ currentStage }: { currentStage: ProjectStage }
       })}
     </ol>
   )
+}
+
+/**
+ * The same three-word comparison `phaseStateFor` makes, for a project that
+ * published a phase directly rather than a stage.
+ *
+ * Kept beside its caller rather than in the contract because it is a
+ * presentation convenience over `PROJECT_PHASE_ORDER`, not a rule about the
+ * domain: the ordering it reads is already owned there.
+ */
+function phaseStateForPhase(phase: ProjectPhase, current: ProjectPhase) {
+  const here = PROJECT_PHASE_ORDER.indexOf(phase)
+  const now = PROJECT_PHASE_ORDER.indexOf(current)
+  return here < now ? 'completed' : here === now ? 'current' : 'upcoming'
 }

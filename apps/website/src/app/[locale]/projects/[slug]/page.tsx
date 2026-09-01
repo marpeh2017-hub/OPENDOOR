@@ -30,7 +30,25 @@ export async function generateMetadata({
   const { slug } = await params
   const project = await getProjectBySlug(slug)
   if (!project) return {}
-  return { title: project.name, description: project.summary }
+
+  /* SEO is EDITABLE CONTENT, so the record's own `seo` wins when an editor has
+     written one. Name and summary are the fallback rather than the source:
+     they are what a project always has, so a page is never left without a
+     title, but they are not what a person optimising a listing would choose.
+     `noIndex` is honoured because unpublishing from search is a legitimate
+     editorial act that must not require a deploy.
+
+     NOTE: `PublicProject.seo` is a single `SeoMetadata`, not per-locale the
+     way `CmsPage.seo` is. So one project publishes one title and description
+     across both locales. That is a real limitation rather than a decision;
+     it is recorded in the localisation section of the CMS architecture
+     alongside the other project fields that are still plain strings. */
+  const seo = project.seo
+  return {
+    title: seo?.title ?? project.name,
+    description: seo?.description ?? project.summary,
+    ...(seo?.noIndex ? { robots: { index: false, follow: false } } : {}),
+  }
 }
 
 export default async function ProjectDetailPage({

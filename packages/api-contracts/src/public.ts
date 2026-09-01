@@ -146,7 +146,20 @@ export interface PublicProject {
   id: string
   slug: string
   name: string
-  type: ProjectType
+  /**
+   * The renewal track, WHEN IT HAS BEEN CONFIRMED.
+   *
+   * Optional, because a complex at the start of a process genuinely does not
+   * have one yet: which route it takes is an outcome of the planning work, not
+   * an input to it. `OTHER` is a real category for a genuinely unusual track,
+   * NOT a stand-in for "we do not know" — using it that way publishes "Other
+   * route" as though somebody had classified the project and reached that
+   * conclusion.
+   *
+   * Absent means the page shows no track at all, which is the same rule every
+   * other unconfirmed field on this type follows.
+   */
+  type?: ProjectType
   location: GeoContext
   /** One or two sentences, for cards and search results. */
   summary: string
@@ -156,6 +169,27 @@ export interface PublicProject {
    *  describes OpenDoor's own working relationship with the complex, which
    *  OpenDoor is the authority on, not a fact about the building. */
   organizingStatus?: OrganizingStatus
+  /**
+   * What OpenDoor does on THIS project, when it differs from the standard
+   * description.
+   *
+   * ── WHY THIS IS AN OVERRIDE AND NOT A REQUIRED FIELD ───────────────────
+   *
+   * OpenDoor's role is the same on almost every complex, and the site-wide
+   * wording has been reviewed once. A required per-project field would mean a
+   * new variant written from scratch each time, and the failure mode there is
+   * one page quietly claiming more than the company can defend on all of them.
+   *
+   * So: absent means the reviewed site-level description renders. Present
+   * means an editor deliberately said something different for this complex —
+   * a narrower mandate, an unusual arrangement — and took responsibility for
+   * it. Editable either way, which is what the CMS requirement asks for.
+   *
+   * It describes OpenDoor's OWN engagement, so it is editorial rather than a
+   * `VerifiedFact`: OpenDoor is the authority on what OpenDoor was engaged to
+   * do. It is not a claim about the building.
+   */
+  role?: LocalizedText
 
   /* ── Media ───────────────────────────────────────────────────────────────
    * Only an asset whose `imageType` is VERIFIED_PROJECT_PHOTO may be used as
@@ -198,6 +232,29 @@ export interface PublicProject {
    * page are required to look complete without it.
    */
   currentStage?: PublicVerifiedFact<ProjectStage>
+  /**
+   * The public phase, when it is known but the precise stage is not.
+   *
+   * ── WHY BOTH FIELDS EXIST ──────────────────────────────────────────────
+   *
+   * Normally the phase is DERIVED from `currentStage` via `STAGE_PHASE`, and
+   * a derived value cannot contradict the stage it came from. That is the
+   * preferred path and the renderer uses it whenever a stage is present.
+   *
+   * But the two are genuinely separable. A complex can be verifiably in the
+   * planning phase while which of `AGREEMENTS` or `PLANNING` it sits in is
+   * unsettled or in flux. Without this field the only options would be to
+   * publish nothing, or to pick a stage nobody verified in order to make the
+   * rail appear — which is precisely the invented-precision failure the whole
+   * verification model exists to prevent.
+   *
+   * It is a `PublicVerifiedFact` for the same reason the stage is: it is a
+   * claim about where a real building's process stands.
+   *
+   * The renderer prefers `currentStage` when present, so the two can never
+   * disagree on screen.
+   */
+  currentPhase?: PublicVerifiedFact<ProjectPhase>
   existingUnits?: PublicVerifiedFact<number>
   proposedUnits?: PublicVerifiedFact<number>
   buildingCount?: PublicVerifiedFact<number>
@@ -344,7 +401,8 @@ export interface PublicProjectSummary {
   id: string
   slug: string
   name: string
-  type: ProjectType
+  /** Absent until the renewal track is confirmed. See `PublicProject.type`. */
+  type?: ProjectType
   location: GeoContext
   summary: string
   /** Optional for the same reason as on `PublicProject`, and verification

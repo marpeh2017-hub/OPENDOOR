@@ -89,10 +89,15 @@ export async function ProjectBody({
       <div className="mx-auto max-w-7xl px-4 pb-10 pt-8 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:gap-14">
           <div>
-            <div className="text-xs font-bold tracking-[0.14em] text-teal-700">
-              {tFacts(`type.${project.type}`)}
-            </div>
-            <h1 className="mt-3.5 text-4xl font-extrabold leading-[1.06] tracking-tight text-gray-900 sm:text-5xl">
+            {/* Only when the track is confirmed. An unconfirmed one is absent
+                rather than shown as "Other route", which would read as a
+                classification somebody made. */}
+            {project.type && (
+              <div className="text-xs font-bold tracking-[0.14em] text-teal-700">
+                {tFacts(`type.${project.type}`)}
+              </div>
+            )}
+            <h1 className={`${project.type ? 'mt-3.5' : ''} text-4xl font-extrabold leading-[1.06] tracking-tight text-gray-900 sm:text-5xl`}>
               {project.name}
             </h1>
             <span aria-hidden="true" className="mt-5 block h-0.5 w-14 bg-teal-600" />
@@ -141,29 +146,73 @@ export async function ProjectBody({
           </h2>
           <span aria-hidden="true" className="mt-5 block h-0.5 w-14 bg-teal-400" />
         </div>
+        {/* A project may override the role description; when it does not, the
+            reviewed site-level wording renders. Either way the value is
+            editable, and neither path is hardcoded in this component. */}
         <div>
-          <p className="text-base leading-relaxed text-gray-300 sm:text-[17px]">
-            {tRole('body1')}
-          </p>
-          <p className="mt-4 text-base leading-relaxed text-gray-300 sm:text-[17px]">
-            {tRole('body2')}
-          </p>
+          {project.role ? (
+            <p className="text-base leading-relaxed text-gray-300 sm:text-[17px]">
+              {t(project.role)}
+            </p>
+          ) : (
+            <>
+              <p className="text-base leading-relaxed text-gray-300 sm:text-[17px]">
+                {tRole('body1')}
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-gray-300 sm:text-[17px]">
+                {tRole('body2')}
+              </p>
+            </>
+          )}
         </div>
       </div>
     </Section>
 
+    {/* ── THE PROJECT'S OWN OVERVIEW ────────────────────────────────────
+        `summary` is the one sentence that rides on cards and in the header;
+        `description` is the fuller account, and it is the field an editor
+        reaches for when there is something to say about a complex that is not
+        a number. On a sparse project it is most of the page, which is why it
+        renders before the sections that may be absent.
+
+        Split on newlines and NEVER parsed as markup: this is editor-supplied
+        content, and a renderer that interprets it is an injection surface. */}
+    {project.description && (
+      <Section size="lg">
+        <div className="max-w-prose">
+          {project.description.split('\n').filter(Boolean).map((paragraph, index) => (
+            <p
+              key={index}
+              className={`text-base leading-relaxed text-gray-600 sm:text-[17px] ${
+                index > 0 ? 'mt-5' : ''
+              }`}
+            >
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      </Section>
+    )}
+
     {/* ── 3. WHERE DOES THE PROCESS STAND? ──────────────────────────────
-        Absent when no stage is verified. There is no default to the first
-        phase: that would state, in a graphic, that the project is at the
-        beginning — a factual claim nobody checked. */}
-    {project.currentStage && (
+        Absent when NEITHER a stage nor a phase is verified, which is the
+        state a brand new project record is in. There is no default to the
+        first phase: that would state, in a graphic, that the project is at
+        the beginning — a factual claim nobody checked. */}
+    {(project.currentStage || project.currentPhase) && (
       <Section size="lg">
         <SectionHead
           eyebrow={tSections('stageEyebrow')}
           heading={tSections('stageHeading')}
           intro={tSections('stageIntro')}
         />
-        <StageRail currentStage={project.currentStage.value} />
+        {/* Stage wins when present, so a derived phase and an explicitly
+            published one can never contradict each other on screen. */}
+        <StageRail
+          {...(project.currentStage
+            ? { currentStage: project.currentStage.value }
+            : { currentPhase: project.currentPhase!.value })}
+        />
       </Section>
     )}
 

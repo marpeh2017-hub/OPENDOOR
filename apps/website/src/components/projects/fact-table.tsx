@@ -71,7 +71,7 @@ export async function FactTable({
       )}
 
       <dl className="border-t border-gray-200">
-        <Row label={t('track')}>{tTypes(project.type)}</Row>
+        {project.type && <Row label={t('track')}>{tTypes(project.type)}</Row>}
 
         {project.planningStatus && (
           <Row label={t('planningStatus')}>

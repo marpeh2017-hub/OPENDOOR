@@ -366,4 +366,90 @@ const FIXTURES: MockProject[] = [
   },
 ]
 
-export const MOCK_PROJECTS: readonly MockProject[] = [...TEMPLATES, ...FIXTURES]
+/**
+ * ── REAL PROJECTS ──────────────────────────────────────────────────────────
+ *
+ * Everything above this line is a template or a fiction. Everything below is a
+ * real complex, and the rules are different.
+ *
+ * `REALISTIC_PLACEHOLDER` provenance is what enforces them: the guard in
+ * `provenance.ts` THROWS in development if a record with this provenance
+ * carries any field in `CLAIM_FIELDS`. So a stage, a unit count, a developer
+ * or a milestone cannot be added here by anyone, including by accident, until
+ * the fixture is given a real verification record. That is a stronger
+ * guarantee than a comment asking people to be careful.
+ */
+const REAL_PROJECTS: MockProject[] = [
+  {
+    /*
+     * ══════════════════════════════════════════════════════════════════════
+     *  PILOT 1. IDENTITY ONLY, AND THAT IS THE POINT.
+     * ══════════════════════════════════════════════════════════════════════
+     *
+     * The ONLY facts published here are the ones supplied directly for this
+     * pilot: the name, the city and the street address. Nothing else about
+     * this complex exists in the repository.
+     *
+     * `docs/FEASIBILITY_ENGINE_PHASE_0.md` is explicit on the point: "The Hida
+     * 26, Jerusalem source documents are not currently in the repository," and
+     * its Golden Case status is `PENDING_SOURCE` with no data to be invented.
+     * So there is no verified stage, no unit count, no developer, no planning
+     * status, no approval, no permit, no date and no milestone to publish, and
+     * every one of those fields is therefore ABSENT rather than guessed.
+     *
+     * This record is the real test of the sparse-data architecture. The page
+     * it produces has an identity header, the role band, the resident bridge
+     * and one paragraph explaining that no figures are published yet. It must
+     * read as a deliberately restrained page rather than a broken one — if it
+     * does not, that is a bug in the presentation, not a reason to fill it.
+     *
+     * ── WHAT MAKES IT PUBLISHABLE WITHOUT FACTS ──────────────────────────
+     *
+     * `summary` and `description` below describe the PROCESS and OpenDoor's
+     * own role, which OpenDoor is the authority on. They assert nothing about
+     * the building: no history, no size, no timetable, no outcome. Read them
+     * as the only two sentences that could be written about a complex on the
+     * day the engagement starts, because that is what they are.
+     */
+    provenance: 'REALISTIC_PLACEHOLDER',
+    id: 'p-hida-26-jerusalem',
+    slug: 'hida-26-jerusalem',
+    name: 'החיד"א 26',
+    // NO `type`. The renewal track has not been confirmed for this complex,
+    // and naming one would be a planning claim. `OTHER` is a real category for
+    // a genuinely unusual track, not a way to say "unknown", so the field is
+    // absent like every other unconfirmed one.
+    location: {
+      city: 'ירושלים',
+      street: 'החיד"א 26',
+    },
+    summary:
+      'מתחם בירושלים שבו אנחנו מלווים ומארגנים את בעלי הדירות בתהליך ההתחדשות העירונית.',
+    description:
+      'אנחנו מרכזים את המידע עבור בעלי הדירות במתחם, מתאמים בין אנשי המקצוע שהם מינו, ומלווים את התהליך לאורך זמן. ההחלטות נשארות בידי בעלי הדירות.\n\nמידע על המתחם יתפרסם בעמוד זה לאחר שייבדק ויאומת. עד אז מוצגים כאן זהות הפרויקט ותפקידנו בו בלבד.',
+    // Editorial, and OpenDoor is the authority on its own working relationship
+    // with the complex. It is not a claim about the building.
+    organizingStatus: 'PROCESS_ACTIVE',
+
+    /* ── DELIBERATELY ABSENT ────────────────────────────────────────────────
+     * currentStage, currentPhase, existingUnits, proposedUnits, buildingCount,
+     * planningStatus, developer, professionals, approvals, permits,
+     * materialDates, milestones, timeline, timelineNote, heroImage, gallery.
+     *
+     * Every one of these is a claim about a real building that nobody has
+     * verified. Absent is the correct value, and the page is built for it.
+     * `heroImage` absent means the generated ARCHITECTURAL_PATTERN takes the
+     * full hero band, which is the approved fallback and asserts nothing. */
+
+    featured: true,
+    visibility: 'public',
+    publishState: 'published',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+  },
+]
+
+export const MOCK_PROJECTS: readonly MockProject[] = [
+  ...REAL_PROJECTS,
+  ...TEMPLATES,
+  ...FIXTURES,
+]

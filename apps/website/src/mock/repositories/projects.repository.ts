@@ -111,7 +111,7 @@ function toSummary(project: PublicProject): PublicProjectSummary {
     id: project.id,
     slug: project.slug,
     name: project.name,
-    type: project.type,
+    ...(project.type ? { type: project.type } : {}),
     location: project.location,
     summary: project.summary,
     // Optional on purpose: most projects have no verified stage, and the card
@@ -186,7 +186,13 @@ export async function getProjectCities(): Promise<string[]> {
  * gets an empty page from a control the site itself drew.
  */
 export async function getProjectTypes(): Promise<ProjectType[]> {
-  const types = MOCK_PROJECTS.filter(isPubliclyVisible).map((p) => p.type)
+  const types = MOCK_PROJECTS
+    .filter(isPubliclyVisible)
+    .map((p) => p.type)
+    // A project whose track is unconfirmed contributes no filter option. It
+    // would otherwise offer a control that hides the very projects that have
+    // the least information, which is the opposite of useful.
+    .filter((type): type is ProjectType => type !== undefined)
   return [...new Set(types)]
 }
 
