@@ -152,11 +152,186 @@ const FIXTURES: MockProject[] = [
     proposedUnits: { value: 132, ...fixtureVerification() },
     buildingCount: { value: 4, ...fixtureVerification() },
     planningStatus: { value: 'PLAN_SUBMITTED', ...fixtureVerification() },
+    approvals: {
+      value: [
+        {
+          id: 'ap-1',
+          label: { he: 'החלטת ועדה מחוזית להפקדה', en: 'District committee decision to deposit' },
+          authority: 'ועדה מחוזית לדוגמה',
+          grantedOn: '2026-02-11',
+        },
+      ],
+      ...fixtureVerification(),
+    },
+    developer: {
+      value: { role: 'DEVELOPER', name: 'חברה יזמית לדוגמה' },
+      ...fixtureVerification(),
+    },
+    materialDates: {
+      value: [
+        {
+          id: 'md-1',
+          label: { he: 'מועד הפקדת התכנית', en: 'Plan deposited' },
+          occursOn: '2026-03-04',
+          isEstimate: false,
+        },
+        {
+          id: 'md-2',
+          label: { he: 'מועד דיון צפוי', en: 'Expected hearing' },
+          occursOn: '2026-11-01',
+          // Exercises the estimate marker: an estimate shown as a commitment
+          // is the most common way a timeline becomes a broken promise.
+          isEstimate: true,
+        },
+      ],
+      ...fixtureVerification(),
+    },
+    // Exercises all three milestone states, the approximate-period path, and
+    // the rule that an upcoming entry never prints a date even when the record
+    // would allow one.
+    milestones: [
+      {
+        id: 'ms-1',
+        title: { he: 'כינוס ראשון של בעלי הדירות', en: 'First owners meeting' },
+        state: 'completed',
+        occurredAt: '2024-03-18',
+        note: {
+          he: 'מפגש הצגה של התהליך ומענה על שאלות, לפני שנדרשה התחייבות כלשהי.',
+          en: 'A meeting explaining the process and answering questions, before anything was asked of the owners.',
+        },
+        verification: { value: true, ...fixtureVerification() },
+      },
+      {
+        id: 'ms-2',
+        title: { he: 'בחירת נציגות מקרב בעלי הדירות', en: 'Representation chosen from among the owners' },
+        state: 'completed',
+        occurredAt: '2024-09-02',
+        verification: { value: true, ...fixtureVerification() },
+      },
+      {
+        id: 'ms-3',
+        title: { he: 'בחינת חלופות והשוואתן', en: 'Alternatives examined and compared' },
+        state: 'completed',
+        // No exact day is known. `periodLabel` is what stops an author from
+        // inventing one so the field will accept a value.
+        periodLabel: { he: '2025', en: '2025' },
+        note: {
+          he: 'הצעות נבחנו מול אותם פרמטרים, וההשוואה תועדה כדי שניתן יהיה לחזור אליה.',
+          en: 'Proposals were examined against the same parameters, and the comparison was recorded so it can be revisited.',
+        },
+        verification: { value: true, ...fixtureVerification() },
+      },
+      {
+        id: 'ms-4',
+        title: { he: 'קידום התכנית מול מוסדות התכנון', en: 'Advancing the plan before the planning institutions' },
+        state: 'current',
+        verification: { value: true, ...fixtureVerification() },
+      },
+      {
+        id: 'ms-5',
+        title: { he: 'אישור תכנית והמשך להיתרים', en: 'Plan approval and on to permits' },
+        state: 'upcoming',
+        // Deliberately carries a date the renderer must IGNORE, so the
+        // "upcoming milestones never show a date" rule is proved by the UI
+        // rather than only asserted in a comment.
+        occurredAt: '2027-06-01',
+        note: {
+          he: 'השלב הבא בתהליך. מועד אינו מוצג משום שהוא אינו ידוע ואינו בשליטתנו.',
+          en: 'The next stage. No date is shown because none is known and none is within our control.',
+        },
+      },
+    ],
+    timelineNote: {
+      he: 'במתחם הזה שלב בחינת החלופות חזר על עצמו לאחר שינוי בתכנית, ולכן הוא מופיע פעם אחת בציר ולא פעמיים.',
+      en: 'In this complex the evaluation stage repeated after a change to the plan, so it appears once on the record rather than twice.',
+    },
+    gallery: [
+      {
+        id: 'g-1',
+        kind: 'image',
+        // Intentionally unresolvable: no image is generated or downloaded for
+        // a fixture. What is under test is the layout, the aspect ratio
+        // reservation and the claim label, none of which need bytes.
+        url: '/fixtures/does-not-exist-project.jpg',
+        alt: 'תמונת בדיקה. אינה תמונה אמיתית של פרויקט.',
+        caption: 'חזית המתחם הקיים.',
+        imageType: 'VERIFIED_PROJECT_PHOTO',
+        order: 1,
+        takenOn: '2026-04-02',
+        credit: 'צלם לדוגמה',
+      },
+      {
+        id: 'g-2',
+        kind: 'image',
+        url: '/fixtures/does-not-exist-context.jpg',
+        alt: 'תמונת בדיקה. אינה תמונה אמיתית של פרויקט.',
+        caption: 'מרקם מגורים ישראלי אופייני.',
+        imageType: 'EDITORIAL_CONTEXT',
+        order: 2,
+      },
+      {
+        id: 'g-3',
+        kind: 'image',
+        url: '/fixtures/does-not-exist-pattern.jpg',
+        alt: '',
+        // Must be DROPPED by `galleryItems`: a generated drawing is not a
+        // gallery item. Present so the filter is proved, not assumed.
+        imageType: 'ARCHITECTURAL_PATTERN',
+        order: 3,
+      },
+      {
+        id: 'g-4',
+        kind: 'image',
+        url: '/fixtures/does-not-exist-unclassified.jpg',
+        alt: 'תמונת בדיקה ללא סיווג.',
+        // No `imageType`. Must also be DROPPED.
+        order: 4,
+      },
+    ],
     timeline: timelineAt(5),
     featured: false,
     visibility: 'internal',
     publishState: 'draft',
     updatedAt: '2026-08-20T00:00:00.000Z',
+  },
+  {
+    // ── NO PHOTOGRAPHY, RICH DATA ────────────────────────────────────────
+    // The state every real project launches in: figures verified, nothing
+    // photographed. Proves the page stays complete on the generated pattern
+    // alone, and that the gallery section is ABSENT rather than empty.
+    provenance: 'UI_FIXTURE',
+    id: 'f-demo-nophoto',
+    slug: 'demo-complex-no-photo',
+    name: 'מתחם הדוגמה, ללא צילום',
+    type: 'PINUY_BINUY',
+    location: { city: 'עיר לדוגמה', neighborhood: 'שכונת הדוגמה', street: 'רחוב לדוגמה 1' },
+    summary: 'פרויקט בדיקה עם נתונים מאומתים וללא צילום. אינו פרויקט אמיתי.',
+    organizingStatus: 'PROCESS_ACTIVE',
+    currentStage: { value: 'PLANNING', ...fixtureVerification() },
+    existingUnits: { value: 120, ...fixtureVerification() },
+    // `proposedUnits` deliberately ABSENT: proves the counts band renders two
+    // columns rather than three with a hole where the third would be.
+    buildingCount: { value: 5, ...fixtureVerification() },
+    planningStatus: { value: 'PRE_PLANNING', ...fixtureVerification() },
+    milestones: [
+      {
+        id: 'np-1',
+        title: { he: 'גיבוש צרכים עם בעלי הדירות', en: 'Settling needs with the owners' },
+        state: 'completed',
+        periodLabel: { he: 'קיץ 2025', en: 'Summer 2025' },
+        verification: { value: true, ...fixtureVerification() },
+      },
+      {
+        id: 'np-2',
+        title: { he: 'בחינת חלופות', en: 'Examining alternatives' },
+        state: 'current',
+        verification: { value: true, ...fixtureVerification() },
+      },
+    ],
+    featured: false,
+    visibility: 'internal',
+    publishState: 'draft',
+    updatedAt: '2026-08-28T00:00:00.000Z',
   },
   {
     provenance: 'UI_FIXTURE',

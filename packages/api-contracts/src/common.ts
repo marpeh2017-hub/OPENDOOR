@@ -208,6 +208,24 @@ export interface MediaAsset {
    * than not — a building's entrance is rarely in the middle of the frame.
    */
   focalPoint?: { x: number; y: number }
+  /**
+   * Position within a gallery. A NUMBER, not the array index.
+   *
+   * Array order is an accident of however the data was assembled; an editor
+   * who drags an image to the front is expressing an intent that has to
+   * survive a re-fetch, a partial update and a different sort upstream.
+   * Renderers sort by this and fall back to array order when it is absent.
+   */
+  order?: number
+  /**
+   * When the photograph was taken.
+   *
+   * Separate from anything editorial because it is the field that makes a
+   * project photo honest: a facade shot from four years ago is not evidence
+   * of what the complex looks like now, and a caption cannot be trusted to
+   * carry that on its own.
+   */
+  takenOn?: IsoDate
 }
 
 /** A place, used by projects and by local SEO. */

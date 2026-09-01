@@ -1,25 +1,26 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
+import type { Locale } from '@urban-renewal/api-contracts'
 import { getProjectBySlug } from '@/mock'
-import { PageShell } from '@/components/layout/page-shell'
+import { makeLocalizer } from '@/lib/localize'
+import { ProjectBody } from '@/components/projects/project-body'
 
 /**
  * Project detail.
  *
- * Phase 1 skeleton: the real Project Transparency timeline is built in a later
- * task. What this route already has to get right is the two things every
- * visitor and every crawler depends on regardless of how much content exists
- * yet — the slug resolves to a real project, and the metadata describes it.
+ * The route resolves the locale, fetches a PUBLISHED project and hands it to
+ * `ProjectBody`. It owns no layout and no copy, which is what lets the
+ * development preview route render the identical page from an unpublished
+ * record — see `components/projects/project-body.tsx` for the section order and
+ * the rules about absent content.
  *
- * ── FIXED HERE: THE SLUG WAS NEVER CHECKED ─────────────────────────────────
+ * ── THE SLUG IS CHECKED ────────────────────────────────────────────────────
  *
- * The route previously rendered `<PageShell title={slug} />` for ANY slug,
- * including ones matching no project — `/projects/does-not-exist` returned
- * 200 with a page titled "does-not-exist". It now calls `getProjectBySlug`
- * and 404s when nothing matches, which is also what makes the metadata below
- * correct instead of a guess: title and slug are the same string only by
- * coincidence for a placeholder page.
+ * `getProjectBySlug` applies the publish filter, so an unpublished or
+ * internal-only slug 404s here exactly like a slug that matches nothing. That
+ * is deliberate: a "this project is not published" page would confirm the
+ * record exists, which is itself a disclosure.
  */
 export async function generateMetadata({
   params,
@@ -29,10 +30,7 @@ export async function generateMetadata({
   const { slug } = await params
   const project = await getProjectBySlug(slug)
   if (!project) return {}
-  return {
-    title: project.name,
-    description: project.summary,
-  }
+  return { title: project.name, description: project.summary }
 }
 
 export default async function ProjectDetailPage({
@@ -46,5 +44,5 @@ export default async function ProjectDetailPage({
   const project = await getProjectBySlug(slug)
   if (!project) notFound()
 
-  return <PageShell title={project.name} />
+  return <ProjectBody project={project} locale={locale} t={makeLocalizer(locale as Locale)} />
 }

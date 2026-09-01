@@ -127,7 +127,10 @@
   },
   "projects": {
     "emptyTitle": "Projects will be published here once the owners have approved.",
-    "emptyBody": "We publish a complex only when the information is verified and agreed with the owners. In the meantime, if you want to understand the options for your building, you can start with a suitability check."
+    "emptyBody": "We publish a complex only when the information is verified and agreed with the owners. In the meantime, if you want to understand the options for your building, you can start with a suitability check.",
+    "eyebrow": "Urban renewal in Israel",
+    "standfirst": "Complexes where we represent and organise the apartment owners. Each project shows the information verified as of its update date.",
+    "verifiedOnly": "Each project shows verified information only. A missing figure does not mean nothing is happening; it means nobody has verified that figure for publication yet."
   },
   "forms": {
     "optionalDivider": "Want to tell us more? The fields below are optional.",
@@ -200,5 +203,135 @@
   },
   "journeyPage": {
     "asksLabel": "What is asked of you:"
+  },
+  "projectFilters": {
+    "label": "Filter",
+    "all": "All"
+  },
+  "projectTypes": {
+    "PINUY_BINUY": "Pinuy binuy",
+    "TAMA_38_1": "TAMA 38/1",
+    "TAMA_38_2": "TAMA 38/2",
+    "COMBINED": "Combined route",
+    "OTHER": "Other route"
+  },
+  "phases": {
+    "ORGANISING": {
+      "name": "Organising",
+      "description": "First review, owners organising, and forming a representation."
+    },
+    "EVALUATION": {
+      "name": "Evaluation and choice",
+      "description": "Appointing professionals, settling needs, and comparing alternatives."
+    },
+    "PLANNING": {
+      "name": "Planning",
+      "description": "Agreements, design, and progress with the municipality and planning institutions."
+    },
+    "EXECUTION": {
+      "name": "Execution",
+      "description": "Permits, construction, oversight and handover."
+    }
+  },
+  "phaseState": {
+    "completed": "Completed",
+    "current": "Current stage",
+    "upcoming": "Ahead"
+  },
+  "milestones": {
+    "completed": "Completed",
+    "current": "Under way",
+    "upcoming": "Ahead",
+    "noDate": "no date"
+  },
+  "projectRole": {
+    "eyebrow": "Our role in this project",
+    "heading": "We organise the owners’ side of the table.",
+    "body1": "We gather the information, coordinate the professionals the owners have appointed, and bring alternatives that can actually be compared. The decisions stay with the owners.",
+    "body2": "We are not the developer and we do not carry out construction. Nor do we replace independent legal, valuation or planning advice: that comes from professionals the owners appoint, and the responsibility stays with them."
+  },
+  "projectSections": {
+    "stageEyebrow": "Where the process stands",
+    "stageHeading": "Current stage",
+    "stageIntro": "The process is described in four parts. Projects do not advance in a fixed sequence: parts run in parallel and some stages repeat. This division is descriptive and carries no statutory meaning.",
+    "timelineEyebrow": "What has happened, and what is ahead",
+    "timelineHeading": "Project record",
+    "timelineIntro": "Completed milestones are recorded with the date they occurred. Milestones ahead are described without a date: they depend on things no party controls, and they are not a commitment to a date.",
+    "factsEyebrow": "What is known about the complex",
+    "factsHeading": "Project information",
+    "galleryEyebrow": "Images",
+    "galleryHeading": "The complex",
+    "noFactsEyebrow": "Information status",
+    "noFactsHeading": "No figures have been published for this complex yet.",
+    "noFactsBody1": "A project at the beginning sits before the stage where there are verified figures to publish: unit counts, planning status and milestones are settled later in the process. We do not publish estimates and we do not fill the gap with guesses.",
+    "noFactsBody2": "When a figure is checked and verified it will appear here with its update date. Until then, what can be described is the process itself."
+  },
+  "projectFacts": {
+    "city": "City",
+    "neighborhood": "Neighbourhood",
+    "address": "Address",
+    "existingUnits": "Existing units",
+    "proposedUnits": "Planned units",
+    "buildingCount": "Buildings in the complex",
+    "track": "Route",
+    "planningStatus": "Planning status",
+    "approvals": "Approvals",
+    "permits": "Permits",
+    "developer": "Developer",
+    "developerNote": "The developer represents its own interests. It does not represent the owners, and it has no business relationship with OpenDoor Group.",
+    "dates": "Dates",
+    "estimate": "estimate",
+    "type": {
+      "PINUY_BINUY": "Pinuy binuy",
+      "TAMA_38_1": "TAMA 38/1",
+      "TAMA_38_2": "TAMA 38/2",
+      "COMBINED": "Combined route",
+      "OTHER": "Other route"
+    }
+  },
+  "planningStatus": {
+    "PRE_PLANNING": "No plan submitted yet",
+    "PLAN_SUBMITTED": "Plan submitted",
+    "PLAN_DEPOSITED": "Plan deposited",
+    "PLAN_APPROVED": "Plan approved",
+    "PERMIT_STAGE": "Permit stage",
+    "UNDER_CONSTRUCTION": "Under construction"
+  },
+  "verification": {
+    "heading": "About the information on this page",
+    "checked": "The figures in this section have been checked and verified by us. Last updated:",
+    "absent": "A figure that has not been verified does not appear here at all. A missing figure does not mean zero, and it does not mean nothing is happening.",
+    "planningMayChange": "Planning information can change during the process and is not a final approval.",
+    "approvalsMayChange": "Approvals and permits reflect the position at the date checked and can change."
+  },
+  "projectImages": {
+    "projectPhoto": "Photograph of this project",
+    "context": "Context photograph, not this project",
+    "contextCaption": "Does not depict this project.",
+    "patternCaption": "Schematic drawing of the complex. Not a photograph, not a rendering, and not a depiction of the proposed design."
+  },
+  "residentBridge": {
+    "heading": "An apartment owner in this project?",
+    "body": "This page carries the general information about the project and is open to everyone. Personal information, documents and running updates go to the owners in the complex directly, and are not published here.",
+    "comingSoon": "The digital environment for owners is being built. Until it is available, information is delivered in meetings, in written summaries, and directly through the representation.",
+    "signIn": "Owner sign in",
+    "about": "About the owners’ environment",
+    "whatIsWhere": "What is where",
+    "publicHeading": "On this page",
+    "public1": "Project identity and location",
+    "public2": "The stage the process has reached",
+    "public3": "Verified figures",
+    "public4": "The milestone record",
+    "privateHeading": "In the owners’ environment",
+    "private1": "Running updates",
+    "private2": "Documents about the apartment",
+    "private3": "Meeting summaries",
+    "private4": "Requests to the representation"
+  },
+  "projectPreview": {
+    "banner": "Development preview. This record is not published and is not publicly reachable.",
+    "state": "State: {state}",
+    "indexBanner": "Development preview. Test cards only; none of these is published.",
+    "indexTitle": "Projects · preview"
   }
 }

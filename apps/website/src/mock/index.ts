@@ -24,6 +24,7 @@
  */
 export {
   getProjects, getProjectBySlug, getFeaturedProjects, getProjectCities,
+  getProjectTypes, getProjectForPreview, getAllProjectsForPreview,
 } from './repositories/projects.repository'
 
 export {

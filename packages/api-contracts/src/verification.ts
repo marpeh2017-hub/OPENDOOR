@@ -62,6 +62,32 @@ export interface VerifiedFact<T> {
 }
 
 /**
+ * A verified fact as an UNAUTHENTICATED VISITOR receives it.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  THE VERIFIER'S NAME IS NOT SHIPPED TO THE BROWSER
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * `verifiedByName` is required on `VerifiedFact` because the value of the
+ * model is that there is always a person to ask. That guarantee is about the
+ * RECORD, not about the web page.
+ *
+ * Omitting it from the render is not enough. A server-rendered page serialises
+ * the objects it was given, so a field that is fetched but never displayed
+ * still travels to every visitor in the page source. That is publication by
+ * any meaningful definition: it is greppable, archived by crawlers, and
+ * visible in view-source to anyone who looks.
+ *
+ * So the name is removed at the repository boundary, and this type is what
+ * makes that removal enforceable rather than a convention somebody remembers.
+ * A component cannot read a name that its type does not have.
+ *
+ * `verifiedAt` stays: the date is the part a reader can act on, and it is the
+ * whole point of the section-level verification note.
+ */
+export type PublicVerifiedFact<T> = Omit<VerifiedFact<T>, 'verifiedByName'>
+
+/**
  * The fields on a project that require structured verification.
  *
  * Exported as data, not just as documentation, so the CMS can drive its own

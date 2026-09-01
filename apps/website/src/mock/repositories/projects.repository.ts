@@ -1,5 +1,5 @@
 import type {
-  PublicProject, PublicProjectQuery, PublicProjectSummary, Paginated,
+  ProjectType, PublicProject, PublicProjectQuery, PublicProjectSummary, Paginated,
 } from '@urban-renewal/api-contracts'
 import { MOCK_PROJECTS, type MockProject } from '../fixtures/projects'
 import { assertNoInventedClaims, stripProvenance } from '../provenance'
@@ -43,9 +43,66 @@ function isPubliclyVisible(project: MockProject): boolean {
   return project.publishState === 'published' && project.visibility === 'public'
 }
 
-/** Runs the honesty guard, then removes authoring metadata. */
+/**
+ * Runs the honesty guard, removes authoring metadata, and REDACTS THE
+ * VERIFIER NAMES.
+ *
+ * ── WHY REDACTION HAPPENS HERE AND NOT IN A COMPONENT ──────────────────────
+ *
+ * A server-rendered page serialises whatever objects it was handed. A field
+ * that is fetched but never displayed still reaches every visitor in the page
+ * source, where it is greppable, archived by crawlers and plainly visible in
+ * view-source. Not rendering `verifiedByName` is therefore NOT the same as not
+ * publishing it, and the difference is the whole requirement.
+ *
+ * Removing it at the repository boundary means no component can leak it by
+ * accident, because no component is ever given it: `PublicProject` is typed
+ * with `PublicVerifiedFact`, which has no such field. The name stays in the
+ * record for the CMS and for anyone who needs to ask who checked.
+ */
 function toPublic(project: MockProject): PublicProject {
-  return stripProvenance(assertNoInventedClaims(project, project.slug))
+  const checked = stripProvenance(assertNoInventedClaims(project, project.slug))
+  return redactVerifiers(checked as PublicProject)
+}
+
+/** Drops `verifiedByName` from every verified fact on a project, at any depth
+ *  the contract puts one. */
+function redactVerifiers(project: PublicProject): PublicProject {
+  const drop = <T,>(fact: T | undefined): T | undefined => {
+    if (!fact) return undefined
+    const { verifiedByName: _name, ...rest } = fact as Record<string, unknown> & {
+      verifiedByName?: string
+    }
+    return rest as T
+  }
+
+  return {
+    ...project,
+    ...pick('currentStage', drop(project.currentStage)),
+    ...pick('existingUnits', drop(project.existingUnits)),
+    ...pick('proposedUnits', drop(project.proposedUnits)),
+    ...pick('buildingCount', drop(project.buildingCount)),
+    ...pick('planningStatus', drop(project.planningStatus)),
+    ...pick('developer', drop(project.developer)),
+    ...pick('professionals', drop(project.professionals)),
+    ...pick('approvals', drop(project.approvals)),
+    ...pick('permits', drop(project.permits)),
+    ...pick('materialDates', drop(project.materialDates)),
+    ...(project.milestones
+      ? {
+          milestones: project.milestones.map((milestone) => ({
+            ...milestone,
+            ...pick('verification', drop(milestone.verification)),
+          })),
+        }
+      : {}),
+  }
+}
+
+/** Spreads a key only when it has a value, so `exactOptionalPropertyTypes`
+ *  never sees an explicit `undefined`. */
+function pick<K extends string, V>(key: K, value: V | undefined) {
+  return value === undefined ? {} : ({ [key]: value } as Record<K, V>)
 }
 
 /** Card projection — exactly what a grid needs, nothing more. */
@@ -119,4 +176,62 @@ export async function getFeaturedProjects(limit = 3): Promise<PublicProjectSumma
 export async function getProjectCities(): Promise<string[]> {
   const cities = MOCK_PROJECTS.filter(isPubliclyVisible).map((p) => p.location.city)
   return [...new Set(cities)].sort((a, b) => a.localeCompare(b, 'he'))
+}
+
+/**
+ * Distinct renewal tracks among published projects.
+ *
+ * Derived for the same reason as the cities: a hardcoded list would offer a
+ * filter for a track nothing is published under, and the visitor who picks it
+ * gets an empty page from a control the site itself drew.
+ */
+export async function getProjectTypes(): Promise<ProjectType[]> {
+  const types = MOCK_PROJECTS.filter(isPubliclyVisible).map((p) => p.type)
+  return [...new Set(types)]
+}
+
+/**
+ * A project regardless of publish state, for the development preview only.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  THIS IS HOW THE RICH AND SPARSE STATES GET TESTED WITHOUT PUBLISHING THEM
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * The QA brief requires the populated detail page to be exercised, and also
+ * requires that the fixtures used to do it never become public content. Those
+ * two are only compatible if there is a way to render an internal record
+ * outside the public filter.
+ *
+ * The safety is not in this function, which deliberately bypasses
+ * `isPubliclyVisible`. It is in its ONLY caller: a route that returns 404
+ * before doing anything else when `NODE_ENV === 'production'`. That route is
+ * therefore the thing to read before changing anything here, and this function
+ * must never be called from a page that ships.
+ *
+ * It doubles as the shape of the CMS "preview before publish" capability the
+ * architecture calls for, which is why it lives here rather than in a test
+ * helper.
+ */
+export async function getProjectForPreview(slug: string): Promise<PublicProject | null> {
+  const found = MOCK_PROJECTS.find((p) => p.slug === slug)
+  return found ? toPublic(found) : null
+}
+
+/**
+ * Every project as card summaries, published or not. Development preview only.
+ *
+ * Same bypass, same single safe caller rule as `getProjectForPreview`: the
+ * projects preview index 404s in production before calling this. It exists so
+ * the grid and the card are rendered at least once before they ship, since the
+ * public index correctly shows its empty state and would otherwise never
+ * exercise them.
+ *
+ * Templates (which have no name) are excluded: they are a CMS starting point,
+ * not a card, and a nameless card tests nothing.
+ */
+export async function getAllProjectsForPreview(): Promise<PublicProjectSummary[]> {
+  return MOCK_PROJECTS
+    .filter((p) => p.name.length > 0)
+    .map(toPublic)
+    .map(toSummary)
 }

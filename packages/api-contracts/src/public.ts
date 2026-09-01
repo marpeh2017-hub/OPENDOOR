@@ -2,7 +2,7 @@ import type {
   GeoContext, IsoDate, IsoDateTime, Locale, LocalizedText, MediaAsset,
   Paginated, PublishState, SeoMetadata, Visibility,
 } from './common'
-import type { VerifiedFact } from './verification'
+import type { PublicVerifiedFact, VerifiedFact } from './verification'
 
 /**
  * Unauthenticated surface: everything odg.co.il serves to a visitor.
@@ -39,6 +39,80 @@ export const PROJECT_STAGE_ORDER: readonly ProjectStage[] = [
   'PROFESSIONAL_SELECTION', 'DEVELOPER_TENDER', 'DEVELOPER_SELECTED',
   'AGREEMENTS', 'PLANNING', 'PERMIT_AND_BUILD', 'DELIVERY',
 ] as const
+
+/* ── THE PUBLIC PHASE LAYER ─────────────────────────────────────────────
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  ELEVEN STAGES ARE FOR US. FOUR PHASES ARE FOR THE PUBLIC.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * The eleven `ProjectStage` values stay exactly as they are: they are what the
+ * organisation actually tracks, and renaming or collapsing them would lose
+ * detail the CRM needs.
+ *
+ * But eleven named steps rendered in a row READ AS A STATUTORY SEQUENCE. A
+ * resident seeing them numbered one to eleven reasonably concludes that this
+ * is the legally defined path, that every project walks all of it, and that
+ * being at step five means being 45% of the way through. None of those is
+ * true, and the last one is the most damaging.
+ *
+ * Four phases read as a description, which is what they are. They are
+ * OpenDoor's own way of talking about the process, they carry no statutory
+ * meaning, and the page says so in words as well as in structure.
+ *
+ * ── WHY A MAP AND NOT AN INDEX RANGE ───────────────────────────────────────
+ *
+ * `PROJECT_STAGE_ORDER.slice(0, 4)` would be shorter and would break silently
+ * the first time a stage is inserted. An explicit stage-to-phase map cannot
+ * drift: adding a `ProjectStage` value is a type error here until somebody
+ * decides which phase it belongs to.
+ */
+export type ProjectPhase =
+  | 'ORGANISING'   // התארגנות
+  | 'EVALUATION'   // גיבוש ובחירה
+  | 'PLANNING'     // תכנון
+  | 'EXECUTION'    // ביצוע
+
+export const PROJECT_PHASE_ORDER: readonly ProjectPhase[] = [
+  'ORGANISING', 'EVALUATION', 'PLANNING', 'EXECUTION',
+] as const
+
+/**
+ * Which phase each stage belongs to.
+ *
+ * `Record<ProjectStage, ProjectPhase>` is total on purpose: a new stage added
+ * to the union fails to compile until it is placed.
+ */
+export const STAGE_PHASE: Record<ProjectStage, ProjectPhase> = {
+  INITIAL_REVIEW:         'ORGANISING',
+  FEASIBILITY:            'ORGANISING',
+  OWNER_ORGANIZATION:     'ORGANISING',
+  REPRESENTATION_FORMED:  'ORGANISING',
+  PROFESSIONAL_SELECTION: 'EVALUATION',
+  DEVELOPER_TENDER:       'EVALUATION',
+  DEVELOPER_SELECTED:     'EVALUATION',
+  AGREEMENTS:             'PLANNING',
+  PLANNING:               'PLANNING',
+  PERMIT_AND_BUILD:       'EXECUTION',
+  DELIVERY:               'EXECUTION',
+}
+
+/**
+ * Phase state, derived from the verified current stage and nothing else.
+ *
+ * NOTE WHAT IS ABSENT: there is no `percentComplete`, no `progress`, no
+ * `stagesRemaining`. Those would all be arithmetic dressed as knowledge. A
+ * phase is behind, at, or ahead of the one the project is actually in, and
+ * that is the entire vocabulary.
+ */
+export type PhaseState = 'completed' | 'current' | 'upcoming'
+
+export function phaseStateFor(phase: ProjectPhase, currentStage: ProjectStage): PhaseState {
+  const currentPhase = STAGE_PHASE[currentStage]
+  const here = PROJECT_PHASE_ORDER.indexOf(phase)
+  const now = PROJECT_PHASE_ORDER.indexOf(currentPhase)
+  return here < now ? 'completed' : here === now ? 'current' : 'upcoming'
+}
 
 /** Renewal track. Affects which stages apply and how the timeline reads. */
 export type ProjectType = 'PINUY_BINUY' | 'TAMA_38_1' | 'TAMA_38_2' | 'COMBINED' | 'OTHER'
@@ -87,6 +161,19 @@ export interface PublicProject {
    * Only an asset whose `imageType` is VERIFIED_PROJECT_PHOTO may be used as
    * this project's own image. The renderer enforces it; see `EditorialImage`. */
   heroImage?: MediaAsset
+  /**
+   * Additional images beyond the hero.
+   *
+   * Rendered in `MediaAsset.order`, falling back to array position. Every
+   * entry must carry an `imageType`; the renderer DROPS any that does not,
+   * because an unclassified image on a project page is exactly the claim the
+   * classification system exists to prevent, and there is no safe default to
+   * guess.
+   *
+   * `ARCHITECTURAL_PATTERN` never appears here either: it is generated, it is
+   * the fallback for an ABSENT image, and listing a drawing among photographs
+   * presents it as documentation of something.
+   */
   gallery?: MediaAsset[]
   /** The complex as it stands today. Distinct from `gallery` because a
    *  "before" image makes a claim about a moment in time. */
@@ -110,22 +197,22 @@ export interface PublicProject {
    * defaulted to the first stage, not shown as "unknown". The card and detail
    * page are required to look complete without it.
    */
-  currentStage?: VerifiedFact<ProjectStage>
-  existingUnits?: VerifiedFact<number>
-  proposedUnits?: VerifiedFact<number>
-  buildingCount?: VerifiedFact<number>
-  planningStatus?: VerifiedFact<PlanningStatus>
+  currentStage?: PublicVerifiedFact<ProjectStage>
+  existingUnits?: PublicVerifiedFact<number>
+  proposedUnits?: PublicVerifiedFact<number>
+  buildingCount?: PublicVerifiedFact<number>
+  planningStatus?: PublicVerifiedFact<PlanningStatus>
   /** A named commercial party. Never rendered without verification, because
    *  naming the wrong developer is both a factual error and a commercial one. */
-  developer?: VerifiedFact<ProjectParty>
+  developer?: PublicVerifiedFact<ProjectParty>
   /** Lawyers, appraisers, architects. Same rule as `developer`, and never
    *  rendered in a way that implies they work for OpenDoor. */
-  professionals?: VerifiedFact<ProjectParty[]>
-  approvals?: VerifiedFact<ProjectApproval[]>
-  permits?: VerifiedFact<ProjectApproval[]>
+  professionals?: PublicVerifiedFact<ProjectParty[]>
+  approvals?: PublicVerifiedFact<ProjectApproval[]>
+  permits?: PublicVerifiedFact<ProjectApproval[]>
   /** Dates a resident might plan around. Wrapped for the same reason as the
    *  counts: a wrong date here is not a typo, it is a broken expectation. */
-  materialDates?: VerifiedFact<ProjectDateRecord[]>
+  materialDates?: PublicVerifiedFact<ProjectDateRecord[]>
 
   /* ── Progress ────────────────────────────────────────────────────────────
    * Milestones carry their own per-entry verification: a project can have
@@ -135,6 +222,15 @@ export interface PublicProject {
   /** Absent when no stage is verified — a timeline without a stage would be an
    *  invented sequence. Empty and absent both mean "no verified progress". */
   timeline?: TimelineStage[]
+  /**
+   * A project-specific note about why its sequence is not tidy: a stage that
+   * repeated, two that ran together, a route that skipped one entirely.
+   *
+   * The generic "projects differ" line is already fixed copy on the page. This
+   * is for the case where THIS project's history would otherwise look like an
+   * error to a reader who knows it.
+   */
+  timelineNote?: LocalizedText
 
   /* ── Control ─────────────────────────────────────────────────────────── */
   /** Whether residents of this project see updates in the portal. Not public
@@ -211,7 +307,19 @@ export interface ProjectMilestone {
   state: 'completed' | 'current' | 'upcoming'
   note?: LocalizedText
   occurredAt?: IsoDate
-  verification?: VerifiedFact<true>
+  /**
+   * An approximate period, for a milestone that genuinely happened but not on
+   * a nameable day: "2025", "קיץ 2024".
+   *
+   * Real project history is mostly like this. Without it an author who knows
+   * only the year is pushed into inventing a day so the field will accept a
+   * value, which converts a vague truth into a precise falsehood. Renderers
+   * prefer `occurredAt` when present and fall back to this.
+   *
+   * NEVER rendered for an `upcoming` milestone: see `state` below.
+   */
+  periodLabel?: LocalizedText
+  verification?: PublicVerifiedFact<true>
 }
 
 /**
@@ -242,7 +350,7 @@ export interface PublicProjectSummary {
   /** Optional for the same reason as on `PublicProject`, and verification
    *  travels with it: a card that renders a stage must be able to say who
    *  confirmed it, even though the card itself does not display that. */
-  currentStage?: VerifiedFact<ProjectStage>
+  currentStage?: PublicVerifiedFact<ProjectStage>
   heroImage?: MediaAsset
   featured: boolean
 }

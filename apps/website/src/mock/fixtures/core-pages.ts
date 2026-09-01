@@ -148,10 +148,30 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'מה שנשמר, נשאר נגיש', en: 'What is recorded stays reachable' },
     body: {
-      he: 'הסביבה הדיגיטלית שלנו נבנית כדי שבעלי הדירות יוכלו לראות איפה התהליך עומד בלי לחכות לשיחת טלפון. חלק מהיכולות כבר פועלות בעבודה השוטפת, וחלקן עדיין בבנייה.',
-      en: 'Our digital environment is being built so owners can see where the process stands without waiting for a phone call. Some of it already supports our day to day work; some is still being built.',
+      he: 'אנחנו בונים סביבה דיגיטלית שבה בעלי דירות יוכלו לראות היכן התהליך עומד בלי להמתין לשיחת טלפון. עד שתהיה זמינה, המידע נמסר במפגשים, בסיכומים כתובים ובתקשורת ישירה עם הנציגות.',
+      en: 'We are building a digital environment where owners can see where the process stands without waiting for a phone call. Until it is available, information is delivered in meetings, in written summaries, and directly through the representation.',
     },
   },
+  /* ── COST CLAIM: FLAGGED FOR LEGAL REVIEW BEFORE PRODUCTION ────────────
+   *
+   * The `ctaSupport` sentence in the block below states that the service
+   * involves no direct cost to the apartment owners. It is APPROVED and
+   * deliberately kept, but it is the strongest commercial representation on
+   * the site and it has not been cleared against every engagement model. It
+   * must be confirmed before launch; if an exception exists the sentence is
+   * rewritten rather than deleted.
+   *
+   * IT APPEARS IN TWO PLACES ON THE SITE, AND NOWHERE ELSE: here, and as
+   * `eligibility.noCost` on the eligibility form (added in Pass 2). Both are
+   * points where a visitor is deciding whether to engage, which is the only
+   * context where the sentence is answering a question they actually have.
+   *
+   * Do NOT add it to a project card, to the projects index or to a project
+   * page. Repetition turns a factual statement into a marketing message and
+   * multiplies the legal exposure, which is why the project system introduced
+   * in Pass 3B carries no cost copy at all. Both existing occurrences are in
+   * scope for the same legal review.
+   * ──────────────────────────────────────────────────────────────────────── */
   {
     id: 'about-cta',
     type: 'CTA',
@@ -516,8 +536,8 @@ const trustBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'איך זה עובד אצלנו', en: 'How this works with us' },
     intro: {
-      he: 'שבעה נהלים שקובעים איך מידע נשמר, נגיש ומגיע לבעלי הדירות.',
-      en: 'Seven practices that govern how information is kept, reached and delivered to owners.',
+      he: 'אלה כללי העבודה שאנחנו מחזיקים בהם. הם מתארים איך אנחנו עובדים, ואינם הבטחה לתוצאה.',
+      en: 'These are the working rules we hold ourselves to. They describe how we work; they are not a promise of an outcome.',
     },
     items: [
       {
@@ -532,16 +552,16 @@ const trustBlocks: PageBlock[] = [
         id: 'tp-access',
         title: { he: 'גישה למידע', en: 'Access to information' },
         body: {
-          he: 'לכל בעל דירה יש גישה למידע שנוגע לו ולמתחם. יש מידע שמוגבל לנציגות מתוקף תפקידה, וההפרדה הזאת מוסברת מראש ולא מתגלה בדיעבד.',
-          en: 'Every owner can reach the information that concerns them and the complex. Some material sits with the representation because of its role, and that distinction is explained in advance rather than discovered later.',
+          he: 'אנחנו עובדים כך שהמידע הנוגע לבעל דירה ולמתחם יהיה נגיש לו. חומר שמוחזק אצל הנציגות מתוקף תפקידה מוגדר ככזה מראש, ולא מתגלה בדיעבד.',
+          en: 'We work so that the information concerning an owner and their complex is reachable by them. Material that sits with the representation because of its role is defined as such in advance, rather than discovered later.',
         },
       },
       {
         id: 'tp-updates',
         title: { he: 'עדכונים לדיירים', en: 'Updates to residents' },
         body: {
-          he: 'עדכון מגיע גם כשאין התקדמות דרמטית. שתיקה ארוכה היא מה שמייצר חוסר אמון, לא חדשות פחות טובות.',
-          en: 'An update goes out even when nothing dramatic has happened. Long silences are what erode trust, not unwelcome news.',
+          he: 'אנחנו מעדכנים גם כשאין התפתחות דרמטית. שתיקה ארוכה שוחקת אמון יותר מבשורה לא נוחה.',
+          en: 'We send an update even when there is no dramatic development. A long silence erodes trust more than unwelcome news does.',
         },
       },
       {
@@ -556,8 +576,8 @@ const trustBlocks: PageBlock[] = [
         id: 'tp-coordination',
         title: { he: 'תיאום בין אנשי המקצוע', en: 'Coordinating the professionals' },
         body: {
-          he: 'עורך דין, שמאי, אדריכל ויועצים עובדים מול אותו מידע ואותם לוחות זמנים. אנחנו מתאמים ביניהם, והאחריות המקצועית נשארת אצל כל אחד מהם.',
-          en: 'Lawyer, appraiser, architect and consultants work from the same information and the same timeline. We coordinate between them; professional responsibility stays with each of them.',
+          he: 'אנחנו מתאמים בין עורך הדין, השמאי, האדריכל והיועצים, ודואגים שיעבדו מול אותו מידע ואותו לוח זמנים. האחריות המקצועית נשארת אצל כל אחד מהם.',
+          en: 'We coordinate between the lawyer, the appraiser, the architect and the consultants, and make sure they work from the same information and the same timeline. Professional responsibility stays with each of them.',
         },
       },
       {
@@ -572,8 +592,8 @@ const trustBlocks: PageBlock[] = [
         id: 'tp-status',
         title: { he: 'מצב הפרויקט', en: 'Where the project stands' },
         body: {
-          he: 'באיזה שלב התהליך נמצא, מה הושלם ומה השלב הבא. השאלה הזאת צריכה תשובה זמינה, לא תיאום שיחה.',
-          en: 'Which stage the process has reached, what is finished and what comes next. That question deserves an answer that is simply available.',
+          he: 'בעל דירה שישאל באיזה שלב התהליך נמצא, מה הסתיים ומה הבא בתור, יקבל תשובה. איננו מצפים ממנו לחפש אותה.',
+          en: 'An owner who asks which stage the process has reached, what is finished and what comes next will get an answer. We do not expect them to go looking for it.',
         },
       },
     ],

@@ -37,7 +37,9 @@ import { getProjects, getKnowledgeArticles } from '@/mock'
  * the two must move together, or the sitemap invites a crawler to a page whose
  * own metadata tells it to stay away.
  */
-const SITE_ROUTES = ['/', '/about', '/why-organizer', '/how-we-work', '/trust'] as const
+const SITE_ROUTES = [
+  '/', '/about', '/why-organizer', '/how-we-work', '/trust', '/projects',
+] as const
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env['NEXT_PUBLIC_SITE_URL']
