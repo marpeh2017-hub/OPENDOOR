@@ -1,4 +1,8 @@
-import type { PublicProject, TimelineStage } from '@urban-renewal/api-contracts'
+import type {
+  PlanningStatus, ProjectApproval, ProjectDateRecord, ProjectMilestone,
+  ProjectParty, ProjectPhase, ProjectStage, PublicProject, TimelineStage,
+  VerifiedFact,
+} from '@urban-renewal/api-contracts'
 import { PROJECT_STAGE_ORDER } from '@urban-renewal/api-contracts'
 import type { WithProvenance } from '../provenance'
 
@@ -40,7 +44,58 @@ import type { WithProvenance } from '../provenance'
  * stays absent until somebody verifies it — see `VerifiedFact`.
  */
 
-export type MockProject = PublicProject & WithProvenance
+/**
+ * A project AS AUTHORED, which is not the same shape a visitor receives.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  THE FIXTURE LAYER HOLDS THE VERIFIER'S NAME. THE PUBLIC LAYER DOES NOT.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * `PublicProject` wraps its material claims in `PublicVerifiedFact`, which has
+ * no `verifiedByName` — that field is redacted at the repository boundary so it
+ * cannot reach a browser even in a payload nothing renders.
+ *
+ * But the RECORD must carry it. The whole value of the verification model is
+ * that there is a person to ask, and a fixture that cannot store a name has
+ * nowhere to keep the thing being redacted.
+ *
+ * So this type restates every verified field with the FULL `VerifiedFact`, and
+ * `toPublic` in the repository performs the narrowing. The redaction is a real
+ * type transformation rather than a cast over a shape that never differed.
+ *
+ * ── WHY THIS IS SPELLED OUT AND NOT `PublicProject & WithProvenance` ───────
+ *
+ * That is what it used to be, and it type-checked only by accident: TypeScript
+ * skips excess-property checks on object SPREAD, so `{ value, ...verification() }`
+ * slipped a `verifiedByName` past a type that forbade it while a literal
+ * `verifiedByName:` was rejected. The data was right, the type was wrong, and
+ * the two disagreed silently. Writing the authoring shape out makes the fixture
+ * layer say what it actually holds.
+ */
+export type MockProject =
+  & Omit<
+      PublicProject,
+      | 'currentStage' | 'currentPhase' | 'existingUnits' | 'proposedUnits'
+      | 'buildingCount' | 'planningStatus' | 'developer' | 'professionals'
+      | 'approvals' | 'permits' | 'materialDates' | 'milestones'
+    >
+  & WithProvenance
+  & {
+      currentStage?: VerifiedFact<ProjectStage>
+      currentPhase?: VerifiedFact<ProjectPhase>
+      existingUnits?: VerifiedFact<number>
+      proposedUnits?: VerifiedFact<number>
+      buildingCount?: VerifiedFact<number>
+      planningStatus?: VerifiedFact<PlanningStatus>
+      developer?: VerifiedFact<ProjectParty>
+      professionals?: VerifiedFact<ProjectParty[]>
+      approvals?: VerifiedFact<ProjectApproval[]>
+      permits?: VerifiedFact<ProjectApproval[]>
+      materialDates?: VerifiedFact<ProjectDateRecord[]>
+      milestones?: (Omit<ProjectMilestone, 'verification'> & {
+        verification?: VerifiedFact<true>
+      })[]
+    }
 
 /**
  * Builds a timeline from a stage, deriving completed/current/future.
@@ -452,20 +507,99 @@ const REAL_PROJECTS: MockProject[] = [
       city: 'ירושלים',
     },
     summary:
-      'מתחם בתהליך בדיקה ראשונית. טרם פורסם מידע על המתחם.',
+      'מתחם בירושלים שבו נבחרו נציגויות בעלי דירות, וכיום מתקיים תהליך לבחינת ובחירת יזם.',
+    description:
+      'במתחם נבחרו נציגויות בעלי דירות, וכיום מתקיים תהליך לבחינת ובחירת היזם המתאים לקידום הפרויקט.\n\nמידע נוסף על המתחם יתפרסם בעמוד זה לאחר שייבדק ויאומת.',
+
+    /* ── USER-VERIFIED FACTS ────────────────────────────────────────────────
+     *
+     * These two are confirmed by OpenDoor about its OWN engagement with the
+     * complex, and their `source` says so. They are NOT supported by the
+     * feasibility workbook, which mentions neither, and the provenance is kept
+     * separate precisely so the workbook is never made to look as though it
+     * does — see `USER_VERIFIED` in `project-internal.ts` for the scope that
+     * source type may and may not support.
+     *
+     * ── WHY `DEVELOPER_TENDER` AND NOT `DEVELOPER_SELECTED` ───────────────
+     *
+     * A developer is being EXAMINED AND CHOSEN. None has been selected.
+     * `DEVELOPER_SELECTED` would state that one has, which is a claim about a
+     * commercial relationship that does not exist yet. The two stages are one
+     * apart in the enum and a world apart in meaning.
+     *
+     * `STAGE_PHASE` maps `DEVELOPER_TENDER` to `EVALUATION`, which renders as
+     * "גיבוש ובחירה". The public phase is therefore derived, not asserted
+     * separately, so the phase and the stage cannot disagree.
+     *
+     * ── WHAT THIS STAGE IS NOT ───────────────────────────────────────────
+     *
+     * Developer selection is an ORGANISATIONAL step. It is not evidence of a
+     * planning submission, deposit, approval or permit, and `planningStatus`
+     * stays absent. Nothing here may be read as a statutory position. */
+    currentStage: {
+      value: 'DEVELOPER_TENDER',
+      verifiedAt: '2026-09-01',
+      // Internal only; redacted from every public payload. Should be replaced
+      // with the individual who confirmed it, since the point of the field is
+      // that there is a person to ask.
+      verifiedByName: 'OpenDoor Group',
+      source: 'USER_VERIFIED',
+    },
+
+    /* Two milestones, no dates. The appointment date, the number of
+     * representatives, the share of owners they represent, the number of
+     * developers in the process and any expected selection date are all
+     * separately unverified, so none appears. A milestone with no date is a
+     * complete milestone; an invented date is not. */
+    milestones: [
+      {
+        id: 'ts-representation',
+        title: {
+          he: 'נבחרו נציגויות בעלי הדירות',
+          en: 'Owner representations were chosen',
+        },
+        state: 'completed',
+        // No `occurredAt` and no `periodLabel`: the date is not verified.
+        verification: {
+          value: true,
+          verifiedAt: '2026-09-01',
+          verifiedByName: 'OpenDoor Group',
+          source: 'USER_VERIFIED',
+        },
+      },
+      {
+        id: 'ts-developer-selection',
+        title: {
+          he: 'בחינת ובחירת יזם',
+          en: 'Examining and selecting a developer',
+        },
+        state: 'current',
+        verification: {
+          value: true,
+          verifiedAt: '2026-09-01',
+          verifiedByName: 'OpenDoor Group',
+          source: 'USER_VERIFIED',
+        },
+      },
+      // NO upcoming milestone. Nothing about what follows has been verified,
+      // and a future entry here would be the generic process presented as this
+      // project's plan.
+    ],
 
     /* ── EVERY OTHER FIELD IS ABSENT ────────────────────────────────────────
-     * No description, and no `role`: there is no evidence establishing what
-     * OpenDoor's engagement here is, and the role statement is NOT copied
-     * from another project. Flagged for user confirmation.
+     * No `role` override: what OpenDoor was engaged to do here has not been
+     * confirmed, so the reviewed site-level description renders instead of a
+     * project-specific claim. Still flagged for user confirmation.
      *
-     * No type, currentStage, currentPhase, existingUnits, proposedUnits,
+     * No type, currentPhase, existingUnits, proposedUnits,
      * buildingCount, planningStatus, developer, professionals, approvals,
      * permits, materialDates, milestones, timeline, heroImage or gallery.
      *
-     * The workbook supports an internal working classification no stronger
-     * than initial review; even that is not published, because publishing a
-     * stage is a claim about where a real building's process stands. */
+     * The workbook supports none of the above. It also does not establish the
+     * project's organisational stage: it is a feasibility calculation, and
+     * feasibility work says nothing about whether a representation exists or a
+     * developer process is running. Those two facts come from the client and
+     * are recorded as `USER_VERIFIED`. */
 
     featured: false,
     visibility: 'internal',

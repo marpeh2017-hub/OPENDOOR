@@ -44,6 +44,48 @@ registered position, which is an input to a model, not an outcome of a process.
 
 ---
 
+## 1b. Second source: client confirmation
+
+| | |
+|---|---|
+| **Type** | `USER_VERIFIED` |
+| **Confirmed** | 2026-09-01 |
+| **Reliability** | authoritative **for facts about OpenDoor's own engagement** |
+
+Two facts confirmed directly by the client:
+
+1. **Resident representations have been chosen** in the complex.
+2. **The project is at the developer-examination and selection stage.**
+
+### Why this is a separate source, and why that matters
+
+The workbook mentions neither. A feasibility calculation says nothing about
+whether a representation exists or a developer process is running, and citing
+the workbook for these would make it appear to support organisational facts it
+never touches.
+
+The two sources also have different scopes, and the difference is not a
+formality:
+
+- **`USER_VERIFIED`** may support facts about process and engagement, because
+  OpenDoor is the authority on its own working relationship with a complex.
+  It may **not** support planning status, approvals, permits, areas or unit
+  counts — those need the body that issued them.
+- **`FEASIBILITY_WORKBOOK`** supports internal scenario material and nothing
+  public at all, for the reasons in §2.
+
+### What the stage does not mean
+
+Developer selection is an **organisational** step. It is not evidence of a
+planning submission, deposit, approval or permit. `planningStatus` stays
+absent, and nothing on the page may be read as a statutory position.
+
+`DEVELOPER_TENDER` is the published stage, not `DEVELOPER_SELECTED`: a
+developer is being examined and chosen, and none has been selected. The two
+values sit one apart in the enum and a world apart in meaning.
+
+---
+
 ## 2. Data-quality flags
 
 Every one of these blocks automatic verification. Together they are why the
@@ -164,22 +206,36 @@ application.
 | Sub-parcel counts (95 / 3) | `SOURCE_FOUND_BUT_REQUIRES_REVIEW` | no |
 | All scenario assumptions and outputs | `NOT_SUPPORTED` as public fact | never |
 | All economic figures | `NOT_SUPPORTED` as public fact | never |
-| Project stage | `NOT_SUPPORTED` | no |
+| Project stage (`DEVELOPER_TENDER`) | `VERIFIED_SOURCE` via `USER_VERIFIED` | **yes** |
+| Representation chosen (milestone) | `VERIFIED_SOURCE` via `USER_VERIFIED` | **yes** |
+| Developer selection under way (milestone) | `VERIFIED_SOURCE` via `USER_VERIFIED` | **yes** |
 | OpenDoor's role | `NOT_SUPPORTED` | no — no evidence at all |
-| Milestones | `NOT_SUPPORTED` | no — the workbook records no event |
+| Any other milestone | `NOT_SUPPORTED` | no — no other event is evidenced |
+| Milestone dates | `NOT_SUPPORTED` | no — no date is confirmed for either |
+| Representative count / share / names | `NOT_SUPPORTED` | no |
+| Developer count / names / tender dates | `NOT_SUPPORTED` | no |
 | Media | `NOT_SUPPORTED` | no — none exists |
 
-**Nothing is class A (`VERIFIED_SOURCE`).**
+**Three items are now class A**, all from `USER_VERIFIED`, and all about
+process rather than about the building. Everything drawn from the workbook
+remains `REQUIRES_REVIEW` or lower.
 
 ---
 
-## 8. Internal working classification
+## 8. Stage
 
-Not published. `INITIAL_REVIEW` is the strongest defensible reading: a
-feasibility calculation exists and nothing else does.
+**Published: `DEVELOPER_TENDER`** — "בחינת ובחירת יזם", which derives to the
+public phase **גיבוש ובחירה**. Confirmed by the client, not by the workbook.
 
-The project must not be described as submitted, deposited, approved or at
-permit stage. A scenario computed `עפ רשום` is the opposite of a submission.
+This supersedes the earlier reading of `INITIAL_REVIEW`. That was inferred from
+the workbook, and it was wrong in a specific and instructive way: the workbook
+represents feasibility *work*, which is not the same thing as the project's
+organisational *stage*. A complex can be well past initial review while
+somebody is still running numbers on it.
+
+The project must still not be described as submitted, deposited, approved or at
+permit stage. A scenario computed `עפ רשום` is the opposite of a submission,
+and developer selection is not a planning event.
 
 ---
 
@@ -190,6 +246,7 @@ permit stage. A scenario computed `עפ רשום` is the opposite of a submissio
 2. **Confirm the city** on project evidence rather than comparison
    transactions.
 3. **Confirm OpenDoor's role**, or the project should not be published at all.
+   This is now the only blocker of the three that remains open.
 4. **Resolve the 95/98 ambiguity** and state which is a registry count.
 5. **Recalculate the workbook**, resolve the `#REF!` formulas and the external
    reference, and confirm author and date.

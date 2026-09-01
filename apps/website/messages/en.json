@@ -103,7 +103,7 @@
     "OWNER_ORGANIZATION": "Owner organisation",
     "REPRESENTATION_FORMED": "Representation formed",
     "PROFESSIONAL_SELECTION": "Professional selection",
-    "DEVELOPER_TENDER": "Developer tender",
+    "DEVELOPER_TENDER": "Examining and selecting a developer",
     "DEVELOPER_SELECTED": "Developer selected",
     "AGREEMENTS": "Agreements",
     "PLANNING": "Planning",
@@ -263,8 +263,8 @@
     "galleryHeading": "The complex",
     "noFactsEyebrow": "Information status",
     "noFactsHeading": "No figures have been published for this complex yet.",
-    "noFactsBody1": "A project at the beginning sits before the stage where there are verified figures to publish: unit counts, planning status and milestones are settled later in the process. We do not publish estimates and we do not fill the gap with guesses.",
-    "noFactsBody2": "When a figure is checked and verified it will appear here with its update date. Until then, what can be described is the process itself."
+    "noFactsBody1": "Figures about this complex are published here only after they have been checked and verified. We do not publish estimates and we do not fill the gap with guesses.",
+    "noFactsBody2": "When a figure is checked and verified it will appear here with its update date. Until then what is shown is what is known: the identity of the complex, the stage the process has reached, and the milestones completed."
   },
   "projectFacts": {
     "city": "City",

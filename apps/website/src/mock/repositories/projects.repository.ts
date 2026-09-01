@@ -65,14 +65,14 @@ function toPublic(project: MockProject): PublicProject {
   return redactVerifiers(checked as PublicProject)
 }
 
-/** Drops `verifiedByName` from every verified fact on a project, at any depth
- *  the contract puts one. */
+/** Drops the internal half of every verified fact on a project, at any depth
+ *  the contract puts one: the verifier's name and the audit source reference.
+ *  `verifiedAt` survives, because the date is the half a reader can use. */
 function redactVerifiers(project: PublicProject): PublicProject {
   const drop = <T,>(fact: T | undefined): T | undefined => {
     if (!fact) return undefined
-    const { verifiedByName: _name, ...rest } = fact as Record<string, unknown> & {
-      verifiedByName?: string
-    }
+    const { verifiedByName: _name, source: _source, ...rest } =
+      fact as Record<string, unknown> & { verifiedByName?: string; source?: string }
     return rest as T
   }
 

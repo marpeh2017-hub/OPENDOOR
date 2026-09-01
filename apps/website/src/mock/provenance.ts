@@ -74,32 +74,93 @@ export const CLAIM_FIELDS = [
   'completedAt',
 ] as const
 
+/** Does this value carry a real verification record? */
+function isVerified(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const fact = value as { verifiedAt?: unknown; verifiedByName?: unknown }
+  return typeof fact.verifiedAt === 'string' && fact.verifiedAt.length > 0
+    && typeof fact.verifiedByName === 'string' && fact.verifiedByName.length > 0
+}
+
 /**
  * Development-time guard.
  *
- * A `REALISTIC_PLACEHOLDER` that carries any claim field is a bug in the
- * fixture, not a display problem — it is the exact failure mode of a mock
- * quietly becoming a published statement about a real building. Throwing in
- * development makes it impossible to miss; production returns the value
- * untouched so a fixture mistake can never take the site down.
+ * ══════════════════════════════════════════════════════════════════════════
+ *  A REAL PROJECT MAY ASSERT A FACT. IT MAY NOT ASSERT AN UNVERIFIED ONE.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * This guard originally forbade a `REALISTIC_PLACEHOLDER` from carrying ANY
+ * claim field. That was right while no real project had verified anything: a
+ * real name plus a factual field could only mean somebody had typed a number
+ * they liked the look of.
+ *
+ * It stopped being right the moment a real project acquired a genuinely
+ * verified fact. The rule as written would have forced the choice between
+ * deleting a true, checked, attributable statement and relabelling a real
+ * complex as fiction — and the second is how a fixture with a real address
+ * ends up marked safe to invent things about.
+ *
+ * So the test is no longer "is there a claim field" but "is there a claim
+ * field NOBODY STOOD BEHIND". A field wrapped in a complete `VerifiedFact` —
+ * a date and a name — is by definition not invented; that is the entire
+ * meaning of the wrapper. A bare value, or a half-filled verification, is.
+ *
+ * This is strictly stronger than what it replaces. The old rule could not
+ * distinguish a checked fact from a fabricated one and simply banned both; it
+ * would have been satisfied by a project that published nothing while saying
+ * nothing about whether anyone had checked. The new one catches the actual
+ * failure mode: an unverified claim about a real building.
+ *
+ * Fields outside the verification model — `timeline`, `unitCount`,
+ * `signaturePercentage` and the rest — stay banned outright. They have no
+ * wrapper to carry a name and a date, so there is no way for one of them to
+ * be verified, and their presence on a real project is always a mistake.
+ *
+ * Throwing in development makes it impossible to miss; production returns the
+ * value untouched so a fixture mistake can never take the site down.
  */
 export function assertNoInventedClaims<T extends WithProvenance>(fixture: T, label: string): T {
   if (process.env.NODE_ENV === 'production') return fixture
   if (fixture.provenance !== 'REALISTIC_PLACEHOLDER') return fixture
 
   const record = fixture as unknown as Record<string, unknown>
+
   const offending = CLAIM_FIELDS.filter((field) => {
     const value = record[field]
     if (value === undefined || value === null) return false
+
+    // Inside the verification model: allowed once somebody has signed for it.
+    if ((MATERIAL_CLAIM_FIELDS as readonly string[]).includes(field)) {
+      return !isVerified(value)
+    }
+
+    // Outside it: no wrapper exists, so nothing here can ever be verified.
     if (Array.isArray(value)) return value.length > 0
     return true
   })
 
-  if (offending.length > 0) {
+  // Milestones are verified per entry rather than as a list, so the list is
+  // checked entry by entry. One unverified milestone is one invented event.
+  const milestones = record['milestones']
+  const unverifiedMilestones = Array.isArray(milestones)
+    ? milestones.filter((entry) => {
+        const m = entry as { state?: unknown; verification?: unknown }
+        return m.state !== 'upcoming' && !isVerified(m.verification)
+      }).length
+    : 0
+
+  if (offending.length > 0 || unverifiedMilestones > 0) {
+    const parts = [
+      ...(offending.length > 0 ? [offending.join(', ')] : []),
+      ...(unverifiedMilestones > 0
+        ? [`${unverifiedMilestones} milestone(s) without a verification record`]
+        : []),
+    ]
     throw new Error(
       `Fixture "${label}" is REALISTIC_PLACEHOLDER but asserts unverified facts: ` +
-      `${offending.join(', ')}. Either remove those fields, or change its ` +
-      `provenance to UI_FIXTURE and give it a fictional name.`,
+      `${parts.join('; ')}. Either remove them, give each a complete ` +
+      `VerifiedFact (verifiedAt AND verifiedByName), or change its provenance ` +
+      `to UI_FIXTURE and give it a fictional name.`,
     )
   }
   return fixture

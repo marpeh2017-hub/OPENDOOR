@@ -52,6 +52,29 @@ import type {
  * exactly the difference that governs whether a value may be published.
  */
 export type ProjectSourceType =
+  /**
+   * A fact confirmed directly by the client about their own engagement.
+   *
+   * ── WHY THIS IS A SOURCE TYPE AND NOT AN ABSENCE OF ONE ────────────────
+   *
+   * Some facts have no document because they are not the kind of thing a
+   * document records. Whether a representation has been chosen, and whether a
+   * developer process is under way, are facts about OpenDoor's own working
+   * relationship with a complex. OpenDoor is the authority on them, in a way
+   * it is not the authority on a parcel area.
+   *
+   * Recording that as its own source type keeps it HONEST IN BOTH DIRECTIONS.
+   * It does not pretend a workbook supports an organisational fact it never
+   * mentions; and it does not treat "no file" as "no evidence", which would
+   * push somebody to cite an unrelated document because the model demanded
+   * one.
+   *
+   * It carries less weight than a registry or a committee decision and more
+   * than an inference. It may support facts about process and engagement. It
+   * may NOT support planning status, approvals, permits, areas or unit
+   * counts: those need the body that issued them.
+   */
+  | 'USER_VERIFIED'
   | 'FEASIBILITY_WORKBOOK'
   | 'APPRAISAL'
   | 'PLANNING_DOCUMENT'

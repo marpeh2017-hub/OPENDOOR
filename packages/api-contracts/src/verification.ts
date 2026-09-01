@@ -82,10 +82,18 @@ export interface VerifiedFact<T> {
  * makes that removal enforceable rather than a convention somebody remembers.
  * A component cannot read a name that its type does not have.
  *
+ * `source` is dropped for the same reason. It is audit vocabulary — a sheet
+ * reference, a decision number, an internal provenance marker such as
+ * `USER_VERIFIED` — written for whoever re-checks the fact, not for a reader.
+ * Where a reference genuinely belongs in public (a committee decision number,
+ * say) it goes in rendered content, as `ProjectApproval.reference` already
+ * does; it does not ride along inside the verification wrapper where nothing
+ * displays it and nobody reviews it.
+ *
  * `verifiedAt` stays: the date is the part a reader can act on, and it is the
  * whole point of the section-level verification note.
  */
-export type PublicVerifiedFact<T> = Omit<VerifiedFact<T>, 'verifiedByName'>
+export type PublicVerifiedFact<T> = Omit<VerifiedFact<T>, 'verifiedByName' | 'source'>
 
 /**
  * The fields on a project that require structured verification.

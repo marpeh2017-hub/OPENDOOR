@@ -69,11 +69,26 @@ export async function ProjectBody({
   locale: string
   t: Localizer
 }) {
-  const [tRole, tSections, tFacts] = await Promise.all([
+  const [tRole, tSections, tFacts, tStages, tPhases] = await Promise.all([
     getTranslations('projectRole'),
     getTranslations('projectSections'),
     getTranslations('projectFacts'),
+    getTranslations('stages'),
+    getTranslations('phases'),
   ])
+
+  /* The heading NAMES the stage rather than saying "current stage" over a rail
+     the reader has to decode. The rail shows the four phases; without the
+     stage in words, the specific step the project is on is never stated.
+
+     Falls back to the phase name when a project published a phase but no
+     precise stage — the one case where the phase IS the most precise thing
+     anyone has verified. */
+  const stageHeading = project.currentStage
+    ? `${tSections('stageHeading')}: ${tStages(project.currentStage.value)}`
+    : project.currentPhase
+      ? `${tSections('stageHeading')}: ${tPhases(`${project.currentPhase.value}.name`)}`
+      : tSections('stageHeading')
 
   const facts = hasProjectFacts(project)
   const verifiedAt = oldestVerification(project)
@@ -203,7 +218,7 @@ export async function ProjectBody({
       <Section size="lg">
         <SectionHead
           eyebrow={tSections('stageEyebrow')}
-          heading={tSections('stageHeading')}
+          heading={stageHeading}
           intro={tSections('stageIntro')}
         />
         {/* Stage wins when present, so a derived phase and an explicitly
