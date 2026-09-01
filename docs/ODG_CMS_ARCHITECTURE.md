@@ -485,3 +485,86 @@ state.
 
 Until then the English project page correctly shows Hebrew identity with
 English UI chrome and English editorial framing, which is honest and readable.
+
+---
+
+# Appendix C. The four layers, and the editor that has to respect them
+
+*Added during Real Project Pilot 2, which is the first time a project arrived
+with confidential material attached.*
+
+## What the pilot exposed
+
+The Tchernichovsky-Shimoni feasibility workbook contains, in one file and all
+attached to one complex: a registered parcel area, a demolition estimate, a
+unit-mix scenario, and a developer's profit figure.
+
+Any model that accepted those onto `PublicProject` would put a margin one
+`publishState` flag away from the public internet. The layers are not a tidiness
+preference; they are what stops a publish button from being a disclosure.
+
+## The four layers
+
+| Layer | Holds | Audience |
+|---|---|---|
+| 1. **Public content** | `PublicProject` | anyone |
+| 2. **Internal project data** | measured/registered detail, candidate boundary, working stage | staff |
+| 3. **Verification / provenance** | sources, quality flags, fact candidates | staff |
+| 4. **Feasibility scenarios** | assumptions, modelled outputs | staff, narrower |
+
+Types for 2, 3 and 4 are defined in
+`packages/api-contracts/src/project-internal.ts`. **Types only** — no data, no
+runtime value, nothing in any bundle. Nothing implements them yet.
+
+### The one-way rule
+
+A value moves from layers 2–4 into layer 1 **one field at a time, by a person,
+through verification**, arriving as a `VerifiedFact`.
+
+There is deliberately **no `toPublic(internal)` helper**, and there must never
+be one. A function that maps an internal object to a public one is precisely
+the accident this separation exists to prevent: it turns a reviewed,
+field-by-field decision into a single call somebody can make without reading
+what is in it.
+
+**Publishing a project must never publish layers 2–4.** Publication is a
+property of the public record, not of the complex.
+
+## The editor
+
+A project editor needs these as separate areas, and an administrator must be
+able to work in all of them without code:
+
+| Tab | Contents |
+|---|---|
+| **Public content** | name, slug, city, neighbourhood, street, summary, description, role override |
+| **Internal data** | candidate boundary, registered/measured areas, sub-parcel counts, working stage |
+| **Verification** | sources, reliability, quality flags, fact candidates and their classification |
+| **Feasibility** | scenarios, assumptions, outputs — read-mostly, imported not typed |
+| **Media** | hero, gallery, ordering, focal point, alt text, captions, classification |
+| **Timeline** | milestones, state, date or approximate period, ordering |
+| **SEO** | title, description, noIndex |
+| **Publication** | draft / review / published / archived, visibility |
+
+### Rules the editor must enforce
+
+1. **Changing a verified fact invalidates its verification.** Appendix A.
+2. **Internal data never becomes public because a project was published.** The
+   publish action touches layer 1 only.
+3. **A scenario output is never offered as a public fact.** No "copy to public"
+   affordance on layer 4 at all — not even a guarded one.
+4. **A blocking source quality flag prevents verification** of anything drawn
+   from that source, whatever its overall reliability says.
+5. **Verifying is a separate permission from editing.** A second signature that
+   the same person can supply is not a second signature.
+6. **Values are captured as written.** "greater of 22 sqm or 22%" and
+   "337.18" are stored as read. Parsing at capture time discards the
+   qualification that is often the point, and invites the rounding that turns
+   a calculation into a claim.
+
+## Present state
+
+The website reads layer 1 only, and has no access to the others because they do
+not exist as data anywhere it can reach. Pilot 2's actual values live in
+`docs/ODG_PILOT_2_SOURCE_RECORD.md`, which `apps/website` does not import — a
+number outside the module graph cannot leak from it.

@@ -383,6 +383,98 @@ const REAL_PROJECTS: MockProject[] = [
   {
     /*
      * ══════════════════════════════════════════════════════════════════════
+     *  PILOT 2. A DRAFT, AND IT STAYS A DRAFT.
+     * ══════════════════════════════════════════════════════════════════════
+     *
+     * `publishState: 'draft'` AND `visibility: 'internal'`. Either alone would
+     * keep it off the site; both are set because they answer different
+     * questions, and `isPubliclyVisible` requires both to pass. The record is
+     * absent from the homepage, from `/projects`, from the sitemap, and its
+     * public detail route 404s. It is reachable only through the
+     * development-only preview, which 404s in production.
+     *
+     * ── WHY IT IS NOT PUBLISHABLE ────────────────────────────────────────
+     *
+     * A feasibility workbook exists for this complex. That workbook proves a
+     * calculation was performed. It does NOT prove a planning scheme was
+     * approved, that a boundary was settled, or that any figure in it was
+     * checked by anyone.
+     *
+     * Every value it carries is therefore classified
+     * SOURCE_FOUND_BUT_REQUIRES_REVIEW or lower, and none may be published.
+     * The workbook also carries defects that block automatic verification on
+     * their own: at least seven #REF! formulas, an unresolved external
+     * reference, cached values that may not survive recalculation, an
+     * inconsistent spelling of the street, a 95-versus-98 unit-count
+     * ambiguity, an address that appears in apartment data but not in the
+     * parcel list, a parcel with no confirmed address, and no confirmed
+     * author or date.
+     *
+     * The full audit lives in `docs/ODG_PILOT_2_SOURCE_RECORD.md`.
+     *
+     * ── WHAT IS DELIBERATELY NOT IN THIS RECORD ──────────────────────────
+     *
+     * The candidate addresses, the registered and measured parcel areas, the
+     * sub-parcel counts, the demolition area, the scenario's floor and
+     * building assumptions, its unit outputs, and every economic figure.
+     *
+     * None of them is here, and none is anywhere else in `apps/website`. They
+     * are recorded in the source document above, which the website does not
+     * import. That is the point: a number that is not in the bundle cannot
+     * leak from it, whatever a future flag does.
+     *
+     * ── THE NAME IS A WORKING NAME ───────────────────────────────────────
+     *
+     * "מתחם טשרניחובסקי - שמעוני" is how the complex is referred to
+     * internally. It is not an official project name, no representation has
+     * approved it, and it must not be treated as fixed. The workbook spells
+     * the street inconsistently, which is itself one of the quality flags.
+     *
+     * ── THE CITY REQUIRES REVIEW ─────────────────────────────────────────
+     *
+     * `GeoContext.city` is required by the type, so a value must be present
+     * for the record to exist at all. Jerusalem is what the working name
+     * implies, but the workbook establishes it only through comparison
+     * transactions, which locate a market rather than a project. It is
+     * carried here as a draft working value and is classified
+     * REQUIRES_REVIEW in the source record. It has never been published and
+     * must not be until confirmed.
+     */
+    provenance: 'REALISTIC_PLACEHOLDER',
+    id: 'p-tchernichovsky-shimoni',
+    slug: 'tchernichovsky-shimoni',
+    name: 'מתחם טשרניחובסקי - שמעוני',
+    location: {
+      // REQUIRES_REVIEW. See the note above. No neighbourhood and no street:
+      // the boundary is a list of ten candidate addresses nobody has
+      // confirmed, and picking one to display would settle by presentation a
+      // question the sources leave open.
+      city: 'ירושלים',
+    },
+    summary:
+      'מתחם בתהליך בדיקה ראשונית. טרם פורסם מידע על המתחם.',
+
+    /* ── EVERY OTHER FIELD IS ABSENT ────────────────────────────────────────
+     * No description, and no `role`: there is no evidence establishing what
+     * OpenDoor's engagement here is, and the role statement is NOT copied
+     * from another project. Flagged for user confirmation.
+     *
+     * No type, currentStage, currentPhase, existingUnits, proposedUnits,
+     * buildingCount, planningStatus, developer, professionals, approvals,
+     * permits, materialDates, milestones, timeline, heroImage or gallery.
+     *
+     * The workbook supports an internal working classification no stronger
+     * than initial review; even that is not published, because publishing a
+     * stage is a claim about where a real building's process stands. */
+
+    featured: false,
+    visibility: 'internal',
+    publishState: 'draft',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+  },
+  {
+    /*
+     * ══════════════════════════════════════════════════════════════════════
      *  PILOT 1. IDENTITY ONLY, AND THAT IS THE POINT.
      * ══════════════════════════════════════════════════════════════════════
      *

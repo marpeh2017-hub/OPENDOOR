@@ -18,3 +18,8 @@ export * from './resident'
 export * from './representative'
 export * from './cms'
 export * from './verification'
+/* Type-level only: the four-layer project separation. Contains no runtime
+   value, so exporting it adds nothing to any bundle. See the file header for
+   why internal, provenance and feasibility data must never be fields on
+   `PublicProject`. */
+export * from './project-internal'
