@@ -720,3 +720,199 @@ Unchanged from Pilot 2 and reinforced:
 Persistence, the API and permission enforcement arrive with 4B, which is the
 first phase that writes anything. A permission gate in front of a read-only
 shell would read as protection while providing none.
+
+
+---
+
+# Appendix E — Pass 4B: persistence and the first real editing loop
+
+Pass 4A produced a shell over fixtures. 4B makes the database authoritative for
+one page and proves the loop end to end: **edit → preview → publish → the
+website changes → restore**, with no deploy, no code change and no manual
+migration.
+
+## E.1 What moved, and what deliberately did not
+
+| | Before 4B | After 4B |
+|---|---|---|
+| שקיפות ואמון | code fixture | **database**, published through the gateway |
+| the other seven pages | code fixture | code fixture, listed as such in the CMS |
+| טשרניחובסקי | code fixture, draft | **database draft**, unpublished, unreachable |
+| permissions | documented | **enforced at the endpoint** |
+| tenancy | documented | **enforced, with cross-tenant tests** |
+
+Only one page migrated on purpose. See E.4.
+
+## E.2 The six tables, and why not one JSON column
+
+Identity, tenant, publication state, revision, authorship and verification are
+things the product must **query and enforce**, not merely store. "What is
+awaiting review", "who published this", "is this figure still verified after
+the edit" are questions a JSON document can hold the answer to but cannot be
+asked, and cannot be constrained. Each is an explicit indexed column; the block
+tree an editor authors is the only thing left as JSON.
+
+```
+cms_content              the item, its identity and its working draft
+cms_revisions            append-only full snapshot per save
+cms_publications         immutable snapshot of what the public was given
+cms_verifications        per-field provenance (value beside verifiedValue)
+cms_verification_audit   append-only trail of every provenance event
+cms_media_references     which stored objects an item points at
+```
+
+**Draft, revision and publication are three different things.** Editing must
+not change what the site serves; publishing must freeze what was approved
+rather than re-read a draft that has moved on; restoring must append rather
+than rewind. One table cannot hold all three without one guarantee quietly
+failing.
+
+A publication stores its **own** snapshot even though it records which revision
+it came from, because publication is a *projection* of a revision, not a copy:
+internal fields dropped, verifier identity and source vocabulary stripped,
+unverified claims omitted. Storing the projection is what makes it provable
+later what was and was not exposed — including after this code changes.
+
+## E.3 The public projection is a rebuild, not a deletion
+
+The obvious implementation is `delete draft.internal` on the way out. It is
+also the one that fails silently: the day somebody adds `sourceNotes` to a
+block, the deny-list does not know about it and the field ships — and the diff
+that causes the leak touches a different file from the one meant to prevent it.
+
+So `toPublicProjection` **walks the content and rebuilds it**, carrying forward
+only what is recognised as publishable. An unrecognised key is dropped. The
+failure mode of a mistake becomes *"my new field does not appear on the
+website"* — noticed immediately by whoever added it — instead of *"my new field
+appears on the website"* — noticed by nobody.
+
+`findPrivateLeaks` re-checks the result independently, inside the publish
+transaction. Projection and assertion can fail separately, and a test whose
+oracle is the code under test proves nothing.
+
+> Tested by **shape**, not by string search. A string search proves one secret
+> stayed out of one payload, and passes happily on a leaked user id. Both are
+> kept for the Tchernichovsky figures, because neither is sufficient alone.
+
+## E.4 The resolver is controlled by an explicit list
+
+The tempting resolver is *"ask the CMS; if it answers, use that"*. It hands the
+live website to whatever happens to be in a row — so a half-finished import, or
+a draft somebody published to see how it looked, silently replaces working
+content while the correct code sits unused.
+
+A page is served from the CMS only when its slug is in `CMS_MANAGED_SLUGS`.
+That leaves three states per page, **all safe**:
+
+| state | serves |
+|---|---|
+| not in the list | code |
+| in the list, unpublished | code |
+| in the list, gateway unreachable | code |
+| in the list, published | **CMS** |
+
+The fallback is therefore the normal path for every unmigrated page, exercised
+constantly rather than being emergency code that has never run. A marketing
+site should not 500 because a database is down for sentences that change twice
+a year.
+
+## E.5 Permissions map onto the existing roles
+
+No second user table, no CMS login, no parallel role enum — a second
+authentication system is a second place for access to be revoked incompletely.
+The tiers narrow faster than elsewhere in `roles.constants.ts` because the
+blast radius differs: a CRM mistake reaches a project team, a website mistake
+reaches every resident and Google, and stays quotable after correction.
+
+| capability | roles |
+|---|---|
+| view | SUPER_ADMIN, COMPANY_ADMIN, CEO, PROJECT_MANAGER, RRM |
+| edit | the same, **minus CEO** |
+| verify | SUPER_ADMIN, COMPANY_ADMIN, PROJECT_MANAGER |
+| publish / unpublish / **restore** | SUPER_ADMIN, COMPANY_ADMIN |
+
+MUNICIPALITY_USER, EXTERNAL_CONSULTANT and DEVELOPER_REP appear at no tier:
+they observe a *project*, and have no standing over the company's website.
+
+Restore sits with publish because restoring a PUBLISHED item changes what the
+public reads — a publishing act under another name.
+
+## E.6 Tenancy
+
+`tenantId` never comes from the browser. It is absent from every DTO, so
+`whitelist: true` strips it; it comes from the verified JWT. Every mutation
+looks the row up scoped, then mutates by id. **Cross-tenant answers 404, never
+403**, which would confirm the id is real somewhere else.
+
+The one exception is the public website route, where the tenant slug *is* in
+the path. It selects among PUBLISHED rows only and so reveals nothing that is
+not already on the open internet.
+
+## E.7 Preview
+
+An HMAC over `contentId.tenantId.expiry` — **not a JWT**, because it is not a
+session and must never be accepted as one. No identity, one item, one hour.
+Compared in constant time, length-checked first.
+
+It renders the **projection**, not the draft. Showing the raw draft would
+display internal notes and unverified figures that publishing is about to drop,
+so a reviewer would approve a page they never saw.
+
+`noindex` twice over: the gateway's header does not survive a server-side
+fetch, so the page declares its own robots metadata. An indexed preview URL
+outlives its token in a search engine's cache.
+
+## E.8 Revalidation
+
+A tagged webhook (`cms:page:<slug>`). Without it the choice is a window where
+Publish visibly does nothing, or `no-store` on every request for content that
+changes twice a year.
+
+It **never throws**. The publication is already committed, so an unreachable
+website must not report failure for work that succeeded — the editor would
+retry and produce a second publication row for one editorial act. Staleness is
+self-correcting; a lie about whether publishing worked is not.
+
+## E.9 The editor walks the tree
+
+A form per block type is the obvious V1 and the wrong one: it must be extended
+for every new block, and until somebody does, that block's text is invisible in
+the editor while perfectly visible on the website — a silent, one-directional
+failure where the CMS quietly stops covering the site it manages.
+
+Walking the tree inverts it. Every `{ he, en? }` leaf is discovered wherever it
+sits, so **a field that is not editable is one that does not exist**. 25 fields
+across 5 block types on שקיפות ואמון, discovered rather than enumerated.
+
+Structure — order, types, ids, `hidden` — is carried through untouched. This is
+a text editor over an existing composition, which is the V1 the pass called
+for: prove content round-trips before adding rearrangement.
+
+**Saving is explicit.** No autosave: content one button from the public website
+should not have half-finished sentences become the draft of record, and "did
+that save?" must be answerable by looking. Its counterpart is a `beforeunload`
+warning — an editor that will not save for you owes you that.
+
+**Saving is not publishing**, and the banner says so in words on a published
+page rather than leaving the user to infer it.
+
+English is optional everywhere and never blocks. Clearing it **removes the
+key** rather than storing `''`: the policy distinguishes "no approved English"
+from "English that happens to be blank".
+
+## E.10 What 4B did not build
+
+Media library (4C), project editor and verification UI (4D), knowledge/FAQ/
+navigation/settings (4E), structural block editing, and migration of the
+remaining seven pages. `cms_media_references` and `cms_verifications` exist and
+are tested, so those phases add screens rather than schema.
+
+## E.11 Revised sequence
+
+| Phase | Ships | Exit gate |
+|---|---|---|
+| 4A ✓ | contracts, localisation, shell, routes | every page renders identically before and after |
+| **4B ✓** | schema, API, permissions, resolver, editor, preview, revisions | **edit a sentence and publish it, end to end, without code** |
+| 4C | media library over the existing MinIO abstraction | an image without classification or alt text cannot publish |
+| 4D | project editor, verification UI, publication check | publishing an unverified fact fails in the API, not just the UI |
+| 4E | knowledge, FAQ, navigation, settings; delete the fixtures | no site content is edited in code |
