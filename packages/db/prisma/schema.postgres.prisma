@@ -630,6 +630,16 @@ model Tenant {
   notifications Notification[]
   meetings      Meeting[]
 
+  // CMS (Site Manager). Cascade on every one of these: a deleted tenant must
+  // not leave published website content, revision history or verification
+  // records behind.
+  cmsContent           CmsContent[]
+  cmsRevisions         CmsRevision[]
+  cmsPublications      CmsPublication[]
+  cmsVerifications     CmsVerification[]
+  cmsVerificationAudit CmsVerificationAudit[]
+  cmsMediaReferences   CmsMediaReference[]
+
   @@index([slug])
   @@map("tenants")
 }
@@ -680,6 +690,18 @@ model User {
   createdDocuments    Document[]      @relation("DocumentCreator")
   importJobs          ImportJob[]
   importRowDecisions  ImportRowDecision[] @relation("ImportRowDecider")
+
+  // CMS (Site Manager). Named relations throughout, because a user can stand in
+  // several different roles against the same row and "who edited it" must stay
+  // distinguishable from "who verified it" and "who published it".
+  cmsContentCreated     CmsContent[]           @relation("CmsContentCreator")
+  cmsContentEdited      CmsContent[]           @relation("CmsContentEditor")
+  cmsRevisionsAuthored  CmsRevision[]          @relation("CmsRevisionAuthor")
+  cmsPublished          CmsPublication[]       @relation("CmsPublicationPublisher")
+  cmsFactsEdited        CmsVerification[]      @relation("CmsVerificationEditor")
+  cmsFactsVerified      CmsVerification[]      @relation("CmsVerificationVerifier")
+  cmsVerificationAudit  CmsVerificationAudit[] @relation("CmsVerificationAuditActor")
+  cmsMediaUploaded      CmsMediaReference[]    @relation("CmsMediaUploader")
 
   @@unique([tenantId, email])
   @@unique([tenantId, phone])
@@ -2778,4 +2800,378 @@ model ImportRowIssue {
   @@index([jobId, rowNumber])
   @@index([jobId, severity])
   @@map("import_row_issues")
+}
+
+// ============================================================
+// CMS — the OpenDoor Site Manager
+// ============================================================
+//
+// What the PUBLIC website says, and the record of who said it.
+//
+// ── WHY THESE TABLES AND NOT A JSON BLOB PER PAGE ──────────────────────────
+//
+// Identity, tenant, publication state, revision, authorship and verification
+// are all things the product has to QUERY and ENFORCE, not merely store:
+// "which items are awaiting review", "who published this and when", "is this
+// figure still verified after the edit". A JSON document per page can hold
+// those facts but cannot be asked about them, and cannot be constrained.
+//
+// So every one of them is an explicit, indexed column here, and the free-form
+// part — the block tree an editor actually authors — is the ONLY thing left as
+// JSON.
+//
+// ── THE FOUR-TABLE SPLIT ───────────────────────────────────────────────────
+//
+//   CmsContent      the item, its identity and its CURRENT working draft
+//   CmsRevision     an append-only full SNAPSHOT per save
+//   CmsPublication  an immutable snapshot of what the public was actually given
+//   CmsVerification per-field provenance, with its own append-only audit
+//
+// Draft, revision and publication are deliberately three different things.
+// Editing a page must not change what the website is serving; publishing must
+// freeze exactly what was approved rather than re-read a draft that may have
+// moved on; and restoring history must not rewrite it. One table could not
+// hold all three without one of those guarantees quietly failing.
+//
+// ── TENANCY ────────────────────────────────────────────────────────────────
+//
+// Every table carries `tenantId` and every index leads with it. Uniqueness is
+// tenant-scoped — two tenants may both own the page `transparency` — and no
+// query in the CMS is written without it. `tenantId` is never accepted from
+// the browser; it comes from the authenticated server context.
+
+enum CmsContentKind {
+  PAGE
+  PROJECT
+  ARTICLE
+  FAQ_ITEM
+  NAVIGATION
+  SETTINGS
+}
+
+enum CmsPublicationState {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CmsRevisionReason {
+  SAVE
+  PUBLISH
+  UNPUBLISH
+  RESTORE
+}
+
+/// Mirrors `VerificationStatus` in @urban-renewal/api-contracts. The contract
+/// DERIVES this value from the record; this column stores what was derived, so
+/// "everything awaiting a second review" is one indexed query.
+enum CmsVerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  SELF_VERIFIED
+  SECOND_REVIEW_REQUIRED
+}
+
+enum CmsVerificationEvent {
+  EDITED
+  VERIFIED
+  INVALIDATED
+  REVIEW_REQUESTED
+}
+
+/// How far a piece of content may travel. FEASIBILITY is distinct from
+/// INTERNAL on purpose: an internal figure may one day be verified and
+/// published, a feasibility scenario output may not, ever.
+enum CmsExposureLevel {
+  PUBLIC
+  INTERNAL
+  FEASIBILITY
+}
+
+/// What an image is claimed to BE. Publishing an editorial photograph as
+/// though it depicted an OpenDoor project is the specific failure this exists
+/// to make impossible, so it is a column and not a caption convention.
+enum CmsImageClaim {
+  VERIFIED_PROJECT_PHOTO
+  EDITORIAL_CONTEXT
+  ARCHITECTURAL_PATTERN
+}
+
+model CmsContent {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  kind CmsContentKind
+  /// Stable, human-meaningful address within its kind. Tenant-scoped, so two
+  /// tenants may each own `transparency` without colliding.
+  slug String
+
+  state    CmsPublicationState @default(DRAFT)
+  exposure CmsExposureLevel    @default(PUBLIC)
+
+  /**
+   * The working draft: the block tree as the editor currently has it.
+   *
+   * JSON because this is the one genuinely open-ended part of the model — the
+   * shape differs per block type and the set of block types grows. It is
+   * validated against the api-contracts schema at the gateway before it is
+   * written, so "unvalidated JSON" it is not; it is simply not a shape SQL can
+   * usefully constrain.
+   *
+   * This is NOT what the website serves. The public reads CmsPublication.
+   */
+  draft Json
+
+  /// Per-locale SEO. Absent locales fall back to the page's own heading and
+  /// opening sentence, which is why this is nullable rather than defaulted.
+  seo Json?
+
+  /// The newest revision, denormalised so the editor can show "last saved"
+  /// without an aggregate over the whole revision history on every load.
+  currentRevisionId String?      @unique
+  currentRevision   CmsRevision? @relation("CmsContentCurrentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
+
+  /// The publication the website is serving right now, or null if this item has
+  /// never been published or has been withdrawn. The resolver reads THIS, so an
+  /// unpublished edit cannot reach the public by any path.
+  livePublicationId String?         @unique
+  livePublication   CmsPublication? @relation("CmsContentLivePublication", fields: [livePublicationId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime  @default(now())
+  createdById      String
+  createdBy        User      @relation("CmsContentCreator", fields: [createdById], references: [id])
+  updatedAt        DateTime  @updatedAt
+  updatedById      String
+  updatedBy        User      @relation("CmsContentEditor", fields: [updatedById], references: [id])
+  firstPublishedAt DateTime?
+
+  revisions     CmsRevision[]          @relation("CmsContentRevisions")
+  publications  CmsPublication[]       @relation("CmsContentPublications")
+  verifications CmsVerification[]
+  mediaRefs     CmsMediaReference[]
+  auditEntries  CmsVerificationAudit[]
+
+  @@unique([tenantId, kind, slug])
+  @@index([tenantId, kind, state])
+  @@index([tenantId, state, updatedAt])
+  @@map("cms_content")
+}
+
+/**
+ * One append-only FULL snapshot per save.
+ *
+ * Full, not a diff: restoring must not depend on replaying every intermediate
+ * step correctly, and a snapshot that can be read on its own is one that can be
+ * audited on its own. Storage is cheap next to the cost of a history that
+ * cannot be trusted.
+ *
+ * Restoring an old revision writes a NEW revision whose snapshot happens to
+ * equal the old one, with `restoredFromRevisionId` recording where it came
+ * from. History is therefore only ever appended to, never rewound: what the
+ * page said last Tuesday remains true even after somebody undoes it.
+ */
+model CmsRevision {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation("CmsContentRevisions", fields: [contentId], references: [id], onDelete: Cascade)
+
+  /// Monotonic per item, starting at 1. Gives the history a stable order that
+  /// does not depend on timestamp resolution or clock skew.
+  sequence Int
+  reason   CmsRevisionReason
+
+  snapshot Json
+  seo      Json?
+  /// The publication state at the moment of the save, so the history explains
+  /// itself without joining forward to what happened later.
+  stateAtRevision CmsPublicationState
+
+  authorId  String
+  author    User     @relation("CmsRevisionAuthor", fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  restoredFromRevisionId String?
+  restoredFrom           CmsRevision?  @relation("CmsRevisionRestoredFrom", fields: [restoredFromRevisionId], references: [id], onDelete: SetNull)
+  restoredInto           CmsRevision[] @relation("CmsRevisionRestoredFrom")
+
+  /// Optional one-line note from the editor. Never required: a mandatory
+  /// message field produces "update" on every row and buys nothing.
+  summary String?
+
+  currentFor   CmsContent?      @relation("CmsContentCurrentRevision")
+  publications CmsPublication[] @relation("CmsPublicationRevision")
+
+  @@unique([contentId, sequence])
+  @@index([tenantId, contentId, createdAt])
+  @@map("cms_revisions")
+}
+
+/**
+ * What the public was actually given, frozen.
+ *
+ * Rows here are written once and never updated. Withdrawing a publication sets
+ * `unpublishedAt` and clears the item's `livePublicationId`; it does not delete
+ * or edit the row, because "what did the website say on the day the resident
+ * signed" has to remain answerable.
+ *
+ * The snapshot is stored again rather than reached through the revision, even
+ * though `revisionId` records which revision it came from. Publication is a
+ * PROJECTION of a revision, not a copy of it: internal fields are dropped,
+ * verifier identity and source vocabulary are stripped, and unverified claims
+ * are omitted. Storing the projection is what makes it possible to prove later
+ * what was and was not exposed.
+ */
+model CmsPublication {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation("CmsContentPublications", fields: [contentId], references: [id], onDelete: Cascade)
+
+  revisionId String
+  revision   CmsRevision @relation("CmsPublicationRevision", fields: [revisionId], references: [id])
+
+  /// The public-safe projection, exactly as served. Never the raw draft.
+  snapshot Json
+  seo      Json?
+
+  publishedAt   DateTime  @default(now())
+  publishedById String
+  publishedBy   User      @relation("CmsPublicationPublisher", fields: [publishedById], references: [id])
+  unpublishedAt DateTime?
+
+  liveFor CmsContent? @relation("CmsContentLivePublication")
+
+  @@index([tenantId, contentId, publishedAt])
+  @@map("cms_publications")
+}
+
+/**
+ * Provenance for one field of one item.
+ *
+ * `verifiedValue` is stored ALONGSIDE the live value so that invalidation is a
+ * mechanism rather than an intention: when the two differ the fact is no longer
+ * verified, and nobody has to remember to clear a flag. That is the whole
+ * design. A boolean `isVerified` would survive an edit and quietly lie.
+ */
+model CmsVerification {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  /// Dotted path into the item, e.g. `unitCount` or `milestone.2.title`.
+  field String
+
+  value         Json
+  verifiedValue Json?
+  status        CmsVerificationStatus @default(UNVERIFIED)
+
+  editedById String
+  editedBy   User     @relation("CmsVerificationEditor", fields: [editedById], references: [id])
+  editedAt   DateTime @default(now())
+
+  verifiedById String?
+  verifiedBy   User?     @relation("CmsVerificationVerifier", fields: [verifiedById], references: [id])
+  verifiedAt   DateTime?
+
+  /// Where the claim comes from, and the reference within it. Both are INTERNAL
+  /// and are stripped from every public projection, along with verifier
+  /// identity: the public learns that a figure was verified, never by whom.
+  source          String?
+  sourceReference String?
+
+  auditEntries CmsVerificationAudit[]
+
+  @@unique([contentId, field])
+  @@index([tenantId, status])
+  @@map("cms_verifications")
+}
+
+/// Append-only. Rows are never updated or deleted, which is what separates an
+/// audit trail from a status column that happens to have a timestamp.
+model CmsVerificationAudit {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  verificationId String?
+  verification   CmsVerification? @relation(fields: [verificationId], references: [id], onDelete: SetNull)
+
+  field  String
+  event  CmsVerificationEvent
+  status CmsVerificationStatus
+
+  actorId    String
+  actor      User     @relation("CmsVerificationAuditActor", fields: [actorId], references: [id])
+  occurredAt DateTime @default(now())
+
+  /// Human-readable LABELS, not the values themselves. The audit trail has to be
+  /// readable by someone who lacks permission to see every figure it mentions.
+  previousValueLabel String?
+  newValueLabel      String?
+
+  source          String?
+  sourceReference String?
+  note            String?
+
+  @@index([tenantId, contentId, occurredAt])
+  @@index([tenantId, field, event])
+  @@map("cms_verification_audit")
+}
+
+/**
+ * A content item's reference to a stored image.
+ *
+ * This is deliberately NOT a media library: it records which objects a piece of
+ * content points at, so that publishing, revision history and deletion can all
+ * reason about images without inventing an upload pipeline. The bytes stay
+ * where they already are, behind the existing StorageService abstraction, and
+ * `storageKey` is the same tenant-scoped key that service already issues.
+ *
+ * `classification` and `alt` are NOT NULL because an image lacking either is
+ * one that cannot be published, and the cheapest place to guarantee that is
+ * here rather than in every screen that touches an image.
+ */
+model CmsMediaReference {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  /// Where inside the item this image is used, e.g. `hero` or `gallery.1`.
+  field String
+
+  storageKey String
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  width      Int?
+  height     Int?
+
+  classification CmsImageClaim
+
+  /// LocalizedContent: `{ he, en? }`. Hebrew is required, English never blocks.
+  alt     Json
+  caption Json?
+  credit  String?
+  takenOn DateTime?
+  /// `{ x, y }` in 0..1, for art-directed cropping.
+  focalPoint Json?
+
+  uploadedById String
+  uploadedBy   User     @relation("CmsMediaUploader", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+
+  @@unique([contentId, field, storageKey])
+  @@index([tenantId, classification])
+  @@map("cms_media_references")
 }
