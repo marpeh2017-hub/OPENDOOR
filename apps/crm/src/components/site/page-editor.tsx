@@ -191,7 +191,7 @@ export function PageEditor({ contentId }: { contentId: string }) {
           type="button"
           onClick={save}
           disabled={!dirty || saveState === 'saving'}
-          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saveState === 'saving'
             ? <Loader2 size={15} className="animate-spin" aria-hidden="true" />
@@ -217,6 +217,9 @@ export function PageEditor({ contentId }: { contentId: string }) {
             dirty ? 'יש שינויים שלא נשמרו' :
             check?.canPublish === false ? 'יש חסמים לפרסום' : undefined
           }
+          /* teal-700 rather than the primary token: publishing is a step beyond
+             saving, and the darker swatch is HIERARCHY, not a contrast patch.
+             7.34:1 with white. */
           className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy === 'publish'

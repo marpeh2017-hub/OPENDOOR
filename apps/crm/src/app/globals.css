@@ -12,13 +12,26 @@
     --card-foreground: 0 0% 23%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 23%;
-    --primary: 182 54% 41%;
+    /*
+     * teal-600, not teal-500. WHITE on teal-500 measures 3.26:1 and fails the
+     * AA minimum of 4.5:1 for normal text, so EVERY primary button in the CRM
+     * and the Portal was failing — not one button, the token.
+     *
+     * teal-600 is 5.12:1 with white and sits in the same hue family (183 vs
+     * 182), so the brand direction is unchanged; the swatch is one step
+     * darker.
+     *
+     * `--ring` deliberately stays teal-500: a focus ring is a non-text
+     * indicator, judged against WCAG 1.4.11's 3:1, and 3.26:1 already passes.
+     * Darkening it would dull the brand accent where it is legitimate.
+     */
+    --primary: 183 57% 31%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 12% 96%;
     --secondary-foreground: 0 0% 23%;
     --muted: 210 12% 93%;
     --muted-foreground: 207 8% 44%;
-    --accent: 182 54% 41%;
+    --accent: 183 57% 31%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -28,7 +41,7 @@
     --radius: 0.5rem;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 23%;
-    --sidebar-primary: 182 54% 41%;
+    --sidebar-primary: 183 57% 31%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 12% 96%;
     --sidebar-accent-foreground: 0 0% 23%;
@@ -43,7 +56,7 @@
     --card-foreground: 210 20% 90%;
     --popover: 220 13% 13%;
     --popover-foreground: 210 20% 90%;
-    --primary: 182 54% 41%;
+    --primary: 183 57% 31%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 13% 17%;
     --secondary-foreground: 210 20% 90%;
@@ -58,7 +71,7 @@
     --ring: 182 54% 41%;
     --sidebar-background: 220 13% 8%;
     --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 182 54% 41%;
+    --sidebar-primary: 183 57% 31%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 13%;
     --sidebar-accent-foreground: 210 20% 90%;
