@@ -30,17 +30,22 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex gap-6">
+    /*
+     * Stacks below `md`. The rail is a fixed 224px, so keeping the row layout on
+     * a phone left the content column about 142px wide and wrapped its prose to
+     * one or two words per line. The CRM's own sidebar already collapses at this
+     * width; this follows it rather than inventing a second breakpoint.
+     */
+    <div className="flex flex-col gap-6 md:flex-row">
       <nav
         aria-label="ניהול האתר"
-        className="w-56 flex-shrink-0"
+        className="w-full flex-shrink-0 md:w-56"
       >
         <div className="rounded-xl border border-border bg-white p-2">
           {SITE_NAV.map((group) => (
             <div key={group.group} className="mb-3 last:mb-0">
-              {/* gray-400 is 2.80:1 on white and fails AA at this size. The CRM
-                  sidebar uses it for its own group labels and carries the same
-                  defect; fixing that one is a separate, deliberate change. */}
+              {/* gray-600, not gray-400: a 12px semibold label needs 4.5:1 and
+                  gray-400 gives 2.80:1 on white. */}
               <p className="px-3 pb-1 pt-2 text-xs font-semibold tracking-wider text-gray-600">
                 {group.group}
               </p>

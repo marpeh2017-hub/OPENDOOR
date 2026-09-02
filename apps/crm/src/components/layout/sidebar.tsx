@@ -104,7 +104,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 overflow-y-auto py-4">
         {navItems.map((group) => (
           <div key={group.group} className="mb-4">
-            <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            {/* gray-600, not gray-400: a 12px semibold label needs 4.5:1 and
+                gray-400 gives 2.80:1 on white. */}
+            <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-600">
               {group.group}
             </p>
             <ul className="space-y-0.5 px-2">

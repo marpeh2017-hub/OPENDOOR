@@ -62,7 +62,9 @@ export function LoginForm() {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <Label className="form-label mb-0">סיסמה</Label>
-          <a href="/he/forgot-password" className="text-xs text-primary hover:underline">
+          {/* teal-600 rather than the primary teal-500: at 12px this link needs
+              4.5:1 and teal-500 gives 3.26:1 on white. teal-600 is 5.12:1. */}
+          <a href="/he/forgot-password" className="text-xs text-teal-600 hover:underline">
             שכחת סיסמה?
           </a>
         </div>
@@ -92,7 +94,18 @@ export function LoginForm() {
         </div>
       )}
 
-      <Button type="submit" disabled={loading || !email || !password} className="w-full h-11 gap-2 text-base">
+      {/*
+        teal-600, not the default primary teal-500: white on teal-500 is 3.25:1
+        and this 16px label needs 4.5:1. The `--primary` token itself is
+        teal-500 with a white foreground, so EVERY primary button in the CRM
+        carries the same 3.25:1 — fixing that is a brand-level decision and a
+        separate change, so the override is scoped to this button.
+      */}
+      <Button
+        type="submit"
+        disabled={loading || !email || !password}
+        className="w-full h-11 gap-2 text-base bg-teal-600 hover:bg-teal-700"
+      >
         {loading
           ? <><Loader2 size={16} className="animate-spin" /> מתחבר...</>
           : <><LogIn size={16} /> כניסה</>
