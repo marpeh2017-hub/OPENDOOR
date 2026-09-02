@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsBoolean, IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator'
 
 /**
  * DTOs for the Site Manager.
@@ -55,4 +55,66 @@ export class ListContentQueryDto {
   @IsOptional()
   @IsIn(['DRAFT', 'IN_REVIEW', 'PUBLISHED', 'ARCHIVED'])
   state?: string
+}
+
+/**
+ * Setting a material fact's value.
+ *
+ * `value` is deliberately untyped: a fact may be a number, a string, a boolean
+ * or a localised object, and the shape is governed by which field it is rather
+ * than by this DTO. What matters here is what is ABSENT — no `status`, no
+ * `verifiedBy`, no `verifiedAt`. A caller cannot declare its own edit verified;
+ * only `POST .../verify` can, and only with the VERIFY capability.
+ */
+export class SetFactDto {
+  @ApiProperty({ description: 'The new value. Type depends on the field.' })
+  value!: unknown
+
+  @ApiPropertyOptional({ description: 'Which source in the project backs this' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  sourceId?: string
+
+  @ApiPropertyOptional({ description: 'Where inside the source, e.g. a sheet or page' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  sourceReference?: string
+
+  @ApiPropertyOptional({ description: 'Note for the audit trail' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string
+}
+
+/** Signing for a fact. Again: no `status` — the server derives it. */
+export class VerifyFactDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  sourceId?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  sourceReference?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string
+
+  /**
+   * Ask for a second pair of eyes on this field. Produces
+   * SECOND_REVIEW_REQUIRED, which is deliberately NOT publishable.
+   */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  requiresSecondReview?: boolean
 }

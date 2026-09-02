@@ -4,10 +4,12 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import {
-  CMS_VIEW_ROLES, CMS_EDIT_ROLES, CMS_PUBLISH_ROLES,
+  CMS_VIEW_ROLES, CMS_EDIT_ROLES, CMS_VERIFY_ROLES, CMS_PUBLISH_ROLES,
 } from '../auth/roles.constants'
 import { CmsService } from './cms.service'
-import { SaveContentDto, SetStateDto, ListContentQueryDto } from './dto/cms.dto'
+import {
+  SaveContentDto, SetStateDto, ListContentQueryDto, SetFactDto, VerifyFactDto,
+} from './dto/cms.dto'
 import { actorFrom, tenantFrom } from '../common/actor'
 import { mapDomainErrors } from '../common/errors/domain-error'
 
@@ -108,6 +110,45 @@ export class CmsController {
       const token = this.cms.createPreviewToken(tenantId, id)
       return { token, expiresInSeconds: 3600 }
     })
+  }
+
+  // ── Verification ──────────────────────────────────────────────────────
+  //
+  // EDIT and VERIFY are separate capabilities and separate routes, because
+  // they are separate acts: typing a number correctly is not the same as
+  // checking it against a source and standing behind it. The split is why
+  // SELF_VERIFIED can be distinguished from VERIFIED at all.
+
+  @Get(':id/facts/history')
+  @Roles(...CMS_VIEW_ROLES)
+  @ApiOperation({ summary: 'Verification audit trail for the project, or one field' })
+  factHistory(@Request() req: any, @Param('id') id: string, @Query('field') field?: string) {
+    return mapDomainErrors(() => this.cms.factHistory(tenantFrom(req), id, field))
+  }
+
+  @Patch(':id/facts/:field')
+  @Roles(...CMS_EDIT_ROLES)
+  @ApiOperation({ summary: "Set a material fact's value, invalidating any verification" })
+  setFact(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('field') field: string,
+    @Body() dto: SetFactDto,
+  ) {
+    return mapDomainErrors(() => this.cms.setFact(actorFrom(req), id, field, dto))
+  }
+
+  @Post(':id/facts/:field/verify')
+  @Roles(...CMS_VERIFY_ROLES)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sign for a fact. Same-person signing records SELF_VERIFIED.' })
+  verifyFact(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('field') field: string,
+    @Body() dto: VerifyFactDto,
+  ) {
+    return mapDomainErrors(() => this.cms.verifyFact(actorFrom(req), id, field, dto))
   }
 
   @Post(':id/publish')
