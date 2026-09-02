@@ -87,13 +87,33 @@ export function queryEngineBinaryExists(): boolean {
    
 
   try {
-    // `.prisma/client` sits next to the resolved @prisma/client entry point.
     const entry = require.resolve('@prisma/client')
-    const generatedDir = path.join(path.dirname(entry), '..', '.prisma', 'client')
-    if (!fs.existsSync(generatedDir)) return false
-    return fs
-      .readdirSync(generatedDir)
-      .some((f) => f.startsWith('query_engine') || f.startsWith('libquery_engine'))
+    const pkgDir = path.dirname(entry)
+
+    // The generated client is emitted to `<node_modules>/.prisma/client`, a
+    // SIBLING of the `@prisma` scope directory — so from `@prisma/client` it is
+    // two levels up, not one. Under pnpm that is
+    //   .../node_modules/@prisma/client        (the package)
+    //   .../node_modules/.prisma/client        (the generated client + engine)
+    // and a flat npm tree has the same shape. Looking only one level up finds
+    // `@prisma/.prisma/client`, which never exists, so the check reported "no
+    // engine" for a perfectly healthy client and refused to boot.
+    //
+    // Both candidates are tried rather than just the corrected one: some
+    // versions do emit alongside the package, and this check must not become a
+    // second way to fail startup for a client that actually works.
+    const candidates = [
+      path.join(pkgDir, '..', '..', '.prisma', 'client'),
+      path.join(pkgDir, '..', '.prisma', 'client'),
+      pkgDir,
+    ]
+
+    return candidates.some((dir) => {
+      if (!fs.existsSync(dir)) return false
+      return fs
+        .readdirSync(dir)
+        .some((f) => f.startsWith('query_engine') || f.startsWith('libquery_engine'))
+    })
   } catch {
     // If the client cannot be resolved at all, a different error will surface
     // first and more clearly. Do not block startup on this check's own failure.

@@ -14,7 +14,7 @@
  * bootstrap and no filesystem, so they cannot themselves be affected by the
  * condition they describe.
  */
-import { checkPrismaEngine } from '../src/config/prisma-engine.validator'
+import { checkPrismaEngine, queryEngineBinaryExists } from '../src/config/prisma-engine.validator'
 
 const PG = 'postgresql://postgres:postgres@127.0.0.1:5432/urban_renewal_os'
 
@@ -48,5 +48,24 @@ describe('Prisma engine guard', () => {
 
   it('treats an empty DATABASE_URL as unset rather than as a direct URL', () => {
     expect(checkPrismaEngine('', true).ok).toBe(false)
+  })
+
+  /**
+   * The guard's other half, and the half that actually broke.
+   *
+   * `queryEngineBinaryExists` looked for the generated client one level up from
+   * `@prisma/client`, at `@prisma/.prisma/client`. That path does not exist in
+   * any layout: the generated client is a SIBLING of the `@prisma` scope
+   * directory, at `<node_modules>/.prisma/client`, two levels up. So the lookup
+   * always returned false, and a healthy client with a working engine was
+   * reported as an Accelerate build — the guard against a confusing outage
+   * became a confusing outage of its own, and refused to boot the API.
+   *
+   * Unlike the tests above this one does touch the filesystem, deliberately: the
+   * bug was entirely in the path arithmetic, so a mocked filesystem would have
+   * reproduced the mistake rather than caught it.
+   */
+  it('finds the query engine that this repository actually has installed', () => {
+    expect(queryEngineBinaryExists()).toBe(true)
   })
 })
