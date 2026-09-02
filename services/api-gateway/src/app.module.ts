@@ -27,7 +27,8 @@ import { DataQualityModule }    from './data-quality/data-quality.module'
 import { ProjectHealthModule }  from './health/health.module'
 import { GisModule }            from './gis/gis.module'
 import { NotificationsModule }  from './notifications/notifications.module'
-import { MeetingsModule }       from './meetings/meetings.module'
+import { MeetingsModule }       from './meetings/meetings.module'
+import { CmsModule } from './cms/cms.module'
 import { MessagingModule }      from './messaging/messaging.module'
 import { FeasibilityModule }    from './feasibility/feasibility.module'
 import { TemplatesModule }      from './templates/templates.module'
@@ -70,6 +71,7 @@ import { AutomationsModule }    from './automations/automations.module'
     AutomationsModule,
     FeasibilityModule,
     MeetingsModule,
+    CmsModule,
     CommunicationsModule,
     ReportsModule,
   ],

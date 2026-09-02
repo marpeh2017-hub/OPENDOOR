@@ -168,3 +168,116 @@ export const TEMPLATE_WRITE_ROLES = [
   'PROJECT_MANAGER',
   'RESIDENT_RELATIONS_MANAGER',
 ] as const
+
+/**
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SITE MANAGER (CMS) — who may read, edit, verify and publish the WEBSITE
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ * These are scoped capabilities expressed through the existing global role
+ * model, exactly like FEASIBILITY_* above. There is deliberately no second
+ * user table, no CMS-specific login and no parallel role enum: the people who
+ * edit the website are the people who already have CRM accounts, and a second
+ * authentication system would be a second place for access to be revoked
+ * incompletely.
+ *
+ * `CmsRole` / `CmsCapability` in @urban-renewal/api-contracts describe the
+ * CMS's own capability vocabulary, which is what the UI reasons about. THESE
+ * lists are the enforcement, and the E2E suite asserts the endpoints refuse
+ * independently of what the UI chooses to render.
+ *
+ * ── WHY THE TIERS NARROW THE WAY THEY DO ───────────────────────────────────
+ *
+ * The CRM manages a renewal process; the Site Manager manages what the company
+ * says in public. Those have different blast radii. A mistake in the CRM is
+ * visible to a project team; a mistake here is visible to every resident,
+ * every competitor and Google, and stays quotable after it is corrected.
+ *
+ * So the tiers narrow faster than they do elsewhere in this file, and none of
+ * them includes the read-only external roles. MUNICIPALITY_USER,
+ * EXTERNAL_CONSULTANT and DEVELOPER_REP are observers of a PROJECT; they have
+ * no standing over the company's own website, so they do not appear even at
+ * view level. RESIDENT is not staff and is nowhere near any of these.
+ */
+
+/**
+ * See the Site Manager at all.
+ *
+ * Includes CEO, who appears in none of the operational lists above: the website
+ * is company voice, and the person accountable for it should be able to read
+ * what it currently says without being able to change it.
+ */
+export const CMS_VIEW_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'CEO',
+  'PROJECT_MANAGER',
+  'RESIDENT_RELATIONS_MANAGER',
+] as const
+
+/**
+ * Edit drafts and submit them for review.
+ *
+ * Narrower than VIEW by exactly one role: CEO reads, and does not edit. That is
+ * not a technical constraint but an editorial one — the drafting queue belongs
+ * to the people who maintain it daily, and an unreviewed edit from outside that
+ * queue is the kind that reaches the public unnoticed.
+ *
+ * Editing NEVER reaches the public on its own. Publishing is a separate
+ * capability below, and the resolver serves publications rather than drafts.
+ */
+export const CMS_EDIT_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'PROJECT_MANAGER',
+  'RESIDENT_RELATIONS_MANAGER',
+] as const
+
+/**
+ * Sign for a factual claim: unit counts, approvals, dates, areas.
+ *
+ * RESIDENT_RELATIONS_MANAGER is deliberately absent though they may EDIT.
+ * Verification is not "I typed this correctly", it is "I checked this against
+ * the source and I stand behind it", and the people who hold those sources are
+ * the project managers and the administrators.
+ *
+ * Self-verification IS permitted and is recorded as SELF_VERIFIED rather than
+ * VERIFIED — see `deriveVerificationStatus` in api-contracts. A promoter of
+ * this size does not have two people for every figure, and a rule that cannot
+ * be followed gets worked around rather than obeyed. What the record must never
+ * do is CLAIM independent review that did not happen.
+ */
+export const CMS_VERIFY_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'PROJECT_MANAGER',
+] as const
+
+/**
+ * Make content live, withdraw it, and restore a previous revision.
+ *
+ * The narrowest tier, and the only one that changes what the public can read.
+ * Restoring is here rather than with EDIT for the same reason publishing is: a
+ * restore of a PUBLISHED item changes the live site, so it is a publishing act
+ * wearing a different name.
+ */
+export const CMS_PUBLISH_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+] as const
+
+/**
+ * Attach, replace and classify images.
+ *
+ * Same list as EDIT. Classification is the load-bearing part: publishing an
+ * editorial photograph as though it depicted an OpenDoor project is the
+ * specific failure the `CmsImageClaim` column exists to prevent, and whoever
+ * places an image is the person who knows which it is.
+ */
+export const CMS_MEDIA_ROLES = CMS_EDIT_ROLES
+
+/** Site-wide settings: contact details, site name, sharing defaults. */
+export const CMS_SETTINGS_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+] as const
