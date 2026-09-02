@@ -19,6 +19,7 @@ import {
   Zap,
   UserCircle,
   ShieldCheck,
+  Globe,
   KeyRound,
   Bell,
   CalendarDays,
@@ -68,6 +69,11 @@ const navItems = [
   {
     group: 'מערכת',
     items: [
+      // The Site Manager. ONE entry, because everything under `/site` has its
+      // own rail: adding nine more destinations here would bury both sets and
+      // blur the distinction between managing a renewal process and managing
+      // what the public can read.
+      { href: '/site', icon: Globe, label: 'מנהל האתר' },
       { href: '/settings', icon: Settings, label: 'הגדרות' },
     ],
   },

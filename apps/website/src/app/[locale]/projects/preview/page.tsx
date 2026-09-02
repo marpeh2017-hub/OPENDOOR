@@ -5,6 +5,8 @@ import { getAllProjectsForPreview } from '@/mock'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
 import { ProjectCard } from '@/components/projects/project-card'
+import { makeLocalizer } from '@/lib/localize'
+import type { Locale } from '@urban-renewal/api-contracts'
 
 /**
  * Development-only projects index preview.
@@ -36,6 +38,8 @@ export default async function ProjectsPreviewPage({
   const { locale } = await params
   setRequestLocale(locale)
 
+  const t = makeLocalizer(locale as Locale)
+
   const [tPreview, projects] = await Promise.all([
     getTranslations('projectPreview'),
     getAllProjectsForPreview(),
@@ -52,7 +56,7 @@ export default async function ProjectsPreviewPage({
       <Section size="lg">
         <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} t={t} />
           ))}
         </ul>
       </Section>

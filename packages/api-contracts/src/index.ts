@@ -23,3 +23,8 @@ export * from './verification'
    why internal, provenance and feasibility data must never be fields on
    `PublicProject`. */
 export * from './project-internal'
+/* Site Manager. Types only, nothing persisted: the localisation policy, the
+   stored verification record and the CMS domain vocabulary. */
+export * from './localization'
+export * from './cms.verification'
+export * from './cms-admin'

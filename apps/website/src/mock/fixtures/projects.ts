@@ -141,10 +141,10 @@ const TEMPLATES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'tpl-pinuy-binuy',
     slug: 'template-pinuy-binuy',
-    name: '',
+    name: { he: '' },
     type: 'PINUY_BINUY',
-    location: { city: '' },
-    summary: '',
+    location: { city: { he: '' } },
+    summary: { he: '' },
     featured: false,
     visibility: 'internal',
     publishState: 'draft',
@@ -154,10 +154,10 @@ const TEMPLATES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'tpl-tama-38-2',
     slug: 'template-tama-38-2',
-    name: '',
+    name: { he: '' },
     type: 'TAMA_38_2',
-    location: { city: '' },
-    summary: '',
+    location: { city: { he: '' } },
+    summary: { he: '' },
     featured: false,
     visibility: 'internal',
     publishState: 'draft',
@@ -167,10 +167,10 @@ const TEMPLATES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'tpl-combined',
     slug: 'template-combined',
-    name: '',
+    name: { he: '' },
     type: 'COMBINED',
-    location: { city: '' },
-    summary: '',
+    location: { city: { he: '' } },
+    summary: { he: '' },
     featured: false,
     visibility: 'internal',
     publishState: 'draft',
@@ -195,12 +195,11 @@ const FIXTURES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'f-demo-mid',
     slug: 'demo-complex-mid-process',
-    name: 'מתחם הדוגמה, שלב ביניים',
+    name: { he: 'מתחם הדוגמה, שלב ביניים' },
     type: 'PINUY_BINUY',
-    location: { city: 'עיר לדוגמה', neighborhood: 'שכונת הדוגמה' },
-    summary: 'פרויקט בדיקה לממשק. אינו פרויקט אמיתי.',
-    description:
-      'רשומת בדיקה המשמשת לפיתוח הממשק בלבד. התוכן כאן אינו מתאר פרויקט קיים.',
+    location: { city: { he: 'עיר לדוגמה' }, neighborhood: { he: 'שכונת הדוגמה' } },
+    summary: { he: 'פרויקט בדיקה לממשק. אינו פרויקט אמיתי.' },
+    description: { he: 'רשומת בדיקה המשמשת לפיתוח הממשק בלבד. התוכן כאן אינו מתאר פרויקט קיים.' },
     organizingStatus: 'PROCESS_ACTIVE',
     currentStage: { value: 'DEVELOPER_TENDER', ...fixtureVerification() },
     existingUnits: { value: 48, ...fixtureVerification() },
@@ -212,7 +211,7 @@ const FIXTURES: MockProject[] = [
         {
           id: 'ap-1',
           label: { he: 'החלטת ועדה מחוזית להפקדה', en: 'District committee decision to deposit' },
-          authority: 'ועדה מחוזית לדוגמה',
+          authority: { he: 'ועדה מחוזית לדוגמה' },
           grantedOn: '2026-02-11',
         },
       ],
@@ -308,8 +307,8 @@ const FIXTURES: MockProject[] = [
         // a fixture. What is under test is the layout, the aspect ratio
         // reservation and the claim label, none of which need bytes.
         url: '/fixtures/does-not-exist-project.jpg',
-        alt: 'תמונת בדיקה. אינה תמונה אמיתית של פרויקט.',
-        caption: 'חזית המתחם הקיים.',
+        alt: { he: 'תמונת בדיקה. אינה תמונה אמיתית של פרויקט.' },
+        caption: { he: 'חזית המתחם הקיים.' },
         imageType: 'VERIFIED_PROJECT_PHOTO',
         order: 1,
         takenOn: '2026-04-02',
@@ -319,8 +318,8 @@ const FIXTURES: MockProject[] = [
         id: 'g-2',
         kind: 'image',
         url: '/fixtures/does-not-exist-context.jpg',
-        alt: 'תמונת בדיקה. אינה תמונה אמיתית של פרויקט.',
-        caption: 'מרקם מגורים ישראלי אופייני.',
+        alt: { he: 'תמונת בדיקה. אינה תמונה אמיתית של פרויקט.' },
+        caption: { he: 'מרקם מגורים ישראלי אופייני.' },
         imageType: 'EDITORIAL_CONTEXT',
         order: 2,
       },
@@ -328,7 +327,7 @@ const FIXTURES: MockProject[] = [
         id: 'g-3',
         kind: 'image',
         url: '/fixtures/does-not-exist-pattern.jpg',
-        alt: '',
+        alt: { he: '' },
         // Must be DROPPED by `galleryItems`: a generated drawing is not a
         // gallery item. Present so the filter is proved, not assumed.
         imageType: 'ARCHITECTURAL_PATTERN',
@@ -338,7 +337,7 @@ const FIXTURES: MockProject[] = [
         id: 'g-4',
         kind: 'image',
         url: '/fixtures/does-not-exist-unclassified.jpg',
-        alt: 'תמונת בדיקה ללא סיווג.',
+        alt: { he: 'תמונת בדיקה ללא סיווג.' },
         // No `imageType`. Must also be DROPPED.
         order: 4,
       },
@@ -357,10 +356,10 @@ const FIXTURES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'f-demo-nophoto',
     slug: 'demo-complex-no-photo',
-    name: 'מתחם הדוגמה, ללא צילום',
+    name: { he: 'מתחם הדוגמה, ללא צילום' },
     type: 'PINUY_BINUY',
-    location: { city: 'עיר לדוגמה', neighborhood: 'שכונת הדוגמה', street: 'רחוב לדוגמה 1' },
-    summary: 'פרויקט בדיקה עם נתונים מאומתים וללא צילום. אינו פרויקט אמיתי.',
+    location: { city: { he: 'עיר לדוגמה' }, neighborhood: { he: 'שכונת הדוגמה' }, street: 'רחוב לדוגמה 1' },
+    summary: { he: 'פרויקט בדיקה עם נתונים מאומתים וללא צילום. אינו פרויקט אמיתי.' },
     organizingStatus: 'PROCESS_ACTIVE',
     currentStage: { value: 'PLANNING', ...fixtureVerification() },
     existingUnits: { value: 120, ...fixtureVerification() },
@@ -392,12 +391,12 @@ const FIXTURES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'f-demo-early',
     slug: 'demo-complex-early',
-    name: 'מתחם הדוגמה, שלב מוקדם',
+    name: { he: 'מתחם הדוגמה, שלב מוקדם' },
     type: 'TAMA_38_2',
-    location: { city: 'עיר לדוגמה' },
+    location: { city: { he: 'עיר לדוגמה' } },
     // Deliberately sparse: proves the card and detail page hold up with the
     // minimum a real early-stage project would have.
-    summary: 'פרויקט בדיקה בשלב מוקדם, עם מעט מאוד תוכן.',
+    summary: { he: 'פרויקט בדיקה בשלב מוקדם, עם מעט מאוד תוכן.' },
     organizingStatus: 'EARLY_CONVERSATION',
     featured: false,
     visibility: 'internal',
@@ -408,10 +407,10 @@ const FIXTURES: MockProject[] = [
     provenance: 'UI_FIXTURE',
     id: 'f-demo-review',
     slug: 'demo-complex-review',
-    name: 'מתחם הדוגמה, בבדיקה עורכית',
+    name: { he: 'מתחם הדוגמה, בבדיקה עורכית' },
     type: 'COMBINED',
-    location: { city: 'עיר לדוגמה' },
-    summary: 'רשומה שממתינה לאישור עורכי. אינה אמורה להופיע לציבור.',
+    location: { city: { he: 'עיר לדוגמה' } },
+    summary: { he: 'רשומה שממתינה לאישור עורכי. אינה אמורה להופיע לציבור.' },
     // Exists so the `review` state introduced in Pass 1 is exercised by real
     // data rather than only asserted in a type.
     featured: false,
@@ -498,18 +497,32 @@ const REAL_PROJECTS: MockProject[] = [
     provenance: 'REALISTIC_PLACEHOLDER',
     id: 'p-tchernichovsky-shimoni',
     slug: 'tchernichovsky-shimoni',
-    name: 'מתחם טשרניחובסקי - שמעוני',
+    name: { he: 'מתחם טשרניחובסקי - שמעוני' },
     location: {
       // REQUIRES_REVIEW. See the note above. No neighbourhood and no street:
       // the boundary is a list of ten candidate addresses nobody has
       // confirmed, and picking one to display would settle by presentation a
       // question the sources leave open.
-      city: 'ירושלים',
+      city: { he: 'ירושלים', en: 'Jerusalem' },
     },
-    summary:
-      'מתחם בירושלים שבו נבחרו נציגויות בעלי דירות, וכיום מתקיים תהליך לבחינת ובחירת יזם.',
-    description:
-      'במתחם נבחרו נציגויות בעלי דירות, וכיום מתקיים תהליך לבחינת ובחירת היזם המתאים לקידום הפרויקט.\n\nמידע נוסף על המתחם יתפרסם בעמוד זה לאחר שייבדק ויאומת.',
+    summary: { he: 'מתחם בירושלים שבו נבחרו נציגויות בעלי דירות, וכיום מתקיים תהליך לבחינת ובחירת יזם.' },
+    description: { he: 'במתחם נבחרו נציגויות בעלי דירות, וכיום מתקיים תהליך לבחינת ובחירת היזם המתאים לקידום הפרויקט.\n\nמידע נוסף על המתחם יתפרסם בעמוד זה לאחר שייבדק ויאומת.' },
+
+    /*
+     * OpenDoor's engagement with THIS complex, confirmed by the client.
+     *
+     * The third user-verified fact, alongside the stage and the representation
+     * milestone below. It overrides the reviewed site-level description because
+     * it names the complex; where a project supplies no override, that reviewed
+     * wording renders instead.
+     *
+     * `OMIT` policy, so with no approved English the English site falls back to
+     * the site-level description rather than showing this sentence in Hebrew
+     * under an English heading.
+     */
+    role: {
+      he: 'OpenDoor Group מארגנת ומלווה את בעלי הדירות במתחם טשרניחובסקי - שמעוני.',
+    },
 
     /* ── USER-VERIFIED FACTS ────────────────────────────────────────────────
      *
@@ -587,19 +600,20 @@ const REAL_PROJECTS: MockProject[] = [
     ],
 
     /* ── EVERY OTHER FIELD IS ABSENT ────────────────────────────────────────
-     * No `role` override: what OpenDoor was engaged to do here has not been
-     * confirmed, so the reviewed site-level description renders instead of a
-     * project-specific claim. Still flagged for user confirmation.
-     *
      * No type, currentPhase, existingUnits, proposedUnits,
      * buildingCount, planningStatus, developer, professionals, approvals,
      * permits, materialDates, milestones, timeline, heroImage or gallery.
      *
      * The workbook supports none of the above. It also does not establish the
      * project's organisational stage: it is a feasibility calculation, and
-     * feasibility work says nothing about whether a representation exists or a
-     * developer process is running. Those two facts come from the client and
-     * are recorded as `USER_VERIFIED`. */
+     * feasibility work says nothing about whether a representation exists, a
+     * developer process is running, or what OpenDoor was engaged to do. Those
+     * THREE facts come from the client and are recorded as `USER_VERIFIED`.
+     *
+     * The client's confirmation covers process and engagement ONLY. It does not
+     * verify the candidate addresses, the boundary, the block and parcel, any
+     * area, any unit count, the planning status, or a single feasibility or
+     * economic figure — none of which OpenDoor is the authority on. */
 
     featured: false,
     visibility: 'internal',
@@ -640,19 +654,17 @@ const REAL_PROJECTS: MockProject[] = [
     provenance: 'REALISTIC_PLACEHOLDER',
     id: 'p-hida-26-jerusalem',
     slug: 'hida-26-jerusalem',
-    name: 'החיד"א 26',
+    name: { he: 'החיד"א 26' },
     // NO `type`. The renewal track has not been confirmed for this complex,
     // and naming one would be a planning claim. `OTHER` is a real category for
     // a genuinely unusual track, not a way to say "unknown", so the field is
     // absent like every other unconfirmed one.
     location: {
-      city: 'ירושלים',
+      city: { he: 'ירושלים', en: 'Jerusalem' },
       street: 'החיד"א 26',
     },
-    summary:
-      'מתחם בירושלים שבו אנחנו מלווים ומארגנים את בעלי הדירות בתהליך ההתחדשות העירונית.',
-    description:
-      'אנחנו מרכזים את המידע עבור בעלי הדירות במתחם, מתאמים בין אנשי המקצוע שהם מינו, ומלווים את התהליך לאורך זמן. ההחלטות נשארות בידי בעלי הדירות.\n\nמידע על המתחם יתפרסם בעמוד זה לאחר שייבדק ויאומת. עד אז מוצגים כאן זהות הפרויקט ותפקידנו בו בלבד.',
+    summary: { he: 'מתחם בירושלים שבו אנחנו מלווים ומארגנים את בעלי הדירות בתהליך ההתחדשות העירונית.' },
+    description: { he: 'אנחנו מרכזים את המידע עבור בעלי הדירות במתחם, מתאמים בין אנשי המקצוע שהם מינו, ומלווים את התהליך לאורך זמן. ההחלטות נשארות בידי בעלי הדירות.\n\nמידע על המתחם יתפרסם בעמוד זה לאחר שייבדק ויאומת. עד אז מוצגים כאן זהות הפרויקט ותפקידנו בו בלבד.' },
     // Editorial, and OpenDoor is the authority on its own working relationship
     // with the complex. It is not a claim about the building.
     organizingStatus: 'PROCESS_ACTIVE',

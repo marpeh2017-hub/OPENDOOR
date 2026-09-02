@@ -95,7 +95,15 @@ export async function ProjectBody({
   const gallery = galleryItems(project)
   const milestones = project.milestones ?? []
 
-  const place = [project.location.city, project.location.neighborhood].filter(Boolean)
+  // Resolved here rather than in the JSX so `place` stays a list of plain
+  // strings and the map below keeps a usable React key.
+  // `OMIT` policy: with no approved English the overview section does not
+  // render at all, rather than showing Hebrew under an English heading.
+  const overview = t.translated(project.description)
+  const role = t.translated(project.role)
+  const place = [project.location.city, project.location.neighborhood]
+    .map((value) => t.text(value))
+    .filter(Boolean)
 
   return (
     <>
@@ -113,7 +121,7 @@ export async function ProjectBody({
               </div>
             )}
             <h1 className={`${project.type ? 'mt-3.5' : ''} text-4xl font-extrabold leading-[1.06] tracking-tight text-gray-900 sm:text-5xl`}>
-              {project.name}
+              {t.text(project.name)}
             </h1>
             <span aria-hidden="true" className="mt-5 block h-0.5 w-14 bg-teal-600" />
 
@@ -141,13 +149,13 @@ export async function ProjectBody({
           </div>
 
           <p className="text-base leading-relaxed text-gray-600 sm:text-[17px]">
-            {project.summary}
+            {t.text(project.summary)}
           </p>
         </div>
       </div>
     </div>
 
-    <ProjectHero project={project} />
+    <ProjectHero project={project} t={t} />
 
     {/* ── 2. WHAT IS OPENDOOR'S ROLE? ───────────────────────────────── */}
     <Section tone="inverse" size="lg">
@@ -163,11 +171,16 @@ export async function ProjectBody({
         </div>
         {/* A project may override the role description; when it does not, the
             reviewed site-level wording renders. Either way the value is
-            editable, and neither path is hardcoded in this component. */}
+            editable, and neither path is hardcoded in this component.
+
+            The condition is the RESOLVED value, not the field's presence. The
+            override carries an `OMIT` policy, so a Hebrew-only override yields
+            nothing on the English site — and the right thing to show there is
+            the reviewed English site-level wording, not an empty column. */}
         <div>
-          {project.role ? (
+          {role ? (
             <p className="text-base leading-relaxed text-gray-300 sm:text-[17px]">
-              {t(project.role)}
+              {role}
             </p>
           ) : (
             <>
@@ -192,10 +205,10 @@ export async function ProjectBody({
 
         Split on newlines and NEVER parsed as markup: this is editor-supplied
         content, and a renderer that interprets it is an injection surface. */}
-    {project.description && (
+    {overview && (
       <Section size="lg">
         <div className="max-w-prose">
-          {project.description.split('\n').filter(Boolean).map((paragraph, index) => (
+          {overview.split('\n').filter(Boolean).map((paragraph, index) => (
             <p
               key={index}
               className={`text-base leading-relaxed text-gray-600 sm:text-[17px] ${
@@ -299,7 +312,7 @@ export async function ProjectBody({
           eyebrow={tSections('galleryEyebrow')}
           heading={tSections('galleryHeading')}
         />
-        <GalleryGrid items={gallery} />
+        <GalleryGrid items={gallery} t={t} />
       </Section>
     )}
 

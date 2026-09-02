@@ -27,9 +27,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; slug: string }>
 }): Promise<Metadata> {
-  const { slug } = await params
+  const { locale, slug } = await params
   const project = await getProjectBySlug(slug)
   if (!project) return {}
+
+  const t = makeLocalizer(locale as Locale)
 
   /* SEO is EDITABLE CONTENT, so the record's own `seo` wins when an editor has
      written one. Name and summary are the fallback rather than the source:
@@ -38,15 +40,13 @@ export async function generateMetadata({
      `noIndex` is honoured because unpublishing from search is a legitimate
      editorial act that must not require a deploy.
 
-     NOTE: `PublicProject.seo` is a single `SeoMetadata`, not per-locale the
-     way `CmsPage.seo` is. So one project publishes one title and description
-     across both locales. That is a real limitation rather than a decision;
-     it is recorded in the localisation section of the CMS architecture
-     alongside the other project fields that are still plain strings. */
-  const seo = project.seo
+     Per locale, matching `CmsPage.seo`. A project can publish a Hebrew
+     title and an English one, or only a Hebrew one; the fallbacks below then
+     supply the name and summary, which are themselves localised. */
+  const seo = project.seo?.[locale as Locale]
   return {
-    title: seo?.title ?? project.name,
-    description: seo?.description ?? project.summary,
+    title: seo?.title ?? t.text(project.name),
+    description: seo?.description ?? t.text(project.summary),
     ...(seo?.noIndex ? { robots: { index: false, follow: false } } : {}),
   }
 }

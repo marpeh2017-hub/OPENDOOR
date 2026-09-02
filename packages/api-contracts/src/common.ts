@@ -96,6 +96,27 @@ export type LocalizedText = Record<Locale, string>
 export type LocalizedTextOptional = Partial<Record<Locale, string>>
 
 /**
+ * Editor-authored text, where Hebrew is the source and English is optional.
+ *
+ * Distinct from `LocalizedText`, which requires BOTH languages and is correct
+ * for the site's own fixed copy: we wrote it twice, so a missing half is a bug.
+ *
+ * It is wrong for anything an editor types. Requiring English there means a
+ * Hebrew sentence cannot be SAVED until somebody translates it, and the real
+ * outcomes are a blocked editor or a machine translation nobody approved.
+ *
+ * The per-field fallback policy, and the resolver that applies it, live in
+ * `localization.ts`. The type lives here because `common.ts` is the base module
+ * and importing upward would make the dependency circular.
+ */
+export interface LocalizedContent {
+  /** The source. Always present. */
+  he: string
+  /** An approved English rendering. Never derived, never transliterated. */
+  en?: string
+}
+
+/**
  * Resolve a localized value for display.
  *
  * Falls back to Hebrew — the primary language — rather than to an empty string,
@@ -182,10 +203,12 @@ export interface MediaAsset {
   id: string
   kind: 'image' | 'video'
   url: string
-  /** REQUIRED for images — WCAG 2.1 AA. An empty string is the correct value
-   *  for purely decorative media, and is different from omitting it. */
-  alt: string
-  caption?: string
+  /** REQUIRED for images — WCAG 2.1 AA. An empty `he` is the correct value
+   *  for purely decorative media, and is different from omitting the field.
+   *  Localised with a `SOURCE` fallback: a Hebrew description read aloud by a
+   *  screen reader on the English site is far better than silence. */
+  alt: LocalizedContent
+  caption?: LocalizedContent
   width?: number
   height?: number
   /** Poster frame for video. Videos must never autoplay with sound. */
@@ -200,7 +223,9 @@ export interface MediaAsset {
   imageType?: ImageClaim
   /** Photographer or licence attribution, rendered wherever the licence
    *  requires it. Separate from `caption`: a credit is a legal obligation,
-   *  a caption is editorial. */
+   *  a caption is editorial.
+   *
+   *  A plain string, not localised: it is a person's or an agency's name. */
   credit?: string
   /**
    * Subject position as percentages, for `object-position`. Urban photography
@@ -230,8 +255,22 @@ export interface MediaAsset {
 
 /** A place, used by projects and by local SEO. */
 export interface GeoContext {
-  city: string
-  neighborhood?: string
+  /**
+   * ── LOCALISED, BECAUSE A CITY GENUINELY HAS TWO NAMES ────────────────
+   *
+   * ירושלים has an established English form that a reader of the English
+   * site expects. The fallback is `SOURCE`: with no English supplied the
+   * Hebrew renders, which reads as untranslated rather than as missing.
+   */
+  city: LocalizedContent
+  neighborhood?: LocalizedContent
+  /**
+   * The street line, in the source language only.
+   *
+   * NOT localised, deliberately. An address is written once, it matches a
+   * municipal record, and the only thing an English field here would attract
+   * is a transliteration nobody uses and nothing matches.
+   */
   street?: string
   /** גוש/חלקה. Present only where already public. */
   block?: string

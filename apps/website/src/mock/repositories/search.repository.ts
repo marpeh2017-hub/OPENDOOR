@@ -1,4 +1,5 @@
-import type { SearchResult, SearchResults } from '@urban-renewal/api-contracts'
+import type { Locale, SearchResult, SearchResults } from '@urban-renewal/api-contracts'
+import { resolveContent } from '@urban-renewal/api-contracts'
 import { MOCK_ARTICLES, MOCK_FAQ } from '../fixtures/knowledge'
 import { getProjects } from './projects.repository'
 
@@ -15,8 +16,20 @@ import { getProjects } from './projects.repository'
  *
  * Phase 2 replaces this with a server endpoint. The CONTRACT (`SearchResults`)
  * is what the UI is built against, so that swap needs no component change.
+ *
+ * ── WHY THIS TAKES A LOCALE ────────────────────────────────────────────────
+ *
+ * A result carries plain strings, because a result list is rendered and never
+ * re-resolved. Matching still runs over EVERY language a value has, so an
+ * English query finds a project whose English name exists while a Hebrew query
+ * always works; only the displayed title and excerpt are resolved, and with
+ * the `SOURCE` policy so a result is never blank.
  */
-export async function search(query: string, limit = 20): Promise<SearchResults> {
+export async function search(
+  query: string,
+  limit = 20,
+  locale: Locale = 'he',
+): Promise<SearchResults> {
   const q = query.trim().toLowerCase()
   if (!q) return { items: [], total: 0, limit, offset: 0 }
 
@@ -24,8 +37,18 @@ export async function search(query: string, limit = 20): Promise<SearchResults> 
 
   const projects = await getProjects({ limit: 100 })
   for (const p of projects.items) {
-    if ([p.name, p.summary, p.location.city].join(' ').toLowerCase().includes(q)) {
-      results.push({ kind: 'project', title: p.name, excerpt: p.summary, href: `/projects/${p.slug}` })
+    // Matches against every language a value has, so an English query finds a
+     // project whose English name exists and a Hebrew one always works. The
+     // RESULT is rendered in the reader's locale by the caller.
+    const haystack = [p.name.he, p.name.en, p.summary.he, p.summary.en, p.location.city.he]
+      .filter(Boolean).join(' ').toLowerCase()
+    if (haystack.includes(q)) {
+      results.push({
+        kind: 'project',
+        title: resolveContent(p.name, locale, 'SOURCE') ?? '',
+        excerpt: resolveContent(p.summary, locale, 'SOURCE') ?? '',
+        href: `/projects/${p.slug}`,
+      })
     }
   }
 

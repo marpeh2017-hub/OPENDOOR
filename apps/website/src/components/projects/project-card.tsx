@@ -2,6 +2,7 @@ import type { PublicProjectSummary } from '@urban-renewal/api-contracts'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { ProjectPattern, STROKE } from '@/components/brand/architecture'
+import type { Localizer } from '@/lib/localize'
 
 /**
  * One project, on the index.
@@ -45,9 +46,11 @@ import { ProjectPattern, STROKE } from '@/components/brand/architecture'
 export async function ProjectCard({
   project,
   headingLevel: Heading = 'h2',
+  t,
 }: {
   project: PublicProjectSummary
   headingLevel?: 'h2' | 'h3'
+  t: Localizer
 }) {
   const [tStages, tImages] = await Promise.all([
     getTranslations('stages'),
@@ -64,6 +67,7 @@ export async function ProjectCard({
       : null
 
   const place = [project.location.city, project.location.neighborhood]
+    .map((value) => t.text(value))
     .filter(Boolean)
     .join(' · ')
 
@@ -79,7 +83,7 @@ export async function ProjectCard({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.url}
-                alt={photo.alt}
+                alt={t.text(photo.alt)}
                 className="h-full w-full object-cover"
                 style={
                   photo.focalPoint
@@ -109,12 +113,12 @@ export async function ProjectCard({
           />
 
           <Heading className="text-lg font-bold tracking-tight text-gray-900 transition-colors group-hover:text-teal-800 sm:text-xl">
-            {project.name}
+            {t.text(project.name)}
           </Heading>
 
           {place && <p className="mt-1.5 text-[13px] text-gray-600">{place}</p>}
 
-          <p className="mt-3.5 text-sm leading-relaxed text-gray-600">{project.summary}</p>
+          <p className="mt-3.5 text-sm leading-relaxed text-gray-600">{t.text(project.summary)}</p>
 
           {/* Absent for most projects, and the card is spaced to look correct
               without it rather than leaving a reserved gap. */}

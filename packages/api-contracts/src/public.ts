@@ -1,5 +1,5 @@
 import type {
-  GeoContext, IsoDate, IsoDateTime, Locale, LocalizedText, MediaAsset,
+  GeoContext, IsoDate, IsoDateTime, Locale, LocalizedContent, LocalizedText, MediaAsset,
   Paginated, PublishState, SeoMetadata, Visibility,
 } from './common'
 import type { PublicVerifiedFact, VerifiedFact } from './verification'
@@ -145,7 +145,18 @@ export interface PublicProject {
    * verification. See `verification.ts` for why the two are kept apart. */
   id: string
   slug: string
-  name: string
+  /**
+   * The complex's name.
+   *
+   * Localised with a `SOURCE` fallback, which is the honest treatment of a
+   * proper noun: the Hebrew IS the name, and an English rendering exists only
+   * where somebody has approved one. Absent English shows the Hebrew rather
+   * than nothing, because a card with no title is a broken card.
+   *
+   * Never transliterated automatically. "HaHida 26" is a spelling nobody uses,
+   * that matches no municipal record and that no resident would search for.
+   */
+  name: LocalizedContent
   /**
    * The renewal track, WHEN IT HAS BEEN CONFIRMED.
    *
@@ -161,10 +172,13 @@ export interface PublicProject {
    */
   type?: ProjectType
   location: GeoContext
-  /** One or two sentences, for cards and search results. */
-  summary: string
-  /** Full body, for the detail page. May contain safe inline markup. */
-  description?: string
+  /** One or two sentences, for cards and search results.
+   *  `SOURCE` fallback: better an untranslated sentence than an empty card. */
+  summary: LocalizedContent
+  /** Full body, for the detail page.
+   *  `OMIT` fallback: an English reader is better served by an absent section
+   *  than by three Hebrew paragraphs under an English heading. */
+  description?: LocalizedContent
   /** How organised the owners are. Editorial rather than verified: it
    *  describes OpenDoor's own working relationship with the complex, which
    *  OpenDoor is the authority on, not a fact about the building. */
@@ -189,7 +203,7 @@ export interface PublicProject {
    * `VerifiedFact`: OpenDoor is the authority on what OpenDoor was engaged to
    * do. It is not a claim about the building.
    */
-  role?: LocalizedText
+  role?: LocalizedContent
 
   /* ── Media ───────────────────────────────────────────────────────────────
    * Only an asset whose `imageType` is VERIFIED_PROJECT_PHOTO may be used as
@@ -287,7 +301,7 @@ export interface PublicProject {
    * is for the case where THIS project's history would otherwise look like an
    * error to a reader who knows it.
    */
-  timelineNote?: LocalizedText
+  timelineNote?: LocalizedContent
 
   /* ── Control ─────────────────────────────────────────────────────────── */
   /** Whether residents of this project see updates in the portal. Not public
@@ -296,7 +310,9 @@ export interface PublicProject {
   featured: boolean
   visibility: Visibility
   publishState: PublishState
-  seo?: SeoMetadata
+  /** Per locale, as `CmsPage.seo` already is. A single record forced one title
+   *  across both sites, which was a limitation rather than a decision. */
+  seo?: Partial<Record<Locale, SeoMetadata>>
   updatedAt: IsoDateTime
 }
 
@@ -325,6 +341,8 @@ export type PlanningStatus =
  */
 export interface ProjectParty {
   role: 'DEVELOPER' | 'LAWYER' | 'APPRAISER' | 'ARCHITECT' | 'SUPERVISOR' | 'OTHER'
+  /** A registered company or personal name. Not localised: it is what the
+   *  party is called, in one language, on its own letterhead. */
   name: string
 }
 
@@ -332,9 +350,9 @@ export interface ProjectParty {
 export interface ProjectApproval {
   id: string
   /** What was granted, in plain language. */
-  label: LocalizedText
+  label: LocalizedContent
   /** Which body granted it. */
-  authority?: string
+  authority?: LocalizedContent
   grantedOn?: IsoDate
   /** Public decision or file number, where one exists and is already public. */
   reference?: string
@@ -343,7 +361,7 @@ export interface ProjectApproval {
 /** A date that matters to a resident's planning. */
 export interface ProjectDateRecord {
   id: string
-  label: LocalizedText
+  label: LocalizedContent
   occursOn: IsoDate
   /** True when the date is a target rather than a commitment. The UI must
    *  render the distinction; an estimate shown as a commitment is the most
@@ -360,9 +378,9 @@ export interface ProjectDateRecord {
  */
 export interface ProjectMilestone {
   id: string
-  title: LocalizedText
+  title: LocalizedContent
   state: 'completed' | 'current' | 'upcoming'
-  note?: LocalizedText
+  note?: LocalizedContent
   occurredAt?: IsoDate
   /**
    * An approximate period, for a milestone that genuinely happened but not on
@@ -388,7 +406,7 @@ export interface ProjectMilestone {
  */
 export interface ProjectDocument {
   id: string
-  title: LocalizedText
+  title: LocalizedContent
   kind: 'PLAN' | 'PERMIT' | 'SUMMARY' | 'OTHER'
   url: string
   visibility: Visibility
@@ -400,11 +418,11 @@ export interface ProjectDocument {
 export interface PublicProjectSummary {
   id: string
   slug: string
-  name: string
+  name: LocalizedContent
   /** Absent until the renewal track is confirmed. See `PublicProject.type`. */
   type?: ProjectType
   location: GeoContext
-  summary: string
+  summary: LocalizedContent
   /** Optional for the same reason as on `PublicProject`, and verification
    *  travels with it: a card that renders a stage must be able to say who
    *  confirmed it, even though the card itself does not display that. */

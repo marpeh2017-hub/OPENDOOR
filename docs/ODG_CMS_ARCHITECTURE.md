@@ -568,3 +568,155 @@ The website reads layer 1 only, and has no access to the others because they do
 not exist as data anywhere it can reach. Pilot 2's actual values live in
 `docs/ODG_PILOT_2_SOURCE_RECORD.md`, which `apps/website` does not import — a
 number outside the module graph cannot leak from it.
+
+---
+
+# Appendix D. Pass 4A: what was built
+
+*The foundation. Routing, navigation, the localisation architecture and the
+domain model. No editor, no persistence, no API.*
+
+## D.1 The amended self-verification policy
+
+**Superseding Appendix C, rule 5.** The design gate forbade anyone from
+verifying a value they had edited. That is now permitted, and recorded.
+
+`content.edit` and `fact.verify` remain **separate capabilities**, and most
+editors hold only the first. But a user who holds both may verify their own
+edit, and the result is stored as `SELF_VERIFIED` rather than refused.
+
+**Why the prohibition was wrong.** In a two-person company its practical effect
+is that nothing can ever be published, so it gets worked around by sharing a
+login — which destroys the audit trail rather than merely annotating it.
+Recording what happened honestly beats prohibiting what will happen anyway.
+
+`SELF_VERIFIED` is an **audit outcome, not an error**. It is publishable exactly
+like `VERIFIED`. The UI reports it quietly, in the verification history, and
+does not warn or block.
+
+### The future second review
+
+`SECOND_REVIEW_REQUIRED` exists in `VerificationStatus` now, and
+`deriveVerificationStatus` already honours a `requiresSecondReview` flag.
+`SECOND_REVIEW_FIELDS` is an **empty list** in V1.
+
+Turning it on for a category of fact is an edit to that list. No verification
+logic changes, and no four-eyes workflow is built in this pass.
+
+## D.2 Localisation architecture
+
+`LocalizedText` (both languages required) is unchanged and still correct for
+the site's own fixed copy: we wrote it twice, so a missing half is a bug.
+
+**`LocalizedContent` is new** and is what every editor-authored field uses:
+
+```ts
+interface LocalizedContent { he: string; en?: string }
+```
+
+Hebrew is required because it is the source. English is absent until a person
+supplies one, and **English is never a condition of saving**.
+
+### Fallback policy, per field category
+
+Neither answer is right everywhere, so the policy travels with the field.
+`PROJECT_TEXT_FALLBACK` exports the map as data, and the CMS drives its editor
+warnings from the same map.
+
+| Policy | Behaviour on `/en` with no English | Fields |
+|---|---|---|
+| **`SOURCE`** | renders the Hebrew | `name`, `location.city`, `location.neighborhood`, `summary`, `media.alt`, `media.caption`, `approval.label`, `approval.authority`, `milestone.title`, `dateRecord.label` |
+| **`OMIT`** | renders nothing; the section disappears | `description`, `role`, `timelineNote`, `milestone.note` |
+
+`SOURCE` for a name or a card summary: a Hebrew phrase in an English sentence
+reads as untranslated, an empty card reads as broken. `OMIT` for long-form
+editorial: three Hebrew paragraphs under an English heading serve nobody.
+
+### Fields that stay single-language, deliberately
+
+`location.street`, `ProjectParty.name`, `MediaAsset.credit`. A street address, a
+company's registered name and a photographer's name are written once and are not
+translated. A language pair there would invite a transliteration — and
+"HaHida 26" is a spelling nobody uses, that matches no municipal record, and
+that no resident would search for.
+
+### One interaction worth knowing
+
+`role` carries `OMIT`. A project whose role override has no English therefore
+falls back on `/en` to the **reviewed site-level role description**, not to an
+empty column. The renderer branches on the resolved value, not on the field's
+presence.
+
+## D.3 CMS route map
+
+Inside `apps/crm`, under `/site`. Same shell, same sign-in, same tenant context.
+
+```
+/site                      dashboard
+/site/pages                the eight fixed pages
+/site/projects             project list
+/site/projects/[slug]      project editor (eight areas, Pass 4B+)
+/site/knowledge            articles
+/site/faq                  questions
+/site/media                media library
+/site/navigation           main menu
+/site/seo                  search titles and descriptions
+/site/settings             contact details and site defaults
+```
+
+`SITE_NAV` in `components/site/site-nav.ts` is the single definition; the rail,
+the section headers and the breadcrumbs all read it, so a route cannot appear in
+one and be missing from another.
+
+**One entry in the CRM sidebar** leads here. Nine would bury both sets and blur
+the distinction between managing a renewal process and managing what the public
+can read.
+
+## D.4 Domain model
+
+Types only. No table, no migration, no endpoint.
+
+| Type | Holds |
+|---|---|
+| `ExposureLevel` | `PUBLIC` · `INTERNAL` · `FEASIBILITY` |
+| `CmsContentItem<T>` | the editorial envelope: state, SEO, authorship, revision pointers |
+| `PublicationState` | `DRAFT` · `IN_REVIEW` · `PUBLISHED` · `ARCHIVED` |
+| `CmsRevision<T>` | full snapshots, never deltas; publish revisions never thinned |
+| `CmsMediaItem` | classification and alt text both required |
+| `CmsRole` / `CmsCapability` | separate from `UserRole`, mapped from it |
+| `VerificationRecord<T>` | value **and** `verifiedValue`, editor **and** verifier |
+| `VerificationAuditEntry` | append-only; never updated, never deleted |
+
+`verifiedValue` is the field the model turns on. Comparing it against `value` is
+what makes "editing invalidates verification" a **mechanism** rather than an
+intention — without it the rule depends on every write path remembering to clear
+a flag, and the one that forgets is the one that publishes a corrected number
+under someone else's signature.
+
+## D.5 The public boundary
+
+Unchanged from Pilot 2 and reinforced:
+
+- The website consumes `PublicProject` only. `PublicVerifiedFact` has neither a
+  verifier nor a source; both are stripped at the repository boundary.
+- `ProjectInternalData` and `FeasibilityScenario` are types with no data and no
+  reader in `apps/website`.
+- **There is deliberately no generic `toPublic(item)`.** A function that maps an
+  arbitrary item to its public form without consulting exposure is precisely the
+  accident the separation exists to prevent, and there is no `publishAll`.
+- Pilot 2's workbook figures live in `docs/`, which `apps/website` does not
+  import. A number outside the module graph cannot leak from it.
+
+## D.6 Implementation sequence
+
+| Phase | Ships | Exit gate |
+|---|---|---|
+| **4A** *(this pass)* | contracts, localisation, CMS shell, routes | every page renders identically before and after the migration |
+| 4B | pages list, block editor, draft/review/publish, preview, revisions | edit a sentence and publish it, end to end, without code |
+| 4C | media library over MinIO | an image without classification or alt text cannot publish |
+| 4D | project editor, verification, publication check | publishing an unverified fact fails in the API, not just the UI |
+| 4E | knowledge, FAQ, navigation, settings; delete the fixtures | no site content is edited in code |
+
+Persistence, the API and permission enforcement arrive with 4B, which is the
+first phase that writes anything. A permission gate in front of a read-only
+shell would read as protection while providing none.

@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import type { ImageSlotSpec } from '@/mock/fixtures/images'
 import { ProjectPattern } from './architecture'
+import type { Localizer } from '@/lib/localize'
 import {
   JerusalemHillside,
   ChordsBridgeGeometry,
@@ -58,6 +59,10 @@ export function EditorialImage({
   captionHidden = false,
   /** Deterministic seed for the `pattern` fallback. */
   patternSlug = 'opendoor',
+  /** Resolves the asset's alt text and caption. Both are authored content now,
+   *  and alt text in the wrong language is worse than none: a screen reader
+   *  announces it regardless. */
+  t,
 }: {
   slot: ImageSlotSpec
   className?: string
@@ -65,6 +70,7 @@ export function EditorialImage({
   sizes?: string
   captionHidden?: boolean
   patternSlug?: string
+  t: Localizer
 }) {
   const Fallback = FALLBACKS[slot.fallback]
   const asset = slot.asset
@@ -80,7 +86,7 @@ export function EditorialImage({
         {asset ? (
           <Image
             src={asset.url}
-            alt={asset.alt}
+            alt={t.text(asset.alt)}
             fill
             priority={priority}
             // Below the fold and not the LCP candidate → let the browser defer
@@ -103,7 +109,7 @@ export function EditorialImage({
 
       {needsCaption && (
         <figcaption className="mt-3 text-xs leading-relaxed text-gray-600">
-          {asset.caption}
+          {t.text(asset.caption)}
           {asset.credit && <span className="text-gray-500"> · {asset.credit}</span>}
         </figcaption>
       )}

@@ -93,10 +93,10 @@ export async function ProjectsBlockView({
 
       {lead && (
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
-          <ProjectCard project={lead} lead stageLabel={tStages} />
+          <ProjectCard project={lead} lead stageLabel={tStages} t={t} />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
             {rest.map((project) => (
-              <ProjectCard key={project.id} project={project} stageLabel={tStages} />
+              <ProjectCard key={project.id} project={project} stageLabel={tStages} t={t} />
             ))}
           </div>
         </div>
@@ -120,10 +120,12 @@ function ProjectCard({
   project,
   lead = false,
   stageLabel,
+  t,
 }: {
   project: PublicProjectSummary
   lead?: boolean
   stageLabel: (key: string) => string
+  t: Localizer
 }) {
   return (
     <Link
@@ -156,21 +158,21 @@ function ProjectCard({
 
       <div className={`flex flex-1 flex-col ${lead ? 'p-6 lg:p-8' : 'p-5'}`}>
         <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
-          {project.location.city}
+          {t.text(project.location.city)}
         </p>
         <h3
           className={`mt-2 font-semibold text-gray-900 transition-colors group-hover:text-teal-800 ${
             lead ? 'text-2xl lg:text-3xl' : 'text-lg'
           }`}
         >
-          {project.name}
+          {t.text(project.name)}
         </h3>
         <p
           className={`mt-3 flex-1 leading-relaxed text-gray-600 ${
             lead ? 'max-w-xl text-base' : 'text-sm'
           }`}
         >
-          {project.summary}
+          {t.text(project.summary)}
         </p>
 
         {/* Only when a stage is actually verified. Absent is the norm. */}

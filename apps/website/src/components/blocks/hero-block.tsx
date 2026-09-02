@@ -126,7 +126,7 @@ export function HeroBlockView({ block, t }: { block: HeroBlock; t: Localizer }) 
 
           {/* ── the aperture ─────────────────────────────────────────────── */}
           <div className="relative mt-14 lg:mt-0">
-            <Aperture slot={slot} />
+            <Aperture slot={slot} t={t} />
           </div>
         </div>
       </div>
@@ -146,7 +146,14 @@ export function HeroBlockView({ block, t }: { block: HeroBlock; t: Localizer }) 
  * The teal thread leaves the sill and continues down the page: the journey the
  * homepage describes begins physically inside this graphic.
  */
-function Aperture({ slot }: { slot: ReturnType<typeof getImageSlot> }) {
+function Aperture({
+  slot,
+  t,
+}: {
+  slot: ReturnType<typeof getImageSlot>
+  /** Resolves the asset's alt text, which a screen reader announces. */
+  t: Localizer
+}) {
   return (
     <div className="relative">
       {/* the reveal — stone, the material of the wall being cut through */}
@@ -155,6 +162,7 @@ function Aperture({ slot }: { slot: ReturnType<typeof getImageSlot> }) {
 
         <div className="relative">
           <EditorialImage
+            t={t}
             slot={slot}
             priority
             sizes="(max-width: 1023px) 92vw, 46vw"

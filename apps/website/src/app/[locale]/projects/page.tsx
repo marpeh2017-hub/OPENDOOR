@@ -7,6 +7,8 @@ import { ProjectCard } from '@/components/projects/project-card'
 import { ProjectFilters } from '@/components/projects/project-filters'
 import { ProjectsEmpty } from '@/components/projects/projects-empty'
 import { shouldShowFilters } from '@/lib/project-presentation'
+import { makeLocalizer } from '@/lib/localize'
+import type { Locale } from '@urban-renewal/api-contracts'
 
 /**
  * Projects index.
@@ -76,6 +78,8 @@ export default async function ProjectsPage({
   const { locale } = await params
   setRequestLocale(locale)
 
+  const t = makeLocalizer(locale as Locale)
+
   const [tPages, tProjects, page, cities, types] = await Promise.all([
     getTranslations('pages.projects'),
     getTranslations('projects'),
@@ -120,7 +124,7 @@ export default async function ProjectsPage({
 
         <ul className={`grid gap-8 sm:grid-cols-2 lg:grid-cols-3 ${showFilters ? 'mt-10' : ''}`}>
           {page.items.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} t={t} />
           ))}
         </ul>
 

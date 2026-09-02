@@ -2,6 +2,7 @@ import type { PublicProject } from '@urban-renewal/api-contracts'
 import { getTranslations } from 'next-intl/server'
 import { ProjectPattern } from '@/components/brand/architecture'
 import { heroPhoto } from '@/lib/project-presentation'
+import type { Localizer } from '@/lib/localize'
 
 /**
  * The band under the project's name.
@@ -31,7 +32,15 @@ import { heroPhoto } from '@/lib/project-presentation'
  * apology and not an image credit: it exists so nobody reads a schematic as a
  * rendering of the finished building.
  */
-export async function ProjectHero({ project }: { project: PublicProject }) {
+export async function ProjectHero({
+  project,
+  t: loc,
+}: {
+  project: PublicProject
+  /** Resolves the photo's authored alt text. Named `loc` so it cannot be
+   *  confused with the message catalogue below. */
+  t: Localizer
+}) {
   const t = await getTranslations('projectImages')
   const photo = heroPhoto(project)
 
@@ -41,7 +50,7 @@ export async function ProjectHero({ project }: { project: PublicProject }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photo.url}
-          alt={photo.alt}
+          alt={loc.text(photo.alt)}
           className="h-full w-full object-cover"
           style={
             photo.focalPoint

@@ -132,13 +132,14 @@ export async function getProjects(
   const matched = MOCK_PROJECTS
     .filter(isPubliclyVisible)
     .map(toPublic)
-    .filter((p) => (city ? p.location.city === city : true))
+    .filter((p) => (city ? p.location.city.he === city : true))
     .filter((p) => (type ? p.type === type : true))
     .filter((p) => (stage ? p.currentStage?.value === stage : true))
     .filter((p) => (featured === undefined ? true : p.featured === featured))
     .filter((p) =>
       search
-        ? [p.name, p.summary, p.location.city].join(' ').toLowerCase().includes(search.toLowerCase())
+        ? [p.name.he, p.name.en, p.summary.he, p.summary.en, p.location.city.he]
+            .filter(Boolean).join(' ').toLowerCase().includes(search.toLowerCase())
         : true,
     )
     // Featured first, then most recently updated. Deterministic, so the grid
@@ -172,9 +173,15 @@ export async function getFeaturedProjects(limit = 3): Promise<PublicProjectSumma
   return page.items
 }
 
-/** Distinct cities, for the project filter. Derived, never a hardcoded list. */
+/**
+ * Distinct cities, for the project filter. Derived, never a hardcoded list.
+ *
+ * Keyed on the Hebrew source rather than on the rendered value: a filter has to
+ * identify the same city whichever language the visitor is reading, and the
+ * source is the only spelling guaranteed to exist.
+ */
 export async function getProjectCities(): Promise<string[]> {
-  const cities = MOCK_PROJECTS.filter(isPubliclyVisible).map((p) => p.location.city)
+  const cities = MOCK_PROJECTS.filter(isPubliclyVisible).map((p) => p.location.city.he)
   return [...new Set(cities)].sort((a, b) => a.localeCompare(b, 'he'))
 }
 
@@ -237,7 +244,7 @@ export async function getProjectForPreview(slug: string): Promise<PublicProject 
  */
 export async function getAllProjectsForPreview(): Promise<PublicProjectSummary[]> {
   return MOCK_PROJECTS
-    .filter((p) => p.name.length > 0)
+    .filter((p) => p.name.he.length > 0)
     .map(toPublic)
     .map(toSummary)
 }

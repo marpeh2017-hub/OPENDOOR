@@ -51,6 +51,7 @@ export function CityBandBlockView({ block, t }: { block: MediaBlock; t: Localize
       <div className="relative left-1/2 w-screen -translate-x-1/2">
         <div className="relative">
           <EditorialImage
+            t={t}
             slot={slot}
             sizes="100vw"
             captionHidden

@@ -89,7 +89,7 @@ export async function FactTable({
                 <li key={approval.id} className="leading-relaxed">
                   {loc(approval.label)}
                   {approval.authority && (
-                    <span className="text-gray-600"> · {approval.authority}</span>
+                    <span className="text-gray-600"> · {loc.text(approval.authority)}</span>
                   )}
                   {approval.reference && (
                     <span className="text-gray-600"> · {approval.reference}</span>
@@ -108,7 +108,7 @@ export async function FactTable({
                 <li key={permit.id} className="leading-relaxed">
                   {loc(permit.label)}
                   {permit.authority && (
-                    <span className="text-gray-600"> · {permit.authority}</span>
+                    <span className="text-gray-600"> · {loc.text(permit.authority)}</span>
                   )}
                 </li>
               ))}

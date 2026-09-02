@@ -53,6 +53,7 @@ export async function CtaBlockView({ block, t }: { block: CtaBlock; t: Localizer
       >
         <div className="relative mx-auto max-w-5xl">
           <EditorialImage
+            t={t}
             slot={slot}
             sizes="(max-width: 1023px) 100vw, 64rem"
             captionHidden

@@ -1,5 +1,6 @@
 import type { MediaAsset } from '@urban-renewal/api-contracts'
 import { getTranslations } from 'next-intl/server'
+import type { Localizer } from '@/lib/localize'
 
 /**
  * Project images, each stating what it is allowed to claim.
@@ -26,7 +27,15 @@ import { getTranslations } from 'next-intl/server'
  * of images does not need a viewer, and a carousel hides the labels behind an
  * interaction.
  */
-export async function GalleryGrid({ items }: { items: readonly MediaAsset[] }) {
+export async function GalleryGrid({
+  items,
+  t: loc,
+}: {
+  items: readonly MediaAsset[]
+  /** Resolves the assets' authored alt text and captions. Named `loc` so it
+   *  cannot be confused with the message catalogue below. */
+  t: Localizer
+}) {
   const t = await getTranslations('projectImages')
   if (items.length === 0) return null
 
@@ -42,7 +51,7 @@ export async function GalleryGrid({ items }: { items: readonly MediaAsset[] }) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={asset.url}
-                  alt={asset.alt}
+                  alt={loc.text(asset.alt)}
                   className="h-full w-full object-cover"
                   style={
                     asset.focalPoint
@@ -60,7 +69,7 @@ export async function GalleryGrid({ items }: { items: readonly MediaAsset[] }) {
               </div>
 
               <figcaption className="mt-2.5 text-[13px] leading-relaxed text-gray-600">
-                {asset.caption}
+                {loc.text(asset.caption)}
                 {/* The second statement, on its own line so it survives the
                     caption being edited or shortened. */}
                 {isContext && (
