@@ -1,26 +1,14 @@
-import { SectionScaffold } from '@/components/site/section-scaffold'
+import { PagesList } from '@/components/site/pages-list'
 
+/**
+ * The pages the CMS knows about.
+ *
+ * Only pages that have actually been MIGRATED appear here. The website has
+ * eight fixed pages; one of them is in the database and the rest are still
+ * rendered from code, and this screen says which is which rather than
+ * pretending to manage all eight. A CMS that lists a page it cannot edit
+ * teaches people that its buttons sometimes do nothing.
+ */
 export default function SitePagesPage() {
-  return (
-    <SectionScaffold
-      title="עמודים"
-      description="שמונת העמודים הקבועים של האתר. אפשר יהיה לערוך את הטקסטים והתמונות, לשנות את סדר החלקים ולהסתיר חלק."
-      willManage={[
-        'עריכת הטקסטים בכל חלק',
-        'החלפת תמונות',
-        'שינוי סדר החלקים',
-        'הסתרה והצגה של חלק',
-        'תצוגה מקדימה',
-        'טיוטה, בדיקה, פרסום',
-        'היסטוריית שינויים',
-      ]}
-      willNotTouch={[
-        'הפריסה והעיצוב של כל חלק',
-        'גופנים, צבעים, מרווחים ורוחב',
-        'יצירת עמודים חדשים',
-        'סוגי החלקים שהאתר יודע להציג',
-      ]}
-      phase="פאזה 2"
-    />
-  )
+  return <PagesList />
 }

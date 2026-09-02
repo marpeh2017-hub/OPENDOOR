@@ -261,7 +261,7 @@ export class CmsService {
       throw new DomainError('VALIDATION', check.blockers)
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const content = await this.mustFind(actor.tenantId, id, tx)
 
       const verifications = await tx.cmsVerification.findMany({
@@ -322,6 +322,11 @@ export class CmsService {
         },
       })
     })
+
+    // After the transaction, deliberately: revalidating a publication that
+    // then rolled back would show the public a page that does not exist.
+    await this.revalidateWebsite(result.slug)
+    return result
   }
 
   /**
@@ -332,7 +337,7 @@ export class CmsService {
    * resident signed" must stay answerable after somebody withdraws the page.
    */
   async unpublish(actor: AuditActor, id: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const content = await this.mustFind(actor.tenantId, id, tx)
       if (!content.livePublicationId) {
         throw DomainError.conflict('CMS_NOT_PUBLISHED', 'הפריט אינו מפורסם.')
@@ -365,6 +370,9 @@ export class CmsService {
         data: { state: 'DRAFT', livePublicationId: null, updatedById: actor.userId },
       })
     })
+
+    await this.revalidateWebsite(result.slug)
+    return result
   }
 
   /**
@@ -420,6 +428,46 @@ export class CmsService {
         },
       })
     })
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  CACHE INVALIDATION
+  // ══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Tell the website that one page changed.
+   *
+   * ── WHY THIS NEVER THROWS ──────────────────────────────────────────────
+   *
+   * The publication is already committed by the time this runs. If the website
+   * is unreachable, mid-deploy, or has no secret configured, the correct
+   * outcome is a page that refreshes on its next revalidation window rather
+   * than a publish that reports failure for work that actually succeeded — and
+   * that an editor would then try again, producing a second publication row
+   * for one editorial act.
+   *
+   * So this is best-effort by design, and its failure is logged rather than
+   * raised. Staleness is self-correcting; a lie about whether publishing
+   * worked is not.
+   */
+  private async revalidateWebsite(slug: string): Promise<void> {
+    const base = process.env['WEBSITE_URL']
+    const secret = process.env['CMS_REVALIDATE_SECRET']
+    if (!base || !secret) return
+
+    try {
+      const res = await fetch(`${base.replace(/\/+$/, '')}/api/revalidate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-revalidate-secret': secret },
+        body: JSON.stringify({ slug }),
+        signal: AbortSignal.timeout(3000),
+      })
+      if (!res.ok) {
+        console.warn(`[cms] revalidation for "${slug}" answered ${res.status}`)
+      }
+    } catch (e) {
+      console.warn(`[cms] revalidation for "${slug}" failed: ${e instanceof Error ? e.message : e}`)
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════
