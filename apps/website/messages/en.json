@@ -61,7 +61,8 @@
       "title": "Trust"
     },
     "knowledge": {
-      "title": "Knowledge centre"
+      "title": "Knowledge centre",
+      "empty": "No articles are published here yet. New content will appear here soon."
     },
     "faq": {
       "title": "FAQ",

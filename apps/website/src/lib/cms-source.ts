@@ -215,21 +215,20 @@ export async function getCmsArticles(): Promise<CmsArticleSummary[]> {
     if (!res.ok) return []
     const rows = (await res.json()) as { slug: string; publishedAt: string; content?: Record<string, unknown> }[]
     if (!Array.isArray(rows)) return []
-    return rows
-      .map((r) => {
-        const c = r.content ?? {}
-        const title = c['title'] as CmsArticleSummary['title'] | undefined
-        if (!title?.he) return null
-        return {
-          slug: r.slug,
-          title,
-          summary: c['summary'] as CmsArticleSummary['summary'],
-          category: c['category'] as CmsArticleSummary['category'],
-          publishedAt: r.publishedAt,
-        } satisfies CmsArticleSummary
+    const summaries: CmsArticleSummary[] = []
+    for (const r of rows) {
+      const c = r.content ?? {}
+      const title = c['title'] as CmsArticleSummary['title'] | undefined
+      if (!title?.he) continue
+      summaries.push({
+        slug: r.slug,
+        title,
+        summary: c['summary'] as CmsArticleSummary['summary'],
+        category: c['category'] as CmsArticleSummary['category'],
+        publishedAt: r.publishedAt,
       })
-      .filter((a): a is CmsArticleSummary => a !== null)
-      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    }
+    return summaries.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
   } catch {
     return []
   }
@@ -257,6 +256,29 @@ export async function getCmsArticleBySlug(slug: string): Promise<CmsArticle | nu
       publishedAt: body.publishedAt,
       seo: body.seo,
     }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A signed URL for one managed object, from the SERVER — used by article and
+ * project-image renderers that hold a `storageKey` rather than a ready URL.
+ * Not cached with a tag of its own: the URL itself is short-lived by design,
+ * so tag-based revalidation would not help it; the surrounding page's own
+ * cache window governs how often this re-runs.
+ */
+export async function getPublicMediaUrl(storageKey: string): Promise<string | null> {
+  const base = gatewayBase()
+  if (!base) return null
+  try {
+    const res = await fetch(
+      `${base}/api/v1/public/cms/${TENANT}/media?key=${encodeURIComponent(storageKey)}`,
+      { next: { revalidate: 60 } },
+    )
+    if (!res.ok) return null
+    const body = (await res.json()) as { url?: string }
+    return body.url ?? null
   } catch {
     return null
   }
