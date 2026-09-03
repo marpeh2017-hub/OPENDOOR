@@ -81,6 +81,46 @@ export class CmsService {
   //  READ
   // ══════════════════════════════════════════════════════════════════════
 
+  /**
+   * Create a new content item, DRAFT, unpublished, empty of anything but what
+   * the caller supplied.
+   *
+   * A slug collision within the same tenant and kind is the database's own
+   * `@@unique([tenantId, kind, slug])` firing, translated to a domain error
+   * rather than a raw constraint violation reaching the client.
+   */
+  async create(actor: AuditActor, input: { kind: string; slug: string; draft?: unknown }) {
+    try {
+      const content = await this.prisma.cmsContent.create({
+        data: {
+          tenantId: actor.tenantId,
+          kind: input.kind as never,
+          slug: input.slug,
+          state: 'DRAFT',
+          exposure: 'PUBLIC',
+          draft: (input.draft ?? {}) as Prisma.InputJsonValue,
+          createdById: actor.userId,
+          updatedById: actor.userId,
+        },
+      })
+      const revision = await this.prisma.cmsRevision.create({
+        data: {
+          tenantId: actor.tenantId, contentId: content.id, sequence: 1, reason: 'SAVE',
+          snapshot: content.draft as Prisma.InputJsonValue, stateAtRevision: 'DRAFT',
+          authorId: actor.userId, summary: 'נוצר',
+        },
+      })
+      return this.prisma.cmsContent.update({
+        where: { id: content.id }, data: { currentRevisionId: revision.id },
+      })
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw DomainError.conflict('CMS_SLUG_TAKEN', `הכתובת "${input.slug}" כבר קיימת עבור סוג תוכן זה.`)
+      }
+      throw e
+    }
+  }
+
   async list(tenantId: string, filter: { kind?: string; state?: string } = {}) {
     return this.prisma.cmsContent.findMany({
       where: {

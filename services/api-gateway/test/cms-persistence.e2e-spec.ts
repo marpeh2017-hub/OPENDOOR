@@ -475,4 +475,59 @@ describe('CMS persistence (e2e)', () => {
       expect(JSON.stringify(list.body)).not.toContain('סוד')
     })
   })
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  PASS 4G · CREATE (Knowledge Center needs new content rows, not only
+  //  edits to existing ones)
+  // ══════════════════════════════════════════════════════════════════════
+
+  describe('creating a content item', () => {
+    it('an editor creates a new item, DRAFT and unpublished, with one revision', async () => {
+      const res = await api().post(BASE).set(as(editorA)).send({
+        kind: 'ARTICLE', slug: `e2e-new-article-${Date.now()}`,
+        draft: { title: { he: 'כתבה חדשה' } },
+      }).expect(201)
+      expect(res.body.state).toBe('DRAFT')
+      expect(res.body.livePublicationId).toBeNull()
+
+      const revs = await api().get(`${BASE}/${res.body.id}/revisions`).set(as(adminA)).expect(200)
+      expect(revs.body).toHaveLength(1)
+      expect(revs.body[0].reason).toBe('SAVE')
+
+      await api().get(`/api/v1/public/cms/${A_SLUG}/article/${res.body.slug}`).expect(404)
+    })
+
+    it('a viewer cannot create — VIEW is not EDIT', async () => {
+      await api().post(BASE).set(as(viewerA)).send({
+        kind: 'ARTICLE', slug: `e2e-viewer-article-${Date.now()}`,
+      }).expect(403)
+    })
+
+    it('refuses a duplicate slug within the same tenant and kind, as a domain conflict not a raw DB error', async () => {
+      const slug = `e2e-dup-${Date.now()}`
+      await api().post(BASE).set(as(editorA)).send({ kind: 'ARTICLE', slug }).expect(201)
+      const dup = await api().post(BASE).set(as(editorA)).send({ kind: 'ARTICLE', slug })
+      expect(dup.status).toBe(409)
+      expect(JSON.stringify(dup.body)).not.toMatch(/PrismaClientKnownRequestError|P2002/)
+    })
+
+    it('the same slug is free again for a DIFFERENT kind, and for a different tenant', async () => {
+      const slug = `e2e-reuse-${Date.now()}`
+      const adminB = token(adminBId, tenantBId, 'COMPANY_ADMIN')
+      await api().post(BASE).set(as(editorA)).send({ kind: 'ARTICLE', slug }).expect(201)
+      await api().post(BASE).set(as(editorA)).send({ kind: 'FAQ_ITEM', slug }).expect(201)
+      await api().post(BASE).set(as(adminB)).send({ kind: 'ARTICLE', slug }).expect(201)
+    })
+
+    it('cannot be used to smuggle a tenant, an id, or a live state past the server', async () => {
+      const res = await api().post(BASE).set(as(editorA)).send({
+        kind: 'ARTICLE', slug: `e2e-smuggle-${Date.now()}`,
+        tenantId: tenantBId, id: 'attacker-chosen-id', state: 'PUBLISHED',
+      } as any).expect(201)
+      expect(res.body.id).not.toBe('attacker-chosen-id')
+      expect(res.body.state).toBe('DRAFT')
+      const row = await prisma.cmsContent.findUniqueOrThrow({ where: { id: res.body.id } })
+      expect(row.tenantId).toBe(tenantAId)
+    })
+  })
 })

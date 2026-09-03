@@ -13,6 +13,31 @@ import { Allow, IsBoolean, IsIn, IsObject, IsOptional, IsString, MaxLength } fro
 
 export const CMS_KINDS = ['PAGE', 'PROJECT', 'ARTICLE', 'FAQ_ITEM', 'NAVIGATION', 'SETTINGS'] as const
 
+/**
+ * Create a new content item.
+ *
+ * Deliberately minimal: `kind`, `slug` and an initial `draft`. Everything
+ * else — id, tenant, state (always DRAFT), timestamps, author — is server
+ * decided, the same discipline as every other DTO here. `slug` collisions
+ * within one tenant and kind are caught by the database's own unique
+ * constraint and surfaced as a 409, not guessed at here.
+ */
+export class CreateContentDto {
+  @ApiProperty({ enum: CMS_KINDS })
+  @IsIn(CMS_KINDS as unknown as string[])
+  kind!: string
+
+  @ApiProperty({ description: 'URL-safe, unique within this tenant and kind' })
+  @IsString()
+  @MaxLength(200)
+  slug!: string
+
+  @ApiPropertyOptional({ description: 'Initial draft content. Defaults to an empty object.' })
+  @IsOptional()
+  @IsObject()
+  draft?: Record<string, unknown>
+}
+
 export class SaveContentDto {
   @ApiProperty({ description: 'The full block tree as the editor now has it' })
   @IsObject()

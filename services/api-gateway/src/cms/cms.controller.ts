@@ -11,8 +11,8 @@ import {
 } from '../auth/roles.constants'
 import { CmsService } from './cms.service'
 import {
-  SaveContentDto, SetStateDto, ListContentQueryDto, SetFactDto, VerifyFactDto,
-  FeasibilityEditDto,
+  CreateContentDto, SaveContentDto, SetStateDto, ListContentQueryDto,
+  SetFactDto, VerifyFactDto, FeasibilityEditDto,
 } from './dto/cms.dto'
 import { actorFrom, tenantFrom } from '../common/actor'
 import { mapDomainErrors } from '../common/errors/domain-error'
@@ -66,6 +66,14 @@ export class CmsController {
   @ApiOperation({ summary: 'List content items in the tenant' })
   list(@Request() req: any, @Query() query: ListContentQueryDto) {
     return mapDomainErrors(() => this.cms.list(tenantFrom(req), query))
+  }
+
+  @Post()
+  @Roles(...CMS_EDIT_ROLES)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new content item (DRAFT, unpublished)' })
+  create(@Request() req: any, @Body() dto: CreateContentDto) {
+    return mapDomainErrors(() => this.cms.create(actorFrom(req), dto))
   }
 
   @Get(':id')

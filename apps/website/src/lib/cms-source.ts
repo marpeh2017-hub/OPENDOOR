@@ -43,8 +43,21 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  * about the company's own conduct, so it is the page most likely to need
  * editing without a deploy — and because it uses five different block types,
  * which makes it a real test of the round trip rather than a easy one.
+ *
+ * `about`, `why-organizer` and `how-we-work` followed in Pass 4G, imported by
+ * the same script from the same fixtures with the same before/after proof —
+ * their content is unchanged, only its home moved.
+ *
+ * `privacy` and `terms` are deliberately ABSENT. Both have a DRAFT row in the
+ * CMS (see the import in Pass 4G) so an editor can see the shell, but no
+ * legal copy exists to publish and none has been invented — see
+ * `docs/ODG_CMS_ARCHITECTURE.md` Appendix E. Adding either slug here before
+ * that copy exists would publish nothing (an unpublished draft still returns
+ * null), so the absence is documentation, not a missing step.
  */
-export const CMS_MANAGED_SLUGS: readonly string[] = ['trust']
+export const CMS_MANAGED_SLUGS: readonly string[] = [
+  'trust', 'about', 'why-organizer', 'how-we-work',
+]
 
 export function isCmsManaged(slug: string): boolean {
   return CMS_MANAGED_SLUGS.includes(slug)

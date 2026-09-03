@@ -91,6 +91,9 @@ export interface FactAuditEntry {
 const BASE = '/cms/content'
 
 export const cmsApi = {
+  create: (input: { kind: string; slug: string; draft?: unknown }) =>
+    api.post<CmsContentDetail>(BASE, input),
+
   list: (params: { kind?: string; state?: string } = {}) => {
     const q = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v) as [string, string][],
