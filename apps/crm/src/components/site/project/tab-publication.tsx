@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { AlertTriangle, Check, EyeOff, Globe, Loader2, Lock } from 'lucide-react'
 import { Section, Callout } from './fields'
+import { PublishConfirmDialog, UnpublishConfirmDialog } from './publish-confirm-dialog'
 import type { CmsContentDetail, CmsRevisionSummary, PublicationCheck } from '@/lib/cms-api'
 
 /**
@@ -45,6 +47,19 @@ export function TabPublication({
   onPublish: () => void
   onUnpublish: () => void
 }) {
+  /*
+   * Opening either dialog NEVER publishes or unpublishes — these booleans only
+   * control visibility, and `onPublish`/`onUnpublish` are called nowhere
+   * except inside each dialog's own confirm handler below.
+   */
+  const [confirmPublish, setConfirmPublish] = useState(false)
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false)
+
+  // Prefer the project's own name over its slug, so the dialog names the
+  // thing a person actually recognises.
+  const targetName =
+    (content.draft as { public?: { name?: { he?: string } } } | undefined)?.public?.name?.he
+    || content.slug
   const live = content.state === 'PUBLISHED' && content.livePublicationId
   const lastPublish = revisions.find((r) => r.reason === 'PUBLISH')
   const savesSincePublish = lastPublish
@@ -193,7 +208,7 @@ export function TabPublication({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={onPublish}
+            onClick={() => setConfirmPublish(true)}
             disabled={!canPublish || blocked || dirty || busy === 'publish'}
             title={
               !canPublish ? 'אין הרשאת פרסום'
@@ -211,7 +226,7 @@ export function TabPublication({
           {live && (
             <button
               type="button"
-              onClick={onUnpublish}
+              onClick={() => setConfirmUnpublish(true)}
               disabled={!canPublish || busy === 'unpublish'}
               className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
@@ -231,6 +246,21 @@ export function TabPublication({
           </p>
         )}
       </Section>
+
+      <PublishConfirmDialog
+        open={confirmPublish}
+        onOpenChange={setConfirmPublish}
+        onConfirm={() => { setConfirmPublish(false); onPublish() }}
+        targetName={targetName}
+        busy={busy === 'publish'}
+      />
+      <UnpublishConfirmDialog
+        open={confirmUnpublish}
+        onOpenChange={setConfirmUnpublish}
+        onConfirm={() => { setConfirmUnpublish(false); onUnpublish() }}
+        targetName={targetName}
+        busy={busy === 'unpublish'}
+      />
     </div>
   )
 }

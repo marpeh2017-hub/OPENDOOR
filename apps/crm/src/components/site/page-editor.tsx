@@ -9,6 +9,7 @@ import {
 } from '@/lib/cms-api'
 import { findLocalizedLeaves, setLocalizedLeaf } from './localized-fields'
 import { ExposureBanner } from './exposure'
+import { PublishConfirmDialog, UnpublishConfirmDialog } from './project/publish-confirm-dialog'
 import { cn } from '@/lib/utils'
 
 /**
@@ -53,6 +54,8 @@ export function PageEditor({ contentId }: { contentId: string }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [confirmPublish, setConfirmPublish] = useState(false)
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false)
 
   const load = useCallback(async () => {
     const [c, revs] = await Promise.all([cmsApi.get(contentId), cmsApi.revisions(contentId)])
@@ -211,7 +214,7 @@ export function PageEditor({ contentId }: { contentId: string }) {
 
         <button
           type="button"
-          onClick={() => act('publish', () => cmsApi.publish(contentId))}
+          onClick={() => setConfirmPublish(true)}
           disabled={busy === 'publish' || dirty || check?.canPublish === false}
           title={
             dirty ? 'יש שינויים שלא נשמרו' :
@@ -231,7 +234,7 @@ export function PageEditor({ contentId }: { contentId: string }) {
         {live && (
           <button
             type="button"
-            onClick={() => act('unpublish', () => cmsApi.unpublish(contentId))}
+            onClick={() => setConfirmUnpublish(true)}
             disabled={busy === 'unpublish'}
             className="inline-flex items-center gap-2 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
           >
@@ -328,6 +331,21 @@ export function PageEditor({ contentId }: { contentId: string }) {
           </fieldset>
         ))}
       </div>
+
+      <PublishConfirmDialog
+        open={confirmPublish}
+        onOpenChange={setConfirmPublish}
+        onConfirm={() => { setConfirmPublish(false); act('publish', () => cmsApi.publish(contentId)) }}
+        targetName={content.slug === 'trust' ? 'שקיפות ואמון' : content.slug}
+        busy={busy === 'publish'}
+      />
+      <UnpublishConfirmDialog
+        open={confirmUnpublish}
+        onOpenChange={setConfirmUnpublish}
+        onConfirm={() => { setConfirmUnpublish(false); act('unpublish', () => cmsApi.unpublish(contentId)) }}
+        targetName={content.slug === 'trust' ? 'שקיפות ואמון' : content.slug}
+        busy={busy === 'unpublish'}
+      />
     </div>
   )
 }
