@@ -495,4 +495,59 @@ describe('CMS project security (e2e)', () => {
       expect(proj).not.toContain('999999999')
     })
   })
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  PASS 4D · PROJECT MEDIA UPLOAD
+  // ══════════════════════════════════════════════════════════════════════
+
+  describe('project media upload', () => {
+    // A genuine PNG signature, so file-signature validation actually passes
+    // rather than being incidentally skipped.
+    const PNG_BYTES = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from('IHDRfake', 'ascii'),
+    ])
+
+    it('an editor can upload an image and gets back a tenant-scoped storage key', async () => {
+      const res = await api().post(`${BASE}/${projectA}/media/upload`).set(as(editorA))
+        .attach('file', PNG_BYTES, { filename: 'photo.png', contentType: 'image/png' })
+        .expect(201)
+      expect(res.body.storageKey).toContain(`${tenantA}/`)
+      expect(res.body.mimeType).toBe('image/png')
+    })
+
+    it('a viewer cannot upload — VIEW is not EDIT', async () => {
+      await api().post(`${BASE}/${projectA}/media/upload`).set(as(viewerA))
+        .attach('file', PNG_BYTES, { filename: 'photo.png', contentType: 'image/png' })
+        .expect(403)
+    })
+
+    it('uploading to another tenant project answers 404 before touching storage', async () => {
+      await api().post(`${BASE}/${projectB}/media/upload`).set(as(adminA))
+        .attach('file', PNG_BYTES, { filename: 'photo.png', contentType: 'image/png' })
+        .expect(404)
+    })
+
+    it('rejects a disguised file whose bytes do not match the declared image type', async () => {
+      const res = await api().post(`${BASE}/${projectA}/media/upload`).set(as(editorA))
+        .attach('file', Buffer.from('#!/bin/sh; echo pwned'), { filename: 'a.png', contentType: 'image/png' })
+      expect(res.status).toBe(400)
+    })
+
+    it('rejects a non-image MIME type outright', async () => {
+      const res = await api().post(`${BASE}/${projectA}/media/upload`).set(as(editorA))
+        .attach('file', Buffer.from('%PDF-1.4'), { filename: 'a.pdf', contentType: 'application/pdf' })
+      expect(res.status).toBe(400)
+    })
+
+    it('a signed preview URL is scoped to a media entry that actually exists on the project', async () => {
+      // The entry must be a real member of doc.media, looked up by id — not a
+      // bare storage key the caller could otherwise supply directly.
+      await api().get(`${BASE}/${projectA}/media/does-not-exist/url`).set(as(adminA)).expect(404)
+    })
+
+    it('a preview URL for another tenant project answers 404', async () => {
+      await api().get(`${BASE}/${projectB}/media/anything/url`).set(as(adminA)).expect(404)
+    })
+  })
 })

@@ -236,6 +236,41 @@ describe('project public projection', () => {
       // classification exists to prevent.
       expect(out.media?.[0]?.classification).toBe('EDITORIAL_CONTEXT')
     })
+
+    /**
+     * Pass 4D §4: an EDITORIAL_CONTEXT image must never be presented publicly
+     * as VERIFIED_PROJECT_PHOTO, and the guarantee must be structural rather
+     * than a UI label. Proven here by round-tripping BOTH classifications
+     * through the exact same code path and asserting neither is altered —
+     * there is no branch in `projectProjection` that reads or rewrites
+     * `classification`, so there is nothing for a future change to that
+     * branch to get wrong.
+     */
+    it.each(['EDITORIAL_CONTEXT', 'VERIFIED_PROJECT_PHOTO', 'ARCHITECTURAL_PATTERN'] as const)(
+      'never changes a %s classification during projection',
+      (classification) => {
+        const withOne = projectProjection({
+          public: { name: { he: 'x' }, location: { city: { he: 'x' } } },
+          media: [{
+            id: 'm1', storageKey: 'k', filename: 'f.jpg', classification,
+            alt: { he: 'תיאור' }, order: 1,
+          }],
+        } as unknown as ProjectDocument)
+        expect(withOne.media?.[0]?.classification).toBe(classification)
+      },
+    )
+
+    it('two images with different classifications keep them distinct after projection', () => {
+      const mixed = projectProjection({
+        public: { name: { he: 'x' }, location: { city: { he: 'x' } } },
+        media: [
+          { id: 'a', storageKey: 'ka', filename: 'a.jpg', classification: 'VERIFIED_PROJECT_PHOTO', alt: { he: 'א' }, order: 1 },
+          { id: 'b', storageKey: 'kb', filename: 'b.jpg', classification: 'EDITORIAL_CONTEXT', alt: { he: 'ב' }, order: 2 },
+        ],
+      } as unknown as ProjectDocument)
+      expect(mixed.media?.find((m) => m.id === 'a')?.classification).toBe('VERIFIED_PROJECT_PHOTO')
+      expect(mixed.media?.find((m) => m.id === 'b')?.classification).toBe('EDITORIAL_CONTEXT')
+    })
   })
 
   describe('SEO is built only from public content', () => {
