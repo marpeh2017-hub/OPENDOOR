@@ -521,7 +521,7 @@ interface LegacyEntry {
 }
 
 /** Hebrew labels and numeric semantics for the keys the pilot already holds. */
-const KNOWN: Record<string, { label: string; kind: NumericKind; unit?: string }> = {
+export const KNOWN_FIELDS: Record<string, { label: string; kind: NumericKind; unit?: string }> = {
   registeredLotArea:       { label: 'שטח מגרש רשום', kind: 'AREA_SQM', unit: 'מ״ר' },
   gisMeasuredArea:         { label: 'שטח במדידת GIS', kind: 'AREA_SQM', unit: 'מ״ר' },
   existingBuiltArea:       { label: 'שטח בנוי קיים', kind: 'AREA_SQM', unit: 'מ״ר' },
@@ -620,7 +620,7 @@ export function migrateFeasibility(
     if (!entries) continue
     for (const [key, entry] of Object.entries(entries)) {
       if (!entry || typeof entry !== 'object') continue
-      const known = KNOWN[key]
+      const known = KNOWN_FIELDS[key]
       const raw = entry.value
       const asString = typeof raw === 'number' ? String(raw) : String(raw ?? '')
       const numeric = known?.kind !== 'TEXT' && isNumeric(asString)
@@ -708,6 +708,21 @@ export type FeasibilityEdit =
   | { op: 'setMeta'; scenarioId: string; key: string; note?: string; sourceRef?: string; reviewState?: ReviewState }
   | { op: 'setOverride'; scenarioId: string; key: string; value: string; reason: string }
   | { op: 'clearOverride'; scenarioId: string; key: string }
+  /**
+   * Record a value the workbook mentions but the import did not carry — the
+   * building count, the coverage, an assumption somebody made on a call.
+   *
+   * INPUT only, and deliberately: a browser that could create FORMULA fields
+   * would be choosing which arithmetic this system asserts, and that choice
+   * belongs in reviewed code. `label` and `kind` come from `KNOWN_FIELDS` when
+   * the key is one this system already understands, so the common case cannot
+   * be mislabelled by hand.
+   */
+  | {
+      op: 'addField'; scenarioId: string; key: string
+      category: FieldCategory; label?: string; kind?: NumericKind
+      value?: string; unit?: string; note?: string
+    }
 
 export class FeasibilityEditError extends Error {
   constructor(readonly code: string, message: string) {
@@ -737,12 +752,56 @@ export function applyEdit(
     throw new FeasibilityEditError('SCENARIO_NOT_FOUND', `התרחיש ${edit.scenarioId} לא נמצא.`)
   }
   const scenario = workspace.scenarios[index]!
+  const stamp = now()
+
+  if (edit.op === 'addField') {
+    if (scenario.fields[edit.key]) {
+      throw new FeasibilityEditError('FIELD_EXISTS', `השדה ${edit.key} כבר קיים בתרחיש.`)
+    }
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,60}$/.test(edit.key)) {
+      throw new FeasibilityEditError('BAD_KEY', 'מזהה השדה חייב להיות באנגלית, ללא רווחים.')
+    }
+    const known = KNOWN_FIELDS[edit.key]
+    const kind = known?.kind ?? edit.kind ?? 'DECIMAL'
+    const label = known?.label ?? edit.label?.trim()
+    if (!label) {
+      throw new FeasibilityEditError('LABEL_REQUIRED', 'לשדה חדש דרושה כותרת בעברית.')
+    }
+    if (edit.value !== undefined && kind !== 'TEXT' && edit.value !== '' && !isNumeric(edit.value)) {
+      throw new FeasibilityEditError('NOT_A_NUMBER', `הערך של "${label}" חייב להיות מספר.`)
+    }
+    const created: FeasibilityField = {
+      key: edit.key,
+      label,
+      category: edit.category,
+      role: 'INPUT',
+      kind,
+    }
+    if (edit.value !== undefined && edit.value !== '') {
+      created.value = kind === 'TEXT' ? edit.value : canonical(edit.value)
+    }
+    const unit = edit.unit ?? known?.unit
+    if (unit) created.unit = unit
+    if (edit.note) created.note = edit.note
+    // A value somebody just typed has been reviewed by nobody.
+    if (edit.category === 'SOURCE_DATA') created.reviewState = 'UNREVIEWED'
+
+    const withField: FeasibilityScenario = {
+      ...scenario,
+      fields: { ...scenario.fields, [edit.key]: created },
+      updatedAt: stamp,
+    }
+    // A new value can complete a formula that was waiting on it.
+    const recomputed = recalculate(withField, [edit.key], () => stamp)
+    const scenarios = [...workspace.scenarios]
+    scenarios[index] = recomputed
+    return { ...workspace, scenarios }
+  }
+
   const field = scenario.fields[edit.key]
   if (!field) {
     throw new FeasibilityEditError('FIELD_NOT_FOUND', `השדה ${edit.key} לא נמצא בתרחיש.`)
   }
-
-  const stamp = now()
   let nextField: FeasibilityField
 
   switch (edit.op) {

@@ -7,10 +7,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { Roles } from '../auth/decorators/roles.decorator'
 import {
   CMS_VIEW_ROLES, CMS_EDIT_ROLES, CMS_VERIFY_ROLES, CMS_PUBLISH_ROLES,
+  CMS_FEASIBILITY_ROLES,
 } from '../auth/roles.constants'
 import { CmsService } from './cms.service'
 import {
   SaveContentDto, SetStateDto, ListContentQueryDto, SetFactDto, VerifyFactDto,
+  FeasibilityEditDto,
 } from './dto/cms.dto'
 import { actorFrom, tenantFrom } from '../common/actor'
 import { mapDomainErrors } from '../common/errors/domain-error'
@@ -207,6 +209,34 @@ export class CmsController {
   @ApiOperation({ summary: 'Signed preview URL for one media entry already on the project' })
   mediaUrl(@Request() req: any, @Param('id') id: string, @Param('mediaId') mediaId: string) {
     return mapDomainErrors(() => this.cms.projectMediaUrl(tenantFrom(req), id, mediaId))
+  }
+
+  // ── Feasibility ───────────────────────────────────────────────────────
+  //
+  // Its own tier, not EDIT. Editing the sentence that describes a project and
+  // editing the scenario that says it sells for 825 million shekels are
+  // different acts, and the second is not implied by the first.
+  //
+  // There is no publish route here, and there will not be one: feasibility is
+  // never publishable, and `CmsService.projectProjection` never reads it.
+
+  @Get(':id/feasibility')
+  @Roles(...CMS_FEASIBILITY_ROLES)
+  @ApiOperation({ summary: "The project's private feasibility workspace" })
+  feasibility(@Request() req: any, @Param('id') id: string) {
+    return mapDomainErrors(() => this.cms.feasibility(tenantFrom(req), id))
+  }
+
+  @Patch(':id/feasibility')
+  @Roles(...CMS_FEASIBILITY_ROLES)
+  @ApiOperation({ summary: 'Apply one edit, recompute dependents, append a revision' })
+  saveFeasibility(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: FeasibilityEditDto,
+  ) {
+    return mapDomainErrors(() =>
+      this.cms.saveFeasibility(actorFrom(req), id, dto as never))
   }
 
   @Post(':id/publish')

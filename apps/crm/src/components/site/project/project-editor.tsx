@@ -98,7 +98,7 @@ export function ProjectEditor({
   permissions,
 }: {
   contentId: string
-  permissions: { canEdit: boolean; canVerify: boolean; canPublish: boolean }
+  permissions: { canEdit: boolean; canVerify: boolean; canPublish: boolean; canFeasibility: boolean }
 }) {
   const [content, setContent] = useState<CmsContentDetail | null>(null)
   const [doc, setDoc] = useState<ProjectDocument | null>(null)
@@ -389,7 +389,10 @@ export function ProjectEditor({
             onChanged={load}
           />
         )}
-        {tab === 'feasibility' && <TabFeasibility doc={doc} />}
+        {/* `canFeasibility`, not `canEdit`: its own tier on the server too. */}
+        {tab === 'feasibility' && (
+          <TabFeasibility contentId={contentId} canEdit={permissions.canFeasibility} />
+        )}
         {tab === 'publication' && (
           <TabPublication
             content={content}

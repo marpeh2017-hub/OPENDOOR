@@ -276,6 +276,29 @@ export const CMS_PUBLISH_ROLES = [
  */
 export const CMS_MEDIA_ROLES = CMS_EDIT_ROLES
 
+/**
+ * Read and edit a project's private feasibility workspace.
+ *
+ * ── WHY THIS IS NOT `CMS_EDIT_ROLES` ───────────────────────────────────────
+ *
+ * Editing the sentence that describes a project to the public and editing the
+ * scenario that says the project sells for 825 million shekels are not the
+ * same act, and the second is not implied by the first.
+ * RESIDENT_RELATIONS_MANAGER edits public copy for a living and has no reason
+ * to hold the economics, so this list is EDIT minus that role — the same
+ * narrowing, and for the same reason, as CMS_VERIFY_ROLES.
+ *
+ * The enforcement is not only this decorator. `CmsService.save` preserves the
+ * server's `feasibility` subtree and ignores whatever the browser sent for it,
+ * so the ordinary project save cannot reach these figures even if someone
+ * posts a document containing them. This tier is the only way in.
+ */
+export const CMS_FEASIBILITY_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'PROJECT_MANAGER',
+] as const
+
 /** Site-wide settings: contact details, site name, sharing defaults. */
 export const CMS_SETTINGS_ROLES = [
   'SUPER_ADMIN',

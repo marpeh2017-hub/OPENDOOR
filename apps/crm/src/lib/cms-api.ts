@@ -172,4 +172,94 @@ export const cmsApi = {
 
   mediaUrl: (id: string, mediaId: string) =>
     api.get<{ url: string }>(`${BASE}/${id}/media/${mediaId}/url`),
+
+  // ── Feasibility ─────────────────────────────────────────────────────────
+  //
+  // Its own tier on the server (`CMS_FEASIBILITY_ROLES`), and its own routes.
+  // There is no publish call here and there will not be one: the projection
+  // never reads feasibility, so there is nothing to publish.
+  //
+  // An edit is an OPERATION, not a document. A client that PUT the whole
+  // workspace could write `calculatedValue`, and a calculated field the
+  // browser can write is not a calculated field.
+
+  feasibility: (id: string) =>
+    api.get<FeasibilityResponse>(`${BASE}/${id}/feasibility`),
+
+  saveFeasibility: (id: string, edit: FeasibilityEdit) =>
+    api.patch<{ contentId: string; workspace: FeasibilityWorkspace; revisionId: string }>(
+      `${BASE}/${id}/feasibility`, edit,
+    ),
 }
+
+// ── Feasibility wire types ────────────────────────────────────────────────
+//
+// Mirrors `services/api-gateway/src/cms/feasibility-model.ts`. Numbers are
+// STRINGS on purpose, all the way to the screen: parsing one into a JS number
+// anywhere on this path would reintroduce exactly the drift the server is
+// storing decimal strings to avoid.
+
+export type NumericKind =
+  | 'AREA_SQM' | 'CURRENCY_ILS' | 'PERCENT' | 'COUNT' | 'DECIMAL' | 'BOOLEAN' | 'TEXT'
+export type FieldCategory = 'SOURCE_DATA' | 'ASSUMPTION' | 'OUTPUT' | 'ECONOMICS'
+export type FieldRole = 'INPUT' | 'FORMULA'
+export type EffectiveRole = 'INPUT' | 'FORMULA' | 'MANUAL_OVERRIDE'
+export type CalcStatus = 'OK' | 'MISSING_INPUTS' | 'NOT_CALCULATED'
+export type FeasReviewState = 'UNREVIEWED' | 'IN_REVIEW' | 'ACCEPTED' | 'REJECTED'
+
+export interface FeasibilityField {
+  key: string
+  label: string
+  category: FieldCategory
+  role: FieldRole
+  kind: NumericKind
+  value?: string
+  unit?: string
+  note?: string
+  sourceRef?: string
+  reviewState?: FeasReviewState
+  importedFrom?: string
+  formulaId?: string
+  calculatedValue?: string
+  calculatedAt?: string
+  calcStatus?: CalcStatus
+  missingInputs?: string[]
+  override?: { value: string; reason: string; userId: string; at: string }
+  warnings?: string[]
+}
+
+export interface FeasibilityScenario {
+  id: string
+  label: string
+  kind: 'BASELINE' | 'ALTERNATIVE_PLANNING' | 'DEVELOPER_PROPOSAL' | 'OWNER_PREFERRED'
+  note?: string
+  fields: Record<string, FeasibilityField>
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface FeasibilityWorkspace {
+  version: 2
+  scenarios: FeasibilityScenario[]
+  activeScenarioId: string
+  sourceWarnings?: { id: string; label: string; detail: string }[]
+}
+
+export interface FeasibilityResponse {
+  contentId: string
+  slug: string
+  dataQualityFlags: { id: string; label: string; detail: string; severity: string }[]
+  workspace: FeasibilityWorkspace | null
+  updatedAt: string
+}
+
+export type FeasibilityEdit =
+  | { op: 'setValue'; scenarioId: string; key: string; value: string }
+  | { op: 'setMeta'; scenarioId: string; key: string; note?: string; sourceRef?: string; reviewState?: FeasReviewState }
+  | { op: 'setOverride'; scenarioId: string; key: string; value: string; reason: string }
+  | { op: 'clearOverride'; scenarioId: string; key: string }
+  | {
+      op: 'addField'; scenarioId: string; key: string
+      category: FieldCategory; label?: string; kind?: NumericKind
+      value?: string; unit?: string; note?: string
+    }

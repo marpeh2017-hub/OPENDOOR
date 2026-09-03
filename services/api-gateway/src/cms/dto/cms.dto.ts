@@ -133,3 +133,90 @@ export class VerifyFactDto {
   @IsBoolean()
   requiresSecondReview?: boolean
 }
+
+/**
+ * One edit to a feasibility scenario.
+ *
+ * NOTE WHAT IS ABSENT: `calculatedValue`, `calculatedAt` and `calcStatus`. A
+ * calculated field the browser can write is not a calculated field, so the
+ * only writable things are an input's value, a field's metadata, and an
+ * override that must carry a reason. The server recomputes the rest.
+ *
+ * `value` is a STRING even for numbers. Sending 337.18 as a JSON number would
+ * make it a double before any validation could run, which is precisely the
+ * precision loss the whole module exists to prevent.
+ */
+export class FeasibilityEditDto {
+  @ApiProperty({ enum: ['setValue', 'setMeta', 'setOverride', 'clearOverride', 'addField'] })
+  @IsIn(['setValue', 'setMeta', 'setOverride', 'clearOverride', 'addField'])
+  op!: 'setValue' | 'setMeta' | 'setOverride' | 'clearOverride' | 'addField'
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(120)
+  scenarioId!: string
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(120)
+  key!: string
+
+  @ApiPropertyOptional({ description: 'Decimal string. Never a JSON number.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  value?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  sourceRef?: string
+
+  @ApiPropertyOptional({ enum: ['UNREVIEWED', 'IN_REVIEW', 'ACCEPTED', 'REJECTED'] })
+  @IsOptional()
+  @IsIn(['UNREVIEWED', 'IN_REVIEW', 'ACCEPTED', 'REJECTED'])
+  reviewState?: 'UNREVIEWED' | 'IN_REVIEW' | 'ACCEPTED' | 'REJECTED'
+
+  /** Required by the model for `setOverride`; an unexplained override is a
+   *  number nobody can account for later. */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string
+
+  // ── `addField` only ───────────────────────────────────────────────────
+  //
+  // No `role` and no `formulaId`: a field created from the browser is always
+  // an INPUT. Letting a client declare a FORMULA would be letting it choose
+  // which arithmetic this system asserts.
+
+  @ApiPropertyOptional({ enum: ['SOURCE_DATA', 'ASSUMPTION', 'OUTPUT', 'ECONOMICS'] })
+  @IsOptional()
+  @IsIn(['SOURCE_DATA', 'ASSUMPTION', 'OUTPUT', 'ECONOMICS'])
+  category?: 'SOURCE_DATA' | 'ASSUMPTION' | 'OUTPUT' | 'ECONOMICS'
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  label?: string
+
+  @ApiPropertyOptional({ enum: ['AREA_SQM', 'CURRENCY_ILS', 'PERCENT', 'COUNT', 'DECIMAL', 'BOOLEAN', 'TEXT'] })
+  @IsOptional()
+  @IsIn(['AREA_SQM', 'CURRENCY_ILS', 'PERCENT', 'COUNT', 'DECIMAL', 'BOOLEAN', 'TEXT'])
+  kind?: 'AREA_SQM' | 'CURRENCY_ILS' | 'PERCENT' | 'COUNT' | 'DECIMAL' | 'BOOLEAN' | 'TEXT'
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  unit?: string
+}

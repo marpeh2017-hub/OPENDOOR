@@ -158,12 +158,21 @@ const CMS_EDIT_ROLES = [
 const CMS_VERIFY_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER']
 /** The only tier that changes what the public can read. Restore lives here too. */
 const CMS_PUBLISH_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN']
+/**
+ * The private feasibility workspace, including the economics.
+ *
+ * EDIT minus RESIDENT_RELATIONS_MANAGER: editing the sentence that describes a
+ * project and editing the scenario that says it sells for 825 million shekels
+ * are different acts, and the second is not implied by the first.
+ */
+const CMS_FEASIBILITY_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER']
 
 export function useCmsPermissions(): {
   canView: boolean
   canEdit: boolean
   canVerify: boolean
   canPublish: boolean
+  canFeasibility: boolean
 } {
   const { data } = useCurrentUser()
   const role = data?.role
@@ -172,5 +181,6 @@ export function useCmsPermissions(): {
     canEdit: Boolean(role && CMS_EDIT_ROLES.includes(role)),
     canVerify: Boolean(role && CMS_VERIFY_ROLES.includes(role)),
     canPublish: Boolean(role && CMS_PUBLISH_ROLES.includes(role)),
+    canFeasibility: Boolean(role && CMS_FEASIBILITY_ROLES.includes(role)),
   }
 }

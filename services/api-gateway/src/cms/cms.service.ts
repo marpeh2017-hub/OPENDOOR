@@ -19,6 +19,10 @@ import {
 import { StorageService } from '../storage/storage.service'
 import { MalwareScanService } from '../documents/malware/malware-scan.service'
 import { sanitizeFileName as sanitizeMediaFileName } from '../documents/document-upload.constants'
+import {
+  applyEdit, migrateFeasibility, FeasibilityEditError,
+  type FeasibilityEdit, type FeasibilityWorkspace,
+} from './feasibility-model'
 
 /** Mirrors `isPublishable`: only these two mean somebody stands behind it. */
 function isPublishableStatus(s: VerificationStatus): boolean {
@@ -173,6 +177,27 @@ export class CmsService {
         )
       }
 
+      /*
+       * THE FEASIBILITY SUBTREE IS NOT WRITABLE FROM HERE.
+       *
+       * This route carries the whole draft, so without this the browser could
+       * post a document containing an economics section and change what the
+       * project is worth using nothing but the EDIT capability. Editing public
+       * copy and editing the money are different acts with different tiers
+       * (`CMS_FEASIBILITY_ROLES`), and a permission boundary that depends on
+       * the client sending the right shape is not a boundary.
+       *
+       * So whatever arrives is discarded and the stored subtree is carried
+       * forward. `PATCH :id/feasibility` is the only way in, which also means
+       * the revision this save writes still contains the true feasibility
+       * state rather than a hole.
+       */
+      const incoming = (input.draft ?? {}) as Record<string, unknown>
+      const stored = (content.draft ?? {}) as Record<string, unknown>
+      const draft = stored['feasibility'] === undefined
+        ? incoming
+        : { ...incoming, feasibility: stored['feasibility'] }
+
       const last = await tx.cmsRevision.findFirst({
         where: { contentId: id },
         orderBy: { sequence: 'desc' },
@@ -185,7 +210,7 @@ export class CmsService {
           contentId: id,
           sequence: (last?.sequence ?? 0) + 1,
           reason: 'SAVE',
-          snapshot: input.draft as Prisma.InputJsonValue,
+          snapshot: draft as Prisma.InputJsonValue,
           seo: (input.seo ?? content.seo ?? undefined) as Prisma.InputJsonValue,
           stateAtRevision: content.state,
           authorId: actor.userId,
@@ -196,7 +221,7 @@ export class CmsService {
       return tx.cmsContent.update({
         where: { id },
         data: {
-          draft: input.draft as Prisma.InputJsonValue,
+          draft: draft as Prisma.InputJsonValue,
           ...(input.seo !== undefined ? { seo: input.seo as Prisma.InputJsonValue } : {}),
           currentRevisionId: revision.id,
           updatedById: actor.userId,
@@ -876,6 +901,116 @@ export class CmsService {
     }
     const url = await this.storage.getSignedUrl(tenantId, entry.storageKey)
     return { url }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  FEASIBILITY
+  // ══════════════════════════════════════════════════════════════════════
+  //
+  // ── NOTHING HERE REVALIDATES THE WEBSITE, AND THAT IS NOT AN OVERSIGHT ──
+  //
+  // `revalidateWebsite` is called by publish, unpublish and restore, because
+  // those change what the public reads. A feasibility edit cannot: the
+  // projection never reads `feasibility` at all, so there is no page whose
+  // content could differ afterwards. Calling revalidation here would be a
+  // cache stampede that also implied, to anyone reading the code, that these
+  // figures reach a page.
+  //
+  // There is likewise no publish path on this surface. Not a hidden button —
+  // no method.
+
+  /**
+   * The workspace as the editor should see it.
+   *
+   * Migrates the Pass 4C flat shape IN MEMORY rather than rewriting the row on
+   * read: a GET that writes turns every page load into a revision, and the
+   * stored shape is nobody's business until somebody actually edits.
+   */
+  async feasibility(tenantId: string, id: string) {
+    const content = await this.mustFind(tenantId, id)
+    if (content.kind !== 'PROJECT') {
+      throw DomainError.validation('CMS_NOT_A_PROJECT', 'בדיקת היתכנות קיימת לפרויקטים בלבד.')
+    }
+    const doc = (content.draft ?? {}) as Record<string, unknown>
+    const workspace = migrateFeasibility(doc['feasibility'])
+    return {
+      contentId: content.id,
+      slug: content.slug,
+      /** The editor needs these to explain a warning attached to a figure. */
+      dataQualityFlags: ((doc['internal'] ?? {}) as Record<string, unknown>)['dataQualityFlags'] ?? [],
+      workspace: workspace ?? null,
+      updatedAt: content.updatedAt,
+    }
+  }
+
+  /**
+   * Apply one edit to the workspace, recompute what depends on it, and save.
+   *
+   * ── WHY THIS TAKES AN OPERATION AND NOT A DOCUMENT ─────────────────────
+   *
+   * A client that PUT the whole workspace could write `calculatedValue`
+   * directly, and a calculated field the browser can write is not a calculated
+   * field. The named operations mean the server decides what every formula
+   * says, and the only writable things are inputs, metadata, and an override
+   * that has to carry a reason.
+   */
+  async saveFeasibility(actor: AuditActor, id: string, edit: FeasibilityEdit) {
+    return this.prisma.$transaction(async (tx) => {
+      const content = await this.mustFind(actor.tenantId, id, tx)
+      if (content.kind !== 'PROJECT') {
+        throw DomainError.validation('CMS_NOT_A_PROJECT', 'בדיקת היתכנות קיימת לפרויקטים בלבד.')
+      }
+
+      const doc = JSON.parse(JSON.stringify(content.draft ?? {})) as Record<string, unknown>
+      const workspace = migrateFeasibility(doc['feasibility'])
+      if (!workspace) {
+        throw DomainError.notFound('CMS_NO_FEASIBILITY', 'אין בדיקת היתכנות לפרויקט הזה.')
+      }
+
+      let next: FeasibilityWorkspace
+      try {
+        next = applyEdit(workspace, edit, { userId: actor.userId })
+      } catch (e) {
+        // The model speaks Hebrew and knows exactly what was wrong with the
+        // edit; translating that into a generic 400 would throw the message
+        // away.
+        if (e instanceof FeasibilityEditError) {
+          throw DomainError.validation(`CMS_FEASIBILITY_${e.code}`, e.message)
+        }
+        throw e
+      }
+
+      doc['feasibility'] = next
+
+      const scenario = next.scenarios.find((sc) => sc.id === edit.scenarioId)
+      const fieldLabel = scenario?.fields[edit.key]?.label ?? edit.key
+      const summary = {
+        setValue: `היתכנות: עדכון ערך של "${fieldLabel}"`,
+        setMeta: `היתכנות: עדכון פרטים של "${fieldLabel}"`,
+        setOverride: `היתכנות: עקיפה ידנית של "${fieldLabel}"`,
+        clearOverride: `היתכנות: ביטול עקיפה ידנית של "${fieldLabel}"`,
+        addField: `היתכנות: הוספת שדה "${fieldLabel}"`,
+      }[edit.op]
+
+      // The same revision machinery as every other edit, so feasibility
+      // history is project history rather than a parallel log.
+      const revision = await this.appendRevision(tx, actor, content, doc, 'SAVE', summary)
+
+      await tx.cmsContent.update({
+        where: { id },
+        data: {
+          draft: doc as Prisma.InputJsonValue,
+          currentRevisionId: revision.id,
+          updatedById: actor.userId,
+        },
+      })
+
+      return {
+        contentId: id,
+        workspace: next,
+        revisionId: revision.id,
+      }
+    })
   }
 
   // ══════════════════════════════════════════════════════════════════════
