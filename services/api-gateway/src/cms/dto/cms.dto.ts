@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator'
+import { Allow, IsBoolean, IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator'
 
 /**
  * DTOs for the Site Manager.
@@ -67,7 +67,22 @@ export class ListContentQueryDto {
  * only `POST .../verify` can, and only with the VERIFY capability.
  */
 export class SetFactDto {
+  /*
+   * `@Allow()` is load-bearing, not decoration.
+   *
+   * The global ValidationPipe runs with `whitelist: true`, which STRIPS every
+   * property that carries no class-validator decorator. `@ApiProperty` is a
+   * Swagger decorator and does not count, so without this the value silently
+   * never arrived and every fact edit wrote `undefined` — a 200 response that
+   * erased the field it was meant to set.
+   *
+   * `@Allow` permits the property through without constraining its type, which
+   * is what is wanted here: a fact may be a number, a string, a boolean or a
+   * localised object, and which one is governed by the field rather than by
+   * this DTO.
+   */
   @ApiProperty({ description: 'The new value. Type depends on the field.' })
+  @Allow()
   value!: unknown
 
   @ApiPropertyOptional({ description: 'Which source in the project backs this' })

@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import { AlertTriangle, Check, Info, Lock, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -43,7 +44,16 @@ export function LocalizedField({
 }) {
   const he = value?.he ?? ''
   const en = value?.en
-  const id = `f-${label.replace(/\s+/g, '-')}`
+  /*
+   * `useId`, not a slug of the label.
+   *
+   * Deriving the id from the label text produced DUPLICATE ids the moment two
+   * milestones both had a field called "כותרת" — and a duplicate id silently
+   * breaks `htmlFor`, so every field after the first lost its label. The
+   * browser reports no error; only an audit that counts unlabelled inputs
+   * catches it, which is how this one was found.
+   */
+  const id = useId()
   const Input = multiline ? 'textarea' : 'input'
 
   return (

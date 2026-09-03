@@ -112,6 +112,14 @@ export function ProjectEditor({
   const [busy, setBusy] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const [focusIntent, setFocusIntent] = useState<TabId | null>(null)
+
+  // Apply a keyboard-driven focus move AFTER the re-render that selected it.
+  useEffect(() => {
+    if (!focusIntent) return
+    tabRefs.current[focusIntent]?.focus()
+    setFocusIntent(null)
+  }, [focusIntent])
 
   const load = useCallback(async () => {
     const [c, revs] = await Promise.all([cmsApi.get(contentId), cmsApi.revisions(contentId)])
@@ -177,10 +185,21 @@ export function ProjectEditor({
     } finally { setBusy(null) }
   }
 
-  /** Arrow-key navigation across the tab strip, per the WAI-ARIA tabs pattern. */
+  /**
+   * Arrow-key navigation across the tab strip, per the WAI-ARIA tabs pattern.
+   *
+   * ArrowLeft advances and ArrowRight retreats because the strip is RTL: the
+   * "next" tab is the one to the left of the current one.
+   *
+   * The focus move is recorded as INTENT and applied in an effect below, not
+   * called here. Calling `.focus()` synchronously ran against the pre-render
+   * DOM, so focus stayed on the old tab while the panel changed underneath it
+   * — the keyboard user ended up on a tab that no longer matched what they
+   * were reading.
+   */
   const onTabKeyDown = (e: React.KeyboardEvent, index: number) => {
-    const keys: Record<string, number> = { ArrowRight: -1, ArrowLeft: 1, Home: NaN, End: NaN }
-    if (!(e.key in keys)) return
+    const keys: Record<string, number> = { ArrowRight: -1, ArrowLeft: 1 }
+    if (!(e.key in keys) && e.key !== 'Home' && e.key !== 'End') return
     e.preventDefault()
     let next: number
     if (e.key === 'Home') next = 0
@@ -188,7 +207,7 @@ export function ProjectEditor({
     else next = (index + keys[e.key]! + TABS.length) % TABS.length
     const target = TABS[next]!
     setTab(target.id)
-    tabRefs.current[target.id]?.focus()
+    setFocusIntent(target.id)
   }
 
   if (!content || !doc) {
@@ -310,7 +329,7 @@ export function ProjectEditor({
                       role="tab"
                       id={`tab-${t.id}`}
                       aria-selected={active}
-                      aria-controls={`panel-${t.id}`}
+                      aria-controls="project-tabpanel"
                       tabIndex={active ? 0 : -1}
                       onKeyDown={(e) => onTabKeyDown(e, index)}
                       onClick={() => setTab(t.id)}
@@ -331,7 +350,19 @@ export function ProjectEditor({
       </div>
 
       {/* ── Panel ─────────────────────────────────────────────────── */}
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={0}>
+      {/*
+        ONE panel element with a stable id, whose content swaps.
+        Per-tab panel ids meant every inactive tab's `aria-controls` pointed at
+        an element that was not in the document — invalid, and invisible to
+        anyone not running an audit. A single panel is the honest description
+        of what is actually rendered.
+      */}
+      <div
+        role="tabpanel"
+        id="project-tabpanel"
+        aria-labelledby={`tab-${tab}`}
+        tabIndex={0}
+      >
         <h2 className="sr-only">{current.label}</h2>
 
         {tab === 'public' && (
