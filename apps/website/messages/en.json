@@ -64,7 +64,8 @@
       "title": "Knowledge centre"
     },
     "faq": {
-      "title": "FAQ"
+      "title": "FAQ",
+      "empty": "No questions are published here yet. For anything not covered, please contact us directly."
     },
     "contact": {
       "title": "Contact"
@@ -76,10 +77,14 @@
       "title": "Search"
     },
     "privacy": {
-      "title": "Privacy policy"
+      "title": "Privacy policy",
+      "notice": "The full privacy policy is being finalised and will appear here. For questions about how information is handled, please contact us directly.",
+      "contactLink": "Contact us"
     },
     "terms": {
-      "title": "Terms of use"
+      "title": "Terms of use",
+      "notice": "The full terms of use are being finalised and will appear here. For questions, please contact us directly.",
+      "contactLink": "Contact us"
     },
     "residentPortal": {
       "title": "Resident portal"

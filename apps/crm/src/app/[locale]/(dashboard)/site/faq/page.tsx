@@ -1,17 +1,5 @@
-import { SectionScaffold } from '@/components/site/section-scaffold'
+import { FaqEditor } from '@/components/site/faq-editor'
 
 export default function SiteFaqPage() {
-  return (
-    <SectionScaffold
-      title="שאלות ותשובות"
-      description="השאלות הנפוצות. הסדר כאן הוא הסדר באתר."
-      willManage={[
-        'שאלה ותשובה',
-        'סדר ההופעה',
-        'קטגוריה',
-        'הסתרה והצגה',
-      ]}
-      phase="פאזה 5"
-    />
-  )
+  return <FaqEditor />
 }

@@ -530,4 +530,37 @@ describe('CMS persistence (e2e)', () => {
       expect(row.tenantId).toBe(tenantAId)
     })
   })
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  PASS 4G · PUBLIC MEDIA URL (Knowledge featured images, image slots)
+  // ══════════════════════════════════════════════════════════════════════
+
+  describe('public media URL', () => {
+    it('mints a signed URL for a real key belonging to this tenant', async () => {
+      const key = `${tenantAId}/cms/some-content/deadbeef-photo.jpg`
+      const res = await api().get(`/api/v1/public/cms/${A_SLUG}/media`).query({ key }).expect(200)
+      expect(typeof res.body.url).toBe('string')
+      expect(res.body.url.length).toBeGreaterThan(0)
+    })
+
+    it('refuses a key belonging to a DIFFERENT tenant', async () => {
+      const key = `${tenantBId}/cms/some-content/deadbeef-photo.jpg`
+      await api().get(`/api/v1/public/cms/${A_SLUG}/media`).query({ key }).expect(403)
+    })
+
+    it('answers 404 with no key at all, never a server error', async () => {
+      await api().get(`/api/v1/public/cms/${A_SLUG}/media`).expect(404)
+    })
+
+    it('an unknown tenant slug reveals nothing', async () => {
+      await api().get('/api/v1/public/cms/not-a-real-tenant/media').query({ key: 'x' }).expect(404)
+    })
+
+    it('does not collide with the kind-list route — "media" is not treated as a content kind', async () => {
+      // If :kind swallowed the literal "media" this would 200 with an empty
+      // array instead of needing a `key`.
+      const res = await api().get(`/api/v1/public/cms/${A_SLUG}/media`)
+      expect(res.status).not.toBe(200)
+    })
+  })
 })

@@ -1,13 +1,17 @@
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { PageShell } from '@/components/layout/page-shell'
+import { PageHeader } from '@/components/blocks/page-header'
+import { Section } from '@/components/blocks/section'
+import { Link } from '@/i18n/navigation'
 import { STUB_ROBOTS } from '@/lib/seo'
 
 /**
- * Terms
+ * Terms of use.
  *
- * Phase 1 route skeleton. Content is built in a later task and will be editable
- * through the CMS, so nothing here hardcodes copy beyond the page title.
+ * Same honest-notice treatment as `/privacy` and for the same reason: no
+ * approved terms-of-use text exists, none is invented, and the visitor sees
+ * an ordinary sentence rather than internal build status. See the longer
+ * note in `privacy/page.tsx`.
  */
 export async function generateMetadata({
   params,
@@ -19,7 +23,7 @@ export async function generateMetadata({
   return { title: t('title'), robots: STUB_ROBOTS }
 }
 
-export default async function Page({
+export default async function TermsPage({
   params,
 }: {
   params: Promise<{ locale: string }>
@@ -27,5 +31,19 @@ export default async function Page({
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations('pages.terms')
-  return <PageShell title={t('title')} />
+
+  return (
+    <>
+      <PageHeader title={t('title')} />
+      <Section size="sm">
+        <p className="max-w-prose text-base leading-relaxed text-gray-700">{t('notice')}</p>
+        <Link
+          href="/contact"
+          className="mt-4 inline-flex items-center gap-2 text-[15px] font-semibold text-teal-700 hover:underline"
+        >
+          {t('contactLink')}
+        </Link>
+      </Section>
+    </>
+  )
 }

@@ -128,3 +128,136 @@ export async function getCmsPage(slug: string): Promise<CmsPage | null> {
     return null
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+//  FAQ — Pass 4G
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface CmsFaqEntry {
+  id: string
+  question: { he: string; en?: string }
+  answer: { he: string; en?: string }
+  order: number
+}
+
+/**
+ * Published FAQ items, or an empty array.
+ *
+ * The FAQ is managed as a single CMS PAGE (slug "faq") holding an array —
+ * see `apps/crm/src/components/site/faq-editor.tsx` for why one row rather
+ * than one per question. An empty array is not an error: it is the correct
+ * result before anyone has published a question, or if the gateway cannot be
+ * reached, and the caller renders an honest empty state either way.
+ */
+export async function getCmsFaqItems(): Promise<CmsFaqEntry[]> {
+  const base = gatewayBase()
+  if (!base) return []
+
+  try {
+    const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/page/faq`, {
+      next: { tags: ['cms:page:faq'], revalidate: 300 },
+    })
+    if (!res.ok) return []
+
+    const body = (await res.json()) as { content?: { items?: unknown } }
+    const items = body?.content?.items
+    if (!Array.isArray(items)) return []
+
+    // Shape-checked rather than trusted, same discipline as `getCmsPage`.
+    return items
+      .filter((it): it is CmsFaqEntry =>
+        Boolean(it) && typeof it === 'object'
+        && typeof (it as CmsFaqEntry).id === 'string'
+        && typeof (it as CmsFaqEntry).question?.he === 'string'
+        && typeof (it as CmsFaqEntry).answer?.he === 'string'
+        && (it as CmsFaqEntry).question.he.trim() !== ''
+        && (it as CmsFaqEntry).answer.he.trim() !== '')
+      .slice()
+      .sort((a, b) => a.order - b.order)
+  } catch {
+    return []
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  KNOWLEDGE CENTER — Pass 4G
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface CmsArticleSummary {
+  slug: string
+  title: { he: string; en?: string }
+  summary?: { he: string; en?: string }
+  category?: { he: string; en?: string }
+  publishedAt: string
+}
+
+export interface CmsArticle extends CmsArticleSummary {
+  body?: { he: string; en?: string }
+  featuredImage?: { storageKey: string; alt: { he: string; en?: string }; classification: string } | null
+  seo?: Record<string, { title?: string; description?: string }>
+}
+
+/**
+ * Every published article, newest first.
+ *
+ * Never invented: if nobody has published an article, this returns an empty
+ * array and the Knowledge Center shows its own honest empty state rather than
+ * a placeholder or fabricated content — see `docs/ODG_CMS_ARCHITECTURE.md`
+ * Appendix E.
+ */
+export async function getCmsArticles(): Promise<CmsArticleSummary[]> {
+  const base = gatewayBase()
+  if (!base) return []
+  try {
+    const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/article`, {
+      next: { tags: ['cms:articles'], revalidate: 300 },
+    })
+    if (!res.ok) return []
+    const rows = (await res.json()) as { slug: string; publishedAt: string; content?: Record<string, unknown> }[]
+    if (!Array.isArray(rows)) return []
+    return rows
+      .map((r) => {
+        const c = r.content ?? {}
+        const title = c['title'] as CmsArticleSummary['title'] | undefined
+        if (!title?.he) return null
+        return {
+          slug: r.slug,
+          title,
+          summary: c['summary'] as CmsArticleSummary['summary'],
+          category: c['category'] as CmsArticleSummary['category'],
+          publishedAt: r.publishedAt,
+        } satisfies CmsArticleSummary
+      })
+      .filter((a): a is CmsArticleSummary => a !== null)
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+  } catch {
+    return []
+  }
+}
+
+export async function getCmsArticleBySlug(slug: string): Promise<CmsArticle | null> {
+  const base = gatewayBase()
+  if (!base) return null
+  try {
+    const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/article/${slug}`, {
+      next: { tags: [`cms:article:${slug}`], revalidate: 300 },
+    })
+    if (!res.ok) return null
+    const body = (await res.json()) as { slug: string; publishedAt: string; content?: Record<string, unknown>; seo?: CmsArticle['seo'] }
+    const c = body.content ?? {}
+    const title = c['title'] as CmsArticle['title'] | undefined
+    if (!title?.he) return null
+    return {
+      slug: body.slug,
+      title,
+      summary: c['summary'] as CmsArticle['summary'],
+      body: c['body'] as CmsArticle['body'],
+      category: c['category'] as CmsArticle['category'],
+      featuredImage: c['featuredImage'] as CmsArticle['featuredImage'],
+      publishedAt: body.publishedAt,
+      seo: body.seo,
+    }
+  } catch {
+    return null
+  }
+}

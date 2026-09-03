@@ -943,6 +943,34 @@ export class CmsService {
     return { url }
   }
 
+  /**
+   * A signed URL for one object, for the PUBLIC website — Pass 4G.
+   *
+   * ── WHY THIS DOES NOT LOOK THE KEY UP IN A CONTENT ROW FIRST ────────────
+   *
+   * `projectMediaUrl` above resolves by looking a media id up inside one
+   * project's draft, which works because the caller already holds an
+   * authenticated relationship to that exact project. A public visitor has
+   * no such relationship to check against, and the shapes that can reference
+   * an image now — a Knowledge article's featured image, a project's own
+   * media, an assigned homepage image slot — are three different documents
+   * with three different layouts; a lookup here would have to know all of
+   * them and would grow every time a fourth is added.
+   *
+   * The storage key itself is the credential instead, exactly as a signed URL
+   * already is everywhere else in this codebase: it is a random 8-byte hex
+   * value the uploader received back from `upload()` and nobody can guess.
+   * Knowing one means it came from this system — an authenticated upload, or
+   * a reference already sitting in HTML this endpoint's own caller rendered.
+   * `getSignedUrl` still verifies the key is prefixed with the RESOLVED
+   * tenant's id, so tenant A can never mint a URL for tenant B's object even
+   * with a real key in hand.
+   */
+  async publicMediaUrl(tenantId: string, storageKey: string): Promise<{ url: string }> {
+    const url = await this.storage.getSignedUrl(tenantId, storageKey)
+    return { url }
+  }
+
   // ══════════════════════════════════════════════════════════════════════
   //  FEASIBILITY
   // ══════════════════════════════════════════════════════════════════════

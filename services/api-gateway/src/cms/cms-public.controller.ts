@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Header, NotFoundException } from '@nestjs/common'
+import { Controller, Get, Param, Query, Header, NotFoundException } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import { Public } from '../auth/decorators/public.decorator'
@@ -74,6 +74,35 @@ export class CmsPublicController {
   @ApiResponse({ status: 404, description: 'Token invalid, expired, or item missing' })
   preview(@Param('token') token: string) {
     return mapDomainErrors(() => this.cms.resolvePreview(token))
+  }
+
+  /**
+   * A signed URL for one media object belonging to this tenant. See
+   * `CmsService.publicMediaUrl` for why the key itself, not a content
+   * lookup, is what authorises this.
+   *
+   * The key is a QUERY parameter rather than a path segment: it contains
+   * slashes (`<tenantId>/cms/<contentId>/<filename>`), and this Express 4
+   * router's path-to-regexp does not support a named wildcard segment that
+   * would capture them. A query string has no such restriction.
+   *
+   * Declared as its own literal segment (`media`) BEFORE `:tenantSlug/:kind`
+   * for the same routing reason the file's own note gives for
+   * `preview/:token`: both match two path segments, `:kind` would otherwise
+   * swallow the literal `media` as a kind name, and the more specific route
+   * has to come first or it is never reached.
+   */
+  @Get(':tenantSlug/media')
+  @Public()
+  @Throttle({ medium: { limit: 120, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Signed URL for one media object, given its storage key' })
+  async media(@Param('tenantSlug') tenantSlug: string, @Query('key') key: string) {
+    return mapDomainErrors(async () => {
+      if (!key) throw new NotFoundException('Not found')
+      const tenantId = await this.cms.resolveTenantIdBySlug(tenantSlug)
+      if (!tenantId) throw new NotFoundException('Not found')
+      return this.cms.publicMediaUrl(tenantId, key)
+    })
   }
 
   @Get(':tenantSlug/:kind/:slug')
