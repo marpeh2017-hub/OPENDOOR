@@ -1,4 +1,4 @@
-import { api } from './api-client'
+import { api, upload } from './api-client'
 
 /**
  * The Site Manager's API client.
@@ -155,4 +155,21 @@ export const cmsApi = {
     field: string,
     body: { sourceId?: string; sourceReference?: string; note?: string; requiresSecondReview?: boolean } = {},
   ) => api.post<CmsContentDetail>(`${BASE}/${id}/facts/${encodeURIComponent(field)}/verify`, body),
+
+  // ── Project media ────────────────────────────────────────────────────────
+  //
+  // Bytes only, exactly like the document library's own upload. The
+  // reference itself (classification, alt text, caption, order) is edited
+  // in-memory and persisted through the ordinary `save()` above.
+
+  uploadMedia: (id: string, file: File, onProgress?: (percent: number | null) => void) => {
+    const form = new FormData()
+    form.append('file', file)
+    return upload<{ storageKey: string; filename: string; mimeType: string }>(
+      `${BASE}/${id}/media/upload`, form, onProgress,
+    )
+  },
+
+  mediaUrl: (id: string, mediaId: string) =>
+    api.get<{ url: string }>(`${BASE}/${id}/media/${mediaId}/url`),
 }

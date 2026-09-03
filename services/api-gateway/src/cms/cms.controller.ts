@@ -1,7 +1,9 @@
 import {
   Controller, Get, Post, Patch, Param, Body, Query, Request, HttpCode, HttpStatus,
+  UploadedFile, UseInterceptors, UseFilters, PayloadTooLargeException, BadRequestException,
 } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import {
   CMS_VIEW_ROLES, CMS_EDIT_ROLES, CMS_VERIFY_ROLES, CMS_PUBLISH_ROLES,
@@ -12,6 +14,22 @@ import {
 } from './dto/cms.dto'
 import { actorFrom, tenantFrom } from '../common/actor'
 import { mapDomainErrors } from '../common/errors/domain-error'
+import { MulterExceptionFilter } from '../filters/multer-exception.filter'
+import { validateFileSignature } from '../documents/document-upload.constants'
+
+/** Deliberately smaller than the document library's 100MB: these are photos
+ *  for a web page, not CAD sets. */
+const MAX_MEDIA_BYTES = 15 * 1024 * 1024
+const ALLOWED_MEDIA_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+
+/** Local structural type, matching the one in documents.controller.ts —
+ *  avoids depending on @types/multer being installed. */
+interface UploadedFileLike {
+  originalname: string
+  mimetype: string
+  size: number
+  buffer: Buffer
+}
 
 /**
  * Site Manager API — the authenticated editing surface.
@@ -149,6 +167,46 @@ export class CmsController {
     @Body() dto: VerifyFactDto,
   ) {
     return mapDomainErrors(() => this.cms.verifyFact(actorFrom(req), id, field, dto))
+  }
+
+  // ── Project media ─────────────────────────────────────────────────────
+  //
+  // Bytes only. The reference (classification, alt text, caption, credit,
+  // order) is edited and saved through the ordinary PATCH above, exactly
+  // like a milestone — these two routes exist only because a browser cannot
+  // put file bytes into a JSON PATCH body.
+
+  @Post(':id/media/upload')
+  @Roles(...CMS_EDIT_ROLES)
+  @HttpCode(HttpStatus.CREATED)
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_MEDIA_BYTES, files: 1 } }))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary' } } } })
+  @ApiOperation({ summary: 'Upload one image for this project (multipart/form-data)' })
+  async uploadMedia(@Request() req: any, @Param('id') id: string, @UploadedFile() file: UploadedFileLike | undefined) {
+    return mapDomainErrors(async () => {
+      if (!file || !file.size) throw new BadRequestException('לא נבחר קובץ')
+      if (file.size > MAX_MEDIA_BYTES) {
+        throw new PayloadTooLargeException(
+          `הקובץ גדול מדי — הגודל המרבי הוא ${Math.round(MAX_MEDIA_BYTES / (1024 * 1024))} מגה-בייט`,
+        )
+      }
+      if (!ALLOWED_MEDIA_MIME_TYPES.includes(file.mimetype)) {
+        throw new BadRequestException('סוג הקובץ אינו נתמך. ניתן להעלות JPEG, PNG או WebP')
+      }
+      const sig = validateFileSignature(file.mimetype, file.originalname, file.buffer)
+      if (!sig.ok) throw new BadRequestException(sig.message)
+
+      return this.cms.uploadProjectMedia(actorFrom(req), id, file)
+    })
+  }
+
+  @Get(':id/media/:mediaId/url')
+  @Roles(...CMS_VIEW_ROLES)
+  @ApiOperation({ summary: 'Signed preview URL for one media entry already on the project' })
+  mediaUrl(@Request() req: any, @Param('id') id: string, @Param('mediaId') mediaId: string) {
+    return mapDomainErrors(() => this.cms.projectMediaUrl(tenantFrom(req), id, mediaId))
   }
 
   @Post(':id/publish')

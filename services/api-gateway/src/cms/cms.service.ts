@@ -13,9 +13,12 @@ import type { AuditActor } from '../common/audit/audit.service'
 import { toPublicProjection, findPrivateLeaks, type Json } from './cms.projection'
 import {
   projectProjection, projectPublicationCheck,
-  type DataQualityFlag, type ProjectDocument, type ProjectFact,
+  type DataQualityFlag, type ProjectDocument, type ProjectFact, type ProjectMedia,
   type ProjectPublicationCheck, type VerificationStatus,
 } from './project-document'
+import { StorageService } from '../storage/storage.service'
+import { MalwareScanService } from '../documents/malware/malware-scan.service'
+import { sanitizeFileName as sanitizeMediaFileName } from '../documents/document-upload.constants'
 
 /** Mirrors `isPublishable`: only these two mean somebody stands behind it. */
 function isPublishableStatus(s: VerificationStatus): boolean {
@@ -64,7 +67,11 @@ function describeValue(v: unknown): string {
  */
 @Injectable()
 export class CmsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+    private readonly malware: MalwareScanService,
+  ) {}
 
   // ══════════════════════════════════════════════════════════════════════
   //  READ
@@ -806,6 +813,69 @@ export class CmsService {
         actor: { select: { id: true, firstName: true, lastName: true } },
       },
     })
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  PROJECT MEDIA
+  // ══════════════════════════════════════════════════════════════════════
+  //
+  // Bytes only. The reference itself — classification, alt text, caption,
+  // credit, order — lives in `ProjectDocument.media` and is written through
+  // the ordinary `save()` path, exactly like a milestone or a fact's editorial
+  // copy. Two upload methods for one array would be two places that could
+  // disagree about what a media entry looks like.
+  //
+  // No row is written here and no object is deleted when a reference is
+  // removed from the array: cleaning up an orphaned object is a Media
+  // Library concern (deliberately not built in this pass), not an upload
+  // endpoint's job. Today's editors are one tenant with two projects; an
+  // unreferenced object in the bucket costs nothing until that Library exists
+  // to reclaim it.
+
+  /**
+   * Store an uploaded image for one project and hand back its storage key.
+   *
+   * Scoped to the project via `mustFind` before a single byte is written, so
+   * an id from another tenant fails closed rather than uploading into a
+   * folder named after someone else's content. The key is namespaced under
+   * `cms/<contentId>/`, distinct from the document library's `documents/`
+   * folder, so the two upload paths can never collide or be confused for one
+   * another in the bucket listing.
+   */
+  async uploadProjectMedia(
+    actor: AuditActor,
+    id: string,
+    file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
+  ): Promise<{ storageKey: string; filename: string; mimeType: string }> {
+    await this.mustFind(actor.tenantId, id)
+
+    const filename = sanitizeMediaFileName(file.originalname)
+    await this.malware.assertClean(file.buffer, file.originalname ?? filename)
+
+    const storageKey = await this.storage.upload(
+      actor.tenantId, `cms/${id}`, filename, file.buffer, file.mimetype,
+    )
+    return { storageKey, filename, mimeType: file.mimetype }
+  }
+
+  /**
+   * A short-lived signed URL for one media entry already on the project.
+   *
+   * Looked up by the entry's OWN id inside `draft.media` rather than by
+   * accepting a bare storage key from the caller — a key is unguessable
+   * (random 8 bytes), but requiring it to already be a media entry ON THIS
+   * project means the preview endpoint can never be pointed at a key it
+   * merely knows about.
+   */
+  async projectMediaUrl(tenantId: string, id: string, mediaId: string): Promise<{ url: string }> {
+    const content = await this.mustFind(tenantId, id)
+    const doc = content.draft as unknown as ProjectDocument
+    const entry = (doc.media ?? []).find((m) => m.id === mediaId)
+    if (!entry) {
+      throw DomainError.notFound('CMS_MEDIA_NOT_FOUND', `התמונה ${mediaId} לא נמצאה בפרויקט.`)
+    }
+    const url = await this.storage.getSignedUrl(tenantId, entry.storageKey)
+    return { url }
   }
 
   // ══════════════════════════════════════════════════════════════════════
