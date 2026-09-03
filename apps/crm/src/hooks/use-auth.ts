@@ -132,3 +132,45 @@ export function useCanWriteMeetings(): boolean {
   const { data } = useCurrentUser()
   return Boolean(data?.role && MEETING_WRITE_ROLES.includes(data.role))
 }
+
+/**
+ * Site Manager (CMS) capabilities.
+ *
+ * Mirrors CMS_VIEW_ROLES / CMS_EDIT_ROLES / CMS_VERIFY_ROLES /
+ * CMS_PUBLISH_ROLES in services/api-gateway/src/auth/roles.constants.ts.
+ *
+ * These hooks only HIDE controls. The API is the enforcement point and answers
+ * 403 regardless of what the UI renders, which the E2E suite proves by driving
+ * the endpoints with a viewer's token.
+ *
+ * The tiers narrow faster than elsewhere in this file because the blast radius
+ * differs: a CRM mistake reaches a project team, a website mistake reaches
+ * every resident and Google and stays quotable after correction.
+ */
+const CMS_VIEW_ROLES = [
+  'SUPER_ADMIN', 'COMPANY_ADMIN', 'CEO', 'PROJECT_MANAGER', 'RESIDENT_RELATIONS_MANAGER',
+]
+/** CEO reads and does not edit: the drafting queue belongs to who maintains it. */
+const CMS_EDIT_ROLES = [
+  'SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'RESIDENT_RELATIONS_MANAGER',
+]
+/** Verification is "I checked this against the source", so it needs the sources. */
+const CMS_VERIFY_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER']
+/** The only tier that changes what the public can read. Restore lives here too. */
+const CMS_PUBLISH_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN']
+
+export function useCmsPermissions(): {
+  canView: boolean
+  canEdit: boolean
+  canVerify: boolean
+  canPublish: boolean
+} {
+  const { data } = useCurrentUser()
+  const role = data?.role
+  return {
+    canView: Boolean(role && CMS_VIEW_ROLES.includes(role)),
+    canEdit: Boolean(role && CMS_EDIT_ROLES.includes(role)),
+    canVerify: Boolean(role && CMS_VERIFY_ROLES.includes(role)),
+    canPublish: Boolean(role && CMS_PUBLISH_ROLES.includes(role)),
+  }
+}

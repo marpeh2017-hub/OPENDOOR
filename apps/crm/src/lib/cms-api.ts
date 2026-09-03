@@ -62,8 +62,25 @@ export interface CmsRevisionSummary {
 
 export interface PublicationCheck {
   canPublish: boolean
-  blockers: { code: string; message: string }[]
-  warnings: { code: string; message: string }[]
+  blockers: { code: string; message: string; field?: string }[]
+  warnings: { code: string; message: string; field?: string }[]
+  /** Projects only: the two columns that make the check readable. */
+  willBecomePublic?: { field: string; label: string }[]
+  staysPrivate?: { area: string; label: string; detail: string }[]
+}
+
+export interface FactAuditEntry {
+  id: string
+  field: string
+  event: 'EDITED' | 'VERIFIED' | 'INVALIDATED' | 'REVIEW_REQUESTED'
+  status: string
+  occurredAt: string
+  previousValueLabel: string | null
+  newValueLabel: string | null
+  source: string | null
+  sourceReference: string | null
+  note: string | null
+  actor: { id: string; firstName: string; lastName: string } | null
 }
 
 /**
@@ -114,4 +131,28 @@ export const cmsApi = {
 
   restore: (id: string, revisionId: string) =>
     api.post<CmsContentDetail>(`${BASE}/${id}/revisions/${revisionId}/restore`),
+
+  // ── Verification ────────────────────────────────────────────────────────
+  //
+  // Two methods for two capabilities. `setFact` needs EDIT and invalidates any
+  // existing verification; `verifyFact` needs VERIFY and signs for the value
+  // as it currently stands. Neither can do the other's job, which is what
+  // makes SELF_VERIFIED meaningful rather than decorative.
+
+  factHistory: (id: string, field?: string) =>
+    api.get<FactAuditEntry[]>(
+      `${BASE}/${id}/facts/history${field ? `?field=${encodeURIComponent(field)}` : ''}`,
+    ),
+
+  setFact: (
+    id: string,
+    field: string,
+    body: { value: unknown; sourceId?: string; sourceReference?: string; note?: string },
+  ) => api.patch<CmsContentDetail>(`${BASE}/${id}/facts/${encodeURIComponent(field)}`, body),
+
+  verifyFact: (
+    id: string,
+    field: string,
+    body: { sourceId?: string; sourceReference?: string; note?: string; requiresSecondReview?: boolean } = {},
+  ) => api.post<CmsContentDetail>(`${BASE}/${id}/facts/${encodeURIComponent(field)}/verify`, body),
 }

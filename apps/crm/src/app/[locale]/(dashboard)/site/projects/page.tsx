@@ -1,24 +1,12 @@
-import { SectionScaffold } from '@/components/site/section-scaffold'
+import { ProjectsList } from '@/components/site/project/projects-list'
 
+/**
+ * The projects the CMS manages.
+ *
+ * Backed by `cms_content` rather than by fixtures, so what this screen lists
+ * is what the system actually holds. A project appears on the website only
+ * when it is published, and even then only the parts that were verified.
+ */
 export default function SiteProjectsPage() {
-  return (
-    <SectionScaffold
-      title="פרויקטים"
-      description="שני פרויקטים: החיד״א 26 מפורסם, ומתחם טשרניחובסקי - שמעוני טיוטה. פרויקט מופיע באתר רק כשהוא מפורסם, וגם אז מוצג ממנו רק מה שאומת."
-      willManage={[
-        'מידע ציבורי: שם, מיקום, תיאור ותפקיד OpenDoor',
-        'שלב ופרק מוצגים',
-        'אבני דרך',
-        'תמונות וגלריה',
-        'אימות נתונים ומקורות',
-        'SEO ופרסום',
-      ]}
-      willNotTouch={[
-        'מידע פנימי והיתכנות אינם מתפרסמים בשום מצב',
-        'נתון שלא אומת אינו מופיע באתר',
-        'אין פעולה שמפרסמת את כל נתוני הפרויקט',
-      ]}
-      phase="פאזה 4"
-    />
-  )
+  return <ProjectsList />
 }
