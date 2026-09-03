@@ -320,6 +320,66 @@ describe('edit validation', () => {
   })
 })
 
+describe('adding a field', () => {
+  const w = migrate()
+
+  it('takes its label and kind from the known registry when the key is known', () => {
+    const out = applyEdit(w, {
+      op: 'addField', scenarioId: 'baseline', key: 'buildingCount',
+      category: 'ASSUMPTION', value: '4',
+    }, { userId: 'u1' }, () => 'T2')
+    const f = active(out).fields['buildingCount']!
+    expect(f.label).toBe('מספר מבנים')
+    expect(f.kind).toBe('COUNT')
+    expect(f.role).toBe('INPUT')
+    expect(f.category).toBe('ASSUMPTION')
+    expect(f.value).toBe('4')
+  })
+
+  it('can complete a formula that was waiting on a missing input', () => {
+    // averageExistingUnitArea needs a numeric existingUnits, which the
+    // workbook leaves ambiguous. Resolving it makes the calculation possible.
+    const before = active(w).fields['averageExistingUnitArea']!
+    expect(before.calcStatus).toBe('MISSING_INPUTS')
+
+    const resolved = applyEdit(w, {
+      op: 'setValue', scenarioId: 'baseline', key: 'existingUnits', value: '98',
+    }, { userId: 'u1' }, () => 'T2')
+    const after = active(resolved).fields['averageExistingUnitArea']!
+    expect(after.calcStatus).toBe('OK')
+    expect(after.calculatedValue!.startsWith('94.865')).toBe(true)
+  })
+
+  it('creates INPUT fields only, never a formula', () => {
+    const out = applyEdit(w, {
+      op: 'addField', scenarioId: 'baseline', key: 'someNewThing',
+      category: 'ASSUMPTION', label: 'משהו חדש', kind: 'DECIMAL', value: '1.5',
+    }, { userId: 'u1' }, () => 'T2')
+    const f = active(out).fields['someNewThing']!
+    expect(f.role).toBe('INPUT')
+    expect(f.formulaId).toBeUndefined()
+  })
+
+  it('marks a newly added source value as reviewed by nobody', () => {
+    const out = applyEdit(w, {
+      op: 'addField', scenarioId: 'baseline', key: 'demolitionGrossArea',
+      category: 'SOURCE_DATA', value: '12000',
+    }, { userId: 'u1' }, () => 'T2')
+    expect(active(out).fields['demolitionGrossArea']!.reviewState).toBe('UNREVIEWED')
+  })
+
+  it('refuses a duplicate key, a bad key, a missing label and a bad number', () => {
+    const bad = (edit: Record<string, unknown>) => () =>
+      applyEdit(w, { op: 'addField', scenarioId: 'baseline', category: 'ASSUMPTION', ...edit } as never,
+        { userId: 'u1' })
+
+    expect(bad({ key: 'sales' })).toThrow(/כבר קיים/)
+    expect(bad({ key: 'שדה', label: 'x' })).toThrow(/באנגלית/)
+    expect(bad({ key: 'brandNew' })).toThrow(/כותרת/)
+    expect(bad({ key: 'brandNew', label: 'חדש', value: 'הרבה' })).toThrow(/מספר/)
+  })
+})
+
 describe('migration and scenario readiness', () => {
   it('is idempotent — a workspace passes through untouched', () => {
     const once = migrate()

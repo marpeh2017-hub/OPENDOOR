@@ -68,7 +68,9 @@ function doc(userId: string): ProjectDocument {
     },
     feasibility: {
       outputs: { totalScenarioUnits: { value: SECRETS.output } },
-      economics: { sales: { value: SECRETS.economics } },
+      // `profit` is here so the derived `cost` formula has both its inputs and
+      // the recalculation assertions have something real to recompute.
+      economics: { sales: { value: SECRETS.economics }, profit: { value: 135_900_000 } },
     },
     milestones: [],
     media: [],
@@ -548,6 +550,308 @@ describe('CMS project security (e2e)', () => {
 
     it('a preview URL for another tenant project answers 404', async () => {
       await api().get(`${BASE}/${projectB}/media/anything/url`).set(as(adminA)).expect(404)
+    })
+  })
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  PASS 4E · FEASIBILITY
+  // ══════════════════════════════════════════════════════════════════════
+
+  describe('feasibility permissions', () => {
+    it('an admin reads the workspace, migrated from the stored flat shape', async () => {
+      const res = await api().get(`${BASE}/${projectA}/feasibility`).set(as(adminA)).expect(200)
+      expect(res.body.workspace.version).toBe(2)
+      expect(res.body.workspace.scenarios).toHaveLength(1)
+      // Migrated in memory. The stored row is untouched until somebody edits.
+      const row = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectA } })
+      expect((row.draft as any).feasibility.version).toBeUndefined()
+    })
+
+    it('a project manager may edit it', async () => {
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(verifierA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'sales', value: '825600000',
+      }).expect(200)
+    })
+
+    /**
+     * The §17 property, and the reason feasibility has its own tier.
+     *
+     * `editorA` is a RESIDENT_RELATIONS_MANAGER: they hold CMS_EDIT_ROLES and
+     * edit public project copy for a living. They must not thereby hold the
+     * project's economics.
+     */
+    it('somebody who can edit public copy CANNOT read or write the economics', async () => {
+      await api().get(`${BASE}/${projectA}/feasibility`).set(as(editorA)).expect(403)
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(editorA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'sales', value: '1',
+      }).expect(403)
+    })
+
+    it('a viewer and an outsider get nothing', async () => {
+      await api().get(`${BASE}/${projectA}/feasibility`).set(as(viewerA)).expect(403)
+      await api().get(`${BASE}/${projectA}/feasibility`).set(as(outsiderA)).expect(403)
+    })
+
+    /**
+     * The structural half of the same property.
+     *
+     * The ordinary project save carries the WHOLE draft, so without the
+     * subtree lock in `CmsService.save` an editor could change what the
+     * project is worth by posting a document — no feasibility capability
+     * required. A permission boundary that depends on the client sending the
+     * right shape is not a boundary.
+     */
+    it('the ordinary project save cannot reach feasibility, even carrying it', async () => {
+      const before = await api().get(`${BASE}/${projectA}/feasibility`).set(as(adminA)).expect(200)
+      const beforeSales = before.body.workspace.scenarios[0].fields.sales.value
+
+      const row = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectA } })
+      await api().patch(`${BASE}/${projectA}`).set(as(editorA)).send({
+        draft: {
+          ...(row.draft as any),
+          public: { ...(row.draft as any).public, summary: { he: 'תקציר מעודכן' } },
+          feasibility: { economics: { sales: { value: 1 } }, outputs: {} },
+        },
+      }).expect(200)
+
+      const after = await api().get(`${BASE}/${projectA}/feasibility`).set(as(adminA)).expect(200)
+      expect(after.body.workspace.scenarios[0].fields.sales.value).toBe(beforeSales)
+
+      // The public edit in the same request DID land — this is a targeted
+      // lock, not a rejected save.
+      const updated = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectA } })
+      expect((updated.draft as any).public.summary.he).toBe('תקציר מעודכן')
+    })
+  })
+
+  describe('feasibility tenant isolation', () => {
+    it('reading another tenant workspace answers 404, never 403', async () => {
+      await api().get(`${BASE}/${projectB}/feasibility`).set(as(adminA)).expect(404)
+    })
+
+    it('editing another tenant workspace answers 404 and changes nothing', async () => {
+      const before = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectB } })
+      await api().patch(`${BASE}/${projectB}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'sales', value: '1',
+      }).expect(404)
+      const after = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectB } })
+      expect(after.draft).toEqual(before.draft)
+    })
+
+    it('restoring across tenants answers 404', async () => {
+      const mine = await api().get(`${BASE}/${projectA}/revisions`).set(as(adminA)).expect(200)
+      const revisionId = mine.body[0].id
+      // A revision id that is real, but belongs to the other tenant's project.
+      await api().post(`${BASE}/${projectB}/revisions/${revisionId}/restore`)
+        .set(as(adminA)).expect(404)
+    })
+
+    it('tenant B can do it on its OWN project, so the 404s are isolation not breakage', async () => {
+      await api().get(`${BASE}/${projectB}/feasibility`).set(as(adminB)).expect(200)
+    })
+  })
+
+  describe('feasibility persistence and revisions', () => {
+    it('an edit persists to Postgres, recomputes dependents and appends a revision', async () => {
+      const revsBefore = await prisma.cmsRevision.count({ where: { contentId: projectA } })
+
+      const res = await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'profit', value: '100000000',
+      }).expect(200)
+
+      const fields = res.body.workspace.scenarios[0].fields
+      expect(fields.profit.value).toBe('100000000')
+      // cost = sales - profit, recomputed by the server
+      expect(fields.cost.calculatedValue).toBe('725600000')
+
+      // Actually in the database, not only in the response.
+      const row = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectA } })
+      const stored = (row.draft as any).feasibility
+      expect(stored.version).toBe(2)
+      expect(stored.scenarios[0].fields.cost.calculatedValue).toBe('725600000')
+
+      const revsAfter = await prisma.cmsRevision.count({ where: { contentId: projectA } })
+      expect(revsAfter).toBe(revsBefore + 1)
+    })
+
+    it('preserves exact precision through the database round trip', async () => {
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'totalScenarioUnits', value: '337.18',
+      }).expect(200)
+      const row = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectA } })
+      const stored = (row.draft as any).feasibility.scenarios[0].fields.totalScenarioUnits
+      // The characters, not the nearest double to them.
+      expect(stored.value).toBe('337.18')
+      expect(typeof stored.value).toBe('string')
+      expect(JSON.stringify(row.draft)).toContain('"337.18"')
+    })
+
+    it('records an override with its reason, keeping the calculated value', async () => {
+      const res = await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setOverride', scenarioId: 'baseline', key: 'cost',
+        value: '700000000', reason: 'תקציב מעודכן שהתקבל מהיזם',
+      }).expect(200)
+      const cost = res.body.workspace.scenarios[0].fields.cost
+      expect(cost.override.value).toBe('700000000')
+      expect(cost.override.reason).toContain('יזם')
+      expect(cost.override.userId).toBe(adminAId)
+      expect(cost.calculatedValue).toBe('725600000')   // survives
+    })
+
+    it('refuses an override with no reason', async () => {
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setOverride', scenarioId: 'baseline', key: 'returnOnCost', value: '20', reason: '   ',
+      }).expect(400)
+    })
+
+    it('refuses a direct write to a calculated field', async () => {
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'cost', value: '1',
+      }).expect(400)
+    })
+
+    it('a DTO cannot smuggle a calculated value past the server', async () => {
+      // `calculatedValue` is not a DTO field, so `whitelist: true` strips it.
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'profit', value: '90000000',
+        calculatedValue: '999', calcStatus: 'OK',
+      } as any).expect(200)
+      const row = await prisma.cmsContent.findUniqueOrThrow({ where: { id: projectA } })
+      const f = (row.draft as any).feasibility.scenarios[0].fields
+      expect(JSON.stringify(f)).not.toContain('999')
+      expect(f.cost.calculatedValue).toBe('735600000')  // 825.6M - 90M
+    })
+
+    it('a revision snapshot carries the whole feasibility workspace', async () => {
+      const revs = await prisma.cmsRevision.findMany({
+        where: { contentId: projectA }, orderBy: { sequence: 'desc' }, take: 1,
+      })
+      const snap = revs[0]!.snapshot as any
+      expect(snap.feasibility.version).toBe(2)
+      expect(snap.feasibility.scenarios[0].fields.sales).toBeTruthy()
+    })
+
+    it('restoring appends a NEW revision and never rewrites history', async () => {
+      const all = await prisma.cmsRevision.findMany({
+        where: { contentId: projectA }, orderBy: { sequence: 'asc' },
+      })
+      const target = all[all.length - 2]!
+      const before = all.length
+
+      await api().post(`${BASE}/${projectA}/revisions/${target.id}/restore`)
+        .set(as(adminA)).expect(200)
+
+      const after = await prisma.cmsRevision.findMany({
+        where: { contentId: projectA }, orderBy: { sequence: 'asc' },
+      })
+      expect(after).toHaveLength(before + 1)
+      expect(after[after.length - 1]!.reason).toBe('RESTORE')
+      // The revision restored FROM is byte-identical to what it was.
+      const untouched = after.find((r) => r.id === target.id)!
+      expect(untouched.snapshot).toEqual(target.snapshot)
+      expect(untouched.sequence).toBe(target.sequence)
+    })
+  })
+
+  describe('feasibility never reaches the public, by shape', () => {
+    /** Every key the feasibility workspace can possibly contribute. */
+    const FEASIBILITY_KEYS = [
+      'feasibility', 'scenarios', 'activeScenarioId', 'sourceWarnings',
+      'calculatedValue', 'calculatedAt', 'calcStatus', 'missingInputs',
+      'override', 'formulaId', 'importedFrom', 'reviewState',
+      'economics', 'assumptions', 'outputs', 'sourceData',
+    ]
+
+    function allKeys(node: unknown, into = new Set<string>()): Set<string> {
+      if (node === null || typeof node !== 'object') return into
+      if (Array.isArray(node)) { node.forEach((v) => allKeys(v, into)); return into }
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        into.add(k)
+        allKeys(v, into)
+      }
+      return into
+    }
+
+    let publicBody: any
+
+    beforeAll(async () => {
+      // Publish, so the strongest possible version of the question is asked:
+      // not "is a draft hidden" but "does a LIVE project leak its scenario".
+      await prisma.cmsContent.update({
+        where: { id: projectA },
+        data: { state: 'DRAFT' },
+      })
+      await api().post(`${BASE}/${projectA}/publish`).set(as(adminA))
+      const res = await api().get(`/api/v1/public/cms/${A_SLUG}/project/secure-project`)
+      publicBody = res.body
+    })
+
+    it('the published public payload carries no feasibility-shaped key at any depth', () => {
+      const keys = allKeys(publicBody)
+      for (const forbidden of FEASIBILITY_KEYS) {
+        expect(keys.has(forbidden)).toBe(false)
+      }
+    })
+
+    it('carries none of the values either', () => {
+      const s = JSON.stringify(publicBody)
+      for (const secret of ['825600000', '337.18', '725600000', '700000000', 'תקציב מעודכן']) {
+        expect(s).not.toContain(secret)
+      }
+    })
+
+    it('the public LIST carries nothing either', async () => {
+      const res = await api().get(`/api/v1/public/cms/${A_SLUG}/project`).expect(200)
+      const keys = allKeys(res.body)
+      for (const forbidden of FEASIBILITY_KEYS) expect(keys.has(forbidden)).toBe(false)
+      expect(JSON.stringify(res.body)).not.toContain('825600000')
+    })
+
+    it('the stored publication snapshot carries nothing either', async () => {
+      const pub = await prisma.cmsPublication.findFirst({
+        where: { contentId: projectA }, orderBy: { publishedAt: 'desc' },
+      })
+      const keys = allKeys(pub!.snapshot)
+      for (const forbidden of FEASIBILITY_KEYS) expect(keys.has(forbidden)).toBe(false)
+    })
+
+    it('the signed preview carries nothing either', async () => {
+      const minted = await api().post(`${BASE}/${projectA}/preview-token`).set(as(adminA)).expect(201)
+      const res = await api().get(`/api/v1/public/cms/preview/${minted.body.token}`).expect(200)
+      const keys = allKeys(res.body.projection)
+      for (const forbidden of FEASIBILITY_KEYS) expect(keys.has(forbidden)).toBe(false)
+      expect(JSON.stringify(res.body.projection)).not.toContain('825600000')
+    })
+
+    it('editing feasibility on a PUBLISHED project changes nothing the public sees', async () => {
+      const before = await api()
+        .get(`/api/v1/public/cms/${A_SLUG}/project/secure-project`).expect(200)
+
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'sales', value: '999999999',
+      }).expect(200)
+
+      const after = await api()
+        .get(`/api/v1/public/cms/${A_SLUG}/project/secure-project`).expect(200)
+
+      // Byte-identical: a feasibility edit is not a publication, so the live
+      // snapshot does not move at all.
+      expect(after.body).toEqual(before.body)
+      expect(JSON.stringify(after.body)).not.toContain('999999999')
+    })
+
+    it('a feasibility edit creates no publication', async () => {
+      const before = await prisma.cmsPublication.count({ where: { contentId: projectA } })
+      await api().patch(`${BASE}/${projectA}/feasibility`).set(as(adminA)).send({
+        op: 'setValue', scenarioId: 'baseline', key: 'profit', value: '111111111',
+      }).expect(200)
+      const after = await prisma.cmsPublication.count({ where: { contentId: projectA } })
+      expect(after).toBe(before)
+    })
+
+    it('offers no publish route on the feasibility surface', async () => {
+      // Not "the button is hidden" — there is no such endpoint.
+      await api().post(`${BASE}/${projectA}/feasibility/publish`).set(as(adminA)).expect(404)
     })
   })
 })
