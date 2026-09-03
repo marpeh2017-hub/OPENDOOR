@@ -372,12 +372,14 @@ export function ProjectEditor({
           <TabTimeline doc={doc} onChange={setDoc} canEdit={permissions.canEdit} />
         )}
         {tab === 'media' && (
-          <TabMedia doc={doc} onChange={setDoc} canEdit={permissions.canEdit} />
+          <TabMedia doc={doc} onChange={setDoc} canEdit={permissions.canEdit} contentId={contentId} />
         )}
         {tab === 'seo' && (
           <TabSeo doc={doc} onChange={setDoc} canEdit={permissions.canEdit} isPublished={!!live} />
         )}
-        {tab === 'internal' && <TabInternal doc={doc} />}
+        {tab === 'internal' && (
+          <TabInternal doc={doc} onChange={setDoc} canEdit={permissions.canEdit} />
+        )}
         {tab === 'verification' && (
           <TabVerification
             doc={doc}

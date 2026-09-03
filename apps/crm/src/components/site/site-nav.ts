@@ -1,6 +1,6 @@
 import {
   LayoutGrid, FileText, FolderOpen, BookOpen, HelpCircle,
-  Image as ImageIcon, Link2, Settings,
+  Image as ImageIcon, Link2, Settings, ClipboardCheck,
 } from 'lucide-react'
 
 /**
@@ -59,6 +59,12 @@ export const SITE_NAV: SiteNavGroup[] = [
         label: 'פרויקטים',
         icon: FolderOpen,
         description: 'מידע ציבורי, אימות נתונים, אבני דרך ותמונות. מידע פנימי והיתכנות נשמרים בנפרד.',
+      },
+      {
+        href: '/site/review',
+        label: 'בדיקה',
+        icon: ClipboardCheck,
+        description: 'תוכן שסומן לבדיקה: מי ערך, מתי, ומה חוסם אותו מפרסום.',
       },
     ],
   },

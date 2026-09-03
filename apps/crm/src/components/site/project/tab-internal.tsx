@@ -1,8 +1,11 @@
 'use client'
 
-import { AlertTriangle, Check, FileSearch, MapPin, X } from 'lucide-react'
+import { AlertTriangle, Check, FileSearch, MapPin, Plus, Trash2, X } from 'lucide-react'
 import { PrivateBanner, Section, Callout, Row } from './fields'
-import { SOURCE_TYPE_LABEL, QUALITY_LABEL, REVIEW_STATE_LABEL, type ProjectDocument } from './types'
+import {
+  SOURCE_TYPE_LABEL, QUALITY_LABEL, REVIEW_STATE_LABEL, factLabel,
+  type ProjectDocument, type ProjectSource,
+} from './types'
 
 /**
  * מידע פנימי — the project's real workspace.
@@ -23,7 +26,13 @@ import { SOURCE_TYPE_LABEL, QUALITY_LABEL, REVIEW_STATE_LABEL, type ProjectDocum
  * list with a map would answer the question by drawing it. So it is presented
  * as what it is: candidates, with the one absence written down explicitly.
  */
-export function TabInternal({ doc }: { doc: ProjectDocument }) {
+export function TabInternal({
+  doc, onChange, canEdit,
+}: {
+  doc: ProjectDocument
+  onChange: (next: ProjectDocument) => void
+  canEdit: boolean
+}) {
   const internal = doc.internal ?? {}
   const candidates = internal.candidateAddresses ?? []
   const inWorkbook = candidates.filter((c) => c.inWorkbook)
@@ -35,6 +44,45 @@ export function TabInternal({ doc }: { doc: ProjectDocument }) {
   const empty =
     candidates.length === 0 && (internal.blocks ?? []).length === 0 &&
     flags.length === 0 && !internal.notes && (internal.observations ?? []).length === 0
+
+  const sources = doc.sources ?? []
+
+  const writeSources = (next: ProjectSource[]) => onChange({ ...doc, sources: next })
+
+  const patchSource = (id: string, p: Partial<ProjectSource>) =>
+    writeSources(sources.map((s) => (s.id === id ? { ...s, ...p } : s)))
+
+  const addSource = () =>
+    writeSources([
+      ...sources,
+      {
+        id: `src-${Date.now().toString(36)}`,
+        type: 'OTHER', label: '', quality: 'UNKNOWN', reviewState: 'UNREVIEWED',
+      },
+    ])
+
+  const removeSource = (id: string) => writeSources(sources.filter((s) => s.id !== id))
+
+  /**
+   * Which facts point at this source, by dotted path.
+   *
+   * Computed by scanning the document rather than stored on the source,
+   * because a fact's `sourceId` is the single place that relationship is
+   * recorded — keeping a second, denormalised list here would let the two
+   * disagree the first time a fact's source changes without this list being
+   * updated in step.
+   */
+  const dependentFacts = (sourceId: string): string[] => {
+    const out: string[] = []
+    if (doc.public.currentStage?.sourceId === sourceId) out.push(factLabel('public.currentStage'))
+    for (const [key, fact] of Object.entries(doc.public.facts ?? {})) {
+      if (fact.sourceId === sourceId) out.push(factLabel(`public.facts.${key}`))
+    }
+    for (const m of doc.milestones ?? []) {
+      if (m.fact?.sourceId === sourceId) out.push(`אבן דרך: ${m.title.he}`)
+    }
+    return out
+  }
 
   return (
     <div className="space-y-5">
@@ -192,43 +240,161 @@ export function TabInternal({ doc }: { doc: ProjectDocument }) {
         </Section>
       )}
 
-      {/* ── §15 · Sources ──────────────────────────────────────────────── */}
-      {(doc.sources ?? []).length > 0 && (
-        <Section
-          title="מקורות"
-          description="מאיפה מגיעים הנתונים. אוצר המילים הזה פנימי ואינו מופיע באתר: הציבור רואה שנתון אומת, לא לפי איזה מקור."
-        >
+      {/* §15 · Sources — editable, kept internal by architecture rather than by omission */}
+      <Section
+        title="מקורות"
+        description="מאיפה מגיעים הנתונים. אוצר המילים הזה פנימי ואינו מופיע באתר: הציבור רואה שנתון אומת, לא לפי איזה מקור."
+      >
+        {canEdit && (
+          <button
+            type="button"
+            onClick={addSource}
+            className="mb-3 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-[12.5px] font-semibold text-gray-800 transition-colors hover:bg-gray-50"
+          >
+            <Plus size={13} aria-hidden="true" />
+            הוספת מקור
+          </button>
+        )}
+
+        {sources.length === 0 ? (
+          <p className="text-[12.5px] text-gray-600">אין מקורות רשומים לפרויקט הזה.</p>
+        ) : (
           <div className="space-y-3">
-            {doc.sources!.map((s) => (
-              <div key={s.id} className="rounded-lg border border-border p-3.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[13px] font-bold text-gray-900">{s.label}</span>
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[11.5px] text-gray-600">
-                    {SOURCE_TYPE_LABEL[s.type]}
-                  </span>
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[11.5px] text-gray-600">
-                    {QUALITY_LABEL[s.quality]}
-                  </span>
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[11.5px] text-gray-600">
-                    {REVIEW_STATE_LABEL[s.reviewState]}
-                  </span>
+            {sources.map((s) => {
+              const dependents = dependentFacts(s.id)
+              return (
+                <div key={s.id} className="rounded-lg border border-border p-3.5">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor={`src-label-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        שם המקור
+                      </label>
+                      <input
+                        id={`src-label-${s.id}`}
+                        type="text"
+                        value={s.label}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, { label: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`src-type-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        סוג
+                      </label>
+                      <select
+                        id={`src-type-${s.id}`}
+                        value={s.type}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, { type: e.target.value as ProjectSource['type'] })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      >
+                        {Object.entries(SOURCE_TYPE_LABEL).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor={`src-quality-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        איכות
+                      </label>
+                      <select
+                        id={`src-quality-${s.id}`}
+                        value={s.quality}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, { quality: e.target.value as ProjectSource['quality'] })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      >
+                        {Object.entries(QUALITY_LABEL).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor={`src-review-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        מצב בדיקה
+                      </label>
+                      <select
+                        id={`src-review-${s.id}`}
+                        value={s.reviewState}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, { reviewState: e.target.value as ProjectSource['reviewState'] })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      >
+                        {Object.entries(REVIEW_STATE_LABEL).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label htmlFor={`src-ref-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        אסמכתא (לא חובה)
+                      </label>
+                      <input
+                        id={`src-ref-${s.id}`}
+                        type="text"
+                        placeholder="לדוגמה: שם קובץ, גיליון, מספר מסמך בספריית המסמכים"
+                        value={s.reference ?? ''}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, { reference: e.target.value || undefined })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label htmlFor={`src-note-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        הערות פנימיות (לא חובה)
+                      </label>
+                      <textarea
+                        id={`src-note-${s.id}`}
+                        rows={2}
+                        value={s.note ?? ''}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, { note: e.target.value || undefined })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] leading-relaxed text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label htmlFor={`src-issues-${s.id}`} className="block text-[12px] font-semibold text-gray-800">
+                        בעיות ידועות (לא חובה, שורה לכל בעיה)
+                      </label>
+                      <textarea
+                        id={`src-issues-${s.id}`}
+                        rows={2}
+                        value={(s.issues ?? []).join('\n')}
+                        disabled={!canEdit}
+                        onChange={(e) => patchSource(s.id, {
+                          issues: e.target.value.split('\n').map((l) => l.trim()).filter(Boolean),
+                        })}
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-1.5 text-[13px] leading-relaxed text-gray-900 focus:border-teal-600 disabled:bg-gray-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5">
+                    <p className="text-[12px] text-gray-600">
+                      {dependents.length > 0
+                        ? <span><span className="font-semibold text-gray-800">נתונים תלויים במקור זה: </span>{dependents.join(', ')}</span>
+                        : 'אין נתונים שמפנים למקור זה כרגע.'}
+                    </p>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => removeSource(s.id)}
+                        disabled={dependents.length > 0}
+                        title={dependents.length > 0 ? 'לא ניתן להסיר מקור שנתונים מפנים אליו' : undefined}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 size={12} aria-hidden="true" />
+                        הסרה
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {s.reference && (
-                  <p className="mt-1.5 text-[12px] text-gray-600">אסמכתא: {s.reference}</p>
-                )}
-                {s.note && (
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-700">{s.note}</p>
-                )}
-                {(s.issues ?? []).length > 0 && (
-                  <ul className="mt-2 list-disc space-y-1 ps-5 text-[12px] text-[#7d6234]">
-                    {s.issues!.map((i) => <li key={i}>{i}</li>)}
-                  </ul>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
-        </Section>
-      )}
+        )}
+      </Section>
 
       {internal.notes && (
         <Section title="הערות פנימיות">
