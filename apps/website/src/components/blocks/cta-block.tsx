@@ -37,7 +37,7 @@ import { getImageSlot } from '@/mock/fixtures/images'
  */
 export async function CtaBlockView({ block, t }: { block: CtaBlock; t: Localizer }) {
   const tLinks = await getTranslations('links')
-  const slot = getImageSlot('JERUSALEM_CHORDS_BRIDGE')
+  const slot = await getImageSlot('JERUSALEM_CHORDS_BRIDGE')
 
   return (
     <section className="relative overflow-hidden bg-white">

@@ -30,9 +30,9 @@ import { STROKE } from '@/components/brand/architecture'
  * the editorial framing, and the two are different things — one is a fact
  * about the picture, the other is why it is here.
  */
-export function CityBandBlockView({ block, t }: { block: MediaBlock; t: Localizer }) {
+export async function CityBandBlockView({ block, t }: { block: MediaBlock; t: Localizer }) {
   const slot = block.slotId && block.slotId in IMAGE_SLOTS
-    ? getImageSlot(block.slotId as keyof typeof IMAGE_SLOTS)
+    ? await getImageSlot(block.slotId as keyof typeof IMAGE_SLOTS)
     : null
 
   if (!slot) return null

@@ -52,8 +52,8 @@ import { getImageSlot } from '@/mock/fixtures/images'
  * is the usual way a hero passes review and then fails it after the asset
  * lands.
  */
-export function HeroBlockView({ block, t }: { block: HeroBlock; t: Localizer }) {
-  const slot = getImageSlot('HERO_JERUSALEM_ARCHITECTURE')
+export async function HeroBlockView({ block, t }: { block: HeroBlock; t: Localizer }) {
+  const slot = await getImageSlot('HERO_JERUSALEM_ARCHITECTURE')
 
   return (
     <section className="relative overflow-hidden bg-white">
@@ -150,7 +150,7 @@ function Aperture({
   slot,
   t,
 }: {
-  slot: ReturnType<typeof getImageSlot>
+  slot: Awaited<ReturnType<typeof getImageSlot>>
   /** Resolves the asset's alt text, which a screen reader announces. */
   t: Localizer
 }) {

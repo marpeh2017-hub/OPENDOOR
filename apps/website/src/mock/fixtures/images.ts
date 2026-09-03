@@ -1,4 +1,5 @@
 import type { MediaAsset } from '@urban-renewal/api-contracts'
+import { getCmsImageSlots, getPublicMediaUrl } from '@/lib/cms-source'
 
 /**
  * ══════════════════════════════════════════════════════════════════════════
@@ -181,10 +182,38 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
   },
 }
 
-/** Reads a slot. Returns the spec so the renderer can draw the fallback when
- *  `asset` is null — the caller never needs to know whether a photo exists. */
-export function getImageSlot(id: keyof typeof IMAGE_SLOTS): ImageSlotSpec {
-  return IMAGE_SLOTS[id]
+/**
+ * Reads a slot, CMS assignment first — Pass 4G.
+ *
+ * Returns the full spec either way, so the renderer can draw the fallback
+ * when `asset` is null without knowing whether that null came from "nobody
+ * has assigned an image yet" or "the CMS is unreachable". A CMS assignment
+ * overrides `asset` only; `desktopRatio`/`mobileRatio`/`minResolution` and
+ * every other production instruction stay exactly as specified here; an
+ * editor picks WHICH photograph, never how it is laid out.
+ *
+ * Async because of the CMS lookup — see `getCmsImageSlots` for why that is
+ * one request for all seven slots rather than one per slot.
+ */
+export async function getImageSlot(id: keyof typeof IMAGE_SLOTS): Promise<ImageSlotSpec> {
+  const spec = IMAGE_SLOTS[id]
+  const assigned = (await getCmsImageSlots())[id]
+  if (!assigned) return spec
+
+  // Resolved to a real, fetchable URL HERE, server-side, so the renderer
+  // (`EditorialImage`) needs no CMS awareness at all — it already knows how
+  // to draw an `asset` or fall back to the pattern, and that is unchanged.
+  const url = await getPublicMediaUrl(assigned.storageKey)
+  if (!url) return spec // signing failed; behave exactly as if unassigned
+
+  const asset: MediaAsset = {
+    id: assigned.storageKey,
+    kind: 'image',
+    url,
+    alt: assigned.alt,
+    imageType: assigned.classification as MediaAsset['imageType'],
+  }
+  return { ...spec, asset }
 }
 
 /** Slots still waiting on a licensed asset. Used by the review report; also the

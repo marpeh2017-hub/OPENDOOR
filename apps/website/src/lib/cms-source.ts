@@ -283,3 +283,45 @@ export async function getPublicMediaUrl(storageKey: string): Promise<string | nu
     return null
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+//  IMAGE SLOT ASSIGNMENT — Pass 4G
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface CmsSlotAssignment {
+  storageKey: string
+  alt: { he: string; en?: string }
+  classification: string
+}
+
+/**
+ * Every CMS-assigned image slot, published slots only, or an empty object.
+ *
+ * Read once per request and passed down by the caller — see `getImageSlot`
+ * in `mock/fixtures/images.ts` for why this is a lookup table rather than a
+ * per-slot fetch: seven slots would otherwise be seven network round trips
+ * for one page render.
+ */
+export async function getCmsImageSlots(): Promise<Record<string, CmsSlotAssignment>> {
+  const base = gatewayBase()
+  if (!base) return {}
+  try {
+    const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/settings/image-slots`, {
+      next: { tags: ['cms:settings:image-slots'], revalidate: 300 },
+    })
+    if (!res.ok) return {}
+    const body = (await res.json()) as { content?: { slots?: Record<string, unknown> } }
+    const slots = body?.content?.slots
+    if (!slots || typeof slots !== 'object') return {}
+    const out: Record<string, CmsSlotAssignment> = {}
+    for (const [id, raw] of Object.entries(slots)) {
+      const s = raw as Partial<CmsSlotAssignment> | null
+      if (s && typeof s.storageKey === 'string' && s.alt?.he) {
+        out[id] = { storageKey: s.storageKey, alt: s.alt as CmsSlotAssignment['alt'], classification: s.classification ?? 'EDITORIAL_CONTEXT' }
+      }
+    }
+    return out
+  } catch {
+    return {}
+  }
+}

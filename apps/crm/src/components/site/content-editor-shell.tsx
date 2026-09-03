@@ -162,8 +162,8 @@ export function ContentEditorShell<TDraft>({
 
       <ExposureBanner level={content.exposure}>
         {live
-          ? `ה${typeLabel} מפורסם. שמירה כאן אינה משנה את מה שמופיע באתר עד לפרסום.`
-          : `ה${typeLabel} אינו מפורסם כרגע. האתר אינו מציג אותו.`}
+          ? `מצב: מפורסם. שמירה כאן אינה משנה את מה שמופיע באתר עד לפרסום.`
+          : `מצב: לא מפורסם. האתר אינו מציג את התוכן הזה.`}
       </ExposureBanner>
 
       {error && (
