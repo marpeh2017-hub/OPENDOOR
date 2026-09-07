@@ -935,7 +935,9 @@ export class CmsService {
   async projectMediaUrl(tenantId: string, id: string, mediaId: string): Promise<{ url: string }> {
     const content = await this.mustFind(tenantId, id)
     const doc = content.draft as unknown as ProjectDocument
-    const entry = (doc.media ?? []).find((m) => m.id === mediaId)
+    const library = content.kind === 'SETTINGS' && content.slug === 'media-library'
+    const entries = library ? ((content.draft as unknown as { items?: { id: string; storageKey: string }[] }).items ?? []) : (doc.media ?? [])
+    const entry = entries.find((m) => m.id === mediaId)
     if (!entry) {
       throw DomainError.notFound('CMS_MEDIA_NOT_FOUND', `התמונה ${mediaId} לא נמצאה בפרויקט.`)
     }
@@ -943,34 +945,24 @@ export class CmsService {
     return { url }
   }
 
-  /**
-   * A signed URL for one object, for the PUBLIC website — Pass 4G.
-   *
-   * ── WHY THIS DOES NOT LOOK THE KEY UP IN A CONTENT ROW FIRST ────────────
-   *
-   * `projectMediaUrl` above resolves by looking a media id up inside one
-   * project's draft, which works because the caller already holds an
-   * authenticated relationship to that exact project. A public visitor has
-   * no such relationship to check against, and the shapes that can reference
-   * an image now — a Knowledge article's featured image, a project's own
-   * media, an assigned homepage image slot — are three different documents
-   * with three different layouts; a lookup here would have to know all of
-   * them and would grow every time a fourth is added.
-   *
-   * The storage key itself is the credential instead, exactly as a signed URL
-   * already is everywhere else in this codebase: it is a random 8-byte hex
-   * value the uploader received back from `upload()` and nobody can guess.
-   * Knowing one means it came from this system — an authenticated upload, or
-   * a reference already sitting in HTML this endpoint's own caller rendered.
-   * `getSignedUrl` still verifies the key is prefixed with the RESOLVED
-   * tenant's id, so tenant A can never mint a URL for tenant B's object even
-   * with a real key in hand.
-   */
+  /** Public media must be referenced by an active published snapshot.
+   * Knowing a private storage key is not publication authorization. */
   async publicMediaUrl(tenantId: string, storageKey: string): Promise<{ url: string }> {
-    const url = await this.storage.getSignedUrl(tenantId, storageKey)
-    return { url }
+    const rows = await this.prisma.cmsContent.findMany({
+      where: { tenantId, state: 'PUBLISHED', livePublication: { is: { unpublishedAt: null } } },
+      select: { livePublication: { select: { snapshot: true } } },
+    })
+    const referencesKey = (value: unknown): boolean => {
+      if (!value || typeof value !== 'object') return false
+      if (Array.isArray(value)) return value.some(referencesKey)
+      const object = value as Record<string, unknown>
+      return object['storageKey'] === storageKey || Object.values(object).some(referencesKey)
+    }
+    if (!rows.some((row) => referencesKey(row.livePublication?.snapshot))) {
+      throw DomainError.notFound('CMS_MEDIA_NOT_FOUND', 'התמונה לא נמצאה')
+    }
+    return { url: await this.storage.getSignedUrl(tenantId, storageKey) }
   }
-
   // ══════════════════════════════════════════════════════════════════════
   //  FEASIBILITY
   // ══════════════════════════════════════════════════════════════════════
@@ -1253,7 +1245,7 @@ export class CmsService {
       where: { tenantId, kind: kind as never, state: 'PUBLISHED' },
       select: {
         slug: true,
-        livePublication: { select: { snapshot: true, publishedAt: true, unpublishedAt: true } },
+        livePublication: { select: { snapshot: true, seo: true, publishedAt: true, unpublishedAt: true } },
       },
     })
     return rows
@@ -1262,6 +1254,7 @@ export class CmsService {
         slug: r.slug,
         publishedAt: r.livePublication!.publishedAt,
         content: r.livePublication!.snapshot as Json,
+        seo: r.livePublication!.seo as Json,
       }))
   }
 }
