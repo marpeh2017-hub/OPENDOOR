@@ -31,9 +31,10 @@ import { STROKE } from '@/components/brand/architecture'
  * about the picture, the other is why it is here.
  */
 export async function CityBandBlockView({ block, t }: { block: MediaBlock; t: Localizer }) {
-  const slot = block.slotId && block.slotId in IMAGE_SLOTS
-    ? await getImageSlot(block.slotId as keyof typeof IMAGE_SLOTS)
-    : null
+  const slot =
+    block.slotId && block.slotId in IMAGE_SLOTS
+      ? await getImageSlot(block.slotId as keyof typeof IMAGE_SLOTS)
+      : null
 
   if (!slot) return null
 
@@ -74,7 +75,7 @@ export async function CityBandBlockView({ block, t }: { block: MediaBlock; t: Lo
       </div>
 
       {/* The framing line, back inside the page column. */}
-      {block.caption && (
+      {slot.asset && block.caption && (
         <div className="relative mx-auto mt-5 max-w-7xl px-4 lg:px-8">
           <p className="flex max-w-2xl items-start gap-3 text-sm leading-relaxed text-gray-600">
             <span aria-hidden="true" className="mt-2.5 h-px w-6 shrink-0 bg-teal-600" />

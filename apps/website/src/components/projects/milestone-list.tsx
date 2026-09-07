@@ -43,15 +43,18 @@ import { STROKE } from '@/components/brand/architecture'
  */
 export async function MilestoneList({
   milestones,
+  verifiedProjection = false,
   t: loc,
 }: {
   milestones: readonly ProjectMilestone[]
+  verifiedProjection?: boolean
   t: Localizer
 }) {
   const tMs = await getTranslations('milestones')
 
   const shown = milestones.filter(
-    (milestone) => milestone.state !== 'completed' || milestone.verification !== undefined,
+    (milestone) =>
+      verifiedProjection || milestone.state !== 'completed' || milestone.verification !== undefined,
   )
   if (shown.length === 0) return null
 
@@ -77,7 +80,7 @@ export async function MilestoneList({
         // Read for completed and current only. See the block comment.
         const when = upcoming
           ? null
-          : milestone.occurredAt ?? (milestone.periodLabel ? loc(milestone.periodLabel) : null)
+          : (milestone.occurredAt ?? (milestone.periodLabel ? loc(milestone.periodLabel) : null))
 
         return (
           <li

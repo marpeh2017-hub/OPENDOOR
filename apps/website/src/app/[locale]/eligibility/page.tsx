@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
-import { EligibilityForm } from '@/components/forms/eligibility-form'
+import { DirectContact } from '@/components/forms/direct-contact'
 import { STROKE } from '@/components/brand/architecture'
 
 /**
@@ -39,11 +39,7 @@ export async function generateMetadata({
   return { title: t('title'), description: t('standfirst') }
 }
 
-export default async function EligibilityPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function EligibilityPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations('eligibility')
@@ -54,7 +50,7 @@ export default async function EligibilityPage({
 
       <Section size="md">
         <div className="grid gap-12 lg:grid-cols-[1.3fr_0.7fr] lg:items-start lg:gap-14">
-          <EligibilityForm />
+          <DirectContact eligibility />
 
           {/* `order-last` on mobile, so the form is the first thing under the
               header regardless of DOM order. DOM order is form-first anyway,

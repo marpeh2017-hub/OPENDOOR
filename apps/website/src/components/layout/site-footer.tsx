@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { FOOTER_GROUPS } from '@/lib/navigation'
+import { CONTACT } from '@/lib/site-config'
 
 /**
  * Site footer.
@@ -23,6 +24,20 @@ export async function SiteFooter() {
           <div>
             <p className="text-base font-bold text-teal-700">{tBrand('name')}</p>
             <p className="mt-2 max-w-narrow text-sm text-gray-600">{tBrand('tagline')}</p>
+            <a
+              href={CONTACT.phoneHref}
+              dir="ltr"
+              className="mt-3 block w-fit py-2 text-sm text-gray-700 underline"
+            >
+              {CONTACT.phone}
+            </a>
+            <a
+              href={`mailto:${CONTACT.email}`}
+              dir="ltr"
+              className="block w-fit py-2 text-sm text-gray-700 underline"
+            >
+              {CONTACT.email}
+            </a>
           </div>
 
           {FOOTER_GROUPS.map((group) => (

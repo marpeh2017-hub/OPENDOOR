@@ -1,62 +1,13 @@
 import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
 
-/**
- * The CMS side of the content resolver.
- *
- * ══════════════════════════════════════════════════════════════════════════
- *  WHY MIGRATION IS AN EXPLICIT LIST AND NOT "WHATEVER THE CMS HAS"
- * ══════════════════════════════════════════════════════════════════════════
- *
- * The tempting resolver is "ask the CMS; if it answers, use that". It hands
- * control of the live website to whatever happens to be in a database row —
- * so a half-finished import, a partially-filled draft that someone published
- * to see what it looked like, or a page created with a colliding slug silently
- * replaces working content, and the code that would have rendered correctly is
- * still sitting right there unused.
- *
- * So a page is served from the CMS only when its slug appears in
- * `CMS_MANAGED_SLUGS` below. Adding a slug to that list is a deliberate,
- * reviewable act — the same act as the import script's `--publish`, and
- * neither works without the other. Everything else keeps rendering from code,
- * with no change in behaviour and no risk.
- *
- * The migration therefore has three states per page, all of them safe:
- *
- *   not in the list          → code. The CMS may hold a draft; nobody sees it.
- *   in the list, unpublished → code. `getCmsPage` returns null, caller falls back.
- *   in the list, published   → CMS.
- *
- * ── WHY THE FALLBACK IS NOT AN ERROR PATH ──────────────────────────────────
- *
- * If the gateway is down, slow, or returns something unexpected, this returns
- * null and the caller renders the code fixture. A marketing site that 500s
- * because a CMS is unreachable has made the CMS a single point of failure for
- * content that has not changed in months. The fallback is the normal path for
- * every unmigrated page anyway, so it is exercised constantly rather than
- * being emergency code that has never run.
- */
-
-/**
- * Pages the CMS is authoritative for. ONE entry, deliberately.
- *
- * `trust` was migrated first because it is the page whose content is most
- * about the company's own conduct, so it is the page most likely to need
- * editing without a deploy — and because it uses five different block types,
- * which makes it a real test of the round trip rather than a easy one.
- *
- * `about`, `why-organizer` and `how-we-work` followed in Pass 4G, imported by
- * the same script from the same fixtures with the same before/after proof —
- * their content is unchanged, only its home moved.
- *
- * `privacy` and `terms` are deliberately ABSENT. Both have a DRAFT row in the
- * CMS (see the import in Pass 4G) so an editor can see the shell, but no
- * legal copy exists to publish and none has been invented — see
- * `docs/ODG_CMS_ARCHITECTURE.md` Appendix E. Adding either slug here before
- * that copy exists would publish nothing (an unpublished draft still returns
- * null), so the absence is documentation, not a missing step.
- */
+/** Migrated pages are served only from an active CMS publication.
+ * Missing, withdrawn or unreachable content fails closed; it never revives a code fixture.
+ * Legal pages remain outside this list until approved copy is available. */
 export const CMS_MANAGED_SLUGS: readonly string[] = [
-  'trust', 'about', 'why-organizer', 'how-we-work',
+  'trust',
+  'about',
+  'why-organizer',
+  'how-we-work',
 ]
 
 export function isCmsManaged(slug: string): boolean {
@@ -100,7 +51,8 @@ export async function getCmsPage(slug: string): Promise<CmsPage | null> {
 
   try {
     const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/page/${slug}`, {
-      next: { tags: [pageTag(slug)], revalidate: 300 },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return null
 
@@ -155,7 +107,8 @@ export async function getCmsFaqItems(): Promise<CmsFaqEntry[]> {
 
   try {
     const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/page/faq`, {
-      next: { tags: ['cms:page:faq'], revalidate: 300 },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return []
 
@@ -165,13 +118,17 @@ export async function getCmsFaqItems(): Promise<CmsFaqEntry[]> {
 
     // Shape-checked rather than trusted, same discipline as `getCmsPage`.
     return items
-      .filter((it): it is CmsFaqEntry =>
-        Boolean(it) && typeof it === 'object'
-        && typeof (it as CmsFaqEntry).id === 'string'
-        && typeof (it as CmsFaqEntry).question?.he === 'string'
-        && typeof (it as CmsFaqEntry).answer?.he === 'string'
-        && (it as CmsFaqEntry).question.he.trim() !== ''
-        && (it as CmsFaqEntry).answer.he.trim() !== '')
+      .filter(
+        (it): it is CmsFaqEntry =>
+          Boolean(it) &&
+          typeof it === 'object' &&
+          !(it as CmsFaqEntry & { hidden?: boolean }).hidden &&
+          typeof (it as CmsFaqEntry).id === 'string' &&
+          typeof (it as CmsFaqEntry).question?.he === 'string' &&
+          typeof (it as CmsFaqEntry).answer?.he === 'string' &&
+          (it as CmsFaqEntry).question.he.trim() !== '' &&
+          (it as CmsFaqEntry).answer.he.trim() !== '',
+      )
       .slice()
       .sort((a, b) => a.order - b.order)
   } catch {
@@ -189,12 +146,17 @@ export interface CmsArticleSummary {
   summary?: { he: string; en?: string }
   category?: { he: string; en?: string }
   publishedAt: string
+  seo?: Record<string, { title?: string; description?: string; noIndex?: boolean }>
 }
 
 export interface CmsArticle extends CmsArticleSummary {
   body?: { he: string; en?: string }
-  featuredImage?: { storageKey: string; alt: { he: string; en?: string }; classification: string } | null
-  seo?: Record<string, { title?: string; description?: string }>
+  featuredImage?: {
+    storageKey: string
+    alt: { he: string; en?: string }
+    classification: string
+  } | null
+  seo?: Record<string, { title?: string; description?: string; noIndex?: boolean }>
 }
 
 /**
@@ -210,10 +172,16 @@ export async function getCmsArticles(): Promise<CmsArticleSummary[]> {
   if (!base) return []
   try {
     const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/article`, {
-      next: { tags: ['cms:articles'], revalidate: 300 },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return []
-    const rows = (await res.json()) as { slug: string; publishedAt: string; content?: Record<string, unknown> }[]
+    const rows = (await res.json()) as {
+      slug: string
+      publishedAt: string
+      seo?: CmsArticleSummary['seo']
+      content?: Record<string, unknown>
+    }[]
     if (!Array.isArray(rows)) return []
     const summaries: CmsArticleSummary[] = []
     for (const r of rows) {
@@ -226,6 +194,7 @@ export async function getCmsArticles(): Promise<CmsArticleSummary[]> {
         summary: c['summary'] as CmsArticleSummary['summary'],
         category: c['category'] as CmsArticleSummary['category'],
         publishedAt: r.publishedAt,
+        seo: r.seo,
       })
     }
     return summaries.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
@@ -239,10 +208,16 @@ export async function getCmsArticleBySlug(slug: string): Promise<CmsArticle | nu
   if (!base) return null
   try {
     const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/article/${slug}`, {
-      next: { tags: [`cms:article:${slug}`], revalidate: 300 },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return null
-    const body = (await res.json()) as { slug: string; publishedAt: string; content?: Record<string, unknown>; seo?: CmsArticle['seo'] }
+    const body = (await res.json()) as {
+      slug: string
+      publishedAt: string
+      content?: Record<string, unknown>
+      seo?: CmsArticle['seo']
+    }
     const c = body.content ?? {}
     const title = c['title'] as CmsArticle['title'] | undefined
     if (!title?.he) return null
@@ -274,7 +249,7 @@ export async function getPublicMediaUrl(storageKey: string): Promise<string | nu
   try {
     const res = await fetch(
       `${base}/api/v1/public/cms/${TENANT}/media?key=${encodeURIComponent(storageKey)}`,
-      { next: { revalidate: 60 } },
+      { cache: 'no-store', signal: AbortSignal.timeout(5000) },
     )
     if (!res.ok) return null
     const body = (await res.json()) as { url?: string }
@@ -307,7 +282,7 @@ export async function getCmsImageSlots(): Promise<Record<string, CmsSlotAssignme
   if (!base) return {}
   try {
     const res = await fetch(`${base}/api/v1/public/cms/${TENANT}/settings/image-slots`, {
-      next: { tags: ['cms:settings:image-slots'], revalidate: 300 },
+      cache: 'no-store', signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return {}
     const body = (await res.json()) as { content?: { slots?: Record<string, unknown> } }
@@ -317,7 +292,11 @@ export async function getCmsImageSlots(): Promise<Record<string, CmsSlotAssignme
     for (const [id, raw] of Object.entries(slots)) {
       const s = raw as Partial<CmsSlotAssignment> | null
       if (s && typeof s.storageKey === 'string' && s.alt?.he) {
-        out[id] = { storageKey: s.storageKey, alt: s.alt as CmsSlotAssignment['alt'], classification: s.classification ?? 'EDITORIAL_CONTEXT' }
+        out[id] = {
+          storageKey: s.storageKey,
+          alt: s.alt as CmsSlotAssignment['alt'],
+          classification: s.classification ?? 'EDITORIAL_CONTEXT',
+        }
       }
     }
     return out

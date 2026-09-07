@@ -37,6 +37,7 @@ export async function FaqBlockView({
   t: Localizer
 }) {
   const tLinks = await getTranslations('links')
+  const tPage = await getTranslations('pages.faq')
 
   return (
     <Section size="lg">
@@ -45,6 +46,7 @@ export async function FaqBlockView({
 
         <div>
           <div className="divide-y divide-gray-200 border-y border-gray-200">
+            {items.length === 0 && <p className="py-6 text-gray-700">{tPage('empty')}</p>}
             {items.map((item) => (
               <details key={item.id} className="odg-faq group">
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-6 text-start text-lg font-medium text-gray-900 outline-none marker:content-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 group-open:text-teal-900 sm:text-xl">

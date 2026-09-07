@@ -1,3 +1,4 @@
+import { Link } from '@/i18n/navigation'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { Locale } from '@urban-renewal/api-contracts'
@@ -31,20 +32,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'pages.faq' })
-  return { title: t('title') }
+  return {
+    title: t('title'),
+    description: t('empty'),
+    robots: { index: (await getCmsFaqItems()).length > 0, follow: true },
+  }
 }
 
-export default async function FaqPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function FaqPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
-  const [t, items] = await Promise.all([
-    getTranslations('pages.faq'),
-    getCmsFaqItems(),
-  ])
+  const [t, items] = await Promise.all([getTranslations('pages.faq'), getCmsFaqItems()])
   const loc = makeLocalizer(locale as Locale)
 
   return (
@@ -54,6 +52,9 @@ export default async function FaqPage({
         {items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 bg-surface-sunken px-6 py-14 text-center">
             <p className="text-base text-gray-700">{t('empty')}</p>
+            <Link href="/contact" className="mt-4 inline-block py-2 text-teal-900 underline">
+              {locale === 'he' ? 'יצירת קשר' : 'Contact us'}
+            </Link>
           </div>
         ) : (
           <dl className="divide-y divide-gray-200">

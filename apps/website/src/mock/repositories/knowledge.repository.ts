@@ -1,72 +1,48 @@
 import type {
-  ExternalResource, FaqItem, KnowledgeArticle, KnowledgeArticleSummary,
-  KnowledgeCategory, Paginated, SearchResult, SearchResults,
+  FaqItem,
+  KnowledgeArticleSummary,
+  Locale,
+  Paginated,
 } from '@urban-renewal/api-contracts'
-import {
-  MOCK_ARTICLES, MOCK_CATEGORIES, MOCK_FAQ, MOCK_EXTERNAL_RESOURCES,
-} from '../fixtures/knowledge'
+import { resolveContent } from '@urban-renewal/api-contracts'
+import { getCmsArticles, getCmsFaqItems } from '@/lib/cms-source'
 
-/**
- * Knowledge, FAQ and external-resource access.
- *
- * Async for the same reason as the project repository: call sites must already
- * be shaped for a network round trip, so Phase 2 replaces the body of these
- * functions and nothing else.
- */
-
-function toSummary(a: KnowledgeArticle): KnowledgeArticleSummary {
-  return { id: a.id, slug: a.slug, title: a.title, summary: a.summary, category: a.category, updatedAt: a.updatedAt }
-}
-
-export async function getKnowledgeCategories(): Promise<KnowledgeCategory[]> {
-  return [...MOCK_CATEGORIES]
-}
-
+// Homepage, search and sitemap share the same published CMS content as detail pages.
+// Unapproved fixtures are deliberately excluded, including during CMS outages.
 export async function getKnowledgeArticles(
-  options: { category?: string; limit?: number; offset?: number } = {},
+  options: { category?: string; limit?: number; offset?: number; locale?: Locale } = {},
 ): Promise<Paginated<KnowledgeArticleSummary>> {
-  const { category, limit = 12, offset = 0 } = options
-  const matched = MOCK_ARTICLES
-    .filter((a) => (category ? a.category.slug === category : true))
-    .slice()
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-
-  return {
-    items: matched.slice(offset, offset + limit).map(toSummary),
-    total: matched.length,
-    limit,
-    offset,
-  }
+  const { category, limit = 12, offset = 0, locale = 'he' } = options
+  const text = (value: { he: string; en?: string } | undefined) =>
+    value ? (resolveContent(value, locale, 'SOURCE') ?? '') : ''
+  const articles = await getCmsArticles()
+  const matched = articles
+    .map((a) => ({
+      id: a.slug,
+      slug: a.slug,
+      title: text(a.title),
+      summary: text(a.summary),
+      category: {
+        id: a.category?.he ?? '',
+        slug: a.category?.he ?? '',
+        name: text(a.category),
+        articleCount: 0,
+      },
+      updatedAt: a.publishedAt,
+    }))
+    .filter((a) => !category || a.category.slug === category)
+  return { items: matched.slice(offset, offset + limit), total: matched.length, limit, offset }
 }
 
-/** Null, not a throw — "no such article" is a 404, not a failure. */
-export async function getArticleBySlug(slug: string): Promise<KnowledgeArticle | null> {
-  return MOCK_ARTICLES.find((a) => a.slug === slug) ?? null
+export async function getFaqItems(_category?: string, locale: Locale = 'he'): Promise<FaqItem[]> {
+  return (await getCmsFaqItems()).map((f) => ({
+    id: f.id,
+    order: f.order,
+    question: resolveContent(f.question, locale, 'SOURCE') ?? '',
+    answer: resolveContent(f.answer, locale, 'SOURCE') ?? '',
+  }))
 }
-
-/**
- * Related articles, resolved from slugs to summaries.
- *
- * A slug that matches nothing is dropped rather than rendered as a dead link —
- * the article body is editorial content and may reference something later
- * unpublished.
- */
-export async function getRelatedArticles(slug: string): Promise<KnowledgeArticleSummary[]> {
-  const article = await getArticleBySlug(slug)
-  if (!article?.relatedArticleSlugs?.length) return []
-  return article.relatedArticleSlugs
-    .map((s) => MOCK_ARTICLES.find((a) => a.slug === s))
-    .filter((a): a is KnowledgeArticle => Boolean(a))
-    .map(toSummary)
-}
-
-export async function getFaqItems(category?: string): Promise<FaqItem[]> {
-  return MOCK_FAQ
-    .filter((f) => (category ? f.category === category : true))
-    .slice()
-    .sort((a, b) => a.order - b.order)
-}
-
-export async function getExternalResources(): Promise<ExternalResource[]> {
+export async function getExternalResources() {
+  const { MOCK_EXTERNAL_RESOURCES } = await import('../fixtures/knowledge')
   return [...MOCK_EXTERNAL_RESOURCES]
 }

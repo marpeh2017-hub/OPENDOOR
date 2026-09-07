@@ -1,3 +1,7 @@
+import { ProjectBody } from '@/components/projects/project-body'
+import { projectWithMedia } from '@/lib/cms-projects'
+import { PageHeader } from '@/components/blocks/page-header'
+import { Section } from '@/components/blocks/section'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
@@ -30,7 +34,12 @@ import { PageBlocks } from '@/components/blocks/page-blocks'
  */
 export const metadata: Metadata = {
   title: 'תצוגה מקדימה',
-  robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false },
+  },
 }
 
 // A preview is per-token and short-lived; caching it would serve one reviewer's
@@ -41,7 +50,9 @@ interface PreviewResponse {
   id: string
   slug: string
   state: string
-  projection: { blocks?: PageBlock[] }
+  kind: string
+  updatedAt: string
+  projection: { blocks?: PageBlock[]; [key: string]: any }
 }
 
 export default async function PreviewPage({
@@ -65,11 +76,86 @@ export default async function PreviewPage({
 
   const body = (await res.json()) as PreviewResponse
   const blocks = body?.projection?.blocks
-  if (!Array.isArray(blocks) || blocks.length === 0) notFound()
+  const loc = makeLocalizer(locale as Locale)
+  const banner = (
+    <div className="bg-surface-sunken p-4 text-center text-sm font-semibold">
+      תצוגה מקדימה בלבד. התוכן אינו מתפרסם בפעולה זו.
+    </div>
+  )
+  if (body.kind === 'PROJECT') {
+    const project = await projectWithMedia({
+      slug: body.slug,
+      publishedAt: body.updatedAt,
+      content: body.projection,
+    })
+    if (!project) notFound()
+    return (
+      <>
+        {banner}
+        <ProjectBody verifiedProjection project={project} locale={locale} t={loc} />
+      </>
+    )
+  }
+  if (body.kind === 'ARTICLE') {
+    return (
+      <>
+        {banner}
+        <PageHeader
+          title={loc.text(body.projection.title)}
+          standfirst={loc.text(body.projection.summary)}
+        />
+        <Section size="md">
+          {(loc.text(body.projection.body) || '')
+            .split(/\n{2,}/)
+            .filter(Boolean)
+            .map((p: string, i: number) => (
+              <p key={i} className="mb-4 text-base leading-relaxed text-gray-700">
+                {p}
+              </p>
+            ))}
+        </Section>
+      </>
+    )
+  }
+  if (body.slug === 'faq' && Array.isArray(body.projection.items)) {
+    return (
+      <>
+        {banner}
+        <PageHeader title={loc.text(body.projection.title) || 'שאלות ותשובות'} />
+        <Section size="md">
+          <dl>
+            {body.projection.items
+              .filter((i: any) => !i.hidden)
+              .map((i: any) => (
+                <div key={i.id} className="py-4">
+                  <dt className="font-semibold">{loc.text(i.question)}</dt>
+                  <dd className="mt-2">{loc.text(i.answer)}</dd>
+                </div>
+              ))}
+          </dl>
+          {body.projection.items.length === 0 && <p>לא נוספו שאלות לתצוגה.</p>}
+        </Section>
+      </>
+    )
+  }
+  if (!Array.isArray(blocks) || blocks.length === 0) {
+    return (
+      <>
+        {banner}
+        <PageHeader title={loc.text(body.projection.title) || 'תצוגת תוכן'} />
+        <Section size="md">
+          <p>אין תוכן ציבורי להצגה בתצוגה זו.</p>
+        </Section>
+      </>
+    )
+  }
 
   const t = makeLocalizer(locale as Locale)
   const resources = await getExternalResources()
-  const visible = blocks.filter((b) => !b.hidden).slice().sort((a, b) => a.order - b.order)
+  const visible = blocks
+    .filter((b) => !b.hidden)
+    .slice()
+    .sort((a, b) => a.order - b.order)
 
   return (
     <>

@@ -19,11 +19,12 @@
     "skipToContent": "Skip to main content",
     "primaryNavigation": "Primary navigation",
     "languageSwitcher": "Select language",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "search": "Search"
   },
   "cta": {
     "eligibility": "Check your building's suitability",
-    "residentPortal": "Resident portal",
+    "residentPortal": "About the resident portal",
     "eligibilityShort": "Check suitability"
   },
   "footer": {
@@ -79,21 +80,17 @@
     },
     "privacy": {
       "title": "Privacy policy",
-      "notice": "The full privacy policy is being finalised and will appear here. For questions about how information is handled, please contact us directly.",
+      "notice": "For questions about information privacy on the OpenDoor Group website, please contact us.",
       "contactLink": "Contact us"
     },
     "terms": {
       "title": "Terms of use",
-      "notice": "The full terms of use are being finalised and will appear here. For questions, please contact us directly.",
+      "notice": "For questions about using the OpenDoor Group website, please contact us.",
       "contactLink": "Contact us"
     },
     "residentPortal": {
       "title": "Resident portal"
     }
-  },
-  "common": {
-    "comingSoon": "Content for this page is being prepared.",
-    "placeholderNotice": "Page shell. Content is built in later tasks and will be editable through the CMS."
   },
   "links": {
     "allProjects": "All projects",
@@ -101,7 +98,8 @@
     "allQuestions": "All questions",
     "contact": "Contact us",
     "whyOrganizer": "Why work with an organising company?",
-    "howWeWork": "How we work"
+    "howWeWork": "How we work",
+    "enquiryIntro": "Contact us for an initial conversation about your building."
   },
   "stages": {
     "INITIAL_REVIEW": "Initial review",
@@ -165,7 +163,7 @@
   "eligibility": {
     "title": "Urban renewal suitability check",
     "heading": "Let us look at the options for your building.",
-    "standfirst": "Three details are all we need to start. The rest can wait for a conversation.",
+    "standfirst": "Contact us for an initial enquiry about your building.",
     "addressLabel": "Building or complex address",
     "addressHint": "Street and city is enough. No block or parcel number needed.",
     "nameLabel": "Full name",
@@ -179,12 +177,12 @@
     "successTitle": "Thank you, we have your details.",
     "successBody": "We will carry out an initial review and contact you about the next steps.",
     "successLinkIntro": "In the meantime, you can read how the process works, from the first review to completion.",
-    "asideTitle": "What happens next",
-    "aside1": "We carry out an initial review of the complex.",
-    "aside2": "We contact you about the next steps.",
-    "aside3": "The check commits you to nothing.",
+    "asideTitle": "Before contacting us",
+    "aside1": "Include the building address and the subject of your enquiry.",
+    "aside2": "Call or email us, whichever is convenient.",
+    "aside3": "An enquiry does not confirm feasibility or commit anyone to a project.",
     "privacyTitle": "Your details",
-    "privacyBody": "Your details come to us only. We do not pass them to developers.",
+    "privacyBody": "Contact details and a building address are sufficient for an initial enquiry. No identity documents are needed.",
     "org": {
       "NOT_STARTED": "We have not started organising",
       "EARLY_CONVERSATION": "Neighbours have started talking",
@@ -195,7 +193,7 @@
   "contactPage": {
     "title": "Contact us",
     "heading": "Contact us",
-    "standfirst": "For a general question, a professional enquiry, or anything other than a suitability check for a specific building.",
+    "standfirst": "For questions and information, contact us by phone or email.",
     "nameLabel": "Full name",
     "phoneLabel": "Phone",
     "emailLabel": "Email",
@@ -203,9 +201,9 @@
     "submit": "Send enquiry",
     "successTitle": "Thank you, we have your message.",
     "successBody": "We will be in touch.",
-    "asideEyebrow": "Most people are looking for this",
+    "asideEyebrow": "Enquiries about your building",
     "asideTitle": "Want to check the options for your building?",
-    "asideBody": "The suitability check has its own shorter form, which goes straight to the team that reviews complexes."
+    "asideBody": "Contact us with the building address and the current state of owner organisation."
   },
   "journeyPage": {
     "asksLabel": "What is asked of you:"

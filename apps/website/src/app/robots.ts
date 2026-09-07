@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { SITE_URL } from '@/lib/site-config'
 
 /**
  * robots.txt.
@@ -10,7 +11,7 @@ import type { MetadataRoute } from 'next'
  * reading those pages at all, hiding the links on them too.
  */
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env['NEXT_PUBLIC_SITE_URL']
+  const base = SITE_URL
 
   return {
     rules: { userAgent: '*', allow: '/' },

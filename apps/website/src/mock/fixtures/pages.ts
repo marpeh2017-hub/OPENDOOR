@@ -46,9 +46,12 @@ const homepageBlocks: PageBlock[] = [
       he: 'מהבדיקה הראשונית, דרך ניהול התהליך ובחירת היזם המתאים, ועד למימוש הפרויקט, בליווי מקצועי ובשקיפות מלאה.',
       en: 'From the initial review, through managing the process and selecting the right developer, to realising the project, with professional guidance and full transparency.',
     },
-    primaryCtaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: "Check your building's suitability" },
+    primaryCtaLabel: {
+      he: 'בדיקת התאמה להתחדשות עירונית',
+      en: "Check your building's suitability",
+    },
     primaryCtaHref: '/eligibility',
-    secondaryCtaLabel: { he: 'כניסה לתיק הדייר', en: 'Resident portal' },
+    secondaryCtaLabel: { he: 'מידע על תיק הדייר', en: 'Resident portal' },
     secondaryCtaHref: '/resident-portal',
     note: {
       he: 'השירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
@@ -92,7 +95,10 @@ const homepageBlocks: PageBlock[] = [
       {
         id: 'wo-selection',
         icon: 'scale',
-        title: { he: 'בחירת אנשי המקצוע והיזם', en: 'Choosing the professionals and the developer' },
+        title: {
+          he: 'בחירת אנשי המקצוע והיזם',
+          en: 'Choosing the professionals and the developer',
+        },
         body: {
           he: 'עורכי דין, שמאים, אדריכלים ויזמים נבחרים על ידי בעלי הדירות. תפקידנו להביא חלופות, להשוות ביניהן ולוודא שההחלטה מתקבלת על בסיס מידע.',
           en: 'Lawyers, appraisers, architects and developers are chosen by the owners. Our role is to bring alternatives, compare them, and make sure the decision rests on information.',
@@ -198,7 +204,7 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'כך אנחנו עובדים', en: 'How we work' },
     intro: {
-      he: 'התהליך המלא מורכב מאחד עשר שלבים. כך הוא נראה מלמעלה.',
+      he: 'התהליך מורכב ממספר שלבים. כך הוא נראה במבט כללי.',
       en: 'The full process has eleven stages. This is how it looks from above.',
     },
     items: [
@@ -244,7 +250,6 @@ const homepageBlocks: PageBlock[] = [
       },
     ],
   },
-
 
   /* 4.5 ── CITY BAND — the light rail ─────────────────────────────────── */
   {
@@ -327,8 +332,8 @@ const homepageBlocks: PageBlock[] = [
       en: 'Transparency that continues past the website',
     },
     intro: {
-      he: 'לכל בעל דירה יש סביבה אישית לפרויקט שלו. לחברי הנציגות יש בנוסף סביבת עבודה לניהול ההחלטות והמשימות.',
-      en: 'Every owner has a personal area for their project. Representation members also get a working environment for decisions and tasks.',
+      he: 'הסביבה המתוכננת מיועדת לרכז מידע לבעלי הדירות, ולסייע לחברי הנציגות בניהול ההחלטות והמשימות.',
+      en: 'The planned environment will bring information together for owners and help representation members manage decisions and tasks.',
     },
     buildNotice: {
       he: 'הסביבה הדיגיטלית נמצאת בבנייה. חלק מהיכולות המתוארות כאן טרם זמינות.',
@@ -355,7 +360,11 @@ const homepageBlocks: PageBlock[] = [
       stages: [
         { id: 'd-1', state: 'completed', title: { he: 'התארגנות', en: 'Organising' } },
         { id: 'd-2', state: 'completed', title: { he: 'נציגות', en: 'Representation' } },
-        { id: 'd-3', state: 'current', title: { he: 'בחינת חלופות', en: 'Reviewing alternatives' } },
+        {
+          id: 'd-3',
+          state: 'current',
+          title: { he: 'בחינת חלופות', en: 'Reviewing alternatives' },
+        },
         { id: 'd-4', state: 'upcoming', title: { he: 'בחירת יזם', en: 'Selecting a developer' } },
         { id: 'd-5', state: 'upcoming', title: { he: 'תכנון', en: 'Planning' } },
       ],
@@ -363,7 +372,10 @@ const homepageBlocks: PageBlock[] = [
         {
           id: 'd-latest',
           label: { he: 'העדכון האחרון', en: 'Latest update' },
-          value: { he: 'נוסף סיכום פגישת נציגות', en: 'A representation meeting summary was added' },
+          value: {
+            he: 'נוסף סיכום פגישת נציגות',
+            en: 'A representation meeting summary was added',
+          },
         },
         {
           id: 'd-next',
@@ -451,32 +463,50 @@ const homepageBlocks: PageBlock[] = [
       {
         id: 'tc-decisions',
         title: { he: 'איך מתקבלות החלטות', en: 'How decisions are made' },
-        body: { he: 'מי מחליט, על מה, ומתי הנושא מובא לכלל בעלי הדירות.', en: 'Who decides what, and when a matter goes to all owners.' },
+        body: {
+          he: 'מי מחליט, על מה, ומתי הנושא מובא לכלל בעלי הדירות.',
+          en: 'Who decides what, and when a matter goes to all owners.',
+        },
       },
       {
         id: 'tc-updates',
         title: { he: 'איך מתעדכנים', en: 'How you stay updated' },
-        body: { he: 'באילו ערוצים מגיע מידע, ובאיזו תדירות.', en: 'Which channels carry information, and how often.' },
+        body: {
+          he: 'באילו ערוצים מגיע מידע, ובאיזו תדירות.',
+          en: 'Which channels carry information, and how often.',
+        },
       },
       {
         id: 'tc-representation',
         title: { he: 'תפקיד הנציגות', en: 'The role of the representation' },
-        body: { he: 'מה הנציגות מוסמכת לעשות, ומה נשאר בידי בעלי הדירות.', en: 'What the representation may do, and what stays with the owners.' },
+        body: {
+          he: 'מה הנציגות מוסמכת לעשות, ומה נשאר בידי בעלי הדירות.',
+          en: 'What the representation may do, and what stays with the owners.',
+        },
       },
       {
         id: 'tc-professionals',
         title: { he: 'בחירת אנשי מקצוע', en: 'Selecting professionals' },
-        body: { he: 'איך נבחרים עורכי דין, שמאים ואדריכלים, ומי מייצג את מי.', en: 'How lawyers, appraisers and architects are chosen, and who represents whom.' },
+        body: {
+          he: 'איך נבחרים עורכי דין, שמאים ואדריכלים, ומי מייצג את מי.',
+          en: 'How lawyers, appraisers and architects are chosen, and who represents whom.',
+        },
       },
       {
         id: 'tc-privacy',
         title: { he: 'פרטיות ואבטחת מידע', en: 'Privacy and information security' },
-        body: { he: 'איזה מידע נשמר, מי רשאי לראות אותו, ואיך הוא מוגן.', en: 'What is stored, who may see it, and how it is protected.' },
+        body: {
+          he: 'איזה מידע נשמר, מי רשאי לראות אותו, ואיך הוא מוגן.',
+          en: 'What is stored, who may see it, and how it is protected.',
+        },
       },
       {
         id: 'tc-sources',
         title: { he: 'מקורות מידע מקצועיים', en: 'Professional information sources' },
-        body: { he: 'הפניות למקורות רשמיים, כדי שתוכלו לבדוק בעצמכם.', en: 'Pointers to official sources, so you can check for yourself.' },
+        body: {
+          he: 'הפניות למקורות רשמיים, כדי שתוכלו לבדוק בעצמכם.',
+          en: 'Pointers to official sources, so you can check for yourself.',
+        },
       },
     ],
   },
@@ -516,7 +546,7 @@ const homepageBlocks: PageBlock[] = [
       en: 'Want to understand the options for your building?',
     },
     body: {
-      he: 'בדיקת ההתאמה אורכת כמה דקות, ואינה מחייבת בשום שלב.',
+      he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
       en: 'The suitability check takes a few minutes and commits you to nothing.',
     },
     ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: "Check your building's suitability" },

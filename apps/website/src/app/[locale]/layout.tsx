@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_URL } from '@/lib/site-config'
 import { notFound } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
@@ -43,6 +44,9 @@ const heebo = Heebo({
  * carries the id the skip link targets. A screen-reader user can jump between
  * regions, and a keyboard user can bypass the navigation on every page.
  */
+// Read the current publication on every request, including withdrawals.
+export const dynamic = 'force-dynamic'
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
 }
@@ -70,9 +74,7 @@ export async function generateMetadata({
     title: { default: t('name'), template: `%s | ${t('name')}` },
     description: t('tagline'),
     // No hardcoded production URL — set via env when the domain is live.
-    metadataBase: process.env['NEXT_PUBLIC_SITE_URL']
-      ? new URL(process.env['NEXT_PUBLIC_SITE_URL'])
-      : undefined,
+    metadataBase: new URL(SITE_URL),
     openGraph: {
       type: 'website',
       siteName: t('name'),
@@ -100,7 +102,7 @@ export default async function LocaleLayout({
 
   // Enables static rendering for this locale segment.
   setRequestLocale(locale)
-  const messages = await getMessages()
+  const { projectPreview: _previewMessages, ...messages } = await getMessages()
   const dir = LOCALE_DIRECTION[locale as AppLocale]
 
   return (

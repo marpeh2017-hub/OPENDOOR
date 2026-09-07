@@ -30,22 +30,19 @@ export async function generateMetadata({
   const page = await getPageBySlug(SLUG)
   const seo = page?.seo[locale as Locale]
   if (!seo) return {}
-  return { title: seo.title, description: seo.description }
+  return {
+    title: seo.title,
+    description: seo.description,
+    ...(seo.noIndex ? { robots: { index: false, follow: true } } : {}),
+  }
 }
 
-export default async function TrustPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function TrustPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
 
   const t = makeLocalizer(locale as Locale)
-  const [page, resources] = await Promise.all([
-    getPageBySlug(SLUG),
-    getExternalResources(),
-  ])
+  const [page, resources] = await Promise.all([getPageBySlug(SLUG), getExternalResources()])
 
   if (!page) notFound()
 

@@ -23,13 +23,19 @@
  * sides are typed by the contracts.
  */
 export {
-  getProjects, getProjectBySlug, getFeaturedProjects, getProjectCities,
-  getProjectTypes, getProjectForPreview, getAllProjectsForPreview,
+  getProjects,
+  getProjectBySlug,
+  getFeaturedProjects,
+  getProjectCities,
+  getProjectTypes,
+  getProjectForPreview,
+  getAllProjectsForPreview,
 } from './repositories/projects.repository'
 
 export {
-  getKnowledgeCategories, getKnowledgeArticles, getArticleBySlug,
-  getRelatedArticles, getFaqItems, getExternalResources,
+  getKnowledgeArticles,
+  getFaqItems,
+  getExternalResources,
 } from './repositories/knowledge.repository'
 
 export { search } from './repositories/search.repository'

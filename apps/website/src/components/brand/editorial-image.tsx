@@ -1,12 +1,8 @@
-import Image from 'next/image'
+import { SafeImage as Image } from './safe-image'
 import type { ImageSlotSpec } from '@/mock/fixtures/images'
 import { ProjectPattern } from './architecture'
 import type { Localizer } from '@/lib/localize'
-import {
-  JerusalemHillside,
-  ChordsBridgeGeometry,
-  LightRailStreet,
-} from './jerusalem'
+import { JerusalemHillside, ChordsBridgeGeometry, LightRailStreet } from './jerusalem'
 
 /**
  * ══════════════════════════════════════════════════════════════════════════
@@ -85,6 +81,7 @@ export function EditorialImage({
       <div className={`relative overflow-hidden bg-surface-sunken ${className}`}>
         {asset ? (
           <Image
+            fallback={Fallback ? <Fallback /> : <ProjectPattern slug={patternSlug} />}
             src={asset.url}
             alt={t.text(asset.alt)}
             fill

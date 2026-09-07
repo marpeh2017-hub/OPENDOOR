@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
-import { ContactForm } from '@/components/forms/contact-form'
+import { DirectContact } from '@/components/forms/direct-contact'
 
 /**
  * General contact.
@@ -31,17 +31,10 @@ export async function generateMetadata({
   return { title: t('title'), description: t('standfirst') }
 }
 
-export default async function ContactPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
-  const [t, tCta] = await Promise.all([
-    getTranslations('contactPage'),
-    getTranslations('cta'),
-  ])
+  const [t, tCta] = await Promise.all([getTranslations('contactPage'), getTranslations('cta')])
 
   return (
     <>
@@ -49,7 +42,7 @@ export default async function ContactPage({
 
       <Section size="md">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,640px)_1fr] lg:gap-16">
-          <ContactForm />
+          <DirectContact />
 
           <aside className="lg:pt-1">
             <div className="border-s-2 border-teal-200 ps-5">

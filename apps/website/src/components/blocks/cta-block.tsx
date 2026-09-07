@@ -106,13 +106,13 @@ export async function CtaBlockView({ block, t }: { block: CtaBlock; t: Localizer
             />
           </span>
 
-          <h2 className="mx-auto max-w-[17ch] text-3xl font-bold leading-[1.1] tracking-[-0.02em] text-gray-900 text-balance sm:text-display-sm lg:text-display-md">
+          <h2 className="mx-auto max-w-[17ch] text-balance text-3xl font-bold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-display-sm lg:text-display-md">
             {t(block.heading)}
           </h2>
 
           {block.body && (
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-gray-700">
-              {t(block.body)}
+              {block.ctaHref === '/eligibility' ? tLinks('enquiryIntro') : t(block.body)}
             </p>
           )}
 

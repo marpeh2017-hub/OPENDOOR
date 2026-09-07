@@ -21,16 +21,23 @@ export interface NavItem {
  * the mobile menu, in the footer, and as in-page links from the FAQ and CTA
  * sections. This reduces top-level density; it does not reduce reachability.
  */
-export const PRIMARY_NAV_KEYS = ['about', 'whyOrganizer', 'howWeWork', 'projects', 'knowledge'] as const
+export const PRIMARY_NAV_KEYS = [
+  'about',
+  'whyOrganizer',
+  'howWeWork',
+  'projects',
+  'knowledge',
+] as const
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { key: 'about',        href: '/about' },
+  { key: 'about', href: '/about' },
   { key: 'whyOrganizer', href: '/why-organizer' },
-  { key: 'howWeWork',    href: '/how-we-work' },
-  { key: 'projects',     href: '/projects' },
-  { key: 'knowledge',    href: '/knowledge' },
-  { key: 'faq',          href: '/faq' },
-  { key: 'contact',      href: '/contact' },
+  { key: 'howWeWork', href: '/how-we-work' },
+  { key: 'projects', href: '/projects' },
+  { key: 'knowledge', href: '/knowledge' },
+  { key: 'faq', href: '/faq' },
+  { key: 'contact', href: '/contact' },
+  { key: 'search', href: '/search' },
 ] as const
 
 /**
@@ -55,6 +62,7 @@ export const FOOTER_GROUPS: readonly { titleKey: string; items: readonly NavItem
       { key: 'about', href: '/about' },
       { key: 'whyOrganizer', href: '/why-organizer' },
       { key: 'trust', href: '/trust' },
+      { key: 'contact', href: '/contact' },
     ],
   },
   {
@@ -69,6 +77,7 @@ export const FOOTER_GROUPS: readonly { titleKey: string; items: readonly NavItem
     items: [
       { key: 'knowledge', href: '/knowledge' },
       { key: 'faq', href: '/faq' },
+      { key: 'search', href: '/search' },
     ],
   },
 ] as const

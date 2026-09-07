@@ -1,3 +1,4 @@
+import { SafeImage } from '@/components/brand/safe-image'
 import type { PublicProject } from '@urban-renewal/api-contracts'
 import { getTranslations } from 'next-intl/server'
 import { ProjectPattern } from '@/components/brand/architecture'
@@ -48,7 +49,8 @@ export async function ProjectHero({
     return (
       <div className="relative aspect-[21/9] overflow-hidden bg-surface-sunken sm:aspect-[21/8]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <SafeImage
+          fallback={<ProjectPattern slug={project.slug} />}
           src={photo.url}
           alt={loc.text(photo.alt)}
           className="h-full w-full object-cover"

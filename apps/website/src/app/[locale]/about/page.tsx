@@ -30,14 +30,14 @@ export async function generateMetadata({
   const page = await getPageBySlug(SLUG)
   const seo = page?.seo[locale as Locale]
   if (!seo) return {}
-  return { title: seo.title, description: seo.description }
+  return {
+    title: seo.title,
+    description: seo.description,
+    ...(seo.noIndex ? { robots: { index: false, follow: true } } : {}),
+  }
 }
 
-export default async function AboutPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
 

@@ -1,3 +1,4 @@
+import { SafeImage } from '@/components/brand/safe-image'
 import type { MediaAsset } from '@urban-renewal/api-contracts'
 import { getTranslations } from 'next-intl/server'
 import type { Localizer } from '@/lib/localize'
@@ -49,7 +50,7 @@ export async function GalleryGrid({
             <figure className="m-0">
               <div className="relative aspect-[4/3] overflow-hidden bg-surface-sunken">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <SafeImage
                   src={asset.url}
                   alt={loc.text(asset.alt)}
                   className="h-full w-full object-cover"

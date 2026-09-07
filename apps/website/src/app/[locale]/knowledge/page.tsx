@@ -24,20 +24,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'pages.knowledge' })
-  return { title: t('title') }
+  return {
+    title: t('title'),
+    description: t('empty'),
+    robots: { index: (await getCmsArticles()).length > 0, follow: true },
+  }
 }
 
-export default async function KnowledgePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function KnowledgePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
-  const [t, articles] = await Promise.all([
-    getTranslations('pages.knowledge'),
-    getCmsArticles(),
-  ])
+  const [t, articles] = await Promise.all([getTranslations('pages.knowledge'), getCmsArticles()])
   const loc = makeLocalizer(locale as Locale)
 
   return (
@@ -47,6 +44,9 @@ export default async function KnowledgePage({
         {articles.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 bg-surface-sunken px-6 py-14 text-center">
             <p className="text-base text-gray-700">{t('empty')}</p>
+            <Link href="/contact" className="mt-4 inline-block py-2 text-teal-900 underline">
+              {locale === 'he' ? 'יצירת קשר' : 'Contact us'}
+            </Link>
           </div>
         ) : (
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -65,7 +65,9 @@ export default async function KnowledgePage({
                     {loc.text(a.title)}
                   </h2>
                   {a.summary && (
-                    <p className="mt-2 text-sm leading-relaxed text-gray-600">{loc.text(a.summary)}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                      {loc.text(a.summary)}
+                    </p>
                   )}
                 </Link>
               </li>

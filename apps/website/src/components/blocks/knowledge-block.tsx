@@ -38,6 +38,7 @@ export async function KnowledgeBlockView({
 }) {
   const tLinks = await getTranslations('links')
   const [lead, ...rest] = articles
+  const tPage = await getTranslations('pages.knowledge')
 
   return (
     <Section tone="sunken" size="lg">
@@ -60,6 +61,7 @@ export async function KnowledgeBlockView({
       </div>
 
       <div className="mt-12 grid gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
+        {!lead && <p className="text-gray-700">{tPage('empty')}</p>}
         {/* ── the lead ──────────────────────────────────────────────────── */}
         {lead && (
           <Link

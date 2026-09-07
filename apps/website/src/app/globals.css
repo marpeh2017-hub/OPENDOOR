@@ -91,11 +91,21 @@ body a:hover {
 .odg-hero-enter > * {
   animation: odg-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
-.odg-hero-enter > *:nth-child(1) { animation-delay: 60ms; }
-.odg-hero-enter > *:nth-child(2) { animation-delay: 130ms; }
-.odg-hero-enter > *:nth-child(3) { animation-delay: 200ms; }
-.odg-hero-enter > *:nth-child(4) { animation-delay: 270ms; }
-.odg-hero-enter > *:nth-child(5) { animation-delay: 340ms; }
+.odg-hero-enter > *:nth-child(1) {
+  animation-delay: 60ms;
+}
+.odg-hero-enter > *:nth-child(2) {
+  animation-delay: 130ms;
+}
+.odg-hero-enter > *:nth-child(3) {
+  animation-delay: 200ms;
+}
+.odg-hero-enter > *:nth-child(4) {
+  animation-delay: 270ms;
+}
+.odg-hero-enter > *:nth-child(5) {
+  animation-delay: 340ms;
+}
 
 @keyframes odg-rise {
   from {
@@ -114,6 +124,15 @@ body a:hover {
 }
 .odg-portal {
   animation: odg-fade 700ms ease-out 620ms backwards;
+}
+
+/* Shared visible keyboard focus, including plain text links. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 4px;
 }
 
 @keyframes odg-fade {

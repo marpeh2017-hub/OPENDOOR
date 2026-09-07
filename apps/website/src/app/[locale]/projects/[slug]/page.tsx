@@ -62,5 +62,12 @@ export default async function ProjectDetailPage({
   const project = await getProjectBySlug(slug)
   if (!project) notFound()
 
-  return <ProjectBody project={project} locale={locale} t={makeLocalizer(locale as Locale)} />
+  return (
+    <ProjectBody
+      verifiedProjection
+      project={project}
+      locale={locale}
+      t={makeLocalizer(locale as Locale)}
+    />
+  )
 }

@@ -1,6 +1,11 @@
 import type {
-  ProjectType, PublicProject, PublicProjectQuery, PublicProjectSummary, Paginated,
+  ProjectType,
+  PublicProject,
+  PublicProjectQuery,
+  PublicProjectSummary,
+  Paginated,
 } from '@urban-renewal/api-contracts'
+import { getPublishedProjects } from '@/lib/cms-projects'
 import { MOCK_PROJECTS, type MockProject } from '../fixtures/projects'
 import { assertNoInventedClaims, stripProvenance } from '../provenance'
 
@@ -69,10 +74,13 @@ function toPublic(project: MockProject): PublicProject {
  *  the contract puts one: the verifier's name and the audit source reference.
  *  `verifiedAt` survives, because the date is the half a reader can use. */
 function redactVerifiers(project: PublicProject): PublicProject {
-  const drop = <T,>(fact: T | undefined): T | undefined => {
+  const drop = <T>(fact: T | undefined): T | undefined => {
     if (!fact) return undefined
-    const { verifiedByName: _name, source: _source, ...rest } =
-      fact as Record<string, unknown> & { verifiedByName?: string; source?: string }
+    const {
+      verifiedByName: _name,
+      source: _source,
+      ...rest
+    } = fact as Record<string, unknown> & { verifiedByName?: string; source?: string }
     return rest as T
   }
 
@@ -129,9 +137,7 @@ export async function getProjects(
 ): Promise<Paginated<PublicProjectSummary>> {
   const { city, type, stage, featured, search, limit = 12, offset = 0 } = query
 
-  const matched = MOCK_PROJECTS
-    .filter(isPubliclyVisible)
-    .map(toPublic)
+  const matched = (await getPublishedProjects())
     .filter((p) => (city ? p.location.city.he === city : true))
     .filter((p) => (type ? p.type === type : true))
     .filter((p) => (stage ? p.currentStage?.value === stage : true))
@@ -139,13 +145,16 @@ export async function getProjects(
     .filter((p) =>
       search
         ? [p.name.he, p.name.en, p.summary.he, p.summary.en, p.location.city.he]
-            .filter(Boolean).join(' ').toLowerCase().includes(search.toLowerCase())
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .includes(search.toLowerCase())
         : true,
     )
     // Featured first, then most recently updated. Deterministic, so the grid
     // does not reshuffle between renders.
-    .sort((a, b) =>
-      Number(b.featured) - Number(a.featured) || b.updatedAt.localeCompare(a.updatedAt),
+    .sort(
+      (a, b) => Number(b.featured) - Number(a.featured) || b.updatedAt.localeCompare(a.updatedAt),
     )
 
   return {
@@ -164,8 +173,7 @@ export async function getProjects(
  * failure once this is backed by a network call.
  */
 export async function getProjectBySlug(slug: string): Promise<PublicProject | null> {
-  const found = MOCK_PROJECTS.filter(isPubliclyVisible).find((p) => p.slug === slug)
-  return found ? toPublic(found) : null
+  return (await getPublishedProjects()).find((p) => p.slug === slug) ?? null
 }
 
 export async function getFeaturedProjects(limit = 3): Promise<PublicProjectSummary[]> {
@@ -181,7 +189,7 @@ export async function getFeaturedProjects(limit = 3): Promise<PublicProjectSumma
  * source is the only spelling guaranteed to exist.
  */
 export async function getProjectCities(): Promise<string[]> {
-  const cities = MOCK_PROJECTS.filter(isPubliclyVisible).map((p) => p.location.city.he)
+  const cities = (await getPublishedProjects()).map((p) => p.location.city.he)
   return [...new Set(cities)].sort((a, b) => a.localeCompare(b, 'he'))
 }
 
@@ -193,8 +201,7 @@ export async function getProjectCities(): Promise<string[]> {
  * gets an empty page from a control the site itself drew.
  */
 export async function getProjectTypes(): Promise<ProjectType[]> {
-  const types = MOCK_PROJECTS
-    .filter(isPubliclyVisible)
+  const types = (await getPublishedProjects())
     .map((p) => p.type)
     // A project whose track is unconfirmed contributes no filter option. It
     // would otherwise offer a control that hides the very projects that have
@@ -243,8 +250,7 @@ export async function getProjectForPreview(slug: string): Promise<PublicProject 
  * not a card, and a nameless card tests nothing.
  */
 export async function getAllProjectsForPreview(): Promise<PublicProjectSummary[]> {
-  return MOCK_PROJECTS
-    .filter((p) => p.name.he.length > 0)
+  return MOCK_PROJECTS.filter((p) => p.name.he.length > 0)
     .map(toPublic)
     .map(toSummary)
 }

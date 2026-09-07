@@ -83,11 +83,7 @@ export async function generateMetadata({
  */
 const CONNECT_AFTER = new Set(['home-hero', 'home-process', 'home-transparency'])
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
 
@@ -100,8 +96,8 @@ export default async function HomePage({
   const [page, projects, articles, faqItems] = await Promise.all([
     getHomePage(),
     getFeaturedProjects(3),
-    getKnowledgeArticles({ limit: 3 }),
-    getFaqItems(),
+    getKnowledgeArticles({ limit: 3, locale: locale as Locale }),
+    getFaqItems(undefined, locale as Locale),
   ])
 
   if (!page) notFound()
