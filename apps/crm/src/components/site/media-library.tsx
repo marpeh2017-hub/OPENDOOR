@@ -64,7 +64,8 @@ export async function getOrCreateMediaLibrary(): Promise<{ id: string; doc: Medi
     return { id: existing.id, doc: full.draft as unknown as MediaLibraryDoc }
   }
   const created = await cmsApi.create({
-    kind: 'SETTINGS', slug: MEDIA_LIBRARY_SLUG,
+    kind: 'SETTINGS',
+    slug: MEDIA_LIBRARY_SLUG,
     draft: { title: { he: 'ספריית מדיה' }, items: [] } satisfies MediaLibraryDoc,
   })
   return { id: created.id, doc: created.draft as unknown as MediaLibraryDoc }
@@ -77,14 +78,23 @@ export function MediaLibrary() {
   useEffect(() => {
     let cancelled = false
     getOrCreateMediaLibrary()
-      .then(({ id }) => { if (!cancelled) setContentId(id) })
-      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'טעינת הספרייה נכשלה') })
-    return () => { cancelled = true }
+      .then(({ id }) => {
+        if (!cancelled) setContentId(id)
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'טעינת הספרייה נכשלה')
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   if (error) {
     return (
-      <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-[13px] text-red-800">
+      <div
+        role="alert"
+        className="rounded-lg border border-red-300 bg-red-50 p-4 text-[13px] text-red-800"
+      >
         {error}
       </div>
     )
@@ -92,14 +102,20 @@ export function MediaLibrary() {
   if (!contentId) return <div className="p-8 text-sm text-gray-600">טוען…</div>
 
   return (
-    <ContentEditorShell<MediaLibraryDoc> contentId={contentId} title="ספריית מדיה" typeLabel="ספרייה">
+    <ContentEditorShell<MediaLibraryDoc>
+      contentId={contentId}
+      title="ספריית מדיה"
+      typeLabel="ספרייה"
+    >
       {({ draft, setDraft }) => <LibraryGrid contentId={contentId} doc={draft} setDoc={setDraft} />}
     </ContentEditorShell>
   )
 }
 
 function LibraryGrid({
-  contentId, doc, setDoc,
+  contentId,
+  doc,
+  setDoc,
 }: {
   contentId: string
   doc: MediaLibraryDoc
@@ -114,11 +130,16 @@ function LibraryGrid({
     let cancelled = false
     for (const item of doc.items) {
       if (previews[item.id]) continue
-      cmsApi.mediaUrl(contentId, item.id).then((r) => {
-        if (!cancelled) setPreviews((p) => ({ ...p, [item.id]: r.url }))
-      }).catch(() => {})
+      cmsApi
+        .mediaUrl(contentId, item.id)
+        .then((r) => {
+          if (!cancelled) setPreviews((p) => ({ ...p, [item.id]: r.url }))
+        })
+        .catch(() => {})
     }
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.items, contentId])
 
@@ -136,10 +157,18 @@ function LibraryGrid({
       const result = await cmsApi.uploadMedia(contentId, file)
       const id = `media-${Date.now().toString(36)}`
       setPreviews((p) => ({ ...p, [id]: URL.createObjectURL(file) }))
-      write([...doc.items, {
-        id, storageKey: result.storageKey, filename: result.filename, mimeType: result.mimeType,
-        title: file.name, altHe: '', classification: 'EDITORIAL_CONTEXT',
-      }])
+      write([
+        ...doc.items,
+        {
+          id,
+          storageKey: result.storageKey,
+          filename: result.filename,
+          mimeType: result.mimeType,
+          title: file.name,
+          altHe: '',
+          classification: 'EDITORIAL_CONTEXT',
+        },
+      ])
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'העלאה נכשלה')
     } finally {
@@ -150,25 +179,44 @@ function LibraryGrid({
   return (
     <div className="space-y-4">
       <p className="max-w-prose text-[13.5px] leading-relaxed text-gray-600">
-        כל התמונות הזמינות לשימוש באתר. תמונה נעשית זמינה לציבור רק לאחר פרסום
-        הספרייה, ורק דרך מקום שמפנה אליה בפועל — כתבת ידע או תמונת פתיחה מוגדרת.
+        כל התמונות הזמינות לשימוש באתר. תמונה נעשית זמינה לציבור רק לאחר פרסום הספרייה, ורק דרך מקום
+        שמפנה אליה בפועל — כתבת ידע או תמונת פתיחה מוגדרת.
       </p>
 
       {uploadError && (
-        <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3">
-          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-red-700" aria-hidden="true" />
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3"
+        >
+          <AlertTriangle
+            size={16}
+            className="mt-0.5 flex-shrink-0 text-red-700"
+            aria-hidden="true"
+          />
           <p className="text-[13px] text-red-800">{uploadError}</p>
         </div>
       )}
 
-      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={onFileChosen} tabIndex={-1} aria-hidden="true" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={onFileChosen}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
         className="inline-flex items-center gap-2 rounded-lg border border-border px-3.5 py-2 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-50 disabled:opacity-50"
       >
-        {uploading ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : <Upload size={15} aria-hidden="true" />}
+        {uploading ? (
+          <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <Upload size={15} aria-hidden="true" />
+        )}
         העלאת תמונה
       </button>
 
@@ -183,7 +231,11 @@ function LibraryGrid({
             <div key={item.id} className="rounded-xl border border-border bg-white p-3.5">
               {previews[item.id] ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={previews[item.id]} alt={item.altHe || item.title} className="h-32 w-full rounded-lg border border-border object-cover" />
+                <img
+                  src={previews[item.id]}
+                  alt={item.altHe || item.title}
+                  className="h-32 w-full rounded-lg border border-border object-cover"
+                />
               ) : (
                 <div className="flex h-32 w-full items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-[11.5px] text-gray-500">
                   טוען תצוגה מקדימה…
@@ -191,7 +243,10 @@ function LibraryGrid({
               )}
 
               <input
-                type="text" value={item.title} placeholder="שם התמונה"
+                type="text"
+                value={item.title}
+                aria-label="שם התמונה"
+                placeholder="שם התמונה"
                 onChange={(e) => patch(item.id, { title: e.target.value })}
                 className="mt-2.5 w-full rounded-lg border border-border px-2.5 py-1.5 text-[13px] font-semibold text-gray-900 focus:border-teal-600"
               />
@@ -202,30 +257,44 @@ function LibraryGrid({
                 className="mt-2 w-full rounded-lg border border-border px-2.5 py-1.5 text-[12.5px] text-gray-900 focus:border-teal-600"
               >
                 {(Object.keys(CLAIM_LABEL) as ImageClaim[]).map((k) => (
-                  <option key={k} value={k}>{CLAIM_LABEL[k].label}</option>
+                  <option key={k} value={k}>
+                    {CLAIM_LABEL[k].label}
+                  </option>
                 ))}
               </select>
-              <p className="mt-1 text-[11px] leading-relaxed text-gray-500">{CLAIM_LABEL[item.classification].detail}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+                {CLAIM_LABEL[item.classification].detail}
+              </p>
 
               <input
-                type="text" value={item.altHe} placeholder="טקסט חלופי (חובה)"
+                type="text"
+                value={item.altHe}
+                aria-label="טקסט חלופי (חובה)"
+                placeholder="טקסט חלופי (חובה)"
                 onChange={(e) => patch(item.id, { altHe: e.target.value })}
                 className="mt-2 w-full rounded-lg border border-border px-2.5 py-1.5 text-[12.5px] text-gray-900 focus:border-teal-600"
               />
               <input
-                type="text" value={item.caption ?? ''} placeholder="כיתוב (לא חובה)"
+                type="text"
+                value={item.caption ?? ''}
+                aria-label="כיתוב (לא חובה)"
+                placeholder="כיתוב (לא חובה)"
                 onChange={(e) => patch(item.id, { caption: e.target.value || undefined })}
                 className="mt-1.5 w-full rounded-lg border border-border px-2.5 py-1.5 text-[12.5px] text-gray-900 focus:border-teal-600"
               />
               <input
-                type="text" value={item.credit ?? ''} placeholder="קרדיט / מקור (לא חובה)"
+                type="text"
+                value={item.credit ?? ''}
+                aria-label="קרדיט / מקור (לא חובה)"
+                placeholder="קרדיט / מקור (לא חובה)"
                 onChange={(e) => patch(item.id, { credit: e.target.value || undefined })}
                 className="mt-1.5 w-full rounded-lg border border-border px-2.5 py-1.5 text-[12.5px] text-gray-900 focus:border-teal-600"
               />
 
               {(item.usageRefs ?? []).length > 0 && (
                 <p className="mt-2 text-[11px] text-gray-600">
-                  <span className="font-semibold">בשימוש: </span>{item.usageRefs!.join(', ')}
+                  <span className="font-semibold">בשימוש: </span>
+                  {item.usageRefs!.join(', ')}
                 </p>
               )}
 
@@ -233,7 +302,11 @@ function LibraryGrid({
                 type="button"
                 onClick={() => write(doc.items.filter((x) => x.id !== item.id))}
                 disabled={(item.usageRefs ?? []).length > 0}
-                title={(item.usageRefs ?? []).length > 0 ? 'לא ניתן להסיר תמונה שנמצאת בשימוש' : undefined}
+                title={
+                  (item.usageRefs ?? []).length > 0
+                    ? 'לא ניתן להסיר תמונה שנמצאת בשימוש'
+                    : undefined
+                }
                 className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Trash2 size={12} aria-hidden="true" />

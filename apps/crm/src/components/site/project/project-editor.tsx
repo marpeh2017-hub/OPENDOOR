@@ -2,11 +2,28 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  AlertTriangle, Check, ExternalLink, FileText, Globe, History, Image as ImageIcon,
-  Loader2, Lock, RotateCcw, Save, Search, ShieldCheck, EyeOff, Milestone, Calculator,
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  FileText,
+  Globe,
+  History,
+  Image as ImageIcon,
+  Loader2,
+  Lock,
+  RotateCcw,
+  Save,
+  Search,
+  ShieldCheck,
+  EyeOff,
+  Milestone,
+  Calculator,
 } from 'lucide-react'
 import {
-  cmsApi, type CmsContentDetail, type CmsRevisionSummary, type PublicationCheck,
+  cmsApi,
+  type CmsContentDetail,
+  type CmsRevisionSummary,
+  type PublicationCheck,
 } from '@/lib/cms-api'
 import { cn } from '@/lib/utils'
 import type { ProjectDocument } from './types'
@@ -52,8 +69,14 @@ import { TabPublication } from './tab-publication'
  */
 
 type TabId =
-  | 'public' | 'internal' | 'verification' | 'feasibility'
-  | 'timeline' | 'media' | 'seo' | 'publication'
+  | 'public'
+  | 'internal'
+  | 'verification'
+  | 'feasibility'
+  | 'timeline'
+  | 'media'
+  | 'seo'
+  | 'publication'
 
 type Exposure = 'PUBLIC' | 'INTERNAL' | 'FEASIBILITY' | 'PUBLISH'
 
@@ -98,7 +121,12 @@ export function ProjectEditor({
   permissions,
 }: {
   contentId: string
-  permissions: { canEdit: boolean; canVerify: boolean; canPublish: boolean; canFeasibility: boolean }
+  permissions: {
+    canEdit: boolean
+    canVerify: boolean
+    canPublish: boolean
+    canFeasibility: boolean
+  }
 }) {
   const [content, setContent] = useState<CmsContentDetail | null>(null)
   const [doc, setDoc] = useState<ProjectDocument | null>(null)
@@ -111,6 +139,7 @@ export function ProjectEditor({
   const [check, setCheck] = useState<PublicationCheck | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const [focusIntent, setFocusIntent] = useState<TabId | null>(null)
 
@@ -129,10 +158,15 @@ export function ProjectEditor({
     setRevisions(revs)
     setSaveState('clean')
     setError(null)
-    cmsApi.publicationCheck(contentId).then(setCheck).catch(() => setCheck(null))
+    cmsApi
+      .publicationCheck(contentId)
+      .then(setCheck)
+      .catch(() => setCheck(null))
   }, [contentId])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    void load()
+  }, [load])
 
   const dirty = doc !== null && JSON.stringify(doc) !== baseline
 
@@ -143,7 +177,10 @@ export function ProjectEditor({
 
   useEffect(() => {
     if (!dirty) return
-    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    const h = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
     window.addEventListener('beforeunload', h)
     return () => window.removeEventListener('beforeunload', h)
   }, [dirty])
@@ -169,9 +206,14 @@ export function ProjectEditor({
   const act = async (name: string, fn: () => Promise<unknown>) => {
     setBusy(name)
     setError(null)
-    try { await fn(); await load() }
-    catch (e) { setError(e instanceof Error ? e.message : 'הפעולה נכשלה') }
-    finally { setBusy(null) }
+    try {
+      await fn()
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'הפעולה נכשלה')
+    } finally {
+      setBusy(null)
+    }
   }
 
   const openPreview = async () => {
@@ -179,10 +221,12 @@ export function ProjectEditor({
     try {
       const { token } = await cmsApi.previewToken(contentId)
       const base = process.env['NEXT_PUBLIC_WEBSITE_URL'] ?? 'http://localhost:3003'
-      window.open(`${base}/he/preview/${token}`, '_blank', 'noopener')
+      setPreviewUrl(`${base}/he/preview/${token}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'לא ניתן ליצור קישור תצוגה')
-    } finally { setBusy(null) }
+    } finally {
+      setBusy(null)
+    }
   }
 
   /**
@@ -221,10 +265,13 @@ export function ProjectEditor({
 
   const live = content.state === 'PUBLISHED' && content.livePublicationId
   const current = TABS.find((t) => t.id === tab)!
-  const grouped = TABS.reduce<Record<Exposure, typeof TABS>>((acc, t) => {
-    ;(acc[t.exposure] ??= []).push(t)
-    return acc
-  }, {} as Record<Exposure, typeof TABS>)
+  const grouped = TABS.reduce<Record<Exposure, typeof TABS>>(
+    (acc, t) => {
+      ;(acc[t.exposure] ??= []).push(t)
+      return acc
+    },
+    {} as Record<Exposure, typeof TABS>,
+  )
 
   return (
     <div className="space-y-5">
@@ -248,15 +295,26 @@ export function ProjectEditor({
               live ? 'border-teal-300 bg-white text-teal-800' : 'border-gray-300 text-gray-700',
             )}
           >
-            {live ? <Globe size={14} aria-hidden="true" /> : <EyeOff size={14} aria-hidden="true" />}
+            {live ? (
+              <Globe size={14} aria-hidden="true" />
+            ) : (
+              <EyeOff size={14} aria-hidden="true" />
+            )}
             {live ? 'מפורסם' : 'לא מפורסם'}
           </span>
         </div>
       </div>
 
       {error && (
-        <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3.5">
-          <AlertTriangle size={17} className="mt-0.5 flex-shrink-0 text-red-700" aria-hidden="true" />
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3.5"
+        >
+          <AlertTriangle
+            size={17}
+            className="mt-0.5 flex-shrink-0 text-red-700"
+            aria-hidden="true"
+          />
           <p className="text-[13px] leading-relaxed text-red-800">{error}</p>
         </div>
       )}
@@ -269,9 +327,11 @@ export function ProjectEditor({
           disabled={!permissions.canEdit || !dirty || saveState === 'saving'}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saveState === 'saving'
-            ? <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-            : <Save size={15} aria-hidden="true" />}
+          {saveState === 'saving' ? (
+            <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Save size={15} aria-hidden="true" />
+          )}
           שמירה
         </button>
 
@@ -295,11 +355,21 @@ export function ProjectEditor({
           היסטוריה ({revisions.length})
         </button>
 
-        <p className="ms-auto text-[12px] text-gray-600">
-          פרסום נמצא בלשונית ״פרסום״ בלבד.
-        </p>
+        <p className="ms-auto text-[12px] text-gray-600">פרסום נמצא בלשונית ״פרסום״ בלבד.</p>
       </div>
 
+      <div aria-live="polite">
+        {previewUrl && (
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block py-3 text-sm font-semibold text-teal-800 underline"
+          >
+            פתיחת התצוגה המקדימה בלשונית חדשה
+          </a>
+        )}
+      </div>
       {showHistory && (
         <RevisionHistory
           revisions={revisions}
@@ -318,14 +388,20 @@ export function ProjectEditor({
               <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-gray-600">
                 {EXPOSURE_STYLE[exp].group}
               </p>
-              <div role="tablist" aria-label={EXPOSURE_STYLE[exp].group} className="flex flex-wrap gap-1">
+              <div
+                role="tablist"
+                aria-label={EXPOSURE_STYLE[exp].group}
+                className="flex flex-wrap gap-1"
+              >
                 {(grouped[exp] ?? []).map((t) => {
                   const index = TABS.findIndex((x) => x.id === t.id)
                   const active = tab === t.id
                   return (
                     <button
                       key={t.id}
-                      ref={(el) => { tabRefs.current[t.id] = el }}
+                      ref={(el) => {
+                        tabRefs.current[t.id] = el
+                      }}
                       role="tab"
                       id={`tab-${t.id}`}
                       aria-selected={active}
@@ -357,12 +433,7 @@ export function ProjectEditor({
         anyone not running an audit. A single panel is the honest description
         of what is actually rendered.
       */}
-      <div
-        role="tabpanel"
-        id="project-tabpanel"
-        aria-labelledby={`tab-${tab}`}
-        tabIndex={0}
-      >
+      <div role="tabpanel" id="project-tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={0}>
         <h2 className="sr-only">{current.label}</h2>
 
         {tab === 'public' && (
@@ -372,7 +443,12 @@ export function ProjectEditor({
           <TabTimeline doc={doc} onChange={setDoc} canEdit={permissions.canEdit} />
         )}
         {tab === 'media' && (
-          <TabMedia doc={doc} onChange={setDoc} canEdit={permissions.canEdit} contentId={contentId} />
+          <TabMedia
+            doc={doc}
+            onChange={setDoc}
+            canEdit={permissions.canEdit}
+            contentId={contentId}
+          />
         )}
         {tab === 'seo' && (
           <TabSeo doc={doc} onChange={setDoc} canEdit={permissions.canEdit} isPublished={!!live} />
@@ -414,15 +490,21 @@ function SaveBadge({ state, savedAt }: { state: SaveState; savedAt: Date | null 
   const MAP: Record<SaveState, { label: string; cls: string; Icon: typeof Check }> = {
     clean: {
       label: savedAt ? `נשמר ב-${savedAt.toLocaleTimeString('he-IL')}` : 'אין שינויים',
-      cls: 'border-gray-300 text-gray-700', Icon: Check,
+      cls: 'border-gray-300 text-gray-700',
+      Icon: Check,
     },
     dirty: {
       label: 'שינויים שלא נשמרו',
-      cls: 'border-[#d8cdb8] bg-[#f4f1ec] text-[#7d6234]', Icon: AlertTriangle,
+      cls: 'border-[#d8cdb8] bg-[#f4f1ec] text-[#7d6234]',
+      Icon: AlertTriangle,
     },
     saving: { label: 'שומר…', cls: 'border-gray-300 text-gray-700', Icon: Loader2 },
     saved: { label: 'נשמר', cls: 'border-teal-300 bg-teal-50 text-teal-800', Icon: Check },
-    error: { label: 'השמירה נכשלה', cls: 'border-red-300 bg-red-50 text-red-800', Icon: AlertTriangle },
+    error: {
+      label: 'השמירה נכשלה',
+      cls: 'border-red-300 bg-red-50 text-red-800',
+      Icon: AlertTriangle,
+    },
   }
   const s = MAP[state]
   return (
@@ -434,14 +516,22 @@ function SaveBadge({ state, savedAt }: { state: SaveState; savedAt: Date | null 
         s.cls,
       )}
     >
-      <s.Icon size={14} className={state === 'saving' ? 'animate-spin' : undefined} aria-hidden="true" />
+      <s.Icon
+        size={14}
+        className={state === 'saving' ? 'animate-spin' : undefined}
+        aria-hidden="true"
+      />
       {s.label}
     </span>
   )
 }
 
 function RevisionHistory({
-  revisions, currentId, busy, canRestore, onRestore,
+  revisions,
+  currentId,
+  busy,
+  canRestore,
+  onRestore,
 }: {
   revisions: CmsRevisionSummary[]
   currentId: string | null
@@ -450,15 +540,18 @@ function RevisionHistory({
   onRestore: (id: string) => void
 }) {
   const REASON: Record<string, string> = {
-    SAVE: 'שמירה', PUBLISH: 'פרסום', UNPUBLISH: 'הסרה מהאתר', RESTORE: 'שחזור',
+    SAVE: 'שמירה',
+    PUBLISH: 'פרסום',
+    UNPUBLISH: 'הסרה מהאתר',
+    RESTORE: 'שחזור',
   }
   return (
     <div className="rounded-xl border border-border bg-white p-4">
       <h2 className="text-[15px] font-bold text-gray-900">היסטוריית שינויים</h2>
       <p className="mt-1 max-w-prose text-[12.5px] leading-relaxed text-gray-600">
-        כל גרסה שומרת את מצב הפרויקט המלא, כולל המידע הפנימי וההיתכנות, כדי
-        שאפשר יהיה להבין מה היה נכון באותו רגע. שחזור יוצר גרסה חדשה ואינו מוחק
-        דבר, ויומן האימותים נשאר שלם גם אחריו. שחזור אינו מפרסם.
+        כל גרסה שומרת את מצב הפרויקט המלא, כולל המידע הפנימי וההיתכנות, כדי שאפשר יהיה להבין מה היה
+        נכון באותו רגע. שחזור יוצר גרסה חדשה ואינו מוחק דבר, ויומן האימותים נשאר שלם גם אחריו. שחזור
+        אינו מפרסם.
       </p>
       <ul className="mt-3 divide-y divide-border">
         {revisions.map((r) => (

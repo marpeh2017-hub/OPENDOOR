@@ -25,6 +25,8 @@ import { ExposureBanner } from './exposure'
 /** The eight fixed pages, so the second group can name what is missing. */
 const SITE_PAGES: { slug: string; label: string }[] = [
   { slug: 'home', label: 'עמוד הבית' },
+  { slug: 'privacy', label: 'מדיניות פרטיות' },
+  { slug: 'terms', label: 'תנאי שימוש' },
   { slug: 'about', label: 'אודות' },
   { slug: 'why-organizer', label: 'למה מארגן' },
   { slug: 'how-we-work', label: 'איך אנחנו עובדים' },
@@ -39,7 +41,8 @@ export function PagesList() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    cmsApi.list({ kind: 'PAGE' })
+    cmsApi
+      .list({ kind: 'PAGE' })
       .then(setItems)
       .catch((e) => setError(e instanceof Error ? e.message : 'טעינת העמודים נכשלה'))
   }, [])
@@ -59,8 +62,15 @@ export function PagesList() {
       <ExposureBanner level="PUBLIC" />
 
       {error && (
-        <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3.5">
-          <AlertTriangle size={17} className="mt-0.5 flex-shrink-0 text-red-700" aria-hidden="true" />
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3.5"
+        >
+          <AlertTriangle
+            size={17}
+            className="mt-0.5 flex-shrink-0 text-red-700"
+            aria-hidden="true"
+          />
           <p className="text-[13px] text-red-800">{error}</p>
         </div>
       )}
@@ -84,16 +94,22 @@ export function PagesList() {
               return (
                 <li key={item.id}>
                   <Link
-                    href={`/site/pages/${item.slug}`}
+                    href={item.slug === 'faq' ? '/site/faq' : `/site/pages/${item.slug}`}
                     className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-gray-50"
                   >
                     <span className="flex items-center gap-3">
-                      <FileText size={18} className="flex-shrink-0 text-teal-500" aria-hidden="true" />
+                      <FileText
+                        size={18}
+                        className="flex-shrink-0 text-teal-500"
+                        aria-hidden="true"
+                      />
                       <span>
                         <span className="block text-sm font-semibold text-gray-900">{label}</span>
                         <span className="block text-[12.5px] text-gray-600">
-                          /{item.slug} · עודכן {new Date(item.updatedAt).toLocaleDateString('he-IL')}
-                          {item.updatedBy && ` · ${item.updatedBy.firstName} ${item.updatedBy.lastName}`}
+                          /{item.slug} · עודכן{' '}
+                          {new Date(item.updatedAt).toLocaleDateString('he-IL')}
+                          {item.updatedBy &&
+                            ` · ${item.updatedBy.firstName} ${item.updatedBy.lastName}`}
                         </span>
                       </span>
                     </span>
@@ -104,7 +120,11 @@ export function PagesList() {
                           : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-2.5 py-0.5 text-[12px] font-semibold text-gray-600'
                       }
                     >
-                      {live ? <Globe size={12} aria-hidden="true" /> : <EyeOff size={12} aria-hidden="true" />}
+                      {live ? (
+                        <Globe size={12} aria-hidden="true" />
+                      ) : (
+                        <EyeOff size={12} aria-hidden="true" />
+                      )}
                       {live ? 'מפורסם' : 'טיוטה'}
                     </span>
                   </Link>
@@ -117,11 +137,9 @@ export function PagesList() {
 
       {unmigrated.length > 0 && (
         <section className="rounded-xl border border-border bg-gray-50 p-5">
-          <h2 className="text-[15px] font-bold text-gray-900">עדיין בקוד</h2>
+          <h2 className="text-[15px] font-bold text-gray-900">עמודים בעריכה טכנית</h2>
           <p className="mt-1.5 max-w-prose text-[13px] leading-relaxed text-gray-600">
-            העמודים האלה מופיעים באתר כרגיל, אך התוכן שלהם נמצא בקוד ולא במערכת.
-            עריכה שלהם דורשת מפתח. הם יועברו לניהול כאן בהמשך, עמוד אחרי עמוד,
-            כשכל העברה נבדקת מול הגרסה הקיימת.
+            לעדכון התוכן בעמודים האלה יש לפנות למי שמתחזק את האתר. עריכתם אינה זמינה במסך זה.
           </p>
           <ul className="mt-3 flex flex-wrap gap-2">
             {unmigrated.map((p) => (

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { PageEditorLoader } from '@/components/site/page-editor-loader'
 
 /**
@@ -15,5 +16,6 @@ export default async function SitePageEditorRoute({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+  if (slug === 'faq') redirect('/site/faq')
   return <PageEditorLoader slug={slug} />
 }

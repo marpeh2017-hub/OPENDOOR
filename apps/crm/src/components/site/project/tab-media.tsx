@@ -55,7 +55,10 @@ import { CLAIM_LABEL, type ImageClaim, type ProjectDocument, type ProjectMedia }
  * disagree about what "saved" means.
  */
 export function TabMedia({
-  doc, onChange, canEdit, contentId,
+  doc,
+  onChange,
+  canEdit,
+  contentId,
 }: {
   doc: ProjectDocument
   onChange: (next: ProjectDocument) => void
@@ -72,10 +75,13 @@ export function TabMedia({
   // for. Revoked on unmount to avoid leaking blob URLs.
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({})
 
-  useEffect(() => () => {
-    Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useEffect(
+    () => () => {
+      Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url))
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [],
+  )
 
   const write = (next: ProjectMedia[]) =>
     onChange({ ...doc, media: next.map((m, i) => ({ ...m, order: i + 1 })) })
@@ -97,49 +103,52 @@ export function TabMedia({
     fileInputRef.current?.click()
   }
 
-  const onFileChosen = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
+  const onFileChosen = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      e.target.value = ''
+      if (!file) return
 
-    const replaceId = replaceTargetRef.current
-    replaceTargetRef.current = null
-    setUploadError(null)
-    setUploading(replaceId ?? 'new')
+      const replaceId = replaceTargetRef.current
+      replaceTargetRef.current = null
+      setUploadError(null)
+      setUploading(replaceId ?? 'new')
 
-    try {
-      const result = await cmsApi.uploadMedia(contentId, file)
-      const objectUrl = URL.createObjectURL(file)
+      try {
+        const result = await cmsApi.uploadMedia(contentId, file)
+        const objectUrl = URL.createObjectURL(file)
 
-      if (replaceId) {
-        setLocalPreviews((p) => ({ ...p, [replaceId]: objectUrl }))
-        patch(replaceId, {
-          storageKey: result.storageKey,
-          filename: result.filename,
-          mimeType: result.mimeType,
-        })
-      } else {
-        const id = `media-${Date.now().toString(36)}`
-        setLocalPreviews((p) => ({ ...p, [id]: objectUrl }))
-        write([
-          ...media,
-          {
-            id,
+        if (replaceId) {
+          setLocalPreviews((p) => ({ ...p, [replaceId]: objectUrl }))
+          patch(replaceId, {
             storageKey: result.storageKey,
             filename: result.filename,
             mimeType: result.mimeType,
-            classification: 'EDITORIAL_CONTEXT',
-            alt: { he: '' },
-            order: media.length + 1,
-          },
-        ])
+          })
+        } else {
+          const id = `media-${Date.now().toString(36)}`
+          setLocalPreviews((p) => ({ ...p, [id]: objectUrl }))
+          write([
+            ...media,
+            {
+              id,
+              storageKey: result.storageKey,
+              filename: result.filename,
+              mimeType: result.mimeType,
+              classification: 'EDITORIAL_CONTEXT',
+              alt: { he: '' },
+              order: media.length + 1,
+            },
+          ])
+        }
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'העלאת התמונה נכשלה')
+      } finally {
+        setUploading(null)
       }
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'העלאת התמונה נכשלה')
-    } finally {
-      setUploading(null)
-    }
-  }, [contentId, media]) // eslint-disable-line react-hooks/exhaustive-deps
+    },
+    [contentId, media],
+  ) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-5">
@@ -153,18 +162,21 @@ export function TabMedia({
         tabIndex={-1}
       />
 
-      <Callout tone="info" title="ספריית המדיה המלאה עדיין לא נבנתה">
-        כאן מנהלים את התמונות של הפרויקט הזה בלבד. ספרייה כלל-אתרית, עם העלאה
-        מרוכזת ומעקב אחרי היכן כל תמונה מופיעה, נבנית בשלב נפרד.
+      <Callout tone="info" title="תמונות הפרויקט">
+        כאן מנהלים את תמונות הפרויקט. לתמונות כלליות ולשיוך תמונות באתר, עברו לספריית המדיה בתפריט
+        ניהול האתר.
       </Callout>
 
       <Callout tone="warning" title="סיווג התמונה הוא טענה">
-        תמונה מסווגת ״צילום מהפרויקט״ אומרת לציבור שכך נראה המתחם. אם התמונה
-        אינה מראה את המתחם, יש לסווג אותה כתצלום הקשר, והאתר יאמר זאת ליד
-        התמונה.
+        תמונה מסווגת ״צילום מהפרויקט״ אומרת לציבור שכך נראה המתחם. אם התמונה אינה מראה את המתחם, יש
+        לסווג אותה כתצלום הקשר, והאתר יאמר זאת ליד התמונה.
       </Callout>
 
-      {uploadError && <Callout tone="blocking" title="שגיאה בהעלאה">{uploadError}</Callout>}
+      {uploadError && (
+        <Callout tone="blocking" title="שגיאה בהעלאה">
+          {uploadError}
+        </Callout>
+      )}
 
       {canEdit && (
         <button
@@ -173,17 +185,19 @@ export function TabMedia({
           disabled={uploading !== null}
           className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[13px] font-semibold text-gray-800 transition-colors hover:bg-gray-50 disabled:opacity-50"
         >
-          {uploading === 'new'
-            ? <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-            : <Upload size={14} aria-hidden="true" />}
+          {uploading === 'new' ? (
+            <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Upload size={14} aria-hidden="true" />
+          )}
           העלאת תמונה
         </button>
       )}
 
       {media.length === 0 ? (
         <Callout tone="info" title="אין תמונות לפרויקט הזה">
-          זה מצב תקין. כשאין תמונת פתיחה, האתר מציג את האיור האדריכלי שנוצר
-          בקוד, שאינו מתיימר להראות מבנה קיים.
+          זה מצב תקין. כשאין תמונת פתיחה, האתר מציג את האיור האדריכלי שנוצר בקוד, שאינו מתיימר
+          להראות מבנה קיים.
         </Callout>
       ) : (
         media.map((m, i) => {
@@ -212,28 +226,41 @@ export function TabMedia({
                         aria-label={`החלפת ${m.filename}`}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2 py-1.5 text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
                       >
-                        {uploading === m.id
-                          ? <Loader2 size={13} className="animate-spin" aria-hidden="true" />
-                          : <Upload size={13} aria-hidden="true" />}
+                        {uploading === m.id ? (
+                          <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Upload size={13} aria-hidden="true" />
+                        )}
                         החלפה
                       </button>
                     )}
                     <button
-                      type="button" disabled={!canEdit || i === 0} onClick={() => move(m.id, -1)}
+                      type="button"
+                      disabled={!canEdit || i === 0}
+                      onClick={() => move(m.id, -1)}
                       aria-label={`העברת ${m.filename} למעלה`}
                       className="rounded-lg border border-border p-1.5 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
-                    ><ArrowUp size={13} aria-hidden="true" /></button>
+                    >
+                      <ArrowUp size={13} aria-hidden="true" />
+                    </button>
                     <button
-                      type="button" disabled={!canEdit || i === media.length - 1} onClick={() => move(m.id, 1)}
+                      type="button"
+                      disabled={!canEdit || i === media.length - 1}
+                      onClick={() => move(m.id, 1)}
                       aria-label={`העברת ${m.filename} למטה`}
                       className="rounded-lg border border-border p-1.5 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
-                    ><ArrowDown size={13} aria-hidden="true" /></button>
+                    >
+                      <ArrowDown size={13} aria-hidden="true" />
+                    </button>
                     <button
-                      type="button" disabled={!canEdit}
+                      type="button"
+                      disabled={!canEdit}
                       onClick={() => write(media.filter((x) => x.id !== m.id))}
                       aria-label={`הסרת ${m.filename}`}
                       className="rounded-lg border border-border p-1.5 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
-                    ><Trash2 size={13} aria-hidden="true" /></button>
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                    </button>
                   </div>
                 </div>
 
@@ -275,7 +302,9 @@ export function TabMedia({
                   fallback="SOURCE"
                   disabled={!canEdit}
                   hint="מה רואים בתמונה, למי שאינו רואה אותה. תמונה בלי טקסט חלופי בעברית אינה מתפרסמת."
-                  onChange={(v) => patch(m.id, { alt: v.en ? { he: v.he, en: v.en } : { he: v.he } })}
+                  onChange={(v) =>
+                    patch(m.id, { alt: v.en ? { he: v.he, en: v.en } : { he: v.he } })
+                  }
                 />
 
                 <LocalizedField
@@ -283,11 +312,18 @@ export function TabMedia({
                   value={m.caption}
                   fallback="SOURCE"
                   disabled={!canEdit}
-                  onChange={(v) => patch(m.id, { caption: v.he ? (v.en ? { he: v.he, en: v.en } : { he: v.he }) : undefined })}
+                  onChange={(v) =>
+                    patch(m.id, {
+                      caption: v.he ? (v.en ? { he: v.he, en: v.en } : { he: v.he }) : undefined,
+                    })
+                  }
                 />
 
                 <div>
-                  <label htmlFor={`cr-${m.id}`} className="block text-[12.5px] font-semibold text-gray-800">
+                  <label
+                    htmlFor={`cr-${m.id}`}
+                    className="block text-[12.5px] font-semibold text-gray-800"
+                  >
                     קרדיט (לא חובה)
                   </label>
                   <input
@@ -301,7 +337,10 @@ export function TabMedia({
                 </div>
 
                 <p className="text-[11.5px] text-gray-600">
-                  מפתח אחסון: <span className="font-mono" dir="ltr">{m.storageKey}</span>
+                  מפתח אחסון:{' '}
+                  <span className="font-mono" dir="ltr">
+                    {m.storageKey}
+                  </span>
                 </p>
               </div>
             </Section>
@@ -322,7 +361,9 @@ export function TabMedia({
  * to a bare storage key the browser could otherwise guess or reuse.
  */
 function MediaPreview({
-  contentId, media, localUrl,
+  contentId,
+  media,
+  localUrl,
 }: {
   contentId: string
   media: ProjectMedia
@@ -334,10 +375,17 @@ function MediaPreview({
   useEffect(() => {
     if (localUrl) return
     let cancelled = false
-    cmsApi.mediaUrl(contentId, media.id)
-      .then((r) => { if (!cancelled) setRemoteUrl(r.url) })
-      .catch(() => { if (!cancelled) setFailed(true) })
-    return () => { cancelled = true }
+    cmsApi
+      .mediaUrl(contentId, media.id)
+      .then((r) => {
+        if (!cancelled) setRemoteUrl(r.url)
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [contentId, media.id, localUrl])
 
   const src = localUrl ?? remoteUrl
