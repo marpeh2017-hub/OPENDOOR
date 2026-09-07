@@ -43,19 +43,19 @@ const homepageBlocks: PageBlock[] = [
       en: 'OpenDoor Group represents and organises apartment owners in urban-renewal processes',
     },
     subheading: {
-      he: 'מהבדיקה הראשונית, דרך ניהול התהליך ובחירת היזם המתאים, ועד למימוש הפרויקט, בליווי מקצועי ובשקיפות מלאה.',
-      en: 'From the initial review, through managing the process and selecting the right developer, to realising the project, with professional guidance and full transparency.',
+      he: 'אנחנו מרכזים את המידע, מתאמים בין אנשי המקצוע ומלווים את בחינת החלופות. אתם מבינים מה עומד על הפרק ומקבלים את ההחלטות.',
+      en: 'We organise the information, coordinate the professionals and help compare alternatives. You understand the options and make the decisions.',
     },
     primaryCtaLabel: {
-      he: 'בדיקת התאמה להתחדשות עירונית',
-      en: "Check your building's suitability",
+      he: 'דברו איתנו על הבניין שלכם',
+      en: "Talk to us about your building",
     },
     primaryCtaHref: '/eligibility',
     secondaryCtaLabel: { he: 'מידע על תיק הדייר', en: 'Resident portal' },
     secondaryCtaHref: '/resident-portal',
     note: {
-      he: 'השירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
-      en: 'The service involves no direct cost to the apartment owners.',
+      he: 'התשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
+      en: 'OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.',
     },
   },
 
@@ -79,8 +79,8 @@ const homepageBlocks: PageBlock[] = [
         icon: 'route',
         title: { he: 'ניהול התהליך', en: 'Managing the process' },
         body: {
-          he: 'תהליך התחדשות עירונית נמשך שנים ומערב עשרות החלטות. אנחנו מנהלים אותו מקצה לקצה, כך שבעלי הדירות יודעים בכל רגע מה קורה ומה השלב הבא.',
-          en: 'An urban-renewal process runs for years and involves dozens of decisions. We manage it end to end, so owners always know what is happening and what comes next.',
+          he: 'תהליך התחדשות עירונית כולל החלטות, מסמכים ואנשי מקצוע רבים. אנחנו מרכזים את העבודה ואת העדכונים, כדי שתוכלו לעקוב אחר ההתקדמות ולהבין מה נדרש מכם.',
+          en: 'Urban renewal involves decisions, documents and many professionals. We coordinate the work and updates so owners can follow progress and understand what they need to do.',
         },
       },
       {
@@ -115,8 +115,8 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'מה זו חברה מארגנת?', en: 'What is an organising company?' },
     body: {
-      he: 'תהליך התחדשות עירונית מפגיש בעלי דירות עם יזמים, עורכי דין, שמאים, אדריכלים ורשויות התכנון. לכל אחד מהם תפקיד מוגדר, וכולם נדרשים כדי שפרויקט יצא לפועל.\n\nחברה מארגנת אינה יזם ואינה מבצעת את הבנייה. תפקידה הוא לארגן את בעלי הדירות, לרכז את העבודה מול אנשי המקצוע, ולנהל את התהליך לאורך זמן, מהעמדה של בעלי הדירות.\n\nהשירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
-      en: 'An urban-renewal process brings together apartment owners, developers, lawyers, appraisers, architects and planning authorities. Each has a defined role, and all of them are needed for a project to happen.\n\nAn organising company is not the developer and does not carry out the construction. Its role is to organise the owners, coordinate the work with the professionals, and manage the process over time, from the owners\u2019 side of the table.\n\nThe service involves no direct cost to the apartment owners.',
+      he: 'תהליך התחדשות עירונית מפגיש בעלי דירות עם יזמים, עורכי דין, שמאים, אדריכלים ורשויות התכנון. לכל אחד מהם תפקיד מוגדר, וכולם נדרשים כדי שפרויקט יצא לפועל.\n\nחברה מארגנת אינה יזם ואינה מבצעת את הבנייה. תפקידה הוא לארגן את בעלי הדירות, לרכז את העבודה מול אנשי המקצוע, ולנהל את התהליך לאורך זמן, מהעמדה של בעלי הדירות.\n\nהתשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
+      en: 'An urban-renewal process brings together apartment owners, developers, lawyers, appraisers, architects and planning authorities. Each has a defined role, and all of them are needed for a project to happen.\n\nAn organising company is not the developer and does not carry out the construction. Its role is to organise the owners, coordinate the work with the professionals, and manage the process over time, from the owners\u2019 side of the table.\n\nOpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.',
     },
 
     /**
@@ -549,7 +549,7 @@ const homepageBlocks: PageBlock[] = [
       he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
       en: 'The suitability check takes a few minutes and commits you to nothing.',
     },
-    ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: "Check your building's suitability" },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: "Talk to us about your building" },
     ctaHref: '/eligibility',
   },
 ]

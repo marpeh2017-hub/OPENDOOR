@@ -23,9 +23,9 @@
     "search": "Search"
   },
   "cta": {
-    "eligibility": "Check your building's suitability",
+    "eligibility": "Talk to us about your building",
     "residentPortal": "About the resident portal",
-    "eligibilityShort": "Check suitability"
+    "eligibilityShort": "Talk to us"
   },
   "footer": {
     "company": "Company",
@@ -63,11 +63,11 @@
     },
     "knowledge": {
       "title": "Knowledge centre",
-      "empty": "No articles are published here yet. New content will appear here soon."
+      "empty": "Looking for an explanation of the process? Start with How we work, or contact us with a question. Articles will appear here once approved."
     },
     "faq": {
       "title": "FAQ",
-      "empty": "No questions are published here yet. For anything not covered, please contact us directly."
+      "empty": "Wondering how to begin, what the representation does, or who is involved? Send us your question. General answers will appear here once approved."
     },
     "contact": {
       "title": "Contact"
@@ -131,7 +131,7 @@
   },
   "projects": {
     "emptyTitle": "Projects will be published here once the owners have approved.",
-    "emptyBody": "We publish a complex only when the information is verified and agreed with the owners. In the meantime, if you want to understand the options for your building, you can start with a suitability check.",
+    "emptyBody": "Project information will appear here after review and approval for publication. Contact us directly about your building or a particular complex.",
     "eyebrow": "Urban renewal in Israel",
     "standfirst": "Complexes where we represent and organise the apartment owners. Each project shows the information verified as of its update date.",
     "verifiedOnly": "Each project shows verified information only. A missing figure does not mean nothing is happening; it means nobody has verified that figure for publication yet."
@@ -147,7 +147,7 @@
     "failureTitle": "Your details were not sent.",
     "failureBody": "Everything you entered is still here. You can try again.",
     "retry": "Try again",
-    "noCost": "The service involves no direct cost to the apartment owners.",
+    "noCost": "OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.",
     "errors": {
       "addressRequired": "We need the building address to look at the complex.",
       "nameRequired": "We need a name so we know who to contact.",
@@ -162,8 +162,8 @@
   },
   "eligibility": {
     "title": "Urban renewal suitability check",
-    "heading": "Let us look at the options for your building.",
-    "standfirst": "Contact us for an initial enquiry about your building.",
+    "heading": "Start with a conversation about your building",
+    "standfirst": "Considering urban renewal, talking with neighbours, or already represented? Tell us where things stand and what you would like to understand.",
     "addressLabel": "Building or complex address",
     "addressHint": "Street and city is enough. No block or parcel number needed.",
     "nameLabel": "Full name",
@@ -178,8 +178,8 @@
     "successBody": "We will carry out an initial review and contact you about the next steps.",
     "successLinkIntro": "In the meantime, you can read how the process works, from the first review to completion.",
     "asideTitle": "Before contacting us",
-    "aside1": "Include the building address and the subject of your enquiry.",
-    "aside2": "Call or email us, whichever is convenient.",
+    "aside1": "Have the building address and your main question ready.",
+    "aside2": "If you know, mention whether there is a representation or an existing process.",
     "aside3": "An enquiry does not confirm feasibility or commit anyone to a project.",
     "privacyTitle": "Your details",
     "privacyBody": "Contact details and a building address are sufficient for an initial enquiry. No identity documents are needed.",
@@ -192,8 +192,8 @@
   },
   "contactPage": {
     "title": "Contact us",
-    "heading": "Contact us",
-    "standfirst": "For questions and information, contact us by phone or email.",
+    "heading": "How can we help?",
+    "standfirst": "A question about urban renewal, your building or a process already underway? Call or email us.",
     "nameLabel": "Full name",
     "phoneLabel": "Phone",
     "emailLabel": "Email",
@@ -202,8 +202,8 @@
     "successTitle": "Thank you, we have your message.",
     "successBody": "We will be in touch.",
     "asideEyebrow": "Enquiries about your building",
-    "asideTitle": "Want to check the options for your building?",
-    "asideBody": "Contact us with the building address and the current state of owner organisation."
+    "asideTitle": "Not yet organised?",
+    "asideBody": "Start with the building address and your questions. The initial enquiry page explains what to prepare."
   },
   "journeyPage": {
     "asksLabel": "What is asked of you:"
@@ -268,7 +268,7 @@
     "noFactsEyebrow": "Information status",
     "noFactsHeading": "No figures have been published for this complex yet.",
     "noFactsBody1": "Figures about this complex are published here only after they have been checked and verified. We do not publish estimates and we do not fill the gap with guesses.",
-    "noFactsBody2": "When a figure is checked and verified it will appear here with its update date. Until then what is shown is what is known: the identity of the complex, the stage the process has reached, and the milestones completed."
+    "noFactsBody2": "The complex identity appears at the top of this page. Further information will be shown after review and approval for publication."
   },
   "projectFacts": {
     "city": "City",
@@ -282,7 +282,7 @@
     "approvals": "Approvals",
     "permits": "Permits",
     "developer": "Developer",
-    "developerNote": "The developer represents its own interests. It does not represent the owners, and it has no business relationship with OpenDoor Group.",
+    "developerNote": "The developer is a separate party in the process. OpenDoor Group is paid only by the developer; apartment owners do not pay the company directly.",
     "dates": "Dates",
     "estimate": "estimate",
     "type": {
@@ -326,7 +326,7 @@
     "public2": "The stage the process has reached",
     "public3": "Verified figures",
     "public4": "The milestone record",
-    "privateHeading": "In the owners’ environment",
+    "privateHeading": "In the planned resident area",
     "private1": "Running updates",
     "private2": "Documents about the apartment",
     "private3": "Meeting summaries",
