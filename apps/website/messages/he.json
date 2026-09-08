@@ -144,8 +144,10 @@
     "optionalDivider": "רוצים להוסיף עוד פרטים? השדות הבאים אינם חובה.",
     "required": "שדה חובה",
     "optional": "רשות",
+    "selectPlaceholder": "בחרו אפשרות",
     "submitting": "שולח",
-    "consentLabel": "קראתי ואני מאשר את מדיניות הפרטיות.",
+    "contactConsentLabel": "אני מסכים שאופן־דור גרופ תחזור אליי בנוגע לפנייה.",
+    "privacyConsentLabel": "קראתי ואני מאשר את",
     "consentLinkText": "מדיניות הפרטיות",
     "errorSummaryTitle": "לא הצלחנו לשלוח. יש פרטים שחסרים או שצריך לתקן.",
     "failureTitle": "השליחה לא הושלמה.",
@@ -154,13 +156,17 @@
     "noCost": "התשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.",
     "errors": {
       "addressRequired": "צריך את כתובת הבניין כדי לבדוק את המתחם.",
+      "cityRequired": "צריך לציין באיזו עיר נמצא הבניין.",
       "nameRequired": "צריך שם כדי שנדע למי לפנות.",
       "phoneRequired": "צריך מספר טלפון כדי לחזור אליכם.",
       "phoneInvalid": "מספר הטלפון לא נראה שלם. אפשר לכתוב אותו עם מקפים או בלי.",
       "emailInvalid": "כתובת האימייל לא נראית תקינה.",
       "apartmentsInvalid": "אפשר לכתוב מספר משוער, למשל 24.",
+      "leadTypeRequired": "בחרו מה הקשר שלכם לפנייה.",
+      "projectTypeRequired": "בחרו מה תרצו לבדוק.",
       "messageRequired": "כתבו לנו במה נוכל לעזור.",
-      "consentRequired": "צריך לאשר את מדיניות הפרטיות כדי לשלוח."
+      "contactConsentRequired": "צריך לאשר שנוכל לחזור אליכם בנוגע לפנייה.",
+      "privacyConsentRequired": "צריך לאשר את מדיניות הפרטיות כדי לשלוח."
     },
     "loadingLabel": "טוען"
   },
@@ -169,12 +175,15 @@
     "heading": "מתחילים בשיחה על הבניין שלכם",
     "standfirst": "יש מחשבה על התחדשות עירונית, שיחה בין שכנים או נציגות פעילה? ספרו לנו איפה הדברים עומדים ומה תרצו לברר.",
     "addressLabel": "כתובת הבניין או המתחם",
-    "addressHint": "מספיק רחוב ועיר. אין צורך בגוש וחלקה.",
+    "addressHint": "מספיק רחוב ומספר. אין צורך בגוש וחלקה.",
+    "cityLabel": "עיר",
     "nameLabel": "שם מלא",
     "phoneLabel": "טלפון",
     "emailLabel": "אימייל",
     "apartmentsLabel": "מספר דירות משוער",
     "apartmentsHint": "הערכה גסה מספיקה.",
+    "leadTypeLabel": "מי פונה אלינו?",
+    "projectTypeLabel": "מה תרצו לבדוק?",
     "organizingLabel": "מצב ההתארגנות",
     "notesLabel": "הערות",
     "submit": "שליחת הפרטים",
@@ -192,6 +201,20 @@
       "EARLY_CONVERSATION": "התחלנו לדבר בין הדיירים",
       "REPRESENTATION_FORMED": "קיימת נציגות",
       "PROCESS_ACTIVE": "כבר מתקיים תהליך"
+    },
+    "leadTypes": {
+      "OWNER": "בעל או בעלת דירה",
+      "REPRESENTATIVE": "חבר או חברת נציגות",
+      "LAWYER": "עורך או עורכת דין",
+      "DEVELOPER": "יזם או נציג יזם",
+      "GENERAL": "מתעניין או מתעניינת"
+    },
+    "projectInterests": {
+      "UNKNOWN": "עדיין לא יודעים",
+      "TAMA_38": "תמ״א 38",
+      "PINUY_BINUY": "פינוי־בינוי",
+      "RIGHTS_CHECK": "בדיקת זכויות והיתכנות",
+      "OWNER_ORGANIZING": "ארגון בעלי הדירות"
     }
   },
   "contactPage": {

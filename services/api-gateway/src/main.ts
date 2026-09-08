@@ -56,6 +56,7 @@ async function bootstrap() {
       process.env['CRM_URL'] ?? 'http://localhost:3001',
       process.env['PORTAL_URL'] ?? 'http://localhost:3002',
       process.env['WEB_URL'] ?? 'http://localhost:3000',
+      process.env['WEBSITE_URL'] ?? 'http://localhost:3003',
     ],
     credentials: true,
   })

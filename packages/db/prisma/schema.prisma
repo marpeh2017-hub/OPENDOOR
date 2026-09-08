@@ -99,6 +99,24 @@ model Lead {
   email                 String?
   address               String?
   city                  String?
+  formType              String?
+  submissionId          String?
+  estimatedUnits        Int?
+  leadType               String?
+  projectType            String?
+  organizingStatus      String?
+  consentContact        Boolean        @default(false)
+  consentPrivacy        Boolean        @default(false)
+  consentRecordedAt     DateTime?
+  privacyPolicyVersion  String?
+  utmSource              String?
+  utmMedium              String?
+  utmCampaign            String?
+  matchedBuildingId      String?
+  matchedBuilding        Building?      @relation("LeadMatchedBuilding", fields: [matchedBuildingId], references: [id], onDelete: SetNull)
+  possibleDuplicateOfId  String?
+  possibleDuplicateOf    Lead?          @relation("LeadPossibleDuplicates", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  possibleDuplicates     Lead[]         @relation("LeadPossibleDuplicates")
   source                LeadSource     @default(OTHER)
   campaignId            String?
   status                LeadStatus     @default(NEW)
@@ -118,6 +136,9 @@ model Lead {
 
   @@index([tenantId, status])
   @@index([tenantId, assignedToId])
+  @@unique([tenantId, submissionId])
+  @@index([tenantId, matchedBuildingId])
+  @@index([tenantId, possibleDuplicateOfId])
   @@map("leads")
 }
 
@@ -237,6 +258,7 @@ model Building {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   apartments       Apartment[]
+  matchedLeads     Lead[]          @relation("LeadMatchedBuilding")
   complex          Complex     @relation(fields: [complexId], references: [id], onDelete: Cascade)
 
   @@index([complexId])

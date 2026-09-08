@@ -557,16 +557,25 @@ export interface ExternalResource {
  * would need a privacy policy that does not exist yet.
  */
 export interface SubmissionMetadata {
+  /** Stable for the lifetime of one rendered form, so a network retry cannot
+   *  create a second CRM lead. */
+  submissionId: string
   /** The route the form was submitted from, e.g. "/he/eligibility". */
   sourcePage: string
   locale: Locale
+  /** Used only by the server's coarse bot filter. */
+  formRenderedAt: IsoDateTime
   submittedAt: IsoDateTime
   /**
    * Campaign tag, only if one is present in the URL when campaigns start.
    * Absent today: nothing on the site sets it, and inventing a default would
    * make every organic lead look like a campaign lead.
    */
-  campaign?: string
+  utmSource?: string
+  utmMedium?: string
+  utmCampaign?: string
+  /** Identifies the privacy wording accepted with this submission. */
+  privacyPolicyVersion: string
 }
 
 /* ── Contact ───────────────────────────────────────────────────────────── */
@@ -576,9 +585,11 @@ export interface ContactSubmission {
   phone: string
   email?: string
   message: string
-  /** Explicit, unticked-by-default consent. Typed as the literal `true` so a
-   *  submission cannot be constructed without it. */
-  consent: true
+  /** Both are explicit and unticked by default. */
+  consentContact: true
+  consentPrivacy: true
+  /** Anti-spam honeypot. A human never sees or fills this field. */
+  company?: string
   metadata: SubmissionMetadata
 }
 
@@ -609,6 +620,20 @@ export interface ContactSubmissionResult {
  */
 export type OrganizingStatusAnswer = OrganizingStatus
 
+export type LeadEnquirerType =
+  | 'OWNER'
+  | 'REPRESENTATIVE'
+  | 'LAWYER'
+  | 'DEVELOPER'
+  | 'GENERAL'
+
+export type LeadProjectType =
+  | 'UNKNOWN'
+  | 'TAMA_38'
+  | 'PINUY_BINUY'
+  | 'RIGHTS_CHECK'
+  | 'OWNER_ORGANIZING'
+
 /**
  * The primary conversion.
  *
@@ -628,6 +653,7 @@ export type OrganizingStatusAnswer = OrganizingStatus
 export interface EligibilitySubmission {
   /** Street and city, one free-text field. Parsing is the CRM's job. */
   address: string
+  city: string
   fullName: string
   phone: string
 
@@ -638,10 +664,14 @@ export interface EligibilitySubmission {
    * the rough figure it is and never as a verified count.
    */
   approximateApartmentCount?: number
+  leadType: LeadEnquirerType
+  projectType: LeadProjectType
   organizingStatus?: OrganizingStatusAnswer
   notes?: string
 
-  consent: true
+  consentContact: true
+  consentPrivacy: true
+  company?: string
   metadata: SubmissionMetadata
 }
 

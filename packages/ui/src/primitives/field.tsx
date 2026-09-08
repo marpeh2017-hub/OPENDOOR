@@ -23,6 +23,7 @@ interface FieldContextValue {
   descriptionId: string
   errorId: string
   hasError: boolean
+  hasDescription: boolean
   required: boolean
 }
 
@@ -47,15 +48,19 @@ export interface FieldProps {
 }
 
 export function Field({ id, required = false, error, children, className }: FieldProps) {
+  const hasDescription = React.Children.toArray(children).some(
+    (child) => React.isValidElement(child) && child.type === FieldDescription,
+  )
   const value = React.useMemo<FieldContextValue>(
     () => ({
       id,
       descriptionId: `${id}-description`,
       errorId: `${id}-error`,
       hasError: Boolean(error),
+      hasDescription,
       required,
     }),
-    [id, error, required],
+    [id, error, hasDescription, required],
   )
 
   return (
@@ -139,7 +144,10 @@ function useControlProps() {
     required: field.required,
     'aria-invalid': field.hasError || undefined,
     // Points at BOTH, so a field with help text and an error announces both.
-    'aria-describedby': [field.hasError ? field.errorId : null, field.descriptionId]
+    'aria-describedby': [
+      field.hasError ? field.errorId : null,
+      field.hasDescription ? field.descriptionId : null,
+    ]
       .filter(Boolean)
       .join(' ') || undefined,
   }

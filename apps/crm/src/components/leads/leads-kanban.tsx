@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Phone, Star } from 'lucide-react'
+import { AlertTriangle, MapPin, Phone, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
 import { useLeads, useMoveLead, type Lead } from '@/hooks/use-leads'
@@ -57,11 +57,18 @@ function LeadCard({ lead, isMoving }: { lead: Lead; isMoving: boolean }) {
         {lead.firstName} {lead.lastName}
       </p>
 
+      {lead.possibleDuplicateOfId && (
+        <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+          <AlertTriangle size={11} aria-hidden="true" />
+          כפילות אפשרית
+        </span>
+      )}
+
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        {lead.city && (
+        {(lead.address || lead.city) && (
           <div className="flex items-center gap-1">
-            <MapPin size={11} />
-            <span>{lead.city}</span>
+            <MapPin size={11} aria-hidden="true" />
+            <span>{[lead.address, lead.city].filter(Boolean).join(', ')}</span>
           </div>
         )}
         {lead.phone && (
@@ -143,8 +150,12 @@ function KanbanColumn({ stage, label, cls, dot, leads, onDropLead, movingId }: {
   )
 }
 
-export function LeadsKanban() {
-  const { data, isLoading, isError, error, refetch } = useLeads({ limit: 200 })
+export function LeadsKanban({ search, source }: { search?: string; source?: string }) {
+  const { data, isLoading, isError, error, refetch } = useLeads({
+    limit: 200,
+    ...(search ? { search } : {}),
+    ...(source ? { source } : {}),
+  })
   const moveLead = useMoveLead()
   const [movingId, setMovingId] = useState<string | null>(null)
 

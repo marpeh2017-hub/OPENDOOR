@@ -4,9 +4,15 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import {
   Field, FieldLabel, FieldDescription, FieldError,
-  Input, Textarea, Checkbox, RadioGroup, Button,
+  Input, Textarea, Select, Checkbox, RadioGroup, Button,
 } from '@urban-renewal/ui'
-import type { EligibilitySubmission, Locale, OrganizingStatusAnswer } from '@urban-renewal/api-contracts'
+import type {
+  EligibilitySubmission,
+  LeadEnquirerType,
+  LeadProjectType,
+  Locale,
+  OrganizingStatusAnswer,
+} from '@urban-renewal/api-contracts'
 import { Link } from '@/i18n/navigation'
 import { buildSubmissionMetadata, getLeadSubmissionService } from '@/lib/submission'
 import {
@@ -46,7 +52,18 @@ import {
  * stops a mock-wired form reaching production unnoticed.
  */
 
-type FieldName = 'address' | 'fullName' | 'phone' | 'email' | 'apartments' | 'notes' | 'consent'
+type FieldName =
+  | 'address'
+  | 'city'
+  | 'fullName'
+  | 'phone'
+  | 'email'
+  | 'apartments'
+  | 'leadType'
+  | 'projectType'
+  | 'notes'
+  | 'consentContact'
+  | 'consentPrivacy'
 
 const ORGANIZING_OPTIONS: OrganizingStatusAnswer[] = [
   'NOT_STARTED', 'EARLY_CONVERSATION', 'REPRESENTATION_FORMED', 'PROCESS_ACTIVE',
@@ -58,13 +75,23 @@ export function EligibilityForm() {
   const tForms = useTranslations('forms')
   const tErrors = useTranslations('forms.errors')
   const tOrg = useTranslations('eligibility.org')
+  const tLeadTypes = useTranslations('eligibility.leadTypes')
+  const tProjectTypes = useTranslations('eligibility.projectInterests')
   const tLinks = useTranslations('links')
 
   const [values, setValues] = useState({
-    address: '', fullName: '', phone: '', email: '', apartments: '', notes: '',
+    address: '', city: '', fullName: '', phone: '', email: '', apartments: '', notes: '',
   })
+  const [leadType, setLeadType] = useState<LeadEnquirerType | ''>('')
+  const [projectType, setProjectType] = useState<LeadProjectType | ''>('')
   const [organizing, setOrganizing] = useState<OrganizingStatusAnswer | ''>('')
-  const [consent, setConsent] = useState(false)
+  const [consentContact, setConsentContact] = useState(false)
+  const [consentPrivacy, setConsentPrivacy] = useState(false)
+  const [company, setCompany] = useState('')
+  const [formIdentity] = useState(() => ({
+    submissionId: crypto.randomUUID(),
+    renderedAt: new Date().toISOString(),
+  }))
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
   const [attempted, setAttempted] = useState(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'failed' | 'sent'>('idle')
@@ -72,6 +99,7 @@ export function EligibilityForm() {
   function validate(): Partial<Record<FieldName, string>> {
     const next: Partial<Record<FieldName, string>> = {}
     if (!isPresent(values.address)) next.address = tErrors('addressRequired')
+    if (!isPresent(values.city)) next.city = tErrors('cityRequired')
     if (!isPresent(values.fullName)) next.fullName = tErrors('nameRequired')
     if (!isPresent(values.phone)) next.phone = tErrors('phoneRequired')
     else if (!isValidPhone(values.phone)) next.phone = tErrors('phoneInvalid')
@@ -81,7 +109,10 @@ export function EligibilityForm() {
     if (!isValidApartmentCount(values.apartments)) {
       next.apartments = tErrors('apartmentsInvalid')
     }
-    if (!consent) next.consent = tErrors('consentRequired')
+    if (!leadType) next.leadType = tErrors('leadTypeRequired')
+    if (!projectType) next.projectType = tErrors('projectTypeRequired')
+    if (!consentContact) next.consentContact = tErrors('contactConsentRequired')
+    if (!consentPrivacy) next.consentPrivacy = tErrors('privacyConsentRequired')
     return next
   }
 
@@ -112,6 +143,7 @@ export function EligibilityForm() {
 
     const submission: EligibilitySubmission = {
       address: values.address.trim(),
+      city: values.city.trim(),
       fullName: values.fullName.trim(),
       // Normalised here, once, so the CRM never receives two spellings of the
       // same number. What the visitor typed is left alone on screen.
@@ -120,10 +152,14 @@ export function EligibilityForm() {
       ...(isPresent(values.apartments)
         ? { approximateApartmentCount: Number(values.apartments.trim()) }
         : {}),
+      leadType: leadType as LeadEnquirerType,
+      projectType: projectType as LeadProjectType,
       ...(organizing ? { organizingStatus: organizing } : {}),
       ...(isPresent(values.notes) ? { notes: values.notes.trim() } : {}),
-      consent: true,
-      metadata: buildSubmissionMetadata(`/${locale}/eligibility`, locale),
+      consentContact: true,
+      consentPrivacy: true,
+      ...(company ? { company } : {}),
+      metadata: buildSubmissionMetadata(`/${locale}/eligibility`, locale, formIdentity),
     }
 
     const outcome = await getLeadSubmissionService().submitEligibility(submission)
@@ -154,7 +190,10 @@ export function EligibilityForm() {
 
   // Ordered to match the visual field order, so the summary reads top to
   // bottom rather than in whatever order the object happens to enumerate.
-  const summary = (['address', 'fullName', 'phone', 'email', 'apartments', 'consent'] as const)
+  const summary = ([
+    'address', 'city', 'fullName', 'phone', 'email', 'apartments',
+    'leadType', 'projectType', 'consentContact', 'consentPrivacy',
+  ] as const)
     .filter((name) => errors[name])
     .map((name) => ({ id: `eligibility-${name}`, message: errors[name]! }))
 
@@ -162,19 +201,28 @@ export function EligibilityForm() {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       <ErrorSummary title={tForms('errorSummaryTitle')} errors={summary} />
 
-      <Field id="eligibility-address" required error={errors.address}>
-        <FieldLabel requiredLabel={tForms('required')}>{t('addressLabel')}</FieldLabel>
-        <Input
-          controlSize="comfortable"
-          autoComplete="street-address"
-          value={values.address}
-          onChange={(e) => update('address', e.target.value)}
-        />
-        {/* gray-600 rather than the primitive's gray-500: 12px gray-500 is
-            4.47:1, below AA. Overridden locally so the CRM is untouched; the
-            shared correction is documented for its own UI audit. */}
-        <FieldDescription className="text-gray-600">{t('addressHint')}</FieldDescription>
-      </Field>
+      <div className="grid gap-5 sm:grid-cols-[1.5fr_0.5fr]">
+        <Field id="eligibility-address" required error={errors.address}>
+          <FieldLabel requiredLabel={tForms('required')}>{t('addressLabel')}</FieldLabel>
+          <Input
+            controlSize="comfortable"
+            autoComplete="street-address"
+            value={values.address}
+            onChange={(e) => update('address', e.target.value)}
+          />
+          <FieldDescription className="text-gray-600">{t('addressHint')}</FieldDescription>
+        </Field>
+
+        <Field id="eligibility-city" required error={errors.city}>
+          <FieldLabel requiredLabel={tForms('required')}>{t('cityLabel')}</FieldLabel>
+          <Input
+            controlSize="comfortable"
+            autoComplete="address-level2"
+            value={values.city}
+            onChange={(e) => update('city', e.target.value)}
+          />
+        </Field>
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="eligibility-fullName" required error={errors.fullName}>
@@ -200,6 +248,42 @@ export function EligibilityForm() {
             value={values.phone}
             onChange={(e) => update('phone', e.target.value)}
           />
+        </Field>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field id="eligibility-leadType" required error={errors.leadType}>
+          <FieldLabel requiredLabel={tForms('required')}>{t('leadTypeLabel')}</FieldLabel>
+          <Select
+            controlSize="comfortable"
+            value={leadType}
+            onChange={(event) => {
+              setLeadType(event.target.value as LeadEnquirerType)
+              if (attempted) setErrors((current) => ({ ...current, leadType: undefined }))
+            }}
+          >
+            <option value="">{tForms('selectPlaceholder')}</option>
+            {(['OWNER', 'REPRESENTATIVE', 'LAWYER', 'DEVELOPER', 'GENERAL'] as const).map((value) => (
+              <option key={value} value={value}>{tLeadTypes(value)}</option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field id="eligibility-projectType" required error={errors.projectType}>
+          <FieldLabel requiredLabel={tForms('required')}>{t('projectTypeLabel')}</FieldLabel>
+          <Select
+            controlSize="comfortable"
+            value={projectType}
+            onChange={(event) => {
+              setProjectType(event.target.value as LeadProjectType)
+              if (attempted) setErrors((current) => ({ ...current, projectType: undefined }))
+            }}
+          >
+            <option value="">{tForms('selectPlaceholder')}</option>
+            {(['UNKNOWN', 'TAMA_38', 'PINUY_BINUY', 'RIGHTS_CHECK', 'OWNER_ORGANIZING'] as const).map((value) => (
+              <option key={value} value={value}>{tProjectTypes(value)}</option>
+            ))}
+          </Select>
         </Field>
       </div>
 
@@ -255,23 +339,59 @@ export function EligibilityForm() {
         />
       </Field>
 
+      <div aria-hidden="true" className="absolute start-[-10000px] top-auto h-px w-px overflow-hidden">
+        <label htmlFor="eligibility-company">Company</label>
+        <input
+          id="eligibility-company"
+          name="company"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={company}
+          onChange={(event) => setCompany(event.target.value)}
+        />
+      </div>
+
       <Checkbox
-        id="eligibility-consent"
-        checked={consent}
+        id="eligibility-consentContact"
+        checked={consentContact}
         onCheckedChange={(next) => {
-          setConsent(next === true)
+          setConsentContact(next === true)
           if (attempted && next === true) {
             setErrors((current) => {
               const rest = { ...current }
-              delete rest.consent
+              delete rest.consentContact
               return rest
             })
           }
         }}
-        error={errors.consent}
+        error={errors.consentContact}
         label={
           <>
-            {tForms('consentLabel')}{' '}
+            {tForms('contactConsentLabel')}
+            <span aria-hidden="true" className="ms-1 text-red-600">*</span>
+            <span className="sr-only"> ({tForms('required')})</span>
+          </>
+        }
+      />
+
+      <Checkbox
+        id="eligibility-consentPrivacy"
+        checked={consentPrivacy}
+        onCheckedChange={(next) => {
+          setConsentPrivacy(next === true)
+          if (attempted && next === true) {
+            setErrors((current) => {
+              const rest = { ...current }
+              delete rest.consentPrivacy
+              return rest
+            })
+          }
+        }}
+        error={errors.consentPrivacy}
+        label={
+          <>
+            {tForms('privacyConsentLabel')}{' '}
             <Link href="/privacy" className="underline underline-offset-2">
               {tForms('consentLinkText')}
             </Link>

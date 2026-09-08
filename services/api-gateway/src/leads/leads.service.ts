@@ -10,18 +10,21 @@ export class LeadsService {
   ) {}
 
   async findAll(query: Record<string, string>, tenantId: string) {
-    const { status, source, search, assignedToId, page = '1', limit = '50' } = query
+    const { status, source, city, search, assignedToId, page = '1', limit = '50' } = query
     const skip = (Number(page) - 1) * Number(limit)
 
     const where: any = { tenantId }
     if (status)       where.status = status
     if (source)       where.source = source
+    if (city)         where.city = { equals: city, mode: 'insensitive' }
     if (assignedToId) where.assignedToId = assignedToId
     if (search) {
       where.OR = [
         { firstName: { contains: search } },
         { lastName:  { contains: search } },
         { phone:     { contains: search } },
+        { email:     { contains: search, mode: 'insensitive' } },
+        { address:   { contains: search, mode: 'insensitive' } },
         { city:      { contains: search } },
       ]
     }

@@ -741,6 +741,27 @@ model Lead {
   address     String?
   city        String?
 
+  // Public website intake. These stay on the lead until a staff member
+  // verifies the enquiry and explicitly converts it into project data.
+  formType             String?
+  submissionId         String?
+  estimatedUnits       Int?
+  leadType              String?
+  projectType           String?
+  organizingStatus     String?
+  consentContact       Boolean   @default(false)
+  consentPrivacy       Boolean   @default(false)
+  consentRecordedAt    DateTime?
+  privacyPolicyVersion String?
+  utmSource             String?
+  utmMedium             String?
+  utmCampaign           String?
+  matchedBuildingId     String?
+  matchedBuilding       Building? @relation("LeadMatchedBuilding", fields: [matchedBuildingId], references: [id], onDelete: SetNull)
+  possibleDuplicateOfId String?
+  possibleDuplicateOf   Lead?     @relation("LeadPossibleDuplicates", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  possibleDuplicates    Lead[]    @relation("LeadPossibleDuplicates")
+
   source      LeadSource @default(OTHER)
   campaignId  String?
   campaign    Campaign?  @relation(fields: [campaignId], references: [id])
@@ -768,6 +789,9 @@ model Lead {
 
   @@index([tenantId, status])
   @@index([tenantId, assignedToId])
+  @@unique([tenantId, submissionId])
+  @@index([tenantId, matchedBuildingId])
+  @@index([tenantId, possibleDuplicateOfId])
   @@map("leads")
 }
 
@@ -920,6 +944,7 @@ model Building {
   updatedAt       DateTime @updatedAt
 
   apartments      Apartment[]
+  matchedLeads    Lead[]      @relation("LeadMatchedBuilding")
 
   @@index([complexId])
   @@map("buildings")

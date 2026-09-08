@@ -50,14 +50,28 @@ describe('Public lead capture (e2e)', () => {
   const renderedAt = () => new Date(Date.now() - 30_000).toISOString()
 
   const validBody = (n: string) => ({
-    firstName: 'ישראל',
-    lastName: 'ישראלי',
+    kind: 'ELIGIBILITY',
+    submissionId: randomUUID(),
+    fullName: 'ישראל ישראלי',
     email: email(n),
     phone: '050-1234567',
+    address: 'רחוב הבדיקה 12',
     city: 'תל אביב',
-    interest: 'DEMO',
+    estimatedUnits: 24,
+    leadType: 'OWNER',
+    projectType: 'PINUY_BINUY',
+    organizingStatus: 'EARLY_CONVERSATION',
     message: `בדיקת E2E ${RUN}`,
+    consentContact: true,
+    consentPrivacy: true,
+    privacyPolicyVersion: '2026-09-08',
+    sourcePage: '/he/eligibility',
+    locale: 'he',
+    submittedAt: new Date().toISOString(),
     renderedAt: renderedAt(),
+    utmSource: 'e2e',
+    utmMedium: 'test',
+    utmCampaign: 'public-leads',
   })
 
   /**
@@ -154,6 +168,16 @@ describe('Public lead capture (e2e)', () => {
         firstName: 'ישראל',
         lastName: 'ישראלי',
         city: 'תל אביב',
+        address: 'רחוב הבדיקה 12',
+        estimatedUnits: 24,
+        leadType: 'OWNER',
+        projectType: 'PINUY_BINUY',
+        organizingStatus: 'EARLY_CONVERSATION',
+        consentContact: true,
+        consentPrivacy: true,
+        utmSource: 'e2e',
+        utmMedium: 'test',
+        utmCampaign: 'public-leads',
         // LeadStatus spells the won state SIGNED, not WON; a new lead is NEW.
         status: 'NEW',
         // Source attribution, server-decided.
@@ -185,13 +209,27 @@ describe('Public lead capture (e2e)', () => {
 
     it('accepts a minimal submission without the optional fields', async () => {
       const res = await post({
-        firstName: 'דנה', lastName: 'כהן', email: email('minimal'), renderedAt: renderedAt(),
+        kind: 'CONTACT',
+        submissionId: randomUUID(),
+        fullName: 'דנה כהן',
+        phone: '050-7654321',
+        message: 'אשמח שתחזרו אליי',
+        consentContact: true,
+        consentPrivacy: true,
+        privacyPolicyVersion: '2026-09-08',
+        sourcePage: '/he/contact',
+        locale: 'he',
+        submittedAt: new Date().toISOString(),
+        renderedAt: renderedAt(),
       })
       expect(res.status).toBe(200)
-      const lead = await findLead('minimal')
+      const lead = await prisma.lead.findFirst({
+        where: { tenantId: destTenantId, phone: '0507654321' },
+      })
       expect(lead).not.toBeNull()
-      expect(lead!.phone).toBeNull()
+      expect(lead!.email).toBeNull()
       expect(lead!.tenantId).toBe(destTenantId)
+      expect(lead!.formType).toBe('CONTACT')
     })
   })
 
@@ -220,9 +258,11 @@ describe('Public lead capture (e2e)', () => {
   // ─────────────────────── input validation ─────────────────────────────
   describe('validation', () => {
     it('rejects a missing required field', async () => {
-      const res = await post({ lastName: 'כהן', email: email('no-first'), renderedAt: renderedAt() })
+      const body = validBody('no-name')
+      const { fullName: _fullName, ...missingName } = body
+      const res = await post(missingName)
       expect(res.status).toBe(400)
-      expect(await findLead('no-first')).toBeNull()
+      expect(await findLead('no-name')).toBeNull()
     })
 
     it('rejects a malformed email', async () => {
@@ -234,6 +274,27 @@ describe('Public lead capture (e2e)', () => {
       const res = await post({ ...validBody('bad-phone'), phone: '12' })
       expect(res.status).toBe(400)
       expect(await findLead('bad-phone')).toBeNull()
+    })
+
+    it('requires a building address and city for an eligibility enquiry', async () => {
+      const body = validBody('no-address')
+      const { address: _address, city: _city, ...missingLocation } = body
+      const res = await post(missingLocation)
+      expect(res.status).toBe(400)
+      expect(await findLead('no-address')).toBeNull()
+    })
+
+    it('requires both contact and privacy consent', async () => {
+      const withoutContact = await post({
+        ...validBody('no-contact-consent'), consentContact: false,
+      })
+      const withoutPrivacy = await post({
+        ...validBody('no-privacy-consent'), consentPrivacy: false,
+      })
+      expect(withoutContact.status).toBe(400)
+      expect(withoutPrivacy.status).toBe(400)
+      expect(await findLead('no-contact-consent')).toBeNull()
+      expect(await findLead('no-privacy-consent')).toBeNull()
     })
 
     it('rejects an over-length message', async () => {
@@ -255,8 +316,8 @@ describe('Public lead capture (e2e)', () => {
       }
     })
 
-    it('rejects an unknown interest value', async () => {
-      const res = await post({ ...validBody('bad-interest'), interest: 'TAKEOVER' })
+    it('rejects an unknown project type', async () => {
+      const res = await post({ ...validBody('bad-interest'), projectType: 'TAKEOVER' })
       expect(res.status).toBe(400)
     })
   })
@@ -343,6 +404,9 @@ describe('Public lead capture (e2e)', () => {
       // No "already exists" signal — the form must not be usable as an oracle
       // for whether a given person is in the CRM.
       expect(second.body).toEqual(first.body)
+      expect(await prisma.lead.count({
+        where: { tenantId: destTenantId, submissionId: body.submissionId },
+      })).toBe(1)
     })
 
     it('never returns an id, a count, or any lead field', async () => {
@@ -356,6 +420,29 @@ describe('Public lead capture (e2e)', () => {
 
       const lead = await findLead('no-leak')
       expect(body).not.toContain(lead!.id)
+    })
+  })
+
+  describe('duplicate review', () => {
+    it('keeps a new enquiry but marks a similar contact for staff review', async () => {
+      const firstBody = {
+        ...validBody('possible-dupe-first'),
+        phone: '052-7654321',
+        address: 'רחוב ייחודי 88',
+      }
+      const secondBody = {
+        ...validBody('possible-dupe-second'),
+        phone: '052-7654321',
+        address: 'רחוב אחר 2',
+      }
+      await post(firstBody)
+      await post(secondBody)
+
+      const first = await findLead('possible-dupe-first')
+      const second = await findLead('possible-dupe-second')
+      expect(first).not.toBeNull()
+      expect(second).toMatchObject({ possibleDuplicateOfId: first!.id })
+      expect(second!.tags).toContain('possible-duplicate')
     })
   })
 })

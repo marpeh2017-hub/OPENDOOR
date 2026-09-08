@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
-import { DirectContact } from '@/components/forms/direct-contact'
+import { ContactForm } from '@/components/forms/contact-form'
 
 /**
  * General contact.
@@ -42,7 +42,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
 
       <Section size="md">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,640px)_1fr] lg:gap-16">
-          <DirectContact />
+          <ContactForm />
 
           <aside className="lg:pt-1">
             <div className="border-s-2 border-teal-200 ps-5">

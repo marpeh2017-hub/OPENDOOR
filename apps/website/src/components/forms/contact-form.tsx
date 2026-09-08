@@ -26,7 +26,13 @@ import { ErrorSummary, SubmissionFailureNotice, SubmissionSuccess } from './form
  * actions, which is no primary action.
  */
 
-type FieldName = 'fullName' | 'phone' | 'email' | 'message' | 'consent'
+type FieldName =
+  | 'fullName'
+  | 'phone'
+  | 'email'
+  | 'message'
+  | 'consentContact'
+  | 'consentPrivacy'
 
 export function ContactForm() {
   const locale = useLocale() as Locale
@@ -35,7 +41,13 @@ export function ContactForm() {
   const tErrors = useTranslations('forms.errors')
 
   const [values, setValues] = useState({ fullName: '', phone: '', email: '', message: '' })
-  const [consent, setConsent] = useState(false)
+  const [consentContact, setConsentContact] = useState(false)
+  const [consentPrivacy, setConsentPrivacy] = useState(false)
+  const [company, setCompany] = useState('')
+  const [formIdentity] = useState(() => ({
+    submissionId: crypto.randomUUID(),
+    renderedAt: new Date().toISOString(),
+  }))
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
   const [attempted, setAttempted] = useState(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'failed' | 'sent'>('idle')
@@ -49,7 +61,8 @@ export function ContactForm() {
       next.email = tErrors('emailInvalid')
     }
     if (!isPresent(values.message)) next.message = tErrors('messageRequired')
-    if (!consent) next.consent = tErrors('consentRequired')
+    if (!consentContact) next.consentContact = tErrors('contactConsentRequired')
+    if (!consentPrivacy) next.consentPrivacy = tErrors('privacyConsentRequired')
     return next
   }
 
@@ -80,8 +93,10 @@ export function ContactForm() {
       phone: normalisePhone(values.phone),
       ...(isPresent(values.email) ? { email: values.email.trim() } : {}),
       message: values.message.trim(),
-      consent: true,
-      metadata: buildSubmissionMetadata(`/${locale}/contact`, locale),
+      consentContact: true,
+      consentPrivacy: true,
+      ...(company ? { company } : {}),
+      metadata: buildSubmissionMetadata(`/${locale}/contact`, locale, formIdentity),
     }
 
     const outcome = await getLeadSubmissionService().submitContact(submission)
@@ -92,7 +107,9 @@ export function ContactForm() {
     return <SubmissionSuccess title={t('successTitle')} body={t('successBody')} />
   }
 
-  const summary = (['fullName', 'phone', 'email', 'message', 'consent'] as const)
+  const summary = ([
+    'fullName', 'phone', 'email', 'message', 'consentContact', 'consentPrivacy',
+  ] as const)
     .filter((name) => errors[name])
     .map((name) => ({ id: `contact-${name}`, message: errors[name]! }))
 
@@ -148,23 +165,59 @@ export function ContactForm() {
         />
       </Field>
 
+      <div aria-hidden="true" className="absolute start-[-10000px] top-auto h-px w-px overflow-hidden">
+        <label htmlFor="contact-company">Company</label>
+        <input
+          id="contact-company"
+          name="company"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={company}
+          onChange={(event) => setCompany(event.target.value)}
+        />
+      </div>
+
       <Checkbox
-        id="contact-consent"
-        checked={consent}
+        id="contact-consentContact"
+        checked={consentContact}
         onCheckedChange={(next) => {
-          setConsent(next === true)
+          setConsentContact(next === true)
           if (attempted && next === true) {
             setErrors((current) => {
               const rest = { ...current }
-              delete rest.consent
+              delete rest.consentContact
               return rest
             })
           }
         }}
-        error={errors.consent}
+        error={errors.consentContact}
         label={
           <>
-            {tForms('consentLabel')}{' '}
+            {tForms('contactConsentLabel')}
+            <span aria-hidden="true" className="ms-1 text-red-600">*</span>
+            <span className="sr-only"> ({tForms('required')})</span>
+          </>
+        }
+      />
+
+      <Checkbox
+        id="contact-consentPrivacy"
+        checked={consentPrivacy}
+        onCheckedChange={(next) => {
+          setConsentPrivacy(next === true)
+          if (attempted && next === true) {
+            setErrors((current) => {
+              const rest = { ...current }
+              delete rest.consentPrivacy
+              return rest
+            })
+          }
+        }}
+        error={errors.consentPrivacy}
+        label={
+          <>
+            {tForms('privacyConsentLabel')}{' '}
             <Link href="/privacy" className="underline underline-offset-2">
               {tForms('consentLinkText')}
             </Link>

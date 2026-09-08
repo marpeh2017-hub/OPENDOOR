@@ -144,8 +144,10 @@
     "optionalDivider": "Want to tell us more? The fields below are optional.",
     "required": "Required",
     "optional": "Optional",
+    "selectPlaceholder": "Choose an option",
     "submitting": "Sending",
-    "consentLabel": "I have read and accept the privacy policy.",
+    "contactConsentLabel": "I agree that OpenDoor Group may contact me about this enquiry.",
+    "privacyConsentLabel": "I have read and accept the",
     "consentLinkText": "privacy policy",
     "errorSummaryTitle": "We could not send this. Some details are missing or need fixing.",
     "failureTitle": "Your details were not sent.",
@@ -154,13 +156,17 @@
     "noCost": "OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.",
     "errors": {
       "addressRequired": "We need the building address to look at the complex.",
+      "cityRequired": "Please tell us which city the building is in.",
       "nameRequired": "We need a name so we know who to contact.",
       "phoneRequired": "We need a phone number to get back to you.",
       "phoneInvalid": "That phone number looks incomplete. Hyphens and spaces are fine.",
       "emailInvalid": "That email address does not look right.",
       "apartmentsInvalid": "An approximate number is fine, for example 24.",
+      "leadTypeRequired": "Choose how you are connected to this enquiry.",
+      "projectTypeRequired": "Choose what you would like us to review.",
       "messageRequired": "Tell us how we can help.",
-      "consentRequired": "Please accept the privacy policy to send this."
+      "contactConsentRequired": "Please agree that we may contact you about this enquiry.",
+      "privacyConsentRequired": "Please accept the privacy policy to send this."
     },
     "loadingLabel": "Loading"
   },
@@ -169,12 +175,15 @@
     "heading": "Start with a conversation about your building",
     "standfirst": "Considering urban renewal, talking with neighbours, or already represented? Tell us where things stand and what you would like to understand.",
     "addressLabel": "Building or complex address",
-    "addressHint": "Street and city is enough. No block or parcel number needed.",
+    "addressHint": "Street and number is enough. No block or parcel number needed.",
+    "cityLabel": "City",
     "nameLabel": "Full name",
     "phoneLabel": "Phone",
     "emailLabel": "Email",
     "apartmentsLabel": "Approximate number of apartments",
     "apartmentsHint": "A rough estimate is fine.",
+    "leadTypeLabel": "Who is contacting us?",
+    "projectTypeLabel": "What would you like us to review?",
     "organizingLabel": "How organised are the owners?",
     "notesLabel": "Anything else",
     "submit": "Send my details",
@@ -192,6 +201,20 @@
       "EARLY_CONVERSATION": "Neighbours have started talking",
       "REPRESENTATION_FORMED": "We have a residents' committee",
       "PROCESS_ACTIVE": "A process is already under way"
+    },
+    "leadTypes": {
+      "OWNER": "Apartment owner",
+      "REPRESENTATIVE": "Owners' representative",
+      "LAWYER": "Lawyer",
+      "DEVELOPER": "Developer representative",
+      "GENERAL": "General enquiry"
+    },
+    "projectInterests": {
+      "UNKNOWN": "Not sure yet",
+      "TAMA_38": "TAMA 38",
+      "PINUY_BINUY": "Pinuy-binuy",
+      "RIGHTS_CHECK": "Rights and feasibility review",
+      "OWNER_ORGANIZING": "Owners organising"
     }
   },
   "contactPage": {

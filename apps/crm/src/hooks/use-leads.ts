@@ -16,6 +16,21 @@ export interface Lead {
   score:        number
   notes:        string | null
   tags:         string[]
+  estimatedUnits: number | null
+  leadType:     string | null
+  projectType:  string | null
+  organizingStatus: string | null
+  formType:     string | null
+  consentContact: boolean
+  consentPrivacy: boolean
+  consentRecordedAt: string | null
+  privacyPolicyVersion: string | null
+  utmSource:    string | null
+  utmMedium:    string | null
+  utmCampaign:  string | null
+  submissionId: string | null
+  matchedBuildingId: string | null
+  possibleDuplicateOfId: string | null
   assignedToId: string | null
   convertedToResidentId: string | null
   convertedAt:  string | null
@@ -37,9 +52,18 @@ export const leadKeys = {
   detail: (id: string) => [...leadKeys.all(), 'detail', id] as const,
 }
 
-export function useLeads(params?: { status?: string; search?: string; page?: number; limit?: number }) {
+export function useLeads(params?: {
+  status?: string
+  source?: string
+  city?: string
+  search?: string
+  page?: number
+  limit?: number
+}) {
   const q = new URLSearchParams()
   if (params?.status) q.set('status', params.status)
+  if (params?.source) q.set('source', params.source)
+  if (params?.city)   q.set('city', params.city)
   if (params?.search) q.set('search', params.search)
   if (params?.page)   q.set('page',   String(params.page))
   if (params?.limit)  q.set('limit',  String(params.limit))
