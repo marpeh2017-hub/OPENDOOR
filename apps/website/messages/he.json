@@ -35,6 +35,7 @@
     "legal": "מידע משפטי",
     "privacy": "מדיניות פרטיות",
     "terms": "תנאי שימוש",
+    "accessibility": "הצהרת נגישות",
     "rights": "כל הזכויות שמורות"
   },
   "errors": {
@@ -87,6 +88,9 @@
       "title": "תנאי שימוש",
       "notice": "לשאלות בנושא השימוש באתר OpenDoor Group, ניתן לפנות אלינו דרך עמוד יצירת הקשר.",
       "contactLink": "יצירת קשר"
+    },
+    "accessibility": {
+      "title": "הצהרת נגישות"
     },
     "residentPortal": {
       "title": "תיק הדייר"

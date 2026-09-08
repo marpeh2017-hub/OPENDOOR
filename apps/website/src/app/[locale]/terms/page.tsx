@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
-import { Link } from '@/i18n/navigation'
 import { STUB_ROBOTS } from '@/lib/seo'
+import { TermsContent } from '@/components/legal/legal-sections'
 
 /**
  * Terms of use.
@@ -36,13 +36,7 @@ export default async function TermsPage({
     <>
       <PageHeader title={t('title')} />
       <Section size="sm">
-        <p className="max-w-prose text-base leading-relaxed text-gray-700">{t('notice')}</p>
-        <Link
-          href="/contact"
-          className="mt-4 inline-flex items-center gap-2 text-[15px] font-semibold text-teal-700 hover:underline"
-        >
-          {t('contactLink')}
-        </Link>
+        <TermsContent english={locale === 'en'} />
       </Section>
     </>
   )

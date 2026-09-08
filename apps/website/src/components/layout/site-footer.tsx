@@ -70,6 +70,9 @@ export async function SiteFooter() {
             <Link href="/terms" className="text-xs text-gray-600 hover:text-teal-700">
               {tFooter('terms')}
             </Link>
+            <Link href="/accessibility" className="text-xs text-gray-600 hover:text-teal-700">
+              {tFooter('accessibility')}
+            </Link>
           </nav>
         </div>
       </div>

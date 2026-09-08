@@ -35,6 +35,7 @@
     "legal": "Legal",
     "privacy": "Privacy policy",
     "terms": "Terms of use",
+    "accessibility": "Accessibility",
     "rights": "All rights reserved"
   },
   "errors": {
@@ -87,6 +88,9 @@
       "title": "Terms of use",
       "notice": "For questions about using the OpenDoor Group website, please contact us.",
       "contactLink": "Contact us"
+    },
+    "accessibility": {
+      "title": "Accessibility statement"
     },
     "residentPortal": {
       "title": "Resident portal"
