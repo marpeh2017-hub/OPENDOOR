@@ -37,6 +37,7 @@ interface SlotSpec {
 }
 
 const SLOTS: SlotSpec[] = [
+  { id: 'RESIDENT_MEETING', label: 'כנס דיירים — עמוד כך אנחנו עובדים', claim: 'EDITORIAL_CONTEXT' },
   { id: 'HERO_JERUSALEM_ARCHITECTURE', label: 'הירו — פתיחת דף הבית', claim: 'EDITORIAL_CONTEXT' },
   { id: 'JERUSALEM_LIGHT_RAIL', label: 'רצועת עיר — בין התהליך לפרויקטים', claim: 'EDITORIAL_CONTEXT' },
   { id: 'JERUSALEM_CHORDS_BRIDGE', label: 'קריאה לפעולה בעמוד הבית', claim: 'EDITORIAL_CONTEXT' },
