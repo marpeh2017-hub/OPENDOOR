@@ -72,7 +72,13 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     direction:
       'Contemporary Jerusalem RESIDENTIAL architecture: stone-faced apartment blocks, balconies, the stepped hillside density. Daylight, flat or overcast, no golden hour. Must NOT be: the Old City, a tourist viewpoint, a luxury tower, a construction site with cranes, or a CGI render. The subject is where people live, not what a visitor photographs.',
     fallback: 'hillside',
-    asset: null,
+    asset: {
+      id: 'editorial-jerusalem-stone-view', kind: 'image',
+      url: '/images/editorial/jerusalem-stone-view.webp', imageType: 'EDITORIAL_CONTEXT',
+      alt: { he: 'המחשת AI של מרקם מגורים ירושלמי מבעד לקירות אבן', en: 'AI illustration of Jerusalem housing seen between stone walls' },
+      caption: { he: 'להמחשה בלבד', en: 'For illustration only' },
+      focalPoint: { x: 50, y: 65 },
+    },
   },
 
   /* ── 2 ── CITY BAND, between the process and the projects ────────────── */

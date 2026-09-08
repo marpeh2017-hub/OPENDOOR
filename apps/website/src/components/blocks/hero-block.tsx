@@ -166,11 +166,6 @@ function Aperture({
             slot={slot}
             priority
             sizes="(max-width: 1023px) 92vw, 46vw"
-            // The caption would sit under the hero's most important control.
-            // The image is a drawing today and claims nothing; when a
-            // photograph lands the credit line belongs in the footer instead,
-            // which is noted in the inventory.
-            captionHidden
             className="aspect-[16/10] w-full lg:aspect-[3/4]"
           />
 

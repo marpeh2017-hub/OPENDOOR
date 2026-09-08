@@ -3,6 +3,8 @@ import { Section, SectionHeading } from './section'
 import type { Localizer } from '@/lib/localize'
 import { Reveal } from '@/components/brand/reveal'
 import { ProjectPattern, STROKE } from '@/components/brand/architecture'
+import { ContextFigure } from '@/components/brand/context-figure'
+import { stageImages, residentMeeting } from '@/content/editorial-assets'
 import { getTranslations } from 'next-intl/server'
 
 /**
@@ -95,11 +97,15 @@ export async function JourneyBlockView({
               index={index}
               t={t}
               headingLevel={stageHeadingLevel}
+              illustrated={block.id === 'how-journey'}
               asksLabel={tJourney('asksLabel')}
             />
           ))}
         </ol>
       </div>
+      {block.id === 'how-journey' && (
+        <Section size="sm"><ContextFigure asset={residentMeeting} t={t} /></Section>
+      )}
     </>
   )
 }
@@ -110,11 +116,13 @@ function StageRow({
   t,
   headingLevel: Heading,
   asksLabel,
+  illustrated,
 }: {
   stage: JourneyStage
   index: number
   t: Localizer
   headingLevel: 'h2' | 'h3'
+  illustrated: boolean
   asksLabel: string
 }) {
   const flipped = index % 2 === 1
@@ -149,7 +157,9 @@ function StageRow({
     </div>
   )
 
-  const graphic = (
+  const assignment = illustrated ? stageImages[stage.id] : undefined
+  const asset = assignment?.title === stage.title.he ? assignment.asset : undefined
+  const graphic = asset ? <ContextFigure asset={asset} t={t} /> : (
     <div className="aspect-[16/9] overflow-hidden bg-surface-sunken">
       {/* Deterministic per stage, so the eight marks differ from one another
           and stay the same on every render. The variation encodes nothing. */}
@@ -164,7 +174,7 @@ function StageRow({
           {/* DOM order is always text first, so the reading and tab order stay
               consistent; `lg:order-*` does the visual alternation. */}
           <div className={flipped ? 'lg:order-2' : ''}>{text}</div>
-          <div className={`hidden lg:block ${flipped ? 'lg:order-1' : ''}`}>{graphic}</div>
+          <div className={`${asset ? 'block' : 'hidden lg:block'} ${flipped ? 'lg:order-1' : ''}`}>{graphic}</div>
         </div>
       </Reveal>
     </li>
