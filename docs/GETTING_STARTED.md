@@ -29,6 +29,25 @@ cp .env .env.local
 
 > ✅ ערכי ברירת המחדל ב-`.env` מתאימים להתקנת ה-Windows המתוארת בסעיף 3א.
 
+**שני קבצי הייחוס:**
+
+| קובץ | מה הוא | מתי להשתמש |
+|---|---|---|
+| `.env.example` | כל משתנה שהקוד באמת קורא, כולל אופציונליים וברירות המחדל שלהם | פיתוח, ולהבין מה קיים |
+| `.env.production.example` | מה שפריסה לפרודקשן חייבת להגדיר | פרודקשן — **זה הקובץ הקובע** |
+
+ארבעה משתנים גורמים לכישלון עלייה מיידי אם הם חסרים בפרודקשן:
+
+```
+DATABASE_URL          Prisma
+JWT_SECRET            JwtStrategy זורק ב-constructor
+REDIS_URL             RedisModule זורק בפרודקשן
+FIELD_ENCRYPTION_KEY  FieldEncryptionService זורק בפרודקשן
+```
+
+בפיתוח `FIELD_ENCRYPTION_KEY` נופל למפתח dev לא מאובטח ומדפיס אזהרה בעלייה.
+זה תקין מקומית ואסור בפרודקשן.
+
 ---
 
 ## 3 — הפעלת תשתית
@@ -75,7 +94,7 @@ curl http://127.0.0.1:9000/minio/health/live
 ### 3ב — Docker (סביבות אחרות בלבד)
 
 ```bash
-# הפעל PostgreSQL, Redis, RabbitMQ, MinIO
+# הפעל PostgreSQL, Redis, MinIO
 docker compose up -d
 
 # אמת שהכל רץ
@@ -157,3 +176,68 @@ cd services/api-gateway && pnpm start:dev
 pnpm build      # build כל האפליקציות
 pnpm typecheck  # בדיקת TypeScript
 ```
+
+---
+
+## 9 — הקמת סביבת פרודקשן
+
+### 9א — מיגרציות
+
+```bash
+# deploy, לא dev. `migrate dev` מייצר מיגרציות ועלול לאפס נתונים.
+DATABASE_URL="..." pnpm --filter @urban-renewal/db exec   prisma migrate deploy --schema prisma/schema.postgres.prisma
+```
+
+`services/api-gateway/start.sh` כבר מריץ את זה לפני שהשרת עולה.
+
+### 9ב — Tenant ומנהל ראשונים
+
+**`pnpm db:seed` הוא נתוני דמו בלבד** — שלושה פרויקטים, דיירים ובעלים — והוא
+יוצא בשגיאה כאשר `NODE_ENV=production`. זה נכון: אף אחד לא רוצה „הרצל 45 תל
+אביב” בפריסה אמיתית.
+
+לפרודקשן יש סקריפט נפרד שיוצר **רק** tenant ומנהל אחד:
+
+```bash
+BOOTSTRAP_TENANT_NAME="OpenDoor Group" BOOTSTRAP_TENANT_SLUG="opendoor" BOOTSTRAP_ADMIN_EMAIL="admin@opendoor.co.il" BOOTSTRAP_ADMIN_PASSWORD="..." pnpm --filter @urban-renewal/api-gateway bootstrap
+```
+
+- אין סיסמת ברירת מחדל. בלי `BOOTSTRAP_ADMIN_PASSWORD` הסקריפט מסרב לרוץ.
+- הרצה חוזרת בטוחה: הוא מדווח מה כבר קיים ואינו משנה שורות קיימות.
+- הוא **לא** מאפס סיסמה של מנהל קיים.
+- הוא אינו יוצר פרויקטים, מבנים או דיירים.
+
+### 9ג — גיבויים
+
+```bash
+# ריצה חד-פעמית
+DATABASE_URL="..." bash scripts/backup/pg-backup.sh
+
+# תזמון יומי במכונת הפיתוח (Windows)
+pwsh scripts/backup/register-backup-task.ps1 -At "03:00"
+```
+
+כל dump מאומת מיד אחרי הכתיבה (`pg_restore --list` + ספירת טבלאות), ודump
+שנכשל נמחק כדי שלא ייחשב בטעות לגיבוי תקין. שמירה: 30 יום, אך לעולם לא פחות
+מ-7 גיבויים.
+
+**שחזור — קראו את זה לפני שתצטרכו אותו:**
+
+```bash
+DATABASE_URL="postgresql://.../restore_drill"   bash scripts/backup/pg-restore.sh ./backups/<file>.dump
+```
+
+הסקריפט מסרב לשחזר לתוך מסד שכבר מכיל טבלאות אלא אם מועבר `--force`.
+
+> ⚠️ הגיבויים נשמרים על אותה מכונה כמו המסד ואינם מוצפנים. dump מכיל את כל
+> המידע האישי של הדיירים. העתיקו אותם למקום אחר לפני שמסתמכים עליהם.
+
+### 9ד — מה עדיין לא קיים
+
+| נושא | מצב |
+|---|---|
+| Dockerfile ל-CRM ול-Portal | חסר — רק ל-api-gateway יש |
+| Reverse proxy / TLS | לא הוגדר |
+| CI | אין `.github/workflows` |
+| לוגים מובנים | קונסולה בלבד |
+| ניטור ו-alerting | אין |

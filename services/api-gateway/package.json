@@ -6,8 +6,12 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
+    "bootstrap": "node dist/scripts/bootstrap-tenant.js",
     "lint": "eslint src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "jest --config jest.unit.config.js",
+    "test:e2e": "jest --config jest.config.js --runInBand",
+    "test:feasibility": "jest --config jest.unit.config.js src/feasibility && jest --config jest.config.js --runInBand test/feasibility"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.716.0",

@@ -60,3 +60,10 @@ prisma/migrations/dev/
 # Redis persistence snapshot. NEVER commit: it contains live runtime state —
 # `jwt:revoked:*` session identifiers and `otp:resend:*` counters.
 dump.rdb
+
+# Database dumps. A dump contains every resident's personal data in plaintext,
+# including encrypted-at-rest columns in their encrypted form plus everything
+# that is not encrypted. It must never reach the repository.
+backups/
+*.dump
+*.sql.gz
