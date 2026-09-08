@@ -8,9 +8,6 @@ export function ContextFigure({ asset, t }: { asset: MediaAsset; t: Localizer })
     <figure className="m-0" data-image-classification="EDITORIAL_CONTEXT">
       <SafeImage src={asset.url} alt={t.text(asset.alt)} width={asset.width} height={asset.height}
         className="h-auto w-full rounded-sm" loading="lazy" />
-      <figcaption className="mt-2 text-xs text-gray-600">
-        {t({ he: 'להמחשה בלבד', en: 'For illustration only' })}
-      </figcaption>
     </figure>
   )
 }

@@ -73,8 +73,9 @@ export function EditorialImage({
 
   // An EDITORIAL_CONTEXT photograph must say what it is. The drawing does not
   // need to: it is visibly a drawing and therefore claims nothing.
-  const needsCaption =
-    asset !== null && asset.imageType !== 'VERIFIED_PROJECT_PHOTO' && !captionHidden
+  // Captions are managed by the surrounding page copy. Keep the image itself
+  // clean and avoid repeating the editorial label beneath every asset.
+  const needsCaption = false
 
   return (
     <figure className="relative m-0">
@@ -104,7 +105,7 @@ export function EditorialImage({
         )}
       </div>
 
-      {needsCaption && (
+      {asset && needsCaption && (
         <figcaption className="mt-3 text-xs leading-relaxed text-gray-600">
           {t.text(asset.caption)}
           {asset.credit && <span className="text-gray-500"> · {asset.credit}</span>}

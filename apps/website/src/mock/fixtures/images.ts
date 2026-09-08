@@ -1,5 +1,6 @@
 import type { MediaAsset } from '@urban-renewal/api-contracts'
 import { getCmsImageSlots, getPublicMediaUrl } from '@/lib/cms-source'
+import { residentMeeting } from '@/content/editorial-assets'
 
 /**
  * ══════════════════════════════════════════════════════════════════════════
@@ -57,6 +58,13 @@ export interface ImageSlotSpec {
 }
 
 export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
+  RESIDENT_MEETING: {
+    id: 'RESIDENT_MEETING', purpose: 'Editorial image in the designated process-page media position.',
+    orientation: 'landscape', desktopRatio: '16 / 9', mobileRatio: '4 / 3', minResolution: '1600 × 900',
+    altIntent: 'A residents meeting shown as an illustrative image, never a verified event.',
+    claim: 'EDITORIAL_CONTEXT', direction: 'Community residents meeting; no claim of a real OpenDoor event.',
+    fallback: 'pattern', asset: residentMeeting,
+  },
   /* ── 1 ── HERO ───────────────────────────────────────────────────────── */
   HERO_JERUSALEM_ARCHITECTURE: {
     id: 'HERO_JERUSALEM_ARCHITECTURE',

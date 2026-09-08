@@ -489,7 +489,7 @@ const howWeWorkBlocks: PageBlock[] = [
     type: 'MEDIA',
     order: 2,
     hidden: false,
-    slotId: 'RENEWED_ALONGSIDE_EXISTING',
+    slotId: 'RESIDENT_MEETING',
     assets: [],
     caption: {
       he: 'בנייה קיימת לצד בנייה מחודשת. תמונת הקשר, לא פרויקט של החברה.',

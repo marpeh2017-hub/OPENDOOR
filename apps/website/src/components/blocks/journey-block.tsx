@@ -4,7 +4,7 @@ import type { Localizer } from '@/lib/localize'
 import { Reveal } from '@/components/brand/reveal'
 import { ProjectPattern, STROKE } from '@/components/brand/architecture'
 import { ContextFigure } from '@/components/brand/context-figure'
-import { stageImages, residentMeeting } from '@/content/editorial-assets'
+import { stageImages } from '@/content/editorial-assets'
 import { getTranslations } from 'next-intl/server'
 
 /**
@@ -103,9 +103,6 @@ export async function JourneyBlockView({
           ))}
         </ol>
       </div>
-      {block.id === 'how-journey' && (
-        <Section size="sm"><ContextFigure asset={residentMeeting} t={t} /></Section>
-      )}
     </>
   )
 }
