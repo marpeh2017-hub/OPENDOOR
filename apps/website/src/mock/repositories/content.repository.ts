@@ -19,8 +19,11 @@ const ALL_PAGES: readonly CmsPage[] = [...MOCK_PAGES, ...CORE_PAGES]
 export async function getPageBySlug(slug: string): Promise<CmsPage | null> {
   const fromCms = await getCmsPage(slug)
   if (fromCms) return { ...fromCms, blocks: visibleBlocks(fromCms.blocks) }
-  // Withdrawal must not resurrect an earlier code copy.
-  if (isCmsManaged(slug)) return null
+  // During local development the gateway is often intentionally stopped while
+  // the website is being worked on. Keep the approved fixture available there;
+  // production remains fail-closed so an unpublished or withdrawn CMS page can
+  // never be resurrected by an outage.
+  if (isCmsManaged(slug) && process.env.NODE_ENV === 'production') return null
 
   const page = ALL_PAGES.find((p) => p.slug === slug && p.publishState === 'published')
   if (!page) return null
