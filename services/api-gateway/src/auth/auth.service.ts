@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
+import { createHash, createHmac, randomInt, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 import { PrismaService } from '../prisma.service'
 import { SmsService } from '../sms/sms.service'
 import { REDIS } from '../redis/redis.module'
@@ -16,6 +16,18 @@ import { VerifyOtpDto } from './dto/verify-otp.dto'
 const OTP_TTL_SECONDS  = 300    // 5 minutes
 const RATE_TTL_SECONDS = 3600   // 1 hour
 const RATE_MAX         = 3      // max OTPs per hour
+
+/**
+ * Failed verification attempts allowed per issued code, after which the code is
+ * destroyed and a new one must be requested.
+ *
+ * Without this, a 6-digit code with a 5-minute life is limited only by the
+ * global throttler — roughly 1,500 guesses per window per IP, and an attacker
+ * with several IPs multiplies that freely. Five is the same order as the
+ * `SigningSession.otpAttempts` counter the signing flow already enforces; this
+ * brings the login flow up to the standard the signing flow already meets.
+ */
+const OTP_MAX_ATTEMPTS = 5
 
 // A revoked session must stay revoked for at least as long as the longest-lived
 // token that carries its sessionId. The refresh token lives 30 days, so a 24h
@@ -51,8 +63,42 @@ function checkPassword(plain: string, stored: string): boolean {
   return plain === stored
 }
 
+/**
+ * OTP storage hash — HMAC, not a bare digest.
+ *
+ * A six-digit code has 10^6 pre-images. `sha256(otp)` is therefore not a hash
+ * in any useful sense: anyone who can read Redis enumerates the whole space in
+ * milliseconds. The HMAC key makes the stored value useless without the server
+ * secret.
+ *
+ * The pepper is DERIVED from `JWT_SECRET` rather than being a new environment
+ * variable. `JwtStrategy` already refuses to construct without `JWT_SECRET`, so
+ * this cannot be silently unset in production — and a new required variable is
+ * a new way for a deployment to fail. The domain separator keeps this key
+ * distinct from anything else derived from the same secret.
+ */
+function otpPepper(): Buffer {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET is required to hash OTP codes')
+  return createHmac('sha256', secret).update('otp-pepper-v1').digest()
+}
+
 function hashOtp(otp: string): string {
-  return createHash('sha256').update(otp).digest('hex')
+  return createHmac('sha256', otpPepper()).update(otp).digest('hex')
+}
+
+/**
+ * Constant-time comparison of two hex digests.
+ *
+ * `a !== b` on a hash leaks nothing useful in practice, but the codebase
+ * already uses `timingSafeEqual` for password checks and consistency here
+ * costs nothing.
+ */
+function digestsMatch(a: string, b: string): boolean {
+  const left = Buffer.from(a, 'hex')
+  const right = Buffer.from(b, 'hex')
+  if (left.length !== right.length || left.length === 0) return false
+  return timingSafeEqual(left, right)
 }
 
 @Injectable()
@@ -131,11 +177,18 @@ export class AuthService {
       throw new BadRequestException('יותר מדי בקשות OTP — נסה שוב בעוד שעה')
     }
 
-    const otp     = Math.floor(100000 + Math.random() * 900000).toString()
+    // `Math.random()` is xorshift128+: fast, and its internal state is
+    // recoverable from a modest number of outputs, after which every later code
+    // is computable rather than guessable. For the resident portal's ONLY
+    // authentication factor that is not acceptable.
+    const otp     = randomInt(100000, 1000000).toString()
     const otpKey  = `otp:${dto.phone}`
 
-    // Store sha256(otp) — never plaintext
+    // Store HMAC(otp) — never plaintext, and never a bare digest over 10^6.
     await this.redis.setex(otpKey, OTP_TTL_SECONDS, hashOtp(otp))
+    // A fresh code resets the attempt budget. Tied to the code's own lifetime,
+    // so the counter cannot outlive the secret it protects.
+    await this.redis.del(`otp:attempts:${dto.phone}`)
 
     // Send via configured SMS provider (never logs the OTP value)
     await this.sms.sendOtp(dto.phone, otp)
@@ -144,24 +197,67 @@ export class AuthService {
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
-    const otpKey    = `otp:${dto.phone}`
-    const storedHash = await this.redis.get(otpKey)
+    const otpKey      = `otp:${dto.phone}`
+    const attemptsKey = `otp:attempts:${dto.phone}`
+    const storedHash  = await this.redis.get(otpKey)
 
-    if (!storedHash || storedHash !== hashOtp(dto.code)) {
+    if (!storedHash) {
+      throw new UnauthorizedException('קוד OTP שגוי או פג תוקף')
+    }
+
+    if (!digestsMatch(storedHash, hashOtp(dto.code))) {
+      // Count the failure against THIS code, and destroy the code once the
+      // budget is spent. Incrementing before the check would be off by one;
+      // incrementing after the throw would never run.
+      const attempts = await this.redis.incr(attemptsKey)
+      if (attempts === 1) await this.redis.expire(attemptsKey, OTP_TTL_SECONDS)
+      if (attempts >= OTP_MAX_ATTEMPTS) {
+        await this.redis.del(otpKey)
+        await this.redis.del(attemptsKey)
+        throw new UnauthorizedException('יותר מדי ניסיונות שגויים — בקשו קוד חדש')
+      }
       throw new UnauthorizedException('קוד OTP שגוי')
     }
 
-    // Delete on success — single-use
+    // Delete on success — single-use, and the attempt budget dies with it.
     await this.redis.del(otpKey)
+    await this.redis.del(attemptsKey)
 
-    // Look up resident by phone
-    const resident = await this.prisma.resident.findFirst({
-      where: { phone: dto.phone },
+    // ── Who is this? ────────────────────────────────────────────────────────
+    //
+    // The OTP proves control of a phone number. It proves NOTHING about which
+    // tenant, project or resident profile the caller is entitled to — phone
+    // numbers are not unique across tenants and nothing in the schema makes
+    // them so.
+    //
+    // The previous `findFirst({ where: { phone } })` therefore handed out a
+    // session for whichever row the query planner happened to reach first,
+    // carrying that row's `tenantId`. With two tenants holding the same number
+    // that is a cross-tenant account takeover with no attacker effort at all.
+    //
+    // Archived residents are excluded: a soft-archived profile is a former
+    // resident, and `isActive` is exactly the flag that says so.
+    const candidates = await this.prisma.resident.findMany({
+      where: { phone: dto.phone, isActive: true },
+      select: { id: true, tenantId: true },
     })
 
-    if (!resident) {
+    if (candidates.length === 0) {
       throw new UnauthorizedException('מספר זה אינו רשום במערכת')
     }
+    if (candidates.length > 1) {
+      // Refuse rather than choose. Picking one would be a coin flip between
+      // two people's data.
+      //
+      // The resident-facing selection flow (subdomain context, invitation
+      // token, explicit choice) is the next phase of work; until it exists,
+      // refusing is the only safe behaviour and it is deliberate, not a stub.
+      throw new UnauthorizedException(
+        'מספר הטלפון משויך ליותר מפרופיל דייר אחד. פנו אלינו כדי להשלים את ההתחברות.',
+      )
+    }
+
+    const resident = candidates[0]!
 
     const sessionId = randomUUID()
     const payload = {
