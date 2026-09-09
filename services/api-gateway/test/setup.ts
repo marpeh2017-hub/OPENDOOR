@@ -10,6 +10,11 @@
 require('dotenv/config')
 
 process.env.NODE_ENV   = 'test'
+process.env.MESSAGING_SIMULATE = 'true'
+// Integration tests must never select a real OTP transport from a local .env.
+for (const key of ['VONAGE_API_KEY', 'TWILIO_ACCOUNT_SID', 'INFORU_USERNAME']) {
+  delete process.env[key]
+}
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-for-e2e-only'
 
 // Local dev/test runs against PostgreSQL (matches production architecture).

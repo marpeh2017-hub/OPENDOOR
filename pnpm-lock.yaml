@@ -155,10 +155,10 @@ importers:
         version: 10.5.0(postcss@8.5.15)
       eslint:
         specifier: ^9.17.0
-        version: 9.39.4(jiti@1.21.7)
+        version: 9.39.4(jiti@2.7.0)
       eslint-config-next:
         specifier: ^15.1.3
-        version: 15.5.19(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
+        version: 15.5.19(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
       postcss:
         specifier: ^8.5.1
         version: 8.5.15
@@ -497,6 +497,9 @@ importers:
       '@types/pdfkit':
         specifier: ^0.17.6
         version: 0.17.6
+      '@vonage/server-sdk':
+        specifier: ^3.30.0
+        version: 3.30.0
       amqplib:
         specifier: ^0.10.5
         version: 0.10.9
@@ -2492,6 +2495,9 @@ packages:
   '@types/d3-timer@3.0.2':
     resolution: {integrity: sha512-Ps3T8E8dZDam6fUyNiMkekK3XUsaUEik+idO9/YjPtfj2qruF8tFBXS7XhtE4iIXBLxhmLjP3SXpLhVf21I9Lw==}
 
+  '@types/debug@4.1.13':
+    resolution: {integrity: sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==}
+
   '@types/eslint-scope@3.7.7':
     resolution: {integrity: sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg==}
 
@@ -2770,6 +2776,86 @@ packages:
     resolution: {integrity: sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==}
     cpu: [x64]
     os: [win32]
+
+  '@vonage/accounts@1.23.0':
+    resolution: {integrity: sha512-6J2vEqkEHukaI6so9XgyklIQ+KHEHTugs99icLvnYj6H8HIX/ydUqRpTteO3BTbrFDUImFJgSceJxDFtzGpROA==}
+    engines: {node: '>=22'}
+
+  '@vonage/applications@1.23.0':
+    resolution: {integrity: sha512-5M961/ho7BHmSazI+jfrJhAz5Bwn8StNTC/Afir0vUQhKKchPJYZrH3zG0idO6W2qAY5PxMIOiJ8OjrVrFQ1zA==}
+    engines: {node: '>=22'}
+
+  '@vonage/auth@1.18.0':
+    resolution: {integrity: sha512-WBaH8dKO1FmfPvwWD+dGBPjpdB53CyZEgdpJOD4Sk1jm8yQZihRPCpSESCJlDInj5AANXysZfI5fMQCESOqa3Q==}
+    engines: {node: '>=22'}
+
+  '@vonage/conversations@1.17.0':
+    resolution: {integrity: sha512-1h5vAIH1Z47XTmXPPrWNFrtLbhd+Yr/YNgz8CXfEDsFquZUlVVdBQmMpytxp9ddgzoelnDZjr8KuJBnCW/plcQ==}
+    engines: {node: '>=22'}
+
+  '@vonage/jwt@1.17.0':
+    resolution: {integrity: sha512-ykV14M/WUuA7bp801qvVhS+5pd+5X0HlbyPcieOzWHn6X/Z9uX5VIIVltTU+lgbz2dTS4x5kYNpnEiPOhFU4eg==}
+    engines: {node: '>=22'}
+
+  '@vonage/messages@1.27.0':
+    resolution: {integrity: sha512-x/zdLmH7Lsk+Y0HuMaaiowG/VY4f5/T2esWckr9BcD202VxxSZLuu2rMKQuPK28E9SmrBukMbdXdZ19aLyuNNQ==}
+    engines: {node: '>=22'}
+
+  '@vonage/number-insights@1.23.0':
+    resolution: {integrity: sha512-i2gEISxLpWtGYQwSUWfheBXe3Pa81OgsL1DgDLS7IxIyin7f0EruhTsedCp1KcKZgnt8E1KAPI3m6cIlcryNag==}
+    engines: {node: '>=22'}
+
+  '@vonage/numbers@1.25.0':
+    resolution: {integrity: sha512-tOQvtLoM+p2tPZcqRLLD15Mc0bSFNvV7o3I0ojL9OasoYDSymHyIL5mhyrNI3Mh78XOctLuoW2io+uC0VQiHQg==}
+    engines: {node: '>=22'}
+
+  '@vonage/pricing@1.23.0':
+    resolution: {integrity: sha512-1VmJRhLeRobRfNQcrqw9sO8SLHKYVbTmi4egQYDGFEUY5N45hWOGYtKn9YLqhgsh5SB6vvYtVnbw0jRq0NAW/A==}
+    engines: {node: '>=22'}
+
+  '@vonage/redact@1.22.0':
+    resolution: {integrity: sha512-PIr4ygDhy+z3G+gwA+s+lhmp/suSbIHqzvHtEUvM9jSEPpBVT0wcHxVxeRnkE5/ywOCbpUHHwiOGm/4IsawXYg==}
+    engines: {node: '>=22'}
+
+  '@vonage/reports@1.2.0':
+    resolution: {integrity: sha512-xs5Aw4XoEz2sHj0R0G91eiplk5G2s2yMak1Qtu978n5Se9Yfev71chg+eF3MKa8Hd36cn793gkn/g8eFOx5LnA==}
+    engines: {node: '>=20'}
+
+  '@vonage/server-client@1.23.0':
+    resolution: {integrity: sha512-i9uZBwxqMc4G9iWQA2PC/I+pvyfF3R1kFNw3MyC0HtR5KJsprbUIueSDumDxB+gEbPhDaBENR6XTkESkRqHKYw==}
+    engines: {node: '>=22'}
+
+  '@vonage/server-sdk@3.30.0':
+    resolution: {integrity: sha512-qjbMAhuHNeMSInxE4y6UeMXTLEOHU9Xt8iGNNoJqFwErVWLOPMbAv7+kJLoM8ZyjVEEx6ML46PkgFL6gzRZarA==}
+    engines: {node: '>=22'}
+
+  '@vonage/sms@1.24.0':
+    resolution: {integrity: sha512-qh92QFSaJzVsP4hLI5LSVViP2AwidZ+ND/iC5slC/wivt8nl75TEcUxE3tMas3k9VBhUhDF41+XVSgvfT4n1iQ==}
+    engines: {node: '>=22'}
+
+  '@vonage/users@1.17.0':
+    resolution: {integrity: sha512-Yz7+GUPnVYwah1vBvWFD3V94Ier5Knf9M9hOqB6GlkkqMmiuEG6wCx2Zup3AwdcPUqbuEvjiTuPK6GMzOOsDnA==}
+    engines: {node: '>=22'}
+
+  '@vonage/verify2@1.22.0':
+    resolution: {integrity: sha512-QoRUGP2bIcn4t8IkHyrv97HJMwaxNoOiH1YEMF41rSSkqOXnaiU6j/LybYyrhzT1s3fH+FpciID3bGI8FmI9Xg==}
+    engines: {node: '>=22'}
+
+  '@vonage/verify@1.23.0':
+    resolution: {integrity: sha512-mVzU46rQhrMtnJJe3ONQ+NwmXC+qkQM5AQSGG4OCnCS66ALgY0PLbNGGCaS5bnt+gcnY6A3SytEtLUoI+dbQ5w==}
+    engines: {node: '>=22'}
+
+  '@vonage/vetch@1.14.0':
+    resolution: {integrity: sha512-ULuYsA//oSD6YM0zIeacNRM+cmSWqo7fzr+kneoUiGgjHZxv+NCWKq2vlXRTx6bK4WZ/YOhW1wzumvVKLfBKlw==}
+    engines: {node: '>=22'}
+
+  '@vonage/video@1.31.0':
+    resolution: {integrity: sha512-So13NCR438Pvg/UzY/YNC7uAr+mzNQBXmN8WxZwWwIeaQ4K32Ban/WKMkoQwjLPTdEcogdVr3UeO2mUXN1JjJg==}
+    engines: {node: '>=22'}
+
+  '@vonage/voice@1.24.0':
+    resolution: {integrity: sha512-hdnF1+WQHscz564rpGZtOYey0IpUbA7ZwRzJWjprG4OFWrFWgAHeZQx+lp4qyovcvbncRJZ8/mOXCW6AI/cDvA==}
+    engines: {node: '>=22'}
 
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
@@ -6058,6 +6144,9 @@ packages:
       jest-util:
         optional: true
 
+  ts-xor@1.3.0:
+    resolution: {integrity: sha512-RLXVjliCzc1gfKQFLRpfeD0rrWmjnSTgj7+RFhoq3KRkUYa8LE/TIidYOzM5h+IdFBDSjjSgk9Lto9sdMfDFEA==}
+
   tsconfig-paths-webpack-plugin@4.2.0:
     resolution: {integrity: sha512-zbem3rfRS8BgeNK50Zz5SIQgXzLafiHjOwUAvk/38/o1jHn/V5QAgVUcz884or7WYcPaH3N2CIfUc2u0ul7UcA==}
     engines: {node: '>=10.13.0'}
@@ -6213,6 +6302,10 @@ packages:
   utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
+
+  uuid@14.0.1:
+    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
+    hasBin: true
 
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
@@ -6852,11 +6945,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.0':
     optional: true
-
-  '@eslint-community/eslint-utils@4.9.1(eslint@9.39.4(jiti@1.21.7))':
-    dependencies:
-      eslint: 9.39.4(jiti@1.21.7)
-      eslint-visitor-keys: 3.4.3
 
   '@eslint-community/eslint-utils@4.9.1(eslint@9.39.4(jiti@2.7.0))':
     dependencies:
@@ -8415,6 +8503,10 @@ snapshots:
 
   '@types/d3-timer@3.0.2': {}
 
+  '@types/debug@4.1.13':
+    dependencies:
+      '@types/ms': 2.1.0
+
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 9.6.1
@@ -8547,22 +8639,6 @@ snapshots:
     dependencies:
       '@types/yargs-parser': 21.0.3
 
-  '@typescript-eslint/eslint-plugin@8.61.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      '@typescript-eslint/scope-manager': 8.61.0
-      '@typescript-eslint/type-utils': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      '@typescript-eslint/visitor-keys': 8.61.0
-      eslint: 9.39.4(jiti@1.21.7)
-      ignore: 7.0.5
-      natural-compare: 1.4.0
-      ts-api-utils: 2.5.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/eslint-plugin@8.61.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
@@ -8575,18 +8651,6 @@ snapshots:
       ignore: 7.0.5
       natural-compare: 1.4.0
       ts-api-utils: 2.5.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/scope-manager': 8.61.0
-      '@typescript-eslint/types': 8.61.0
-      '@typescript-eslint/typescript-estree': 8.61.0(typescript@5.9.3)
-      '@typescript-eslint/visitor-keys': 8.61.0
-      debug: 4.4.3
-      eslint: 9.39.4(jiti@1.21.7)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -8621,18 +8685,6 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  '@typescript-eslint/type-utils@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/types': 8.61.0
-      '@typescript-eslint/typescript-estree': 8.61.0(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      debug: 4.4.3
-      eslint: 9.39.4(jiti@1.21.7)
-      ts-api-utils: 2.5.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/type-utils@8.61.0(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
       '@typescript-eslint/types': 8.61.0
@@ -8658,17 +8710,6 @@ snapshots:
       semver: 7.8.4
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/utils@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.4(jiti@1.21.7))
-      '@typescript-eslint/scope-manager': 8.61.0
-      '@typescript-eslint/types': 8.61.0
-      '@typescript-eslint/typescript-estree': 8.61.0(typescript@5.9.3)
-      eslint: 9.39.4(jiti@1.21.7)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -8758,6 +8799,165 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
+
+  '@vonage/accounts@1.23.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/applications@1.23.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/auth@1.18.0':
+    dependencies:
+      '@vonage/jwt': 1.17.0
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/conversations@1.17.0':
+    dependencies:
+      '@vonage/messages': 1.27.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/users': 1.17.0
+      '@vonage/voice': 1.24.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/jwt@1.17.0':
+    dependencies:
+      debug: 4.4.3
+      jsonwebtoken: 9.0.3
+      uuid: 14.0.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/messages@1.27.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/number-insights@1.23.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/numbers@1.25.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/pricing@1.23.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/redact@1.22.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/reports@1.2.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/server-client@1.23.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/vetch': 1.14.0
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/server-sdk@3.30.0':
+    dependencies:
+      '@vonage/accounts': 1.23.0
+      '@vonage/applications': 1.23.0
+      '@vonage/auth': 1.18.0
+      '@vonage/conversations': 1.17.0
+      '@vonage/messages': 1.27.0
+      '@vonage/number-insights': 1.23.0
+      '@vonage/numbers': 1.25.0
+      '@vonage/pricing': 1.23.0
+      '@vonage/redact': 1.22.0
+      '@vonage/reports': 1.2.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/sms': 1.24.0
+      '@vonage/users': 1.17.0
+      '@vonage/verify': 1.23.0
+      '@vonage/verify2': 1.22.0
+      '@vonage/video': 1.31.0
+      '@vonage/voice': 1.24.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/sms@1.24.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/server-client': 1.23.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/users@1.17.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/verify2@1.22.0':
+    dependencies:
+      '@vonage/server-client': 1.23.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/verify@1.23.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/vetch@1.14.0': {}
+
+  '@vonage/video@1.31.0':
+    dependencies:
+      '@vonage/auth': 1.18.0
+      '@vonage/jwt': 1.17.0
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vonage/voice@1.24.0':
+    dependencies:
+      '@types/debug': 4.1.13
+      '@vonage/server-client': 1.23.0
+      '@vonage/vetch': 1.14.0
+      debug: 4.4.3
+      ts-xor: 1.3.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
@@ -9851,26 +10051,6 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-config-next@15.5.19(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3):
-    dependencies:
-      '@next/eslint-plugin-next': 15.5.19
-      '@rushstack/eslint-patch': 1.16.1
-      '@typescript-eslint/eslint-plugin': 8.61.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      '@typescript-eslint/parser': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      eslint: 9.39.4(jiti@1.21.7)
-      eslint-import-resolver-node: 0.3.10
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.4(jiti@1.21.7))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7))
-      eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.4(jiti@1.21.7))
-      eslint-plugin-react: 7.37.5(eslint@9.39.4(jiti@1.21.7))
-      eslint-plugin-react-hooks: 5.2.0(eslint@9.39.4(jiti@1.21.7))
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - eslint-import-resolver-webpack
-      - eslint-plugin-import-x
-      - supports-color
-
   eslint-config-next@15.5.19(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3):
     dependencies:
       '@next/eslint-plugin-next': 15.5.19
@@ -9899,21 +10079,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.4(jiti@1.21.7)):
-    dependencies:
-      '@nolyfill/is-core-module': 1.0.39
-      debug: 4.4.3
-      eslint: 9.39.4(jiti@1.21.7)
-      get-tsconfig: 4.14.0
-      is-bun-module: 2.0.0
-      stable-hash: 0.0.5
-      tinyglobby: 0.2.17
-      unrs-resolver: 1.12.2
-    optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7))
-    transitivePeerDependencies:
-      - supports-color
-
   eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
@@ -9929,17 +10094,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.13.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@1.21.7)):
-    dependencies:
-      debug: 3.2.7
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-      eslint: 9.39.4(jiti@1.21.7)
-      eslint-import-resolver-node: 0.3.10
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.4(jiti@1.21.7))
-    transitivePeerDependencies:
-      - supports-color
-
   eslint-module-utils@2.13.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
       debug: 3.2.7
@@ -9949,35 +10103,6 @@ snapshots:
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.4(jiti@2.7.0))
     transitivePeerDependencies:
-      - supports-color
-
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7)):
-    dependencies:
-      '@rtsao/scc': 1.1.0
-      array-includes: 3.1.9
-      array.prototype.findlastindex: 1.2.6
-      array.prototype.flat: 1.3.3
-      array.prototype.flatmap: 1.3.3
-      debug: 3.2.7
-      doctrine: 2.1.0
-      eslint: 9.39.4(jiti@1.21.7)
-      eslint-import-resolver-node: 0.3.10
-      eslint-module-utils: 2.13.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@1.21.7))
-      hasown: 2.0.4
-      is-core-module: 2.16.2
-      is-glob: 4.0.3
-      minimatch: 3.1.5
-      object.fromentries: 2.0.8
-      object.groupby: 1.0.3
-      object.values: 1.2.1
-      semver: 6.3.1
-      string.prototype.trimend: 1.0.10
-      tsconfig-paths: 3.15.0
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.61.0(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
-    transitivePeerDependencies:
-      - eslint-import-resolver-typescript
-      - eslint-import-resolver-webpack
       - supports-color
 
   eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.61.0(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@2.7.0)):
@@ -10009,25 +10134,6 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-jsx-a11y@6.10.2(eslint@9.39.4(jiti@1.21.7)):
-    dependencies:
-      aria-query: 5.3.2
-      array-includes: 3.1.9
-      array.prototype.flatmap: 1.3.3
-      ast-types-flow: 0.0.8
-      axe-core: 4.12.1
-      axobject-query: 4.1.0
-      damerau-levenshtein: 1.0.8
-      emoji-regex: 9.2.2
-      eslint: 9.39.4(jiti@1.21.7)
-      hasown: 2.0.4
-      jsx-ast-utils: 3.3.5
-      language-tags: 1.0.9
-      minimatch: 3.1.5
-      object.fromentries: 2.0.8
-      safe-regex-test: 1.1.0
-      string.prototype.includes: 2.0.1
-
   eslint-plugin-jsx-a11y@6.10.2(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
       aria-query: 5.3.2
@@ -10047,35 +10153,9 @@ snapshots:
       safe-regex-test: 1.1.0
       string.prototype.includes: 2.0.1
 
-  eslint-plugin-react-hooks@5.2.0(eslint@9.39.4(jiti@1.21.7)):
-    dependencies:
-      eslint: 9.39.4(jiti@1.21.7)
-
   eslint-plugin-react-hooks@5.2.0(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
       eslint: 9.39.4(jiti@2.7.0)
-
-  eslint-plugin-react@7.37.5(eslint@9.39.4(jiti@1.21.7)):
-    dependencies:
-      array-includes: 3.1.9
-      array.prototype.findlast: 1.2.5
-      array.prototype.flatmap: 1.3.3
-      array.prototype.tosorted: 1.1.4
-      doctrine: 2.1.0
-      es-iterator-helpers: 1.3.3
-      eslint: 9.39.4(jiti@1.21.7)
-      estraverse: 5.3.0
-      hasown: 2.0.4
-      jsx-ast-utils: 3.3.5
-      minimatch: 3.1.5
-      object.entries: 1.1.9
-      object.fromentries: 2.0.8
-      object.values: 1.2.1
-      prop-types: 15.8.1
-      resolve: 2.0.0-next.7
-      semver: 6.3.1
-      string.prototype.matchall: 4.0.12
-      string.prototype.repeat: 1.0.0
 
   eslint-plugin-react@7.37.5(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
@@ -10114,47 +10194,6 @@ snapshots:
   eslint-visitor-keys@4.2.1: {}
 
   eslint-visitor-keys@5.0.1: {}
-
-  eslint@9.39.4(jiti@1.21.7):
-    dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.4(jiti@1.21.7))
-      '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.21.2
-      '@eslint/config-helpers': 0.4.2
-      '@eslint/core': 0.17.0
-      '@eslint/eslintrc': 3.3.5
-      '@eslint/js': 9.39.4
-      '@eslint/plugin-kit': 0.4.1
-      '@humanfs/node': 0.16.8
-      '@humanwhocodes/module-importer': 1.0.1
-      '@humanwhocodes/retry': 0.4.3
-      '@types/estree': 1.0.9
-      ajv: 6.15.0
-      chalk: 4.1.2
-      cross-spawn: 7.0.6
-      debug: 4.4.3
-      escape-string-regexp: 4.0.0
-      eslint-scope: 8.4.0
-      eslint-visitor-keys: 4.2.1
-      espree: 10.4.0
-      esquery: 1.7.0
-      esutils: 2.0.3
-      fast-deep-equal: 3.1.3
-      file-entry-cache: 8.0.0
-      find-up: 5.0.0
-      glob-parent: 6.0.2
-      ignore: 5.3.2
-      imurmurhash: 0.1.4
-      is-glob: 4.0.3
-      json-stable-stringify-without-jsonify: 1.0.1
-      lodash.merge: 4.6.2
-      minimatch: 3.1.5
-      natural-compare: 1.4.0
-      optionator: 0.9.4
-    optionalDependencies:
-      jiti: 1.21.7
-    transitivePeerDependencies:
-      - supports-color
 
   eslint@9.39.4(jiti@2.7.0):
     dependencies:
@@ -12704,6 +12743,8 @@ snapshots:
       babel-jest: 29.7.0(@babel/core@7.29.7)
       jest-util: 29.7.0
 
+  ts-xor@1.3.0: {}
+
   tsconfig-paths-webpack-plugin@4.2.0:
     dependencies:
       chalk: 4.1.2
@@ -12906,6 +12947,8 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   utils-merge@1.0.1: {}
+
+  uuid@14.0.1: {}
 
   uuid@8.3.2: {}
 
