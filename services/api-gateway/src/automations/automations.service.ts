@@ -4,7 +4,7 @@ import { AuditService } from '../common/audit/audit.service'
 import type { AuditActor } from '../common/audit/audit.service'
 import { NOTIFICATION_KINDS } from '../notifications/notification-kinds'
 import {
-  isEnabledActionType, DISABLED_ACTION_REASONS, hasOutboundAction,
+  isEnabledActionType, DISABLED_ACTION_REASONS, hasOutboundAction, hasSendCap,
   isSendingActionType, ACTION_TYPE_CHANNEL, SEND_AUDIENCES,
   type CreateTaskConfig, type CreateNotificationConfig,
   type SendMessageConfig, type WebhookConfig,
@@ -311,7 +311,11 @@ export class AutomationsService {
   async update(actor: AuditActor, id: string, dto: UpdateAutomationDto) {
     const existing = await this.prisma.automation.findFirst({
       where: { id, tenantId: actor.tenantId },
-      select: { id: true, isActive: true, dryRun: true, actions: { select: { type: true } } },
+      select: {
+        id: true, isActive: true, dryRun: true,
+        sendCapPerHour: true, sendCapPerDay: true,
+        actions: { select: { type: true } },
+      },
     })
     if (!existing) throw new NotFoundException('Automation not found')
 
@@ -335,6 +339,23 @@ export class AutomationsService {
     const outbound = hasOutboundAction(actionTypes)
     const beingActivated = dto.isActive === true && !existing.isActive
     const forceDryRun = outbound && beingActivated
+
+    /*
+     * Guard the state this edit would LEAVE the automation in, not the state it
+     * is in now — an update can switch it on and clear its cap in one call, and
+     * checking the stored row would miss that.
+     */
+    const nextActive = dto.isActive ?? existing.isActive
+    const nextDryRun = forceDryRun ? true : existing.dryRun
+    this.assertSendCapForLiveSending(
+      {
+        sendCapPerHour: dto.sendCapPerHour === undefined ? existing.sendCapPerHour : (dto.sendCapPerHour ?? null),
+        sendCapPerDay:  dto.sendCapPerDay  === undefined ? existing.sendCapPerDay  : (dto.sendCapPerDay  ?? null),
+        actions: (dto.actions ?? existing.actions).map((a) => ({ type: a.type })),
+      },
+      nextActive,
+      nextDryRun,
+    )
 
     return this.prisma.$transaction(async (tx) => {
       if (dto.actions) {
@@ -395,12 +416,53 @@ export class AutomationsService {
    * manual confirmation step the product decision requires, and it is recorded
    * as its own audit action rather than as a field edit buried in a PATCH.
    */
+  /**
+   * An outbound automation may not reach a state where it actually sends
+   * unless a volume ceiling is set.
+   *
+   * "Actually sends" is `isActive && !dryRun` — either flag alone is harmless,
+   * and blocking on `isActive` by itself would stop a perfectly safe dry-run
+   * automation from being switched on for testing.
+   *
+   * The cap machinery already existed and already hard-stops mid-batch; what
+   * was missing was anything forcing an operator to set one. The default is
+   * `null`, which `SendCapService` reads as unlimited, so an automation could
+   * go live able to message every resident in the tenant because a field was
+   * left blank.
+   */
+  private assertSendCapForLiveSending(
+    automation: {
+      sendCapPerHour: number | null
+      sendCapPerDay: number | null
+      actions: { type: string }[]
+    },
+    isActive: boolean,
+    dryRun: boolean,
+  ): void {
+    if (!hasOutboundAction(automation.actions.map((a) => a.type))) return
+    if (!isActive || dryRun) return
+    if (hasSendCap(automation)) return
+    throw new BadRequestException({
+      code: 'AUTOMATION_SEND_CAP_REQUIRED',
+      message:
+        'אוטומציה שפונה לדיירים אינה יכולה לפעול ללא מגבלת שליחות. ' +
+        'הגדירו sendCapPerHour או sendCapPerDay כמספר חיובי לפני ההפעלה.',
+    })
+  }
+
   async setDryRun(actor: AuditActor, id: string, dryRun: boolean) {
     const existing = await this.prisma.automation.findFirst({
       where: { id, tenantId: actor.tenantId },
-      select: { id: true, actions: { select: { type: true } } },
+      select: {
+        id: true, isActive: true,
+        sendCapPerHour: true, sendCapPerDay: true,
+        actions: { select: { type: true } },
+      },
     })
     if (!existing) throw new NotFoundException('Automation not found')
+
+    // Taking it OUT of dry run is the moment it can start contacting people.
+    this.assertSendCapForLiveSending(existing, existing.isActive, dryRun)
 
     if (!hasOutboundAction(existing.actions.map((a) => a.type))) {
       throw new BadRequestException({

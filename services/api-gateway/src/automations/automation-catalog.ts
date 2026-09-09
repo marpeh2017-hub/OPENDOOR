@@ -89,6 +89,19 @@ export function isSendingActionType(type: string): boolean {
   return (SENDING_ACTION_TYPES as readonly string[]).includes(type)
 }
 
+/**
+ * True when an outbound automation has a usable volume ceiling.
+ *
+ * `SendCapService` treats "both caps null" as unlimited, which is the correct
+ * reading of the data but the wrong thing to allow: an automation that reaches
+ * real people should not be able to reach an unbounded number of them because
+ * nobody filled a field in. One positive cap is enough to bound the blast
+ * radius; requiring both would be theatre, since either alone bounds the total.
+ */
+export function hasSendCap(a: { sendCapPerHour: number | null; sendCapPerDay: number | null }): boolean {
+  return (a.sendCapPerHour ?? 0) > 0 || (a.sendCapPerDay ?? 0) > 0
+}
+
 /** True if any action in the set reaches outside the company. */
 export function hasOutboundAction(types: readonly string[]): boolean {
   return types.some((t) => isSendingActionType(t) || t === 'WEBHOOK')

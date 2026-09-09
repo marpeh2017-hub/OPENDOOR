@@ -78,6 +78,11 @@ const ATTENDEE_LOAD = {
  * caller could tamper with to reach another tenant, and every write below is
  * additionally scoped by the attendee id the token resolved to.
  */
+/** First 8 characters of a token — enough to correlate, useless as a credential. */
+function prefix(token: string): string {
+  return `${token.slice(0, 8)}…`
+}
+
 @Injectable()
 export class MeetingAccessService {
   private readonly logger = new Logger(MeetingAccessService.name)
@@ -95,14 +100,41 @@ export class MeetingAccessService {
    * resident who forwarded it to a neighbour has not permanently delegated
    * their RSVP.
    */
-  async issueForAttendee(attendeeId: string): Promise<{ token: string; url: string } | null> {
+  /**
+   * Mints a fresh invitation link for one attendee, replacing any previous one.
+   *
+   * The replacement is destructive by nature: the row is keyed on `attendeeId`,
+   * so the previous token string ceases to exist the moment this returns. That
+   * is correct — a resident should hold exactly one live credential — but it
+   * has two consequences the caller has to handle, and used not to:
+   *
+   *   1. The previous link is dead IMMEDIATELY, before any replacement message
+   *      has been delivered. A caller that rotates and then fails to send has
+   *      left the resident with no working link at all, which is strictly worse
+   *      than not having rotated. `previous` is returned so the caller can put
+   *      it back — see `restorePrevious`.
+   *
+   *   2. Nobody can explain afterwards why a link stopped working. The rotation
+   *      is logged with both token prefixes so a resident's "my link is broken"
+   *      can be traced to the edit that caused it.
+   */
+  async issueForAttendee(attendeeId: string): Promise<{
+    token: string
+    url: string
+    previous: { token: string; expiresAt: Date; useCount: number } | null
+  } | null> {
     const attendee = await this.prisma.meetingAttendee.findUnique({
       where: { id: attendeeId },
-      select: { id: true, residentId: true, meeting: { select: { startTime: true, status: true } } },
+      select: { id: true, residentId: true, meeting: { select: { id: true, startTime: true, status: true } } },
     })
     // Staff attendees use the authenticated CRM; there is nothing to tokenise.
     if (!attendee || !attendee.residentId) return null
     if (attendee.meeting.status === 'cancelled') return null
+
+    const previous = await this.prisma.meetingAccessToken.findUnique({
+      where: { attendeeId },
+      select: { token: true, expiresAt: true, useCount: true },
+    })
 
     const token = randomBytes(48).toString('base64url')
     const expiresAt = this.expiryFor(attendee.meeting.startTime)
@@ -113,7 +145,37 @@ export class MeetingAccessService {
       update: { token, expiresAt, revokedAt: null, useCount: 0 },
     })
 
-    return { token, url: this.urlFor(token) }
+    if (previous) {
+      this.logger.log(
+        `Invitation link rotated for attendee ${attendeeId} on meeting ${attendee.meeting.id}: ` +
+        `${prefix(previous.token)} -> ${prefix(token)} (previous had been opened ${previous.useCount} time(s))`,
+      )
+    }
+
+    return { token, url: this.urlFor(token), previous: previous ?? null }
+  }
+
+  /**
+   * Puts a rotated token back, for the case where the replacement message could
+   * not be sent.
+   *
+   * Restoring the ORIGINAL expiry and use count deliberately: this is an undo,
+   * not a new grant, and a failed notification should not quietly extend a
+   * credential's life or reset its replay ceiling.
+   */
+  async restorePrevious(
+    attendeeId: string,
+    previous: { token: string; expiresAt: Date; useCount: number },
+    reason: string,
+  ): Promise<void> {
+    await this.prisma.meetingAccessToken.update({
+      where: { attendeeId },
+      data: { token: previous.token, expiresAt: previous.expiresAt, useCount: previous.useCount, revokedAt: null },
+    })
+    this.logger.warn(
+      `Restored the previous invitation link for attendee ${attendeeId} (${prefix(previous.token)}): ${reason}. ` +
+      'The resident keeps the link they already have rather than being left with none.',
+    )
   }
 
   /**

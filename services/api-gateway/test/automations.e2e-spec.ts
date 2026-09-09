@@ -632,7 +632,11 @@ describe('Automations (e2e)', () => {
     })
 
     it('actually sends once live, tagging the message with the automation', async () => {
-      const created = await sendAutomation()
+      // A cap is now mandatory before an outbound automation may leave dry run,
+      // so this fixture carries one. The cap is deliberately larger than the
+      // single send this test performs, so it exercises the send path rather
+      // than the cap path — the cap itself is covered by the test below.
+      const created = await sendAutomation({ sendCapPerHour: 50 })
       await api().patch(`${BASE}/${created.id}/dry-run`).set(asAdmin()).send({ dryRun: false })
 
       await runner.dispatch({

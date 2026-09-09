@@ -111,7 +111,14 @@ export class MeetingResidentNotifierService {
 
         // A cancellation kills the link; everything else refreshes it, which
         // also rotates any previously-sent token.
+        //
+        // Rotation happens BEFORE the message is composed, because the message
+        // contains the link. That ordering is unavoidable, and it is why
+        // `rotated` is kept: if the send then fails, the resident would be left
+        // holding a dead link and no replacement — worse off than if we had
+        // never touched it. The failure path below puts the old one back.
         let link: string | null = null
+        let rotated: { token: string; expiresAt: Date; useCount: number } | null = null
         if (event === 'cancelled') {
           await this.access.issueForAttendee(attendee.id).catch(() => null)
         } else {
@@ -120,6 +127,7 @@ export class MeetingResidentNotifierService {
             return null
           })
           link = issued?.url ?? null
+          rotated = issued?.previous ?? null
         }
 
         const { subject, body } = this.compose(event, meeting, link)
@@ -141,11 +149,24 @@ export class MeetingResidentNotifierService {
             event,
             meetingId: meeting.id,
             attendeeId: attendee.id,
+            // Durable, per-resident answer to "why did my old link stop
+            // working?" — the log line is transient, this row is not.
+            ...(rotated ? { rotatedFromToken: `${rotated.token.slice(0, 8)}…` } : {}),
           },
         })
 
-        if (queued) out.queued += 1
-        else out.skipped.push({ residentId: route.residentId, reason: 'ENQUEUE_FAILED' })
+        if (queued) {
+          out.queued += 1
+        } else {
+          // The replacement never left the building. Undo the rotation so the
+          // link the resident already has keeps working.
+          if (rotated) {
+            await this.access
+              .restorePrevious(attendee.id, rotated, `the ${event} message could not be queued`)
+              .catch((err) => this.logger.error(`Could not restore invitation link: ${(err as Error).message}`))
+          }
+          out.skipped.push({ residentId: route.residentId, reason: 'ENQUEUE_FAILED' })
+        }
       }
     } catch (err) {
       // Contract: never throw into the caller's transaction path.
