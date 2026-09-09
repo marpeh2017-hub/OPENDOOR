@@ -28,6 +28,7 @@ import { ProjectHealthModule }  from './health/health.module'
 import { GisModule }            from './gis/gis.module'
 import { NotificationsModule }  from './notifications/notifications.module'
 import { MeetingsModule }       from './meetings/meetings.module'
+import { PortalModule } from './portal/portal.module'
 import { CmsModule } from './cms/cms.module'
 import { MessagingModule }      from './messaging/messaging.module'
 import { FeasibilityModule }    from './feasibility/feasibility.module'
@@ -71,6 +72,7 @@ import { AutomationsModule }    from './automations/automations.module'
     AutomationsModule,
     FeasibilityModule,
     MeetingsModule,
+    PortalModule,
     CmsModule,
     CommunicationsModule,
     ReportsModule,
