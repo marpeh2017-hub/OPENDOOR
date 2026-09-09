@@ -6,29 +6,19 @@ import {
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
-import { generateOtp, hashOtp, otpMatches } from '../common/otp/otp'
 import { PrismaService } from '../prisma.service'
-import { SmsService } from '../sms/sms.service'
 import { REDIS } from '../redis/redis.module'
 import { LoginDto } from './dto/login.dto'
-import { SendOtpDto } from './dto/send-otp.dto'
-import { VerifyOtpDto } from './dto/verify-otp.dto'
+import { PortalAuthService } from './portal-auth.service'
 
-const OTP_TTL_SECONDS  = 300    // 5 minutes
-const RATE_TTL_SECONDS = 3600   // 1 hour
-const RATE_MAX         = 3      // max OTPs per hour
-
-/**
- * Failed verification attempts allowed per issued code, after which the code is
- * destroyed and a new one must be requested.
+/*
+ * The resident OTP constants and flow moved to `PortalAuthService`.
  *
- * Without this, a 6-digit code with a 5-minute life is limited only by the
- * global throttler — roughly 1,500 guesses per window per IP, and an attacker
- * with several IPs multiplies that freely. Five is the same order as the
- * `SigningSession.otpAttempts` counter the signing flow already enforces; this
- * brings the login flow up to the standard the signing flow already meets.
+ * They did not move to sit beside newer code: the OTP is now only half of
+ * resident sign-in — the other half decides WHICH resident file the proven
+ * handset may open — and splitting those two halves across two services is how
+ * the original `findFirst({ phone })` hole survived review in the first place.
  */
-const OTP_MAX_ATTEMPTS = 5
 
 // A revoked session must stay revoked for at least as long as the longest-lived
 // token that carries its sessionId. The refresh token lives 30 days, so a 24h
@@ -69,7 +59,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-    private readonly sms: SmsService,
+    private readonly portal: PortalAuthService,
     @Inject(REDIS) private readonly redis: any,
   ) {}
 
@@ -124,126 +114,10 @@ export class AuthService {
     }
   }
 
-  /* ─── OTP flow (resident portal) ───────────────────────────────── */
-  async sendOtp(dto: SendOtpDto) {
-    if (!/^05\d{8}$/.test(dto.phone)) {
-      throw new BadRequestException('מספר טלפון לא תקין — נדרש פורמט 05XXXXXXXX')
-    }
-
-    // Rate limiting: max RATE_MAX sends per hour per phone
-    const rateKey = `otp:rate:${dto.phone}`
-    const count   = await this.redis.incr(rateKey)
-    if (count === 1) {
-      await this.redis.expire(rateKey, RATE_TTL_SECONDS)
-    }
-    if (count > RATE_MAX) {
-      throw new BadRequestException('יותר מדי בקשות OTP — נסה שוב בעוד שעה')
-    }
-
-    // `Math.random()` is xorshift128+: fast, and its internal state is
-    // recoverable from a modest number of outputs, after which every later code
-    // is computable rather than guessable. For the resident portal's ONLY
-    // authentication factor that is not acceptable.
-    const otp     = generateOtp()
-    const otpKey  = `otp:${dto.phone}`
-
-    // Store HMAC(otp) — never plaintext, and never a bare digest over 10^6.
-    await this.redis.setex(otpKey, OTP_TTL_SECONDS, hashOtp(otp))
-    // A fresh code resets the attempt budget. Tied to the code's own lifetime,
-    // so the counter cannot outlive the secret it protects.
-    await this.redis.del(`otp:attempts:${dto.phone}`)
-
-    // Send via configured SMS provider (never logs the OTP value)
-    await this.sms.sendOtp(dto.phone, otp)
-
-    return { message: 'קוד OTP נשלח', expiresIn: OTP_TTL_SECONDS }
-  }
-
-  async verifyOtp(dto: VerifyOtpDto) {
-    const otpKey      = `otp:${dto.phone}`
-    const attemptsKey = `otp:attempts:${dto.phone}`
-    const storedHash  = await this.redis.get(otpKey)
-
-    if (!storedHash) {
-      throw new UnauthorizedException('קוד OTP שגוי או פג תוקף')
-    }
-
-    if (!otpMatches(storedHash, dto.code)) {
-      // Count the failure against THIS code, and destroy the code once the
-      // budget is spent. Incrementing before the check would be off by one;
-      // incrementing after the throw would never run.
-      const attempts = await this.redis.incr(attemptsKey)
-      if (attempts === 1) await this.redis.expire(attemptsKey, OTP_TTL_SECONDS)
-      if (attempts >= OTP_MAX_ATTEMPTS) {
-        await this.redis.del(otpKey)
-        await this.redis.del(attemptsKey)
-        throw new UnauthorizedException('יותר מדי ניסיונות שגויים — בקשו קוד חדש')
-      }
-      throw new UnauthorizedException('קוד OTP שגוי')
-    }
-
-    // Delete on success — single-use, and the attempt budget dies with it.
-    await this.redis.del(otpKey)
-    await this.redis.del(attemptsKey)
-
-    // ── Who is this? ────────────────────────────────────────────────────────
-    //
-    // The OTP proves control of a phone number. It proves NOTHING about which
-    // tenant, project or resident profile the caller is entitled to — phone
-    // numbers are not unique across tenants and nothing in the schema makes
-    // them so.
-    //
-    // The previous `findFirst({ where: { phone } })` therefore handed out a
-    // session for whichever row the query planner happened to reach first,
-    // carrying that row's `tenantId`. With two tenants holding the same number
-    // that is a cross-tenant account takeover with no attacker effort at all.
-    //
-    // Archived residents are excluded: a soft-archived profile is a former
-    // resident, and `isActive` is exactly the flag that says so.
-    const candidates = await this.prisma.resident.findMany({
-      where: { phone: dto.phone, isActive: true },
-      select: { id: true, tenantId: true },
-    })
-
-    if (candidates.length === 0) {
-      throw new UnauthorizedException('מספר זה אינו רשום במערכת')
-    }
-    if (candidates.length > 1) {
-      // Refuse rather than choose. Picking one would be a coin flip between
-      // two people's data.
-      //
-      // The resident-facing selection flow (subdomain context, invitation
-      // token, explicit choice) is the next phase of work; until it exists,
-      // refusing is the only safe behaviour and it is deliberate, not a stub.
-      throw new UnauthorizedException(
-        'מספר הטלפון משויך ליותר מפרופיל דייר אחד. פנו אלינו כדי להשלים את ההתחברות.',
-      )
-    }
-
-    const resident = candidates[0]!
-
-    const sessionId = randomUUID()
-    const payload = {
-      sub:       resident.id,
-      phone:     dto.phone,
-      role:      'RESIDENT',
-      tenantId:  resident.tenantId,
-      sessionId,
-    }
-
-    const accessToken  = this.jwtService.sign(payload, { expiresIn: ACCESS_TOKEN_TTL })
-    const refreshToken = this.jwtService.sign(
-      { sub: resident.id, sessionId },
-      { expiresIn: REFRESH_TOKEN_TTL },
-    )
-
-    return { accessToken, refreshToken, residentId: resident.id }
-  }
-
   /* ─── Refresh tokens ────────────────────────────────────────────── */
   async refreshTokens(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify<{ sub: string; sessionId: string }>(refreshToken)
+      const payload = this.jwtService.verify<{ sub: string; sessionId: string; role?: string }>(refreshToken)
 
       // A refresh token must carry a sessionId, otherwise it can never be
       // revoked. Reject legacy/forged tokens that omit it.
@@ -253,6 +127,20 @@ export class AuthService {
       // to mint a fresh access token for a session that was already revoked.
       const revoked = await this.redis.exists(`jwt:revoked:${payload.sessionId}`)
       if (revoked) throw new UnauthorizedException('הסשן בוטל — יש להתחבר מחדש')
+
+      /*
+       * A resident refresh token's `sub` is a residentId, not a userId, so the
+       * staff lookup below would never find it — resident sessions simply died
+       * after 12 hours with no way back except a fresh OTP.
+       *
+       * The scope is RE-DERIVED from the database rather than copied out of the
+       * old token. A refresh is a good moment to notice that the resident was
+       * archived or moved: carrying forward yesterday's tenantId and projectId
+       * would keep a stale grant alive for the full 30-day refresh window.
+       */
+      if (payload.role === 'RESIDENT') {
+        return this.portal.refreshSession(payload.sub, payload.sessionId)
+      }
 
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } })
       if (!user) throw new UnauthorizedException('משתמש לא נמצא')

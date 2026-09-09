@@ -70,6 +70,33 @@ export const IMPORT_ROLES = [
 ] as const
 
 /**
+ * Roles allowed to issue and withdraw a resident's PORTAL LOGIN LINK.
+ *
+ * An invitation is a credential, not a message. Redeemed on the right handset
+ * it opens that resident's file — their documents, their signature status,
+ * their correspondence — so issuing one is an access-granting act and belongs
+ * with the people who own the resident relationship.
+ *
+ * FIELD_AGENT is included for the same reason they can run an import: they are
+ * the ones standing at the door when a resident says the app does not work,
+ * and routing that through a manager makes the fix take a day. The risk is
+ * bounded by what the link can actually do — it grants access to ONE resident
+ * they can already see, only after an OTP to the number already on that
+ * resident's record, and every issuance is logged with the actor.
+ *
+ * The professional roles are deliberately absent. LAWYER, ARCHITECT, ENGINEER,
+ * DEVELOPER_REP, MUNICIPALITY_USER and EXTERNAL_CONSULTANT read a project;
+ * none of them administers residents' access to it.
+ */
+export const RESIDENT_INVITE_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'PROJECT_MANAGER',
+  'RESIDENT_RELATIONS_MANAGER',
+  'FIELD_AGENT',
+] as const
+
+/**
  * Roles allowed to CREATE documents (metadata record or file upload).
  *
  * Deliberately narrower than STAFF_ROLES: MUNICIPALITY_USER and

@@ -5,6 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, ValidationPipe, VersioningType, Logger } from '@nestjs/common'
 import request from 'supertest'
+import { ThrottlerStorage } from '@nestjs/throttler'
 import { AppModule } from '../src/app.module'
 
 process.env.NODE_ENV = 'test'
@@ -26,7 +27,30 @@ describe('OTP (e2e)', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile()
+    })
+      /*
+       * Login now carries per-IP limits far tighter than the global defaults
+       * (2 sends/10s, 3 verifies/10s), because an OTP endpoint is where
+       * enumeration happens. This suite fires well past that in a burst, and
+       * 429s would replace the 401s it is actually asserting.
+       *
+       * Replace the throttler's STORAGE, not the guard: `overrideGuard` does
+       * not work because APP_GUARD is registered with `useClass`, which
+       * constructs a fresh instance rather than resolving the overridden
+       * token. Its injected `ThrottlerStorage` IS resolved from the container.
+       * Same seam, and same reasoning, as documents-upload.e2e-spec.ts.
+       *
+       * The per-phone budget (3 sends/hour, 5 guesses/code) is enforced in
+       * Redis by the service itself and is NOT affected by this override — it
+       * is asserted for real in portal-login.e2e-spec.ts.
+       */
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({
+          totalHits: 0, timeToExpire: 60, isBlocked: false, timeToBlockExpire: 0,
+        }),
+      })
+      .compile()
 
     app = moduleFixture.createNestApplication()
     app.setGlobalPrefix('api')

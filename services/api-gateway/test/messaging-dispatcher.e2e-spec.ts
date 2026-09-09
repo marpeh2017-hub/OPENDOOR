@@ -110,7 +110,16 @@ describe('Communications dispatcher (e2e)', () => {
 
   const token = (userId: string, tenantId: string, role: string) =>
     jwt.sign(
-      { sub: userId, email: `${role}@e2e-disp.test`, role, tenantId, sessionId: randomUUID() },
+      {
+        sub: userId, email: `${role}@e2e-disp.test`, role, tenantId, sessionId: randomUUID(),
+        // A RESIDENT token must ALSO carry its project and resident scope, for
+        // the same reason it must carry a sessionId: `JwtStrategy` rejects a
+        // resident token it cannot safely scope, so without these the 403 under
+        // test here would never be reached — the request would 401 first. The
+        // ids are probes: these routes are staff routes and run no
+        // resident-scoped query.
+        ...(role === 'RESIDENT' ? { projectId: 'prj_rbac_probe', residentId: 'res_rbac_probe' } : {}),
+      },
       { secret: process.env.JWT_SECRET as string, expiresIn: '10m' },
     )
 

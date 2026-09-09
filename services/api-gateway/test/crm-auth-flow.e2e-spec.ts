@@ -158,6 +158,13 @@ describe('CRM auth flow + BFF proxy contract (e2e)', () => {
           role,
           tenantId,
           sessionId: `rbac-test-${role}-${Date.now()}`,
+          // A RESIDENT token must ALSO carry its project and resident scope, for
+          // the same reason it must carry a sessionId: `JwtStrategy` rejects a
+          // resident token it cannot safely scope, so without these the 403 under
+          // test here would never be reached — the request would 401 first. The
+          // ids are probes: these routes are staff routes and run no
+          // resident-scoped query.
+          ...(role === 'RESIDENT' ? { projectId: 'prj_rbac_probe', residentId: 'res_rbac_probe' } : {}),
         },
         { secret: process.env.JWT_SECRET!, expiresIn: '5m' },
       )

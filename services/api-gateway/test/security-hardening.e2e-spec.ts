@@ -13,6 +13,7 @@ import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common
 import { Test, TestingModule } from '@nestjs/testing'
 import { createHmac } from 'crypto'
 import request from 'supertest'
+import { ThrottlerStorage } from '@nestjs/throttler'
 import { AppModule } from '../src/app.module'
 import { PrismaService } from '../src/prisma.service'
 
@@ -43,7 +44,30 @@ describe('Security hardening (e2e)', () => {
   const http = () => request(app.getHttpServer())
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile()
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
+      /*
+       * Login now carries per-IP limits far tighter than the global defaults
+       * (2 sends/10s, 3 verifies/10s), because an OTP endpoint is where
+       * enumeration happens. This suite fires well past that in a burst, and
+       * 429s would replace the 401s it is actually asserting.
+       *
+       * Replace the throttler's STORAGE, not the guard: `overrideGuard` does
+       * not work because APP_GUARD is registered with `useClass`, which
+       * constructs a fresh instance rather than resolving the overridden
+       * token. Its injected `ThrottlerStorage` IS resolved from the container.
+       * Same seam, and same reasoning, as documents-upload.e2e-spec.ts.
+       *
+       * The per-phone budget (3 sends/hour, 5 guesses/code) is enforced in
+       * Redis by the service itself and is NOT affected by this override — it
+       * is asserted for real in portal-login.e2e-spec.ts.
+       */
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({
+          totalHits: 0, timeToExpire: 60, isBlocked: false, timeToBlockExpire: 0,
+        }),
+      })
+      .compile()
     app = moduleFixture.createNestApplication()
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
@@ -106,15 +130,78 @@ describe('Security hardening (e2e)', () => {
   }
 
   describe('S4 — a phone number is not an identity', () => {
-    it('refuses to issue a session when the number matches residents in two tenants', async () => {
+    /*
+     * ── WHAT CHANGED HERE, AND WHY THE ASSERTIONS MOVED ────────────────────
+     *
+     * The first fix for S4 was to REFUSE when a number matched residents in
+     * two tenants. That was correct and deliberately temporary: it closed the
+     * takeover, and it also locked out every resident who genuinely appears
+     * twice — a spouse on two apartments, an owner in two projects — with an
+     * error telling them to phone the office.
+     *
+     * The portal login now answers with a SELECTION CHALLENGE instead. The
+     * security property is unchanged and is what these tests hold: verifying
+     * an OTP against an ambiguous number issues NO SESSION. What follows is a
+     * second, explicit step, and the code has still never picked.
+     */
+    it('issues no session when the number matches residents in two tenants', async () => {
       await plantOtp(SHARED_PHONE, KNOWN_CODE)
       const res = await http().post('/api/v1/auth/otp/verify').send({ phone: SHARED_PHONE, code: KNOWN_CODE })
 
-      // The old code answered 200 here with a token for whichever tenant the
-      // planner reached first — a cross-tenant takeover requiring no effort.
-      expect(res.status).toBe(401)
-      expect(res.body.message).toMatch(/יותר מפרופיל דייר אחד/)
+      expect(res.status).toBe(200)
+      expect(res.body.selectionRequired).toBe(true)
+      // THE property. The old code answered here with a token for whichever
+      // tenant the planner reached first — a cross-tenant takeover requiring
+      // no effort.
       expect(JSON.stringify(res.body)).not.toContain('accessToken')
+      expect(res.body.accessToken).toBeUndefined()
+      expect(res.body.options).toHaveLength(2)
+    })
+
+    it('the choice on offer names apartments, never the other resident', async () => {
+      await plantOtp(SHARED_PHONE, KNOWN_CODE)
+      const res = await http().post('/api/v1/auth/otp/verify')
+        .send({ phone: SHARED_PHONE, code: KNOWN_CODE }).expect(200)
+
+      for (const option of res.body.options) {
+        expect(Object.keys(option).sort()).toEqual(
+          ['apartmentNumber', 'buildingAddress', 'projectName', 'residentId'],
+        )
+      }
+      // Both records are reachable from this handset, so listing the homes is
+      // not a disclosure about a third party — but names, phone numbers and
+      // tenant ids would be, and none of them appear.
+      const body = JSON.stringify(res.body)
+      expect(body).not.toContain(SHARED_PHONE)
+      expect(body).not.toContain('tenantId')
+    })
+
+    it('a tenant slug narrows the same login to one file, with no selection step', async () => {
+      // This is what the portal sends when it is opened on a tenant subdomain.
+      const slug = `${MARKER}-a`.toLowerCase()
+      await plantOtp(SHARED_PHONE, KNOWN_CODE)
+
+      const res = await http().post('/api/v1/auth/otp/verify')
+        .send({ phone: SHARED_PHONE, code: KNOWN_CODE, tenantSlug: slug })
+
+      expect(res.status).toBe(200)
+      expect(res.body.selectionRequired).toBeUndefined()
+      expect(res.body.residentId).toBe(createdResidentIds[0])
+    })
+
+    it('a tenant slug can NARROW the candidates but never widen them', async () => {
+      // Tenant B's slug with a phone that has no active resident there: the
+      // slug must not become the session's tenant on its own.
+      await prisma.resident.update({ where: { id: createdResidentIds[1]! }, data: { isActive: false } })
+      await plantOtp(SHARED_PHONE, KNOWN_CODE)
+
+      const res = await http().post('/api/v1/auth/otp/verify')
+        .send({ phone: SHARED_PHONE, code: KNOWN_CODE, tenantSlug: `${MARKER}-b`.toLowerCase() })
+
+      expect(res.status).toBe(401)
+      expect(JSON.stringify(res.body)).not.toContain('accessToken')
+
+      await prisma.resident.update({ where: { id: createdResidentIds[1]! }, data: { isActive: true } })
     })
 
     it('issues a session once the ambiguity is gone', async () => {
@@ -147,8 +234,9 @@ describe('Security hardening (e2e)', () => {
 
     it('consumes the code even on the ambiguous path — a rejected login still burns the OTP', async () => {
       await plantOtp(SHARED_PHONE, KNOWN_CODE)
-      await http().post('/api/v1/auth/otp/verify').send({ phone: SHARED_PHONE, code: KNOWN_CODE }).expect(401)
-      // Second use of the same code must fail as expired, not as ambiguous.
+      await http().post('/api/v1/auth/otp/verify').send({ phone: SHARED_PHONE, code: KNOWN_CODE }).expect(200)
+      // Second use of the same code must fail as expired — the selection
+      // challenge is the continuation, not a licence to verify again.
       const again = await http().post('/api/v1/auth/otp/verify').send({ phone: SHARED_PHONE, code: KNOWN_CODE })
       expect(again.status).toBe(401)
       expect(again.body.message).toMatch(/פג תוקף|שגוי/)

@@ -79,6 +79,11 @@ describe('GIS (e2e)', () => {
         email: SEED_EMAIL,
         role: 'RESIDENT',
         tenantId,
+        // A resident token must carry its project and resident scope or
+        // `JwtStrategy` rejects it outright — and this test is about
+        // authorization, so it has to get past authentication first.
+        projectId: 'prj_rbac_probe',
+        residentId: 'res_rbac_probe',
         // sessionId is mandatory; a fresh random one is never revoked, so this
         // isolates the RBAC check without weakening authentication.
         sessionId: randomUUID(),

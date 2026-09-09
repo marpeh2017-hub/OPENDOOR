@@ -625,6 +625,7 @@ model Tenant {
   feasibilityScenarios FeasibilityScenario[]
   feasibilityCalculationSnapshots FeasibilityCalculationSnapshot[]
   feasibilityReportVersions FeasibilityReportVersion[]
+  residentInvitations ResidentInvitation[]
   comparableTransactions ComparableTransaction[]
   automations   Automation[]
   notifications Notification[]
@@ -873,6 +874,7 @@ model Project {
   @@index([tenantId, status])
   @@index([tenantId, stage])
   @@map("projects")
+  residentInvitations ResidentInvitation[]
 }
 
 model ProjectMember {
@@ -948,6 +950,7 @@ model Building {
 
   @@index([complexId])
   @@map("buildings")
+  residentInvitations ResidentInvitation[]
 }
 
 model Apartment {
@@ -978,6 +981,7 @@ model Apartment {
   @@unique([buildingId, apartmentNumber])
   @@index([buildingId])
   @@map("apartments")
+  residentInvitations ResidentInvitation[]
 }
 
 // ============================================================
@@ -1244,6 +1248,74 @@ model Resident {
   @@index([apartmentId])
   @@index([signatureStatus])
   @@map("residents")
+  invitations ResidentInvitation[]
+}
+
+/// A personal invitation into the resident portal.
+///
+/// ── WHY THIS EXISTS ─────────────────────────────────────────────────────────
+///
+/// A phone number is not an identity. It is not unique across tenants, people
+/// share numbers, and numbers are recycled — so "the OTP succeeded" answers
+/// only "this person controls this handset", never "this person is entitled to
+/// that resident's file". An audit found the previous login resolving a
+/// resident with `findFirst({ where: { phone } })`, which handed out a session
+/// for whichever row the planner reached first.
+///
+/// The invitation is the missing half: a credential the organisation issues to
+/// a specific resident, naming the tenant, project, building and apartment up
+/// front. OTP then proves the handset; the invitation says whose file it opens.
+///
+/// ── WHY THE IDS ARE DENORMALISED ────────────────────────────────────────────
+///
+/// `tenantId` … `apartmentId` could all be derived by walking
+/// resident → apartment → building → complex → project. They are stored anyway
+/// because this row is a CREDENTIAL: what it grants must be legible without
+/// four joins, and must not silently change if the resident is later moved to a
+/// different apartment. An invitation grants what it says, or it is rejected.
+///
+/// ── THE TOKEN ───────────────────────────────────────────────────────────────
+///
+/// Stored hashed, never in the clear. The plaintext exists only in the link
+/// that was sent; a database read must not yield a working credential — the
+/// same rule the signing OTP now follows.
+model ResidentInvitation {
+  id           String   @id @default(cuid())
+
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// The scope this invitation grants, fixed at issue time.
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  buildingId   String
+  building     Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  apartmentId  String
+  apartment    Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  residentId   String
+  resident     Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  /// HMAC of the token that was sent. The plaintext is never stored.
+  tokenHash    String   @unique
+
+  /// The phone the invitation was addressed to, so a leaked link cannot be
+  /// redeemed from a different handset.
+  phone        String
+
+  expiresAt    DateTime
+  /// Set on first successful redemption. An invitation opens a session once;
+  /// afterwards the resident signs in with their phone.
+  usedAt       DateTime?
+  revokedAt    DateTime?
+  revokedReason String?
+
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId, residentId])
+  @@index([expiresAt])
+  @@map("resident_invitations")
 }
 
 model ResidentActivity {
