@@ -10,7 +10,8 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common'
-import { createHash, randomBytes } from 'crypto'
+import { randomBytes } from 'crypto'
+import { generateOtp, hashOtp, otpMatches } from '../common/otp/otp'
 import { PrismaService } from '../prisma.service'
 import { SignatureStateMachineService } from './signature-state-machine.service'
 import { SmsService } from '../sms/sms.service'
@@ -27,10 +28,6 @@ const SESSION_TTL_DAYS = 7
 // a signing session has a bounded total number of guesses.
 const OTP_MAX_RESENDS       = 5
 const OTP_RESEND_TTL_SECONDS = 60 * 60  // 1 hour window
-
-function hashOtp(otp: string): string {
-  return createHash('sha256').update(otp).digest('hex')
-}
 
 @Injectable()
 export class SigningSessionService {
@@ -145,7 +142,7 @@ export class SigningSessionService {
       )
     }
 
-    const otp        = Math.floor(100000 + Math.random() * 900000).toString()
+    const otp        = generateOtp()
     const otpHash    = hashOtp(otp)
     const otpExpires = new Date(Date.now() + OTP_TTL_MS)
 
@@ -190,7 +187,7 @@ export class SigningSessionService {
       throw new UnauthorizedException('קוד OTP פג תוקף')
     }
 
-    const match = session.otpHash === hashOtp(otp)
+    const match = otpMatches(session.otpHash, otp)
 
     await this.prisma.signingSession.update({
       where: { id: session.id },

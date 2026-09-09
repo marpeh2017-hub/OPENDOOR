@@ -52,7 +52,7 @@ async function main() {
       firstName:    'מנהל',
       lastName:     'מערכת',
       role:         UserRole.COMPANY_ADMIN,
-      phone:        '0501234567',
+      phone:        '0548018613',
       isActive:     true,
       isVerified:   true,
     },
@@ -196,8 +196,20 @@ async function main() {
   console.log('✅ Building structure seeded')
 
   // ── Residents ──────────────────────────────────────────────────────────────
+  //
+  // NOTE ON THE PHONE NUMBER 0548018613
+  //
+  // This is a REAL number belonging to the product owner, used deliberately so
+  // that SMS flows can be tested against a live handset. It replaced the
+  // generic placeholder 0501234567 after an end-to-end audit sent 24 real
+  // messages to that placeholder — a number nobody owned and nobody was
+  // watching, so a live-send misconfiguration produced no visible signal.
+  //
+  // Sending is still gated by MESSAGING_SIMULATE, which defaults to ON outside
+  // production and must be set explicitly IN production. Flipping it off is now
+  // the only way to reach this handset, and that is a deliberate act.
   const residentsData = [
-    { id: 'res_01', firstName: 'דוד',  lastName: 'כהן',   phone: '0501234567', email: 'david.cohen@gmail.com',  aptId: 'apt_001', sig: ResidentSignatureStatus.SIGNED },
+    { id: 'res_01', firstName: 'דוד',  lastName: 'כהן',   phone: '0548018613', email: 'david.cohen@gmail.com',  aptId: 'apt_001', sig: ResidentSignatureStatus.SIGNED },
     { id: 'res_02', firstName: 'רחל',  lastName: 'לוי',   phone: '0529876543', email: 'rachel.levi@gmail.com',   aptId: 'apt_002', sig: ResidentSignatureStatus.OBJECTING },
     { id: 'res_03', firstName: 'משה',  lastName: 'ברג',   phone: '0545551234', email: 'moshe.berg@walla.co.il',  aptId: 'apt_003', sig: ResidentSignatureStatus.INTERESTED },
     { id: 'res_04', firstName: 'שרה',  lastName: 'אברהם', phone: '0534449876', email: 'sara.avraham@gmail.com', aptId: 'apt_004', sig: ResidentSignatureStatus.UNDECIDED },
@@ -228,7 +240,7 @@ async function main() {
   // Owners drive the digital-signature flow (SignaturePackage → SignatureRecord),
   // so at least one owner must exist with a fractional holding in an apartment.
   const ownersData = [
-    { id: 'own_01', fullName: 'דוד כהן',    phone: '0501234567', email: 'david.cohen@gmail.com',  residentId: 'res_01', aptId: 'apt_001', num: 1, den: 1 },
+    { id: 'own_01', fullName: 'דוד כהן',    phone: '0548018613', email: 'david.cohen@gmail.com',  residentId: 'res_01', aptId: 'apt_001', num: 1, den: 1 },
     { id: 'own_02', fullName: 'רחל לוי',    phone: '0529876543', email: 'rachel.levi@gmail.com',  residentId: 'res_02', aptId: 'apt_002', num: 1, den: 2 },
     { id: 'own_03', fullName: 'יוסי מזרחי', phone: '0523334455', email: 'yossi.m@gmail.com',      residentId: 'res_05', aptId: 'apt_005', num: 1, den: 1 },
   ]

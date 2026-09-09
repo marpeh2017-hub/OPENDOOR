@@ -57,13 +57,63 @@ export const MessagingConfig = {
   },
 
   /**
-   * Forces the dev/no-op provider regardless of configured credentials. The
-   * default is "simulate unless we are in production", which is the safe
-   * direction: a developer with a stray TWILIO_ACCOUNT_SID in their `.env`
-   * must not start texting real residents.
+   * Forces the dev/no-op provider regardless of configured credentials.
+   *
+   * ── OUTSIDE PRODUCTION ────────────────────────────────────────────────
+   *
+   * Defaults to ON. A developer with a stray TWILIO_ACCOUNT_SID copied from
+   * staging must not start texting real residents merely by running the API.
+   *
+   * ── IN PRODUCTION: THE VARIABLE IS MANDATORY ──────────────────────────
+   *
+   * There is deliberately NO default here. Previously production defaulted to
+   * `false` — real sending — which meant an operator who had never heard of
+   * this variable got live SMS by omission, and an operator who wanted a quiet
+   * first deploy had no way to know what to set.
+   *
+   * The failure that motivated this was the mirror image, in development: the
+   * flag was set to `false` to test a provider, left that way, and ordinary
+   * CRM actions then sent 24 real messages to a seeded number before anyone
+   * noticed. In both directions the problem is the same — whether messages
+   * reach real people was decided by something nobody had to state.
+   *
+   * So in production it must be stated. `MESSAGING_SIMULATE=false` to send for
+   * real, `true` to stay quiet; anything else, including absent, is a startup
+   * failure. This is checked once at boot by `assertConfigured()` rather than
+   * at first send, so the deployment fails immediately instead of at 02:00 on
+   * the first reminder.
    */
   get forceSimulation(): boolean {
-    return boolEnv('MESSAGING_SIMULATE', process.env.NODE_ENV !== 'production')
+    if (process.env.NODE_ENV === 'production') {
+      const raw = process.env.MESSAGING_SIMULATE
+      if (raw === undefined || raw === '') {
+        throw new Error(
+          'MESSAGING_SIMULATE must be set explicitly in production. ' +
+          'Set it to "false" to send real messages, or "true" to simulate. ' +
+          'It has no default in production because whether residents receive ' +
+          'real SMS must be a decision somebody made, not one they inherited.',
+        )
+      }
+      if (raw !== 'true' && raw !== 'false' && raw !== '1' && raw !== '0') {
+        throw new Error(
+          `MESSAGING_SIMULATE must be "true" or "false" (got ${JSON.stringify(raw)}). ` +
+          'An unrecognised value is treated as a configuration error rather ' +
+          'than silently falling back, because the fallback decides whether ' +
+          'real people are contacted.',
+        )
+      }
+      return raw === 'true' || raw === '1'
+    }
+    return boolEnv('MESSAGING_SIMULATE', true)
+  },
+
+  /**
+   * Boot-time gate. Called from `main.ts` so a misconfiguration stops the
+   * deployment rather than surfacing on the first send attempt.
+   */
+  assertConfigured(): void {
+    // Reading the getter is the check: it throws on anything unacceptable.
+    void this.forceSimulation
   },
 
   // ── Phase 5: reminders ────────────────────────────────────────────────

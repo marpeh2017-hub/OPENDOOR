@@ -15,6 +15,10 @@ import { AppModule } from '../src/app.module'
 import { PrismaService } from '../src/prisma.service'
 import { StorageService } from '../src/storage/storage.service'
 import { createHash, randomBytes } from 'crypto'
+// The SAME hashing the service uses. Computing it independently here is what
+// let the test keep passing while the service's own hashing was weak — the
+// test was asserting against its own copy of the algorithm, not the real one.
+import { hashOtp } from '../src/common/otp/otp'
 
 process.env.NODE_ENV   = 'test'
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-for-e2e'
@@ -347,7 +351,7 @@ describe('Signature Workflow (e2e)', () => {
       if (!session) return
 
       const testOtp  = '123456'
-      const testHash = createHash('sha256').update(testOtp).digest('hex')
+      const testHash = hashOtp(testOtp)
       await prisma.signingSession.update({
         where: { id: session.id },
         data: {
@@ -462,7 +466,7 @@ describe('Signature Workflow (e2e)', () => {
       await prisma.signingSession.update({
         where: { id: session!.id },
         data: {
-          otpHash:      createHash('sha256').update(testOtp).digest('hex'),
+          otpHash:      hashOtp(testOtp),
           otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
           otpAttempts:  0,
         },
@@ -681,7 +685,7 @@ describe('Signature Workflow (e2e)', () => {
       await prisma.signingSession.update({
         where: { id: s1.id },
         data: {
-          otpHash:      createHash('sha256').update(otp1).digest('hex'),
+          otpHash:      hashOtp(otp1),
           otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
           otpAttempts:  0,
           verifiedAt:   null,
@@ -695,7 +699,7 @@ describe('Signature Workflow (e2e)', () => {
       await prisma.signingSession.update({
         where: { id: s1.id },
         data: {
-          otpHash:      createHash('sha256').update(otp1).digest('hex'),
+          otpHash:      hashOtp(otp1),
           otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
           otpAttempts:  0,
         },
@@ -751,7 +755,7 @@ describe('Signature Workflow (e2e)', () => {
       await prisma.signingSession.update({
         where: { id: session!.id },
         data: {
-          otpHash:      createHash('sha256').update('999999').digest('hex'),
+          otpHash:      hashOtp('999999'),
           otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
           otpAttempts:  0,
         },
@@ -813,7 +817,7 @@ describe('Signature Workflow (e2e)', () => {
       await prisma.signingSession.update({
         where: { id: evSession!.id },
         data: {
-          otpHash:      createHash('sha256').update(evOtp).digest('hex'),
+          otpHash:      hashOtp(evOtp),
           otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
           otpAttempts:  0,
         },

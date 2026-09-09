@@ -5,7 +5,8 @@ import {
   Inject,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { createHash, createHmac, randomInt, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
+import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto'
+import { generateOtp, hashOtp, otpMatches } from '../common/otp/otp'
 import { PrismaService } from '../prisma.service'
 import { SmsService } from '../sms/sms.service'
 import { REDIS } from '../redis/redis.module'
@@ -61,44 +62,6 @@ function checkPassword(plain: string, stored: string): boolean {
     return hash === stored
   }
   return plain === stored
-}
-
-/**
- * OTP storage hash — HMAC, not a bare digest.
- *
- * A six-digit code has 10^6 pre-images. `sha256(otp)` is therefore not a hash
- * in any useful sense: anyone who can read Redis enumerates the whole space in
- * milliseconds. The HMAC key makes the stored value useless without the server
- * secret.
- *
- * The pepper is DERIVED from `JWT_SECRET` rather than being a new environment
- * variable. `JwtStrategy` already refuses to construct without `JWT_SECRET`, so
- * this cannot be silently unset in production — and a new required variable is
- * a new way for a deployment to fail. The domain separator keeps this key
- * distinct from anything else derived from the same secret.
- */
-function otpPepper(): Buffer {
-  const secret = process.env.JWT_SECRET
-  if (!secret) throw new Error('JWT_SECRET is required to hash OTP codes')
-  return createHmac('sha256', secret).update('otp-pepper-v1').digest()
-}
-
-function hashOtp(otp: string): string {
-  return createHmac('sha256', otpPepper()).update(otp).digest('hex')
-}
-
-/**
- * Constant-time comparison of two hex digests.
- *
- * `a !== b` on a hash leaks nothing useful in practice, but the codebase
- * already uses `timingSafeEqual` for password checks and consistency here
- * costs nothing.
- */
-function digestsMatch(a: string, b: string): boolean {
-  const left = Buffer.from(a, 'hex')
-  const right = Buffer.from(b, 'hex')
-  if (left.length !== right.length || left.length === 0) return false
-  return timingSafeEqual(left, right)
 }
 
 @Injectable()
@@ -181,7 +144,7 @@ export class AuthService {
     // recoverable from a modest number of outputs, after which every later code
     // is computable rather than guessable. For the resident portal's ONLY
     // authentication factor that is not acceptable.
-    const otp     = randomInt(100000, 1000000).toString()
+    const otp     = generateOtp()
     const otpKey  = `otp:${dto.phone}`
 
     // Store HMAC(otp) — never plaintext, and never a bare digest over 10^6.
@@ -205,7 +168,7 @@ export class AuthService {
       throw new UnauthorizedException('קוד OTP שגוי או פג תוקף')
     }
 
-    if (!digestsMatch(storedHash, hashOtp(dto.code))) {
+    if (!otpMatches(storedHash, dto.code)) {
       // Count the failure against THIS code, and destroy the code once the
       // budget is spent. Incrementing before the check would be off by one;
       // incrementing after the throw would never run.

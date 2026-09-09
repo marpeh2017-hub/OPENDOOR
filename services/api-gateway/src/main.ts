@@ -10,6 +10,7 @@ import { PrismaExceptionFilter } from './filters/prisma-exception.filter'
 import { validateSignatureConfig } from './config/signature-config.validator'
 import { validateAllowlistConfiguration } from './automations/webhook-allowlist'
 import { validatePrismaEngine } from './config/prisma-engine.validator'
+import { MessagingConfig } from './messaging/messaging.config'
 
 async function bootstrap() {
   /**
@@ -19,6 +20,14 @@ async function bootstrap() {
    * silently rewrites the shared generated client under node_modules.
    */
   validatePrismaEngine()
+
+  /**
+   * Whether real people receive real messages must be a stated decision, not an
+   * inherited default. In production `MESSAGING_SIMULATE` is mandatory, and
+   * this throws here — before Nest boots — so a misconfigured deployment fails
+   * immediately with one clear message rather than at the first reminder.
+   */
+  MessagingConfig.assertConfigured()
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:  ['error', 'warn', 'log', 'debug'],
