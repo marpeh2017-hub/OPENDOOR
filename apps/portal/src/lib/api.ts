@@ -27,6 +27,20 @@ export class NotAuthenticated extends Error {
   }
 }
 
+/**
+ * The resource does not exist, or does not belong to this resident.
+ *
+ * Deliberately one class for both: the gateway answers 404 in either case, so
+ * that a resident cannot establish which by trying ids, and reconstructing the
+ * distinction here would give away exactly what it withholds.
+ */
+export class NotFound extends Error {
+  constructor(readonly path: string) {
+    super('Not found')
+    this.name = 'NotFound'
+  }
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const token = (await cookies()).get(ACCESS_COOKIE)?.value
   if (!token) throw new NotAuthenticated()
@@ -43,6 +57,12 @@ export async function apiGet<T>(path: string): Promise<T> {
     // The gateway distinguishes "expired" from "your placement changed"; both
     // end the session, and the code is what lets the sign-in page say which.
     throw new NotAuthenticated(body?.code)
+  }
+  if (res.status === 404) {
+    // Typed, because a page has to tell "not found" apart from a real failure
+    // and matching on an error message is the kind of thing that breaks the day
+    // somebody rewords it.
+    throw new NotFound(path)
   }
   if (!res.ok) {
     throw new Error(`Gateway responded ${res.status} for ${path}`)

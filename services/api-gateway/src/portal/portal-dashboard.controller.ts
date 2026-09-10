@@ -6,6 +6,8 @@ import { PortalMessagesService } from './portal-messages.service'
 import { PortalMessagesQueryDto } from './dto/portal-messages.dto'
 import { PortalProfileService } from './portal-profile.service'
 import { ContactUpdateRequestDto, UpdatePortalProfileDto } from './dto/portal-profile.dto'
+import { PortalSupportService } from './portal-support.service'
+import { CreateSupportTicketDto, CreateTicketReplyDto } from './dto/portal-support.dto'
 import { PortalScopeService } from './portal-scope.service'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current-user.decorator'
@@ -38,6 +40,7 @@ export class PortalDashboardController {
     private readonly documents: PortalDocumentsService,
     private readonly messages: PortalMessagesService,
     private readonly profile: PortalProfileService,
+    private readonly support: PortalSupportService,
     private readonly scopes: PortalScopeService,
   ) {}
 
@@ -130,6 +133,64 @@ export class PortalDashboardController {
   ) {
     const scope = await this.scopes.resolve(user)
     return this.profile.requestContactUpdate(scope, dto, contextFrom(req))
+  }
+
+  // ── Support ───────────────────────────────────────────────────────────────
+
+  /**
+   * The resident's own tickets, and the questions this project's record can
+   * answer.
+   *
+   * "Their own" is literal: a ticket belongs to one resident, not to an
+   * apartment. Co-residents of a jointly-owned apartment are routinely heirs
+   * contesting an estate or a couple separating, and there is no flag on
+   * `SupportTicket` to opt into sharing one.
+   */
+  @Get('support')
+  @ApiOperation({ summary: "The resident's support tickets" })
+  async listTickets(@CurrentUser() user: CurrentUserPayload) {
+    const scope = await this.scopes.resolve(user)
+    return this.support.list(scope)
+  }
+
+  @Get('support/:id')
+  @ApiOperation({ summary: 'One ticket and its conversation' })
+  @ApiResponse({ status: 404, description: 'No such ticket, or not one of theirs.' })
+  async getTicket(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    const scope = await this.scopes.resolve(user)
+    return this.support.get(scope, id)
+  }
+
+  @Post('support')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Open a support ticket' })
+  async createTicket(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateSupportTicketDto,
+    @Req() req: any,
+  ) {
+    const scope = await this.scopes.resolve(user)
+    return this.support.create(scope, dto, contextFrom(req))
+  }
+
+  /**
+   * Reply to one of their own tickets.
+   *
+   * `isInternal` is not on the DTO and is server-assigned `false`: it is the
+   * flag that hides staff's private notes from the resident, and a resident who
+   * could set it would be writing into a channel they cannot read.
+   */
+  @Post('support/:id/replies')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Reply to one of their tickets' })
+  async replyToTicket(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: CreateTicketReplyDto,
+    @Req() req: any,
+  ) {
+    const scope = await this.scopes.resolve(user)
+    return this.support.reply(scope, id, dto, contextFrom(req))
   }
 
   /**

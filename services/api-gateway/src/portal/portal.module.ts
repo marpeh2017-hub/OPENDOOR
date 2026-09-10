@@ -5,6 +5,7 @@ import { PortalDashboardService } from './portal-dashboard.service'
 import { PortalDocumentsService } from './portal-documents.service'
 import { PortalMessagesService } from './portal-messages.service'
 import { PortalProfileService } from './portal-profile.service'
+import { PortalSupportService } from './portal-support.service'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PortalScopeService } from './portal-scope.service'
 
@@ -29,6 +30,7 @@ import { PortalScopeService } from './portal-scope.service'
     PortalDocumentsService,
     PortalMessagesService,
     PortalProfileService,
+    PortalSupportService,
   ],
   exports: [PortalScopeService],
 })
