@@ -54,3 +54,16 @@ export class BulkResidentStatusDto {
   @IsIn(RESIDENT_SIGNATURE_STATUSES as unknown as string[])
   status!: string
 }
+
+/**
+ * Turning a resident's portal inbox on or off.
+ *
+ * Only the flag. The resident comes from the path and the tenant from the
+ * authenticated session, so there is no field here through which a caller could
+ * point the grant at somebody else.
+ */
+export class SetPortalAccessDto {
+  @ApiProperty({ description: 'Whether the PORTAL channel may be used for this resident' })
+  @IsBoolean()
+  enabled!: boolean
+}

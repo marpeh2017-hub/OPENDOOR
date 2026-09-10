@@ -10,7 +10,7 @@ import type { CreateResidentDto } from './dto/create-resident.dto'
 import type { UpdateResidentDto } from './dto/update-resident.dto'
 import type {
   UpdateSignatureStatusDto, AddResidentActivityDto, SetResidentActiveDto,
-  MoveResidentDto, BulkResidentStatusDto,
+  MoveResidentDto, BulkResidentStatusDto, SetPortalAccessDto,
 } from './dto/resident-actions.dto'
 
 /**
@@ -371,6 +371,72 @@ export class ResidentsService {
         metadata: { reason: dto.isActive ? 'RESTORE' : 'ARCHIVE' },
       }, tx)
       return redactResident(after)
+    })
+  }
+
+  /**
+   * Turns the resident's PORTAL inbox on or off.
+   *
+   * ── WHY THIS METHOD HAD TO EXIST ─────────────────────────────────────────
+   *
+   * `MessageChannel.PORTAL` is a fully built delivery channel: it has its own
+   * provider, the dispatcher writes it straight to `DELIVERED` because its
+   * transport is this database, and `ResidentContactService` selects it as the
+   * last resort for a resident who has opted out of SMS, WhatsApp and email —
+   * the one channel needing no opt-in, because it is pull rather than push and
+   * puts nothing on anybody's phone.
+   *
+   * The gate on all of that is `Resident.portalEnabled`, and nothing in the
+   * product ever wrote to it: only the seed set it. So the channel built
+   * specifically for the resident portal was unreachable for every resident
+   * created through the API — the same shape of gap as `ResidentDocument`,
+   * where a table the portal reads had no writer at all.
+   *
+   * ── WHY THE TENANT CHECK IS THE TRAVERSAL ────────────────────────────────
+   *
+   * `setActive` above scopes on `Resident.tenantId`. That column is a bare
+   * scalar with no foreign key and can disagree with where the apartment
+   * actually sits. Archiving a resident is an internal state change; opening a
+   * communication channel to them is a grant, and a grant should not rest on
+   * the weaker of two available checks. Same rule as document sharing.
+   */
+  async setPortalAccess(id: string, dto: SetPortalAccessDto, actor: AuditActor) {
+    const before = await this.prisma.resident.findFirst({
+      where: {
+        id,
+        apartment: { building: { complex: { project: { tenantId: actor.tenantId } } } },
+      },
+      select: { id: true, portalEnabled: true, isActive: true },
+    })
+    if (!before) throw DomainError.notFound('RESIDENT_NOT_FOUND', `דייר ${id} לא נמצא`)
+
+    if (dto.enabled && !before.isActive) {
+      // A former resident is not somebody to open a new channel to.
+      throw DomainError.validation(
+        'RESIDENT_INACTIVE',
+        'לא ניתן להפעיל גישה לפורטל לדייר שהועבר לארכיון',
+      )
+    }
+
+    if (before.portalEnabled === dto.enabled) {
+      return { id: before.id, portalEnabled: before.portalEnabled, changed: false }
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const after = await tx.resident.update({
+        where: { id },
+        data: { portalEnabled: dto.enabled },
+        select: { id: true, portalEnabled: true },
+      })
+      await this.audit.record(actor, {
+        action: 'UPDATE', entity: 'Resident', entityId: id,
+        changes: {
+          before: { portalEnabled: before.portalEnabled },
+          after: { portalEnabled: dto.enabled },
+        },
+        metadata: { grant: dto.enabled ? 'PORTAL_INBOX_ENABLED' : 'PORTAL_INBOX_DISABLED' },
+      }, tx)
+      return { ...after, changed: true }
     })
   }
 

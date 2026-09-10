@@ -12,7 +12,7 @@ import { CreateResidentDto } from './dto/create-resident.dto'
 import { UpdateResidentDto } from './dto/update-resident.dto'
 import {
   UpdateSignatureStatusDto, AddResidentActivityDto, SetResidentActiveDto,
-  MoveResidentDto, BulkResidentStatusDto,
+  MoveResidentDto, BulkResidentStatusDto, SetPortalAccessDto,
 } from './dto/resident-actions.dto'
 
 /** Roles allowed to edit resident records and their engagement state. */
@@ -74,6 +74,26 @@ export class ResidentsController {
   @ApiOperation({ summary: 'Archive or restore a resident (manager+)' })
   setActive(@Param('id') id: string, @Body() dto: SetResidentActiveDto, @Request() req: any) {
     return mapDomainErrors(() => this.residentsService.setActive(id, dto, actorFrom(req)))
+  }
+
+  /**
+   * Open or close this resident's portal inbox.
+   *
+   * `RESIDENT_WRITE_ROLES` rather than manager-only: it is the same tier that
+   * may edit the resident's contact details, and it is the field agent at the
+   * door who discovers somebody wants to stop receiving texts and read things
+   * in the app instead.
+   */
+  @Patch(':id/portal-access')
+  @Roles(...RESIDENT_WRITE_ROLES)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Enable or disable the resident's portal inbox" })
+  setPortalAccess(
+    @Param('id') id: string,
+    @Body() dto: SetPortalAccessDto,
+    @Request() req: any,
+  ) {
+    return mapDomainErrors(() => this.residentsService.setPortalAccess(id, dto, actorFrom(req)))
   }
 
   @Delete(':id')

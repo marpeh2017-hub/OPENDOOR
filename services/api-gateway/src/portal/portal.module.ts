@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module'
 import { PortalDashboardController } from './portal-dashboard.controller'
 import { PortalDashboardService } from './portal-dashboard.service'
 import { PortalDocumentsService } from './portal-documents.service'
+import { PortalMessagesService } from './portal-messages.service'
 import { PortalScopeService } from './portal-scope.service'
 
 /**
@@ -17,7 +18,12 @@ import { PortalScopeService } from './portal-scope.service'
 @Module({
   imports: [AuthModule],
   controllers: [PortalDashboardController],
-  providers: [PortalScopeService, PortalDashboardService, PortalDocumentsService],
+  providers: [
+    PortalScopeService,
+    PortalDashboardService,
+    PortalDocumentsService,
+    PortalMessagesService,
+  ],
   exports: [PortalScopeService],
 })
 export class PortalModule {}

@@ -1,7 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common'
+import { Controller, Get, Param, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { PortalDashboardService } from './portal-dashboard.service'
 import { PortalDocumentsService } from './portal-documents.service'
+import { PortalMessagesService } from './portal-messages.service'
+import { PortalMessagesQueryDto } from './dto/portal-messages.dto'
 import { PortalScopeService } from './portal-scope.service'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current-user.decorator'
@@ -32,6 +34,7 @@ export class PortalDashboardController {
   constructor(
     private readonly dashboard: PortalDashboardService,
     private readonly documents: PortalDocumentsService,
+    private readonly messages: PortalMessagesService,
     private readonly scopes: PortalScopeService,
   ) {}
 
@@ -54,6 +57,25 @@ export class PortalDashboardController {
   async listDocuments(@CurrentUser() user: CurrentUserPayload) {
     const scope = await this.scopes.resolve(user)
     return this.documents.list(scope)
+  }
+
+  /**
+   * The resident's message history.
+   *
+   * `limit` and `cursor` are the first query parameters on a portal route. They
+   * are allowed because they choose how much of the CALLER'S OWN list to
+   * return, never whose list it is — and `forbidNonWhitelisted` means an
+   * attempt to add `?residentId=…` beside them is a 400 rather than a silently
+   * dropped field.
+   */
+  @Get('messages')
+  @ApiOperation({ summary: 'Messages the project actually sent this resident' })
+  async listMessages(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: PortalMessagesQueryDto,
+  ) {
+    const scope = await this.scopes.resolve(user)
+    return this.messages.list(scope, { limit: query.limit, cursor: query.cursor })
   }
 
   /**
