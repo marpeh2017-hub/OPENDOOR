@@ -197,6 +197,47 @@ export const TEMPLATE_WRITE_ROLES = [
 ] as const
 
 /**
+ * Roles allowed to SHARE a document with an individual resident.
+ *
+ * ── WHY THIS IS NARROWER THAN `DOCUMENT_WRITE_ROLES` ───────────────────────
+ *
+ * Uploading a document and handing it to a named resident are different acts.
+ * The first puts a file in the company's own library; the second gives a person
+ * outside the company the ability to read it, and there is no un-reading it
+ * afterwards. Sharing is an access grant wearing the clothes of a metadata
+ * edit, which is exactly the kind of thing that gets the broader list by
+ * default and should not.
+ *
+ * Three roles that may upload are absent here:
+ *
+ *   - DEVELOPER_REP is the COUNTERPARTY. The developer negotiates with these
+ *     residents, and letting their representative put documents directly in
+ *     front of them — outside the promoter's channel, on the promoter's
+ *     letterhead — hands one side of a negotiation a private line to the other
+ *     side's clients. This is the load-bearing exclusion.
+ *   - ARCHITECT and ENGINEER upload plans for the project. Deciding that ONE
+ *     resident should receive a particular drawing is a resident-relationship
+ *     decision, not a technical one, and they are not the people holding that
+ *     relationship.
+ *
+ * LAWYER stays: the agreements and powers of attorney are theirs, and sending
+ * them to the resident who must sign is the job. FIELD_AGENT stays for the same
+ * reason they may run an import — they are the ones at the door when a resident
+ * says they never received something.
+ *
+ * Revoking a share uses this same list. If you may not grant, you may not
+ * decide to withdraw either.
+ */
+export const RESIDENT_SHARE_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'PROJECT_MANAGER',
+  'RESIDENT_RELATIONS_MANAGER',
+  'FIELD_AGENT',
+  'LAWYER',
+] as const
+
+/**
  * ════════════════════════════════════════════════════════════════════════════
  *  SITE MANAGER (CMS) — who may read, edit, verify and publish the WEBSITE
  * ════════════════════════════════════════════════════════════════════════════

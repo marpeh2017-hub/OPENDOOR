@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module'
 import { PortalDashboardController } from './portal-dashboard.controller'
 import { PortalDashboardService } from './portal-dashboard.service'
+import { PortalDocumentsService } from './portal-documents.service'
 import { PortalScopeService } from './portal-scope.service'
 
 /**
@@ -16,7 +17,7 @@ import { PortalScopeService } from './portal-scope.service'
 @Module({
   imports: [AuthModule],
   controllers: [PortalDashboardController],
-  providers: [PortalScopeService, PortalDashboardService],
+  providers: [PortalScopeService, PortalDashboardService, PortalDocumentsService],
   exports: [PortalScopeService],
 })
 export class PortalModule {}

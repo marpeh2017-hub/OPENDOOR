@@ -12,12 +12,13 @@ import { Roles } from '../auth/decorators/roles.decorator'
 import { PrismaService } from '../prisma.service'
 import { MalwareScanService } from './malware/malware-scan.service'
 import { StorageService } from '../storage/storage.service'
-import { STAFF_ROLES, MANAGER_ROLES, DOCUMENT_WRITE_ROLES } from '../auth/roles.constants'
+import { STAFF_ROLES, MANAGER_ROLES, DOCUMENT_WRITE_ROLES, RESIDENT_SHARE_ROLES } from '../auth/roles.constants'
 import { DocumentCategory } from '@prisma/client'
 import { CreateDocumentDto } from './dto/create-document.dto'
 import { UploadDocumentDto } from './dto/upload-document.dto'
 import { MulterExceptionFilter } from '../filters/multer-exception.filter'
 import { UploadDocumentVersionDto } from './dto/upload-version.dto'
+import { ShareDocumentDto } from './dto/share-document.dto'
 import { AuditService } from '../common/audit/audit.service'
 import { actorFrom } from '../common/actor'
 import {
@@ -390,6 +391,175 @@ export class DocumentsController {
    * GET /documents/:versionId/download — no special-case download route, and no
    * storage key leaves the server.
    */
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Sharing a document with a resident
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // `ResidentDocument` has existed since the schema was written and nothing
+  // ever wrote to it. The resident portal reads it as the answer to "which
+  // documents may this resident see", so without a writer that page is empty
+  // by construction — the table described a sharing decision the product had
+  // no way to make.
+  //
+  // Sharing is an ACCESS GRANT, not a metadata edit: afterwards a person
+  // outside the organisation can read that file. So it is audited like one, it
+  // is restricted to the roles that may create documents in the first place,
+  // and both sides of it are re-checked against the caller's tenant.
+
+  /**
+   * Who this document is shared with.
+   *
+   * Staff-facing, and worth being able to ask before sharing it with one more
+   * person: it answers "who outside the company can already read this".
+   */
+  @Get(':id/residents')
+  @Roles(...STAFF_ROLES)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Residents this document is shared with' })
+  async sharedWith(@Param('id') id: string, @Request() req: any) {
+    const tenantId = this.tenantId(req)
+    await this.documentInTenant(id, tenantId)
+
+    const rows = await this.prisma.residentDocument.findMany({
+      where: { documentId: id },
+      select: {
+        addedAt: true,
+        resident: {
+          select: {
+            id: true, firstName: true, lastName: true, isActive: true,
+            apartment: { select: { apartmentNumber: true } },
+          },
+        },
+      },
+      orderBy: { addedAt: 'desc' },
+    })
+
+    return rows.map((r) => ({
+      residentId: r.resident.id,
+      name: `${r.resident.firstName} ${r.resident.lastName}`.trim(),
+      apartmentNumber: r.resident.apartment.apartmentNumber,
+      isActive: r.resident.isActive,
+      sharedAt: r.addedAt,
+    }))
+  }
+
+  @Post(':id/residents')
+  @Roles(...RESIDENT_SHARE_ROLES)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Share a document with one resident' })
+  async share(@Param('id') id: string, @Body() dto: ShareDocumentDto, @Request() req: any) {
+    const tenantId = this.tenantId(req)
+    const doc = await this.documentInTenant(id, tenantId)
+    const resident = await this.residentInTenant(dto.residentId, tenantId)
+
+    /*
+     * Idempotent, via the unique (residentId, documentId) constraint. Sharing
+     * twice is what a person does when they are not sure the first click
+     * registered, and it should not be an error — but the original `addedAt`
+     * is kept, because it is the date the grant actually began.
+     */
+    const existing = await this.prisma.residentDocument.findUnique({
+      where: { residentId_documentId: { residentId: resident.id, documentId: id } },
+      select: { addedAt: true },
+    })
+    if (existing) {
+      return { documentId: id, residentId: resident.id, sharedAt: existing.addedAt, alreadyShared: true }
+    }
+
+    const row = await this.prisma.residentDocument.create({
+      data: { residentId: resident.id, documentId: id },
+      select: { addedAt: true },
+    })
+
+    await this.audit.record(actorFrom(req), {
+      action: 'CREATE', entity: 'ResidentDocument', entityId: id,
+      changes: { after: { residentId: resident.id, documentId: id } },
+      metadata: {
+        documentTitle: doc.title, projectId: doc.projectId,
+        grant: 'DOCUMENT_SHARED_WITH_RESIDENT',
+      },
+    })
+
+    return { documentId: id, residentId: resident.id, sharedAt: row.addedAt, alreadyShared: false }
+  }
+
+  /**
+   * Withdraw the share.
+   *
+   * Deletes the join row only. Revoking one resident's access to a file is not
+   * a reason to destroy the file.
+   */
+  @Delete(':id/residents/:residentId')
+  @Roles(...RESIDENT_SHARE_ROLES)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Stop sharing a document with a resident' })
+  async unshare(
+    @Param('id') id: string,
+    @Param('residentId') residentId: string,
+    @Request() req: any,
+  ) {
+    const tenantId = this.tenantId(req)
+    const doc = await this.documentInTenant(id, tenantId)
+    await this.residentInTenant(residentId, tenantId, { allowArchived: true })
+
+    const removed = await this.prisma.residentDocument.deleteMany({
+      where: { documentId: id, residentId },
+    })
+    if (removed.count === 0) {
+      throw new NotFoundException('This document is not shared with that resident')
+    }
+
+    await this.audit.record(actorFrom(req), {
+      action: 'DELETE', entity: 'ResidentDocument', entityId: id,
+      changes: { before: { residentId, documentId: id } },
+      metadata: { documentTitle: doc.title, grant: 'DOCUMENT_SHARE_REVOKED' },
+    })
+  }
+
+  /** A document in the caller's tenant, or 404. Never 403 — see TenantScopeService. */
+  private async documentInTenant(id: string, tenantId: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: { id, tenantId },
+      select: { id: true, title: true, projectId: true },
+    })
+    if (!doc) throw new NotFoundException('Document not found')
+    return doc
+  }
+
+  /**
+   * A resident in the caller's tenant, or 404.
+   *
+   * Scoped through apartment → building → complex → project rather than through
+   * `Resident.tenantId`. That column is a bare scalar with no foreign key and
+   * can disagree with where the apartment actually sits; the traversal is the
+   * authoritative answer, and granting access to a file is exactly the kind of
+   * decision that should not rest on the weaker of two available checks.
+   *
+   * Archived residents cannot be GIVEN access — a former resident is not
+   * someone to start sharing with — but access can always be TAKEN AWAY from
+   * one, which is why revoking passes `allowArchived`.
+   */
+  private async residentInTenant(
+    residentId: string,
+    tenantId: string,
+    opts: { allowArchived?: boolean } = {},
+  ) {
+    const resident = await this.prisma.resident.findFirst({
+      where: {
+        id: residentId,
+        apartment: { building: { complex: { project: { tenantId } } } },
+      },
+      select: { id: true, isActive: true },
+    })
+    if (!resident) throw new NotFoundException('Resident not found')
+    if (!resident.isActive && !opts.allowArchived) {
+      throw new BadRequestException('Cannot share a document with an archived resident')
+    }
+    return resident
+  }
+
   @Get(':id/versions')
   @Roles(...STAFF_ROLES)
   @ApiOperation({ summary: 'Version history of a document, newest first' })

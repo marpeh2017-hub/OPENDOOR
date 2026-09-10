@@ -1,6 +1,7 @@
-import { Controller, Get } from '@nestjs/common'
+import { Controller, Get, Param } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { PortalDashboardService } from './portal-dashboard.service'
+import { PortalDocumentsService } from './portal-documents.service'
 import { PortalScopeService } from './portal-scope.service'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current-user.decorator'
@@ -30,6 +31,7 @@ import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current
 export class PortalDashboardController {
   constructor(
     private readonly dashboard: PortalDashboardService,
+    private readonly documents: PortalDocumentsService,
     private readonly scopes: PortalScopeService,
   ) {}
 
@@ -45,5 +47,29 @@ export class PortalDashboardController {
   async get(@CurrentUser() user: CurrentUserPayload) {
     const scope = await this.scopes.resolve(user)
     return this.dashboard.build(scope)
+  }
+
+  @Get('documents')
+  @ApiOperation({ summary: "Documents shared with the signed-in resident" })
+  async listDocuments(@CurrentUser() user: CurrentUserPayload) {
+    const scope = await this.scopes.resolve(user)
+    return this.documents.list(scope)
+  }
+
+  /**
+   * The first portal route that names a resource.
+   *
+   * The id goes INTO a query already scoped to the session rather than being
+   * checked against it afterwards, so a document belonging to someone else does
+   * not match and the answer is 404. A 403 would confirm the id exists
+   * somewhere, which is a fact a resident should not be able to establish by
+   * trying ids.
+   */
+  @Get('documents/:id/download')
+  @ApiOperation({ summary: 'A short-lived download URL for one of their documents' })
+  @ApiResponse({ status: 404, description: 'No such document, or not one of theirs.' })
+  async downloadDocument(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    const scope = await this.scopes.resolve(user)
+    return this.documents.downloadUrl(scope, id)
   }
 }
