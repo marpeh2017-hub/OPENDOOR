@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { SmsProvider, SmsProviderName } from './sms.interface'
+import { normaliseIsraeliPhone } from '../messaging/phone'
+import { MessagingConfig } from '../messaging/messaging.config'
 
 /** `+972501234567` → `*********567`. Never log a full subscriber number. */
 export function maskPhone(phone: string): string {
@@ -19,6 +21,30 @@ export function maskPhone(phone: string): string {
  * `sendText` is now the primitive and `sendOtp` is a wrapper over it. The OTP
  * path keeps its own guarantee — the code value is never logged, never put in
  * an error message, and in development nothing is transmitted at all.
+ *
+ * ── TWO THINGS `sendText` DOES BEFORE ANY PROVIDER SEES A NUMBER ────────────
+ *
+ * Both were missing, and both were found by tracing the OTP path rather than
+ * the messaging pipeline — the pipeline had them and the OTP path did not,
+ * because the OTP callers reach this service DIRECTLY instead of going through
+ * `ProviderRegistryService`.
+ *
+ *   1. NORMALISATION. `sendOtp('0548018613', …)` handed a provider a local
+ *      Israeli number with a leading zero. Vonage wants E.164. The messaging
+ *      pipeline was fine because `ResidentContactService` normalises on the way
+ *      in; nothing normalised for OTP, so the one message that matters most
+ *      would have been the one that failed.
+ *
+ *   2. SIMULATION. This service never read `MESSAGING_SIMULATE`. Only the
+ *      provider registry did, and the OTP callers bypass it — so the flag that
+ *      everyone treats as "nothing leaves the building" did not cover portal
+ *      login, signature OTPs or signing reminders. Nothing had gone out only
+ *      because no provider was configured; the day credentials were added,
+ *      every one of those would have become a real, charged message.
+ *
+ * That second one is the same shape as the incident that sent 24 real messages
+ * during the 2026-09-09 audit. The fix made then covered the pipeline. This
+ * covers the rest.
  */
 @Injectable()
 export class SmsService implements SmsProvider {
@@ -48,10 +74,49 @@ export class SmsService implements SmsProvider {
   }
 
   async sendText(phone: string, text: string, opts?: { isOtp?: boolean }): Promise<void> {
+    /*
+     * ── E.164, or a loud refusal ────────────────────────────────────────────
+     *
+     * Every provider below wants an international number. A local `05…` is not
+     * a smaller problem than a missing one: the provider may accept it, charge
+     * for it, and report success for a message nobody receives.
+     *
+     * A LANDLINE is refused for the same reason and is worth calling out
+     * separately — an SMS to a landline is a charge with a guaranteed silence
+     * at the other end, and `normaliseIsraeliPhone` already knows the
+     * difference.
+     */
+    const normalised = normaliseIsraeliPhone(phone)
+    if (!normalised.e164) {
+      throw new Error(
+        `Cannot send SMS: ${maskPhone(phone)} is not a usable Israeli number (${normalised.reason ?? 'unparseable'})`,
+      )
+    }
+    if (!normalised.isMobile) {
+      throw new Error(`Cannot send SMS: ${maskPhone(phone)} is not a mobile number`)
+    }
+    const to = normalised.e164
+
+    /*
+     * ── The simulation flag now means what it says ──────────────────────────
+     *
+     * Checked HERE rather than only in the provider registry, because the OTP
+     * callers never reach the registry. `MESSAGING_SIMULATE=true` now stops
+     * every outbound message this process can produce, including the ones that
+     * carry a login code.
+     */
+    if (this.shouldSimulate(to)) {
+      this.logger.log(
+        `[SIMULATED SMS] → ${maskPhone(to)} (${text.length} chars) — nothing was transmitted ` +
+        '(MESSAGING_SIMULATE is on)',
+      )
+      return
+    }
+
     switch (this.provider) {
-      case 'vonage':  return this.sendVonage(phone, text)
-      case 'twilio':  return this.sendTwilio(phone, text)
-      case 'inforu':  return this.sendInforu(phone, text)
+      case 'vonage':  return this.sendVonage(to, text)
+      case 'twilio':  return this.sendTwilio(to, text)
+      case 'inforu':  return this.sendInforu(to, text)
       default:
         if (process.env.NODE_ENV === 'production') {
           throw new Error('No SMS provider configured in production — cannot send SMS')
@@ -60,11 +125,63 @@ export class SmsService implements SmsProvider {
         // and never log the full number in either case.
         this.logger.warn(
           opts?.isOtp
-            ? `[DEV] SMS not sent to ${maskPhone(phone)} — configure SMS provider`
-            : `[DEV] SMS not sent to ${maskPhone(phone)} (${text.length} chars) — configure SMS provider`,
+            ? `[DEV] SMS not sent to ${maskPhone(to)} — configure SMS provider`
+            : `[DEV] SMS not sent to ${maskPhone(to)} (${text.length} chars) — configure SMS provider`,
         )
         return
     }
+  }
+
+  /**
+   * Whether this particular message should be simulated.
+   *
+   * ── WHY THERE IS AN EXCEPTION LIST AT ALL ────────────────────────────────
+   *
+   * Verifying that SMS actually works needs exactly one real message. The
+   * obvious way to get it — switch `MESSAGING_SIMULATE` off for a minute — is
+   * the way that produced the 2026-09-09 incident: the flag is global, the
+   * outbox worker polls every five seconds, and everything queued goes out
+   * with it. Twenty-four messages, no window to cancel.
+   *
+   * `MESSAGING_SIMULATE_EXCEPT` names the numbers that may receive a real
+   * message WHILE simulation stays on for everything else. It is deliberately
+   * an allow-list of specific numbers rather than a boolean: you have to write
+   * down whose phone is about to ring.
+   *
+   * It does not open the outbox worker. When simulation is on, the dispatcher
+   * resolves `DevNoopProvider` through the provider registry and never reaches
+   * this service at all — so this affects only the direct callers, which are
+   * the OTP paths, which is exactly the thing worth testing.
+   *
+   * IGNORED IN PRODUCTION, loudly. In production `MESSAGING_SIMULATE` is false
+   * and required to be set explicitly, so an exception list there could only
+   * mean somebody had copied a development `.env`.
+   */
+  private shouldSimulate(e164: string): boolean {
+    if (!MessagingConfig.forceSimulation) return false
+
+    const exceptions = (process.env.MESSAGING_SIMULATE_EXCEPT ?? '')
+      .split(',')
+      .map((raw) => normaliseIsraeliPhone(raw.trim()).e164)
+      .filter((v): v is string => Boolean(v))
+
+    if (exceptions.length === 0) return true
+
+    if (process.env.NODE_ENV === 'production') {
+      this.logger.error(
+        'MESSAGING_SIMULATE_EXCEPT is set in production and is being ignored. ' +
+        'It exists so a development machine can send one deliberate test message.',
+      )
+      return true
+    }
+
+    if (!exceptions.includes(e164)) return true
+
+    this.logger.warn(
+      `SENDING A REAL SMS to ${maskPhone(e164)} — this number is listed in ` +
+      'MESSAGING_SIMULATE_EXCEPT. Everything else is still simulated.',
+    )
+    return false
   }
 
   private async sendVonage(phone: string, text: string): Promise<void> {
