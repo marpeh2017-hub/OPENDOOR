@@ -63,6 +63,9 @@ export const NOTIFICATION_KIND_LABELS_HE: Record<NotificationKind, string> = {
  */
 export const NOTIFICATION_ENTITY_TYPES = [
   'Project', 'Task', 'Document', 'Meeting', 'SignatureRequest', 'Resident', 'Lead',
+  // Raised by the resident portal when somebody asks staff to change contact
+  // details they may not change themselves.
+  'SupportTicket',
 ] as const
 
 export type NotificationEntityType = (typeof NOTIFICATION_ENTITY_TYPES)[number]

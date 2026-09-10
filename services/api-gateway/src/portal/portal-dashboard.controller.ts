@@ -1,9 +1,11 @@
-import { Controller, Get, Param, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { PortalDashboardService } from './portal-dashboard.service'
 import { PortalDocumentsService } from './portal-documents.service'
 import { PortalMessagesService } from './portal-messages.service'
 import { PortalMessagesQueryDto } from './dto/portal-messages.dto'
+import { PortalProfileService } from './portal-profile.service'
+import { ContactUpdateRequestDto, UpdatePortalProfileDto } from './dto/portal-profile.dto'
 import { PortalScopeService } from './portal-scope.service'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current-user.decorator'
@@ -35,6 +37,7 @@ export class PortalDashboardController {
     private readonly dashboard: PortalDashboardService,
     private readonly documents: PortalDocumentsService,
     private readonly messages: PortalMessagesService,
+    private readonly profile: PortalProfileService,
     private readonly scopes: PortalScopeService,
   ) {}
 
@@ -78,6 +81,57 @@ export class PortalDashboardController {
     return this.messages.list(scope, { limit: query.limit, cursor: query.cursor })
   }
 
+  // ── Profile ───────────────────────────────────────────────────────────────
+
+  @Get('profile')
+  @ApiOperation({ summary: "The resident's own record" })
+  async getProfile(@CurrentUser() user: CurrentUserPayload) {
+    const scope = await this.scopes.resolve(user)
+    return this.profile.get(scope)
+  }
+
+  /**
+   * The five fields a resident may change about themselves.
+   *
+   * The DTO is an allow-list and `forbidNonWhitelisted` is on, so a body
+   * carrying `phone`, `ownershipPercentage` or `notes` is a 400 rather than a
+   * field that is silently dropped today and silently honoured after some
+   * later refactor. That is the enforcement; the DTO comment is the reasoning.
+   */
+  @Patch('profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update language, preferred channel and consent' })
+  @ApiResponse({ status: 400, description: 'A field a resident may not set was present.' })
+  async updateProfile(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdatePortalProfileDto,
+    @Req() req: any,
+  ) {
+    const scope = await this.scopes.resolve(user)
+    return this.profile.update(scope, dto, contextFrom(req))
+  }
+
+  /**
+   * Ask staff to change contact details the resident may not change themselves.
+   *
+   * The phone number is the login credential; changing it without verifying the
+   * new one turns a stolen session into permanent ownership of the account.
+   * Until an OTP-verified change flow exists, a human reading the request and
+   * satisfying themselves about who is asking IS the control.
+   */
+  @Post('profile/contact-update-request')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Ask staff to update phone or email' })
+  @ApiResponse({ status: 400, description: 'A request is already open for this resident.' })
+  async requestContactUpdate(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: ContactUpdateRequestDto,
+    @Req() req: any,
+  ) {
+    const scope = await this.scopes.resolve(user)
+    return this.profile.requestContactUpdate(scope, dto, contextFrom(req))
+  }
+
   /**
    * The first portal route that names a resource.
    *
@@ -93,5 +147,20 @@ export class PortalDashboardController {
   async downloadDocument(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     const scope = await this.scopes.resolve(user)
     return this.documents.downloadUrl(scope, id)
+  }
+}
+
+/**
+ * IP and user agent for a resident-initiated audit row.
+ *
+ * Deliberately NOT `actorFrom(req)`: on a portal token `req.user.userId` is the
+ * RESIDENT id, `AuditLog.userId` is a `User` foreign key, and the insert would
+ * fail silently. `actorFrom` throws on a resident session for that reason;
+ * resident actions audit through `recordAnonymous`, which needs only this.
+ */
+function contextFrom(req: any): { ip?: string | null; userAgent?: string | null } {
+  return {
+    ip: req?.ip ?? req?.headers?.['x-forwarded-for'] ?? null,
+    userAgent: req?.headers?.['user-agent'] ?? null,
   }
 }

@@ -4,6 +4,8 @@ import { PortalDashboardController } from './portal-dashboard.controller'
 import { PortalDashboardService } from './portal-dashboard.service'
 import { PortalDocumentsService } from './portal-documents.service'
 import { PortalMessagesService } from './portal-messages.service'
+import { PortalProfileService } from './portal-profile.service'
+import { NotificationsModule } from '../notifications/notifications.module'
 import { PortalScopeService } from './portal-scope.service'
 
 /**
@@ -16,13 +18,17 @@ import { PortalScopeService } from './portal-scope.service'
  * question every access decision here depends on.
  */
 @Module({
-  imports: [AuthModule],
+  // `NotificationsModule` because a contact-update request has to reach a
+  // person today: the support inbox that will read `SupportTicket` does not
+  // exist yet, and a request nobody can see is not a request.
+  imports: [AuthModule, NotificationsModule],
   controllers: [PortalDashboardController],
   providers: [
     PortalScopeService,
     PortalDashboardService,
     PortalDocumentsService,
     PortalMessagesService,
+    PortalProfileService,
   ],
   exports: [PortalScopeService],
 })
