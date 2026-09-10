@@ -2,6 +2,7 @@ import {
   Controller, Get, Post, Patch, Delete,
   Param, Body, Request, Query, Ip, Headers, UnauthorizedException,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { STAFF_ROLES } from '../auth/roles.constants'
@@ -193,6 +194,9 @@ export class SignaturesController {
   /* ─── Signing portal (public — token-authenticated) ─────────── */
 
   @Public()
+  // Opening a signing link. Same shape and same reasoning as the meeting
+  // invitation view, which has been throttled since it was written.
+  @Throttle({ short: { limit: 6, ttl: 60_000 } })
   @Get('portal/:token')
   @ApiOperation({ summary: 'Owner opens signing link' })
   openPortal(
@@ -204,6 +208,16 @@ export class SignaturesController {
   }
 
   @Public()
+  /*
+   * THIS ONE SENDS AN SMS.
+   *
+   * Per-session limits already bound it well — five resends an hour, and a
+   * fresh code resets the five-guess budget, which is why that cap exists.
+   * What was missing was a limit on the ROUTE, so the global default of 300
+   * a minute was the only thing standing between a caller with a handful of
+   * valid links and a stream of real messages to real people, at real cost.
+   */
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, medium: { limit: 10, ttl: 3_600_000 } })
   @Post('portal/:token/otp')
   @ApiOperation({ summary: 'Request OTP code (sent to owner phone)' })
   requestOtp(@Param('token') token: string, @Ip() ip: string) {
@@ -211,6 +225,10 @@ export class SignaturesController {
   }
 
   @Public()
+  // The OTP guessing surface. Bounded per session at five attempts per code,
+  // so this is defence in depth against somebody working across many tokens
+  // rather than against somebody working on one.
+  @Throttle({ short: { limit: 5, ttl: 60_000 }, medium: { limit: 20, ttl: 3_600_000 } })
   @Post('portal/:token/verify')
   @ApiOperation({ summary: 'Verify OTP code' })
   verifyOtp(
@@ -235,6 +253,7 @@ export class SignaturesController {
    * a missing, malformed or expired header changes nothing at all.
    */
   @Public()
+  @Throttle({ short: { limit: 5, ttl: 60_000 } })
   @Post('portal/:token/sign')
   @ApiOperation({ summary: 'Execute signing after OTP verification' })
   async sign(
@@ -248,6 +267,7 @@ export class SignaturesController {
   }
 
   @Public()
+  @Throttle({ short: { limit: 5, ttl: 60_000 } })
   @Post('portal/:token/decline')
   @ApiOperation({ summary: 'Decline signing with reason' })
   decline(

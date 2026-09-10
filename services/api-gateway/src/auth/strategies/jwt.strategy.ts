@@ -55,6 +55,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Resident session is missing its scope — sign in again')
     }
 
+    /*
+     * ── THE TWO IDENTITY CLAIMS MUST AGREE ──────────────────────────────────
+     *
+     * On a resident token `sub` and `residentId` are the same person, and
+     * `issueSession` always writes them from one value. Nothing checked that
+     * they still matched by the time the token arrived.
+     *
+     * They are read by different code: `userId` (from `sub`) is what logging
+     * and `actorFrom` see, `residentId` is what every portal query scopes by.
+     * A token where they disagree therefore serves one resident's data while
+     * every log line names another — which is the specific failure that makes
+     * an audit trail worse than none, because it is confidently wrong.
+     *
+     * Found by probing rather than by reading: a hand-signed token with
+     * mismatched claims was accepted and answered with the `residentId`
+     * resident's dashboard. Not an escalation — anyone minting tokens can name
+     * anybody — but a divergence with no reason to exist.
+     */
+    if (payload.role === 'RESIDENT' && payload.sub !== payload.residentId) {
+      throw new UnauthorizedException('Resident session identity is inconsistent — sign in again')
+    }
+
     return {
       userId:     payload.sub,
       email:      payload.email,

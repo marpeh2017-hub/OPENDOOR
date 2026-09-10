@@ -118,7 +118,12 @@ describe('Communications dispatcher (e2e)', () => {
         // test here would never be reached — the request would 401 first. The
         // ids are probes: these routes are staff routes and run no
         // resident-scoped query.
-        ...(role === 'RESIDENT' ? { projectId: 'prj_rbac_probe', residentId: 'res_rbac_probe' } : {}),
+        ...(role === 'RESIDENT'
+          // `sub` too: `JwtStrategy` now requires the two identity claims on a
+          // resident token to agree, because code reading `sub` and code reading
+          // `residentId` would otherwise describe different people.
+          ? { sub: 'res_rbac_probe', projectId: 'prj_rbac_probe', residentId: 'res_rbac_probe' }
+          : {}),
       },
       { secret: process.env.JWT_SECRET as string, expiresIn: '10m' },
     )

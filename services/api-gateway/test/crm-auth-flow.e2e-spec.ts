@@ -17,6 +17,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common'
 import request from 'supertest'
+import { ThrottlerStorage } from '@nestjs/throttler'
 import { JwtService } from '@nestjs/jwt'
 import { AppModule } from '../src/app.module'
 import { PrismaService } from '../src/prisma.service'
@@ -40,7 +41,28 @@ describe('CRM auth flow + BFF proxy contract (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile()
+    })
+      /*
+       * Login, refresh and the signing portal's token routes now carry per-IP
+       * limits of their own — 5 logins a minute, 3 OTP sends, 5 verifies. This
+       * suite drives those paths far past that on purpose, and 429s would
+       * replace the 200s and 401s it actually asserts.
+       *
+       * Replace the STORAGE, not the guard: APP_GUARD is registered with
+       * `useClass`, which constructs a fresh instance rather than resolving an
+       * overridden token, but its injected `ThrottlerStorage` IS resolved from
+       * the container. Same seam as documents-upload.e2e-spec.ts.
+       *
+       * The limits themselves are asserted for real in auth-rate-limits.e2e-spec.ts,
+       * which keeps the real storage precisely because they are its subject.
+       */
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({
+          totalHits: 0, timeToExpire: 60, isBlocked: false, timeToBlockExpire: 0,
+        }),
+      })
+      .compile()
 
     app = moduleFixture.createNestApplication()
     app.setGlobalPrefix('api')
@@ -164,7 +186,12 @@ describe('CRM auth flow + BFF proxy contract (e2e)', () => {
           // test here would never be reached — the request would 401 first. The
           // ids are probes: these routes are staff routes and run no
           // resident-scoped query.
-          ...(role === 'RESIDENT' ? { projectId: 'prj_rbac_probe', residentId: 'res_rbac_probe' } : {}),
+          ...(role === 'RESIDENT'
+          // `sub` too: `JwtStrategy` now requires the two identity claims on a
+          // resident token to agree, because code reading `sub` and code reading
+          // `residentId` would otherwise describe different people.
+          ? { sub: 'res_rbac_probe', projectId: 'prj_rbac_probe', residentId: 'res_rbac_probe' }
+          : {}),
         },
         { secret: process.env.JWT_SECRET!, expiresIn: '5m' },
       )

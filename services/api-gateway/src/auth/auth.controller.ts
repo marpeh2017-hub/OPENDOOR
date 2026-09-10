@@ -18,9 +18,37 @@ export class AuthController {
     private readonly portal: PortalAuthService,
   ) {}
 
+  /**
+   * Staff email/password sign-in.
+   *
+   * ── WHY THIS NEEDED A LIMIT OF ITS OWN ────────────────────────────────────
+   *
+   * It had none. `login()` checks the password, throws 401 on a mismatch, and
+   * counts nothing — there is no account lockout — so the only ceiling was the
+   * global default of 300 requests a minute per IP. Three hundred password
+   * guesses a minute against the strongest identity in the system: a
+   * COMPANY_ADMIN account opens every project, every resident and every
+   * document in the tenant.
+   *
+   * Found by probing rather than by reading — twelve wrong passwords in a row
+   * drew twelve 401s and no 429.
+   *
+   * 5 a minute is generous for a person typing their own password and useless
+   * for a dictionary. The hourly bound is what stops a slow grind under the
+   * per-minute limit, which is the attack that actually gets run.
+   *
+   * A LIMIT, NOT A LOCKOUT. Deliberately per-IP: locking the ACCOUNT after N
+   * failures hands anybody who knows an email address a way to lock a project
+   * manager out of their own system on the morning of a signing deadline.
+   */
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short:  { limit: 3, ttl: 10_000 },
+    medium: { limit: 5, ttl: 60_000 },
+    long:   { limit: 20, ttl: 3_600_000 },
+  })
   @ApiOperation({ summary: 'Login with email/password' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
@@ -76,9 +104,25 @@ export class AuthController {
     })
   }
 
+  /**
+   * Exchange a refresh token for a fresh access token.
+   *
+   * Guessing a signed JWT is not a practical attack, so this limit is not about
+   * brute force. It is about the same thing every other unauthenticated route
+   * here is capped for: an endpoint that does database work on behalf of an
+   * anonymous caller should not be free to call three hundred times a minute.
+   *
+   * Set higher than login because a legitimate client refreshes on a timer and
+   * several tabs may do it at once.
+   */
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short:  { limit: 5, ttl: 10_000 },
+    medium: { limit: 20, ttl: 60_000 },
+    long:   { limit: 120, ttl: 3_600_000 },
+  })
   @ApiOperation({ summary: 'Refresh access token' })
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshTokens(dto.refreshToken)

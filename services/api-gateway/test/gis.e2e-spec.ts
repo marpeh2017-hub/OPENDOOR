@@ -75,7 +75,9 @@ describe('GIS (e2e)', () => {
     // authentication.
     const outsiderToken = jwtService.sign(
       {
-        sub: userId,
+        // The resident probe's `sub` must equal its `residentId`: `JwtStrategy`
+        // now requires the two identity claims on a resident token to agree.
+        sub: 'res_rbac_probe',
         email: SEED_EMAIL,
         role: 'RESIDENT',
         tenantId,
