@@ -259,10 +259,35 @@ export class MeetingAccessService {
    * atomic part — same conditional-update pattern the dispatcher uses to claim
    * a message, and safe for the same reason.
    */
+  /**
+   * Answers an invitation, and records who was authenticated when they did.
+   *
+   * ── WHAT THE ANSWER USED TO SAY ──────────────────────────────────────────
+   *
+   * `respondedVia: 'token'`, an attendee id, and an IP. In other words: the
+   * token issued to attendee X was used. Not who used it — even though
+   * `MeetingAttendee.residentId` has always named the resident, it never
+   * reached the audit row.
+   *
+   * When the person clicking is also signed in to the portal, this now records
+   * `respondedVia: 'portal'` and the authenticated resident, and states whether
+   * that resident is the attendee the invitation was addressed to.
+   *
+   * `respondedVia` is not a new column — it has existed all along and was
+   * hard-coded to `'token'`, which is to say the schema anticipated exactly
+   * this distinction and nothing had ever made it.
+   *
+   * A mismatch is recorded, never blocked. The token is the control; a
+   * household sharing one phone is ordinary, and refusing their RSVP would
+   * trade a working invitation for a tidier record.
+   */
   async rsvp(
     token: string,
     rsvpStatus: RsvpStatus,
-    meta?: { ip?: string | null },
+    meta?: {
+      ip?: string | null
+      portalSession?: { residentId: string; tenantId: string; sessionId: string } | null
+    },
   ): Promise<MeetingInvitationView> {
     if (!RSVP_STATUSES.includes(rsvpStatus)) {
       throw DomainError.validation('MEETING_RSVP_INVALID', 'תשובה לא חוקית')
@@ -298,12 +323,34 @@ export class MeetingAccessService {
       throw DomainError.notFound('MEETING_INVITE_NOT_FOUND', 'ההזמנה לא נמצאה')
     }
 
+    /*
+     * A session only counts as attribution when it belongs to the same tenant
+     * as the meeting. A token and a session from two different organisations
+     * should be impossible; recording it as provenance would be worse than
+     * ignoring it.
+     */
+    const session = meta?.portalSession && meta.portalSession.tenantId === meeting.tenantId
+      ? meta.portalSession
+      : null
+    const matchesAttendee = session != null
+      && row.attendee.residentId != null
+      && row.attendee.residentId === session.residentId
+
+    if (session && !matchesAttendee) {
+      this.logger.log(
+        `RSVP for attendee ${row.attendee.id} answered inside a portal session for resident ` +
+        `${session.residentId}, which is not the attendee's resident.`,
+      )
+    }
+
     await this.prisma.meetingAttendee.update({
       where: { id: row.attendee.id },
       data: {
         rsvpStatus,
         respondedAt: new Date(),
-        respondedVia: 'token',
+        // The column has always existed and has always said 'token'. It now
+        // says how the answer actually arrived.
+        respondedVia: session ? 'portal' : 'token',
       },
     })
 
@@ -332,8 +379,25 @@ export class MeetingAccessService {
         entityId: row.attendee.id,
         metadata: {
           rsvpStatus,
-          respondedVia: 'token',
+          respondedVia: session ? 'portal' : 'token',
           meetingId: meeting.id,
+          ...(session
+            ? {
+                viaPortalSession: true,
+                sessionResidentId: session.residentId,
+                sessionId: session.sessionId,
+                /**
+                 * The check itself. `false` means somebody answered another
+                 * attendee's invitation while signed in as themselves — which
+                 * happens in a household and should be legible afterwards
+                 * rather than implied to be an identity match.
+                 */
+                sessionMatchesAttendee: matchesAttendee,
+                ...(row.attendee.residentId
+                  ? { attendeeResidentId: row.attendee.residentId }
+                  : {}),
+              }
+            : {}),
         },
       },
     )

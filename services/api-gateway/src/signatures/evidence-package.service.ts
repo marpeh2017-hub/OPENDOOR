@@ -30,6 +30,30 @@ export class EvidencePackageService {
 
     const generatedAt = new Date().toISOString()
 
+    /*
+     * How each signer was authenticated, from the SIGNED event of their record.
+     *
+     * `SignatureRecord.ownerId` already says whose signature a record is. What
+     * the evidence never said was who was authenticated when it was made — a
+     * signature by somebody holding a link and a signature by somebody who had
+     * proved their identity to the portal looked identical.
+     *
+     * Read from the event rather than stored a second time on the record: the
+     * event is the contemporaneous account of what happened, and duplicating it
+     * would create two places for the same fact to disagree.
+     */
+    const authenticationByRecord = new Map<string, Record<string, unknown>>()
+    for (const event of pkg.events) {
+      if (event.type !== 'SIGNED' || !event.recordId || !event.metadata) continue
+      try {
+        const meta = JSON.parse(event.metadata) as Record<string, unknown>
+        if (meta.viaPortalSession) authenticationByRecord.set(event.recordId, meta)
+      } catch {
+        // A malformed metadata blob must not stop an evidence package being
+        // generated — the package is the thing somebody needs in a dispute.
+      }
+    }
+
     const evidence = {
       packageId:    pkg.id,
       title:        pkg.title,
@@ -49,6 +73,18 @@ export class EvidencePackageService {
         openedAt:      r.openedAt?.toISOString(),
         signedAt:      r.signedAt?.toISOString(),
         declineReason: r.declineReason,
+        /**
+         * How this signature was authenticated.
+         *
+         * `TOKEN_AND_OTP` for every signature made by opening the emailed or
+         * texted link — which is every signature made before this field
+         * existed, and every one made by a resident who is not signed in.
+         *
+         * `PORTAL_SESSION_AND_TOKEN` additionally means the signer held a live
+         * authenticated portal session, and `residentMatchesOwner` says whether
+         * that session belonged to the resident linked to this owner.
+         */
+        authentication: authenticationOf(authenticationByRecord.get(r.id)),
       })),
       auditEvents: pkg.events.map(e => ({
         type:      e.type,
@@ -165,5 +201,31 @@ export class EvidencePackageService {
     }
 
     return {}
+  }
+}
+
+/**
+ * Describes how one signature was authenticated, for the evidence package.
+ *
+ * A record with no portal attribution reports `TOKEN_AND_OTP` — which is the
+ * truth for it, and is what every signature made before this existed was. It
+ * does NOT report "unknown": the token-and-OTP path is a known, deliberate
+ * method, not an absence of information.
+ */
+export function authenticationOf(meta?: Record<string, unknown>) {
+  if (!meta?.viaPortalSession) {
+    return { method: 'TOKEN_AND_OTP' as const }
+  }
+  return {
+    method: 'PORTAL_SESSION_AND_TOKEN' as const,
+    sessionResidentId: meta.sessionResidentId ?? null,
+    /**
+     * Whether the authenticated resident is the one linked to this owner.
+     * `false` is a real and ordinary outcome — a couple sharing a handset —
+     * and is recorded rather than hidden, because an evidence package that
+     * implied an identity match which did not occur would be worse than one
+     * that says nothing.
+     */
+    residentMatchesOwner: meta.sessionMatchesOwner === true,
   }
 }

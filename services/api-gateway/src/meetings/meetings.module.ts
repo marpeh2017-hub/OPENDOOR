@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common'
 import { AutomationsModule } from '../automations/automations.module'
+// For `PortalSessionProbe`: lets the PUBLIC RSVP route notice that the
+// responder is also authenticated in the portal, without requiring it.
+import { AuthModule } from '../auth/auth.module'
 import { MeetingsController } from './meetings.controller'
 import { MeetingInviteController } from './meeting-invite.controller'
 import { MeetingsService } from './meetings.service'
@@ -23,7 +26,7 @@ import { MessagingModule } from '../messaging/messaging.module'
  * — nothing outside should be able to trigger a reminder sweep.
  */
 @Module({
-  imports: [AutomationsModule, NotificationsModule, MessagingModule],
+  imports: [AuthModule, AutomationsModule, NotificationsModule, MessagingModule],
   controllers: [MeetingsController, MeetingInviteController],
   providers: [
     MeetingsService,

@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller'
 import { PortalAuthController }   from './portal-auth.controller'
 import { PortalAuthService }      from './portal-auth.service'
 import { ResidentIdentityService } from './resident-identity.service'
+import { PortalSessionProbe }      from './portal-session-probe.service'
 import { JwtStrategy }    from './strategies/jwt.strategy'
 import { JwtAuthGuard }   from './guards/jwt-auth.guard'
 import { RolesGuard }     from './guards/roles.guard'
@@ -30,12 +31,17 @@ import { RedisModule }    from '../redis/redis.module'
     // could this be", `PortalAuthService` decides whether a session is issued.
     ResidentIdentityService,
     PortalAuthService,
+    // Lets a PUBLIC token route notice that the caller is also signed in.
+    PortalSessionProbe,
     JwtStrategy,
     // Register JwtAuthGuard globally — all routes protected unless @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
   controllers: [AuthController, PortalAuthController],
-  exports: [AuthService, PortalAuthService, ResidentIdentityService, JwtModule],
+  exports: [
+    AuthService, PortalAuthService, ResidentIdentityService,
+    PortalSessionProbe, JwtModule,
+  ],
 })
 export class AuthModule {}

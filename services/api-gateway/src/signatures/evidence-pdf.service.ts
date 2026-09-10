@@ -156,6 +156,11 @@ export class EvidencePdfService {
         field('Session Opened', r.openedAt?.toISOString())
         field('Signed At',      r.signedAt?.toISOString())
         field('Decline Reason', r.declineReason)
+        // How this signer was authenticated. Absent for records with no SIGNED
+        // event, and 'Token + SMS OTP' for every signature made by opening the
+        // link — which is what every signature was before the portal existed.
+        const auth = authenticationLine(pkg.events ?? [], r.id)
+        if (auth) field('Authenticated By', auth)
         doc.moveDown(0.8)
       }
 
@@ -214,4 +219,32 @@ export class EvidencePdfService {
       doc.end()
     })
   }
+}
+
+/**
+ * One line describing how a signature was authenticated, for the PDF.
+ *
+ * Reads the SIGNED event rather than a stored field, for the same reason the
+ * JSON does: the event is the contemporaneous account, and a second copy is a
+ * second thing to keep in step.
+ */
+export function authenticationLine(
+  events: { type?: string | null; recordId?: string | null; metadata?: string | null }[],
+  recordId: string,
+): string | undefined {
+  const signed = events.find((e) => e.type === 'SIGNED' && e.recordId === recordId)
+  if (!signed) return undefined
+
+  let meta: Record<string, unknown> = {}
+  try {
+    meta = signed.metadata ? JSON.parse(signed.metadata) : {}
+  } catch {
+    meta = {}
+  }
+
+  if (!meta.viaPortalSession) return 'Token + SMS OTP'
+
+  return meta.sessionMatchesOwner === true
+    ? 'Token + SMS OTP, in an authenticated portal session for the linked resident'
+    : 'Token + SMS OTP, in an authenticated portal session for a DIFFERENT resident'
 }

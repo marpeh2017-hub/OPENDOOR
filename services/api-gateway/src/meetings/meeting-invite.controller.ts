@@ -5,6 +5,7 @@ import { Public } from '../auth/decorators/public.decorator'
 import { mapDomainErrors } from '../common/errors/domain-error'
 import { MeetingAccessService } from './meeting-access.service'
 import { ResidentAttendanceDto, ResidentRsvpDto } from './dto/meeting-invite.dto'
+import { PortalSessionProbe } from '../auth/portal-session-probe.service'
 
 /**
  * The resident-facing meeting invitation surface.
@@ -27,7 +28,10 @@ import { ResidentAttendanceDto, ResidentRsvpDto } from './dto/meeting-invite.dto
 @ApiTags('meeting-invitations')
 @Controller({ path: 'meeting-invitations', version: '1' })
 export class MeetingInviteController {
-  constructor(private readonly access: MeetingAccessService) {}
+  constructor(
+    private readonly access: MeetingAccessService,
+    private readonly portalSessions: PortalSessionProbe,
+  ) {}
 
   @Public()
   @Throttle({ short: { limit: 6, ttl: 60_000 } })
@@ -39,11 +43,21 @@ export class MeetingInviteController {
 
   @Public()
   @Throttle({ short: { limit: 10, ttl: 60_000 } })
+  /**
+   * Still public, still token-driven. The `Authorization` header is consulted
+   * optionally: a resident who happens to be signed in has their answer
+   * attributed to that session as well as to the link. `probe` never throws, so
+   * anybody without one is unaffected.
+   */
   @Post(':token/rsvp')
   @ApiOperation({ summary: 'Resident answers the invitation' })
-  rsvp(@Param('token') token: string, @Body() dto: ResidentRsvpDto, @Req() req: any) {
+  async rsvp(@Param('token') token: string, @Body() dto: ResidentRsvpDto, @Req() req: any) {
+    // Resolved before the guarded call: `mapDomainErrors` takes a synchronous
+    // thunk, and the probe is deliberately outside the error mapping anyway —
+    // it cannot fail in a way that should reach the caller.
+    const portalSession = await this.portalSessions.probe(req.headers?.authorization)
     return mapDomainErrors(() =>
-      this.access.rsvp(token, dto.rsvpStatus, { ip: req.ip ?? null }),
+      this.access.rsvp(token, dto.rsvpStatus, { ip: req.ip ?? null, portalSession }),
     )
   }
 

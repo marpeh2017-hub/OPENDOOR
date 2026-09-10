@@ -211,10 +211,41 @@ export class SigningSessionService {
   }
 
   /** Execute signing after OTP verification */
+  /**
+   * Signs, and records HOW the signer was authenticated when they did.
+   *
+   * ── THE TWO IDENTITIES IN A SIGNATURE ────────────────────────────────────
+   *
+   * `SignatureRecord.ownerId` says WHOSE signature this is: the registered
+   * owner, which is the legally correct signer for a pinuy-binuy agreement and
+   * is not necessarily the person living in the apartment.
+   *
+   * `portalSession` says WHO WAS AUTHENTICATED when it was made. Until now the
+   * evidence answered the first question and never the second — every signature
+   * looked identical whether the signer had proved their identity to the portal
+   * or merely opened a link that arrived by SMS.
+   *
+   * `Owner.residentId` links the two, so when a session is present this can do
+   * better than note its existence: it can check whether the authenticated
+   * resident IS the resident linked to the owner named on the record, and
+   * record the ANSWER. `sessionMatchesOwner: false` is as much a fact worth
+   * keeping as `true` — a spouse signing on a shared handset is ordinary, and
+   * the evidence should say so rather than imply an identity match that did not
+   * happen.
+   *
+   * A mismatch does NOT block. The token plus the OTP is the control that
+   * decides whether a signature may happen; the session is provenance layered
+   * on top, and refusing a legitimate signature because the household shares a
+   * phone would trade a real capability for a worse record.
+   *
+   * With no session, every value below is absent and the event is byte-for-byte
+   * what it was before this existed.
+   */
   async sign(
     token: string,
     ip?: string,
     userAgent?: string,
+    portalSession?: { residentId: string; tenantId: string; sessionId: string } | null,
   ) {
     const session = await this.resolveSession(token)
     if (!session.verifiedAt) throw new UnauthorizedException('OTP לא אומת — בקש קוד תחילה')
@@ -252,6 +283,7 @@ export class SigningSessionService {
       actorId:   record.ownerId,
       ip,
       userAgent,
+      metadata: await this.attribution(record.ownerId, record.tenantId, portalSession),
     })
 
     // Check if all required signers are done → auto-complete
@@ -357,6 +389,62 @@ export class SigningSessionService {
    * Enforce sequential signing: all records with a lower signingOrder must be SIGNED
    * before this record can request an OTP or execute signing.
    */
+  /**
+   * Turns an optional portal session into the provenance recorded on the event.
+   *
+   * Returns `undefined` when there is no session, so the metadata field is
+   * absent rather than present-and-null — an evidence package that says
+   * `viaPortalSession: null` for every historical signature would be asserting
+   * something about signatures made before this code existed.
+   */
+  private async attribution(
+    ownerId: string,
+    tenantId: string,
+    portalSession?: { residentId: string; tenantId: string; sessionId: string } | null,
+  ): Promise<Record<string, unknown> | undefined> {
+    if (!portalSession) return undefined
+
+    // A session from another tenant is not a candidate for anything. It should
+    // be impossible — the token and the session would have to belong to
+    // different organisations — but recording it as an attribution would be
+    // worse than ignoring it.
+    if (portalSession.tenantId !== tenantId) {
+      this.logger.warn(
+        `Portal session tenant ${portalSession.tenantId} does not match signature tenant ${tenantId} — not attributing.`,
+      )
+      return undefined
+    }
+
+    const owner = await this.prisma.owner.findFirst({
+      where: { id: ownerId, tenantId },
+      select: { residentId: true },
+    })
+
+    const matches = owner?.residentId != null && owner.residentId === portalSession.residentId
+
+    if (!matches) {
+      // Ordinary, and worth seeing: a couple sharing a handset, or a child
+      // logged in while a parent signs.
+      this.logger.log(
+        `Signature by owner ${ownerId} made in a portal session for resident ` +
+        `${portalSession.residentId}, which is not the resident linked to that owner.`,
+      )
+    }
+
+    return {
+      viaPortalSession: true,
+      sessionResidentId: portalSession.residentId,
+      sessionId: portalSession.sessionId,
+      /**
+       * The verification itself, not merely the session's presence. `false`
+       * means the signature was made while somebody else was signed in — which
+       * the evidence should state plainly rather than leave to inference.
+       */
+      sessionMatchesOwner: matches,
+      ...(owner?.residentId ? { ownerLinkedResidentId: owner.residentId } : {}),
+    }
+  }
+
   private async assertSigningOrderAllowed(record: any): Promise<void> {
     if (!record.package) return // safety — should always be included
     const pkg = record.package as { signingOrder: string; records: any[] }

@@ -9,6 +9,7 @@ import { Public } from '../auth/decorators/public.decorator'
 import { ThresholdService }          from './threshold.service'
 import { SignaturePackageService }   from './signature-package.service'
 import { SigningSessionService }     from './signing-session.service'
+import { PortalSessionProbe } from '../auth/portal-session-probe.service'
 import { SignatureExpiryService }    from './signature-expiry.service'
 import { EvidencePackageService }    from './evidence-package.service'
 import { StorageService }            from '../storage/storage.service'
@@ -26,6 +27,7 @@ export class SignaturesController {
     private readonly threshold: ThresholdService,
     private readonly packages: SignaturePackageService,
     private readonly sessions: SigningSessionService,
+    private readonly portalSessions: PortalSessionProbe,
     private readonly expiry: SignatureExpiryService,
     private readonly evidence: EvidencePackageService,
     private readonly storage: StorageService,
@@ -220,15 +222,29 @@ export class SignaturesController {
     return this.sessions.verifyOtp(token, code, ip, ua)
   }
 
+  /**
+   * Execute signing after OTP verification.
+   *
+   * Still `@Public()`, and still driven entirely by the token: a resident who
+   * clicks the link in their SMS signs exactly as they did before.
+   *
+   * The `Authorization` header is read OPTIONALLY. If the same person happens
+   * to be signed in to the portal, the session is resolved and recorded on the
+   * evidence event alongside the owner — including whether the authenticated
+   * resident is in fact the one linked to that owner. `probe` never throws, so
+   * a missing, malformed or expired header changes nothing at all.
+   */
   @Public()
   @Post('portal/:token/sign')
   @ApiOperation({ summary: 'Execute signing after OTP verification' })
-  sign(
+  async sign(
     @Param('token') token: string,
     @Ip() ip: string,
     @Headers('user-agent') ua: string,
+    @Headers('authorization') authorization?: string,
   ) {
-    return this.sessions.sign(token, ip, ua)
+    const portalSession = await this.portalSessions.probe(authorization)
+    return this.sessions.sign(token, ip, ua, portalSession)
   }
 
   @Public()

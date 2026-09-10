@@ -31,14 +31,6 @@ import {
   Calendar, MapPin, Video, Clock, CalendarX2,
 } from 'lucide-react'
 
-/**
- * Same normalisation as the signing page: NEXT_PUBLIC_API_URL is the gateway
- * ORIGIN by repo convention, and the "/api/v1" prefix is the caller's job —
- * but tolerate a value that already carries it.
- */
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')
-const API = /\/api\/v\d+$/.test(API_ORIGIN) ? API_ORIGIN : `${API_ORIGIN}/api/v1`
-
 type RsvpAnswer = 'accepted' | 'declined' | 'tentative'
 
 interface InvitationView {
@@ -146,7 +138,10 @@ export default function MeetingInvitePage() {
 
   const call = useCallback(
     async (path: string, method = 'GET', body?: unknown) => {
-      const res = await fetch(`${API}/meeting-invitations/${token}${path}`, {
+      // Same-origin, so the session cookie reaches the proxy and an RSVP by a
+      // signed-in resident is attributed to them as well as to the token. See
+      // the proxy's own comment for why this hop is what makes that real.
+      const res = await fetch(`/api/token-flow/invite/${token}${path}`, {
         method,
         // An invitation's state changes underneath the resident (staff cancel
         // the meeting, re-issue the link, revoke it). A cached GET would show

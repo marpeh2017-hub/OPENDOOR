@@ -28,15 +28,6 @@ import {
   FileText, AlertTriangle, ChevronLeft,
 } from 'lucide-react'
 
-/**
- * NEXT_PUBLIC_API_URL is the gateway ORIGIN by convention across this repo
- * (e.g. "http://localhost:4000") — the "/api/v1" version prefix is added by the
- * caller. Appending it unconditionally to the raw env value would have produced
- * "http://localhost:4000/signatures/portal/..." and every request 404'd, so
- * normalise here and tolerate a value that already carries the prefix.
- */
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')
-const API = /\/api\/v\d+$/.test(API_ORIGIN) ? API_ORIGIN : `${API_ORIGIN}/api/v1`
 const OTP_EXPIRY_SEC = 300 // 5 minutes
 
 type Step = 'loading' | 'order_blocked' | 'otp_req' | 'otp_entry' | 'review' | 'signing' | 'success' | 'declined' | 'error'
@@ -126,7 +117,14 @@ export default function SignPage() {
   const [signedAt,    setSignedAt]    = useState<string | null>(null)
 
   const call = useCallback(async (path: string, method = 'GET', body?: any) => {
-    const res = await fetch(`${API}/signatures/portal/${token}${path}`, {
+    /*
+     * Same-origin, so the httpOnly session cookie travels with the request and
+     * the proxy can forward it as `Authorization`. A resident who is signed in
+     * gets their signature attributed to that authenticated identity as well as
+     * to the link; one who is not is forwarded without it and follows exactly
+     * the path they always did.
+     */
+    const res = await fetch(`/api/token-flow/sign/${token}${path}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body:    body ? JSON.stringify(body) : undefined,
