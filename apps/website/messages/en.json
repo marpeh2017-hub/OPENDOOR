@@ -7,6 +7,7 @@
   "nav": {
     "home": "Home",
     "about": "About",
+    "services": "Our services",
     "whyOrganizer": "Why an organiser",
     "howWeWork": "How we work",
     "projects": "Projects",
@@ -49,6 +50,9 @@
   "pages": {
     "about": {
       "title": "About"
+    },
+    "services": {
+      "title": "Our services"
     },
     "whyOrganizer": {
       "title": "Why an organising company"

@@ -7,6 +7,7 @@
   "nav": {
     "home": "ראשי",
     "about": "מי אנחנו",
+    "services": "השירותים שלנו",
     "whyOrganizer": "למה חברה מארגנת",
     "howWeWork": "כך אנחנו עובדים",
     "projects": "פרויקטים",
@@ -49,6 +50,9 @@
   "pages": {
     "about": {
       "title": "מי אנחנו"
+    },
+    "services": {
+      "title": "השירותים שלנו"
     },
     "whyOrganizer": {
       "title": "למה חברה מארגנת"

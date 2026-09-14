@@ -48,142 +48,70 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
     heading: {
-      he: 'אנחנו עומדים בצד של בעלי הדירות.',
-      en: 'We stand on the owners’ side of the table.',
+      he: 'מחברים בין אנשים, מפתחים בית',
+      en: 'Connecting people, developing a home',
     },
     standfirst: {
-      he: 'ייצוג וארגון בעלי דירות בהתחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
-      en: 'Representing and organising apartment owners through urban renewal, from the first review to the finished project.',
+      he: 'התחדשות עירונית ששמה את הדיירים במרכז',
+      en: 'Urban renewal with the residents at the centre',
     },
   },
   {
-    id: 'about-statement',
-    type: 'STATEMENT',
+    id: 'about-story',
+    type: 'PROSE',
     order: 1,
     hidden: false,
-    statement: {
-      he: 'תהליך שנמשך שנים צריך מישהו שמנהל אותו.',
-      en: 'A process that runs for years needs someone managing it.',
-    },
-    support: {
-      he: 'לא כדי להחליט במקום בעלי הדירות, אלא כדי שההחלטות יתקבלו על בסיס מידע מסודר.',
-      en: 'Not to decide for the owners, but so the decisions rest on information that has been put in order.',
+    heading: { he: 'הסיפור שלנו', en: 'Our story' },
+    body: {
+      he: 'תהליכי פינוי-בינוי ותמ"א 38 הם הרבה מעבר לעסקת נדל"ן. מדובר בתהליך אנושי, מורכב ומשנה חיים - עבור אנשים שגדלו בבית הזה, גידלו בו ילדים, וקשרו אליו זיכרונות שאי אפשר לשים להם מחיר.\n\nראיתי לא פעם דיירים שהולכים לאיבוד מול יזמים, רשויות ובירוקרטיה - בלי ייצוג אמיתי, בלי מידע ברור, בלי מישהו שעומד לצדם. הקמתי את החברה כדי לשנות את זה.',
+      en: 'Evacuate-and-rebuild and TAMA 38 processes are far more than a property transaction. They are human, complex and life-changing - for people who grew up in this building, raised children in it, and formed memories no price can be put on.\n\nI have seen residents lose their footing among developers, authorities and bureaucracy - with no real representation, no clear information, and nobody standing beside them. I founded the company to change that.',
     },
   },
   {
-    id: 'about-why',
+    id: 'about-transparency',
     type: 'PROSE',
     order: 2,
     hidden: false,
-    lead: {
-      he: 'בעלי הדירות הם בעלי הנכס ומקבלי ההחלטות. מולם עומדים גורמים מקצועיים שעוסקים בכך דרך קבע, ולכל אחד מהם תפקיד ואינטרס משלו. זה המבנה הרגיל של התהליך, ולא פגם בו.',
-      en: 'The owners hold the property and make the decisions. Across from them sit professionals who do this for a living, each with a defined role and an interest of their own. That is simply how the process is built.',
-    },
+    heading: { he: 'שקיפות בגובה העיניים', en: 'Transparency at eye level' },
     body: {
-      he: 'הפער אינו בידע המשפטי או התכנוני. הוא בזמן ובארגון. גורם מקצועי מגיע לפגישה עם התמונה המלאה ועם ניסיון מצטבר, ובעל דירה מגיע אליה אחרי יום עבודה, עם מה שהספיק לקרוא.\n\nתפקידה של חברה מארגנת הוא לסגור את הפער הזה. לרכז את המידע, לתאם בין אנשי המקצוע שבעלי הדירות בחרו, להביא חלופות להשוואה, ולוודא שכל החלטה מתועדת ומובנת לכל מי שנוגע בה.\n\nהחברה אינה יזם ואינה מבצעת את הבנייה. היא גם אינה מחליפה ייעוץ משפטי, שמאי או תכנוני עצמאי: אלה ניתנים על ידי אנשי מקצוע שבעלי הדירות ממנים, ואחריותם נשארת שלהם.',
-      en: 'The gap is not legal or planning knowledge. It is time and organisation. A professional arrives at a meeting with the full picture and years of pattern recognition; an owner arrives after a day’s work with whatever they managed to read.\n\nAn organising company exists to close that gap: to gather the information, coordinate the professionals the owners have appointed, bring alternatives that can actually be compared, and make sure every decision is documented and understood by everyone it affects.\n\nThe company is not the developer and does not carry out construction. Nor does it replace independent legal, valuation or planning advice: that comes from professionals the owners appoint, and the responsibility stays with them.',
+      he: 'בלי אותיות קטנות ובלי הבטחות ללא כיסוי. כל דייר יודע בדיוק איפה הפרויקט עומד - בכל שלב.',
+      en: 'No small print and no promises without backing. Every resident knows exactly where the project stands - at every stage.',
     },
   },
   {
-    id: 'about-image',
-    type: 'MEDIA',
+    id: 'about-representation',
+    type: 'PROSE',
     order: 3,
     hidden: false,
-    slotId: 'ABOUT_ISRAELI_RESIDENTIAL',
-    assets: [],
-    caption: {
-      he: 'מרקם מגורים ישראלי. תמונת הקשר, לא פרויקט של החברה.',
-      en: 'Israeli residential fabric. Context, not a project of ours.',
+    heading: { he: 'ייצוג האינטרס שלכם בלבד', en: 'Representing your interest alone' },
+    body: {
+      he: 'אנחנו בצד שלכם. דואגים שתקבלו את התמורה המרבית, הערבויות החזקות ביותר והיזם המתאים ביותר לפרויקט - לא מה שנוח ליזם.',
+      en: 'We are on your side. We work to secure the strongest consideration, the strongest guarantees and the developer best suited to the project - not what suits the developer.',
     },
   },
   {
-    id: 'about-principles',
-    type: 'TRUST',
+    id: 'about-sensitivity',
+    type: 'PROSE',
     order: 4,
     hidden: false,
-    heading: { he: 'איך אנחנו עובדים בפועל', en: 'How we actually work' },
-    intro: {
-      he: 'ארבעה עקרונות שקובעים איך התהליך מתנהל, ומה בעלי הדירות יכולים לצפות לו.',
-      en: 'Four principles that govern how the process runs, and what owners can expect from it.',
-    },
-    items: [
-      {
-        id: 'ap-decisions',
-        title: { he: 'ההחלטות נשארות אצל בעלי הדירות', en: 'The decisions stay with the owners' },
-        body: {
-          he: 'אנחנו מביאים חלופות ומידע. הבחירה בין אנשי מקצוע, בין הצעות ובין מסלולים היא של בעלי הדירות.',
-          en: 'We bring alternatives and information. Choosing between professionals, offers and routes is the owners’ to do.',
-        },
-      },
-      {
-        id: 'ap-information',
-        title: { he: 'מידע מסודר לפני כל החלטה', en: 'Information in order before every decision' },
-        body: {
-          he: 'החלטה מתקבלת אחרי שהחומר הרלוונטי נאסף, הוסבר, וזמין לכל מי שצריך אותו.',
-          en: 'A decision is taken once the relevant material has been gathered, explained, and made available to everyone who needs it.',
-        },
-      },
-      {
-        id: 'ap-documentation',
-        title: { he: 'תיעוד לאורך כל הדרך', en: 'Documented throughout' },
-        body: {
-          he: 'פגישות, הכרעות והסכמות מתועדות. בתהליך שנמשך שנים, זיכרון אנושי אינו תחליף לרישום.',
-          en: 'Meetings, resolutions and agreements are recorded. In a process that runs for years, memory is no substitute for a record.',
-        },
-      },
-      {
-        id: 'ap-continuity',
-        title: { he: 'רציפות, גם כשהתהליך ארוך', en: 'Continuity, across a long process' },
-        body: {
-          he: 'נציגויות מתחלפות ואנשים עוברים דירה. מה שנשמר צריך להישאר נגיש גם למי שהצטרף באמצע.',
-          en: 'Representations change and people move. What has been recorded needs to stay available to whoever joins partway through.',
-        },
-      },
-    ],
-  },
-  {
-    id: 'about-digital',
-    type: 'PROSE',
-    order: 5,
-    hidden: false,
-    heading: { he: 'מה שנשמר, נשאר נגיש', en: 'What is recorded stays reachable' },
+    heading: { he: 'רגישות אנושית לצד מקצועיות', en: 'Human sensitivity alongside professionalism' },
     body: {
-      he: 'אנחנו בונים סביבה דיגיטלית שבה בעלי דירות יוכלו לראות היכן התהליך עומד בלי להמתין לשיחת טלפון. עד שתהיה זמינה, המידע נמסר במפגשים, בסיכומים כתובים ובתקשורת ישירה עם הנציגות.',
-      en: 'We are building a digital environment where owners can see where the process stands without waiting for a phone call. Until it is available, information is delivered in meetings, in written summaries, and directly through the representation.',
+      he: 'מבינים שבין הכתלים האלה יש קהילה, זיכרונות וחיים שלמים. אנחנו לא רק בונים בניין - אנחנו שומרים על מה שחשוב לכם.',
+      en: 'We understand that within these walls there is a community, memories and whole lives. We are not only building a building - we are protecting what matters to you.',
     },
   },
-  /* ── COST CLAIM: FLAGGED FOR LEGAL REVIEW BEFORE PRODUCTION ────────────
-   *
-   * The `ctaSupport` sentence in the block below states that the service
-   * involves no direct cost to the apartment owners. It is APPROVED and
-   * deliberately kept, but it is the strongest commercial representation on
-   * the site and it has not been cleared against every engagement model. It
-   * must be confirmed before launch; if an exception exists the sentence is
-   * rewritten rather than deleted.
-   *
-   * IT APPEARS IN TWO PLACES ON THE SITE, AND NOWHERE ELSE: here, and as
-   * `eligibility.noCost` on the eligibility form (added in Pass 2). Both are
-   * points where a visitor is deciding whether to engage, which is the only
-   * context where the sentence is answering a question they actually have.
-   *
-   * Do NOT add it to a project card, to the projects index or to a project
-   * page. Repetition turns a factual statement into a marketing message and
-   * multiplies the legal exposure, which is why the project system introduced
-   * in Pass 3B carries no cost copy at all. Both existing occurrences are in
-   * scope for the same legal review.
-   * ──────────────────────────────────────────────────────────────────────── */
   {
     id: 'about-cta',
     type: 'CTA',
-    order: 6,
+    order: 5,
     hidden: false,
     heading: {
-      he: 'רוצים להבין מה האפשרויות בבניין שלכם?',
-      en: 'Want to understand the options for your building?',
+      he: 'רוצים לבדוק אם הבניין שלכם מתאים?',
+      en: 'Want to check whether your building is suitable?',
     },
     body: {
-      he: 'בדיקת ההתאמה אורכת כמה דקות, ואינה מחייבת בשום שלב. השירות אינו כרוך בתשלום ישיר מצד בעלי הדירות.',
-      en: 'The suitability check takes a few minutes and commits you to nothing. The service involves no direct cost to the apartment owners.',
+      he: 'נשמח לשבת, להכיר ולבחון את ההיתכנות - ללא עלות וללא התחייבות.',
+      en: 'We would be glad to sit down, get to know you and review feasibility - at no cost and with no obligation.',
     },
     ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: 'Check your building’s suitability' },
     ctaHref: '/eligibility',
@@ -635,9 +563,176 @@ const trustBlocks: PageBlock[] = [
   },
 ]
 
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * /services
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+const servicesBlocks: PageBlock[] = [
+  {
+    id: 'services-header',
+    type: 'PAGE_HEADER',
+    order: 0,
+    hidden: false,
+    eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
+    heading: { he: 'מעטפת מקצועית מלאה', en: 'A complete professional envelope' },
+    standfirst: {
+      he: 'מובילים את הדיירים ממתחם ישן לבית חדש, בבטחה ובשקיפות.',
+      en: 'Leading residents from an ageing complex to a new home, safely and transparently.',
+    },
+  },
+  {
+    id: 'services-journey',
+    type: 'JOURNEY',
+    order: 1,
+    hidden: false,
+    variabilityNote: {
+      he: 'פרויקטים נבדלים זה מזה במסלול התכנוני, במבנה הבעלויות ובלוחות הזמנים. חלק מהשלבים מתרחשים במקביל וחלקם חוזרים על עצמם. התיאור שלהלן הוא המבנה הכללי ואינו סדר קבוע או התחייבות למועדים.',
+      en: 'Projects differ in planning route, ownership structure and timing. Some stages run in parallel and some repeat. What follows is the general shape, not a fixed sequence or a commitment to dates.',
+    },
+    stages: [
+      {
+        id: 'sv-1',
+        title: {
+          he: 'בדיקת היתכנות תכנונית וכלכלית',
+          en: 'Planning and financial feasibility review',
+        },
+        body: {
+          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות כלכלית ראשונית - עבורכם ועבור היזמים. ללא עלות וללא התחייבות.',
+          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment - for you and for the developers. At no cost and with no obligation.',
+        },
+      },
+      {
+        id: 'sv-2',
+        title: {
+          he: 'התארגנות הדיירים ובחירת נציגות',
+          en: 'Organising the residents and electing a representation',
+        },
+        body: {
+          he: 'ניהול אספות, הקמת נציגות בית מוסמכת, מינוי עורך דין ומפקח בנייה מטעמכם, ויצירת ערוצי תקשורת שקופים בין כלל בעלי הדירות.',
+          en: 'Running meetings, establishing an authorised building representation, appointing a lawyer and a construction supervisor on your behalf, and setting up transparent communication among all owners.',
+        },
+      },
+      {
+        id: 'sv-3',
+        title: { he: 'מכרז יזמים תחרותי', en: 'A competitive developer tender' },
+        body: {
+          he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים המובילים בשוק, ניהול המשא ומתן - כדי שתקבלו את התמורה והערבויות המרביות.',
+          en: 'Writing a technical specification and mandatory requirements, approaching leading developers, and running the negotiation - so that you receive the strongest consideration and guarantees.',
+        },
+      },
+      {
+        id: 'sv-4',
+        title: {
+          he: 'ליווי תכנוני ומשפטי עד לחתימה',
+          en: 'Planning and legal support up to signature',
+        },
+        body: {
+          he: 'גיבוש הסכם מפורט מול עורכי הדין, הגדרת לוחות זמנים, מנגנוני פיצוי וערבויות בנקאיות לפי חוק המכר.',
+          en: 'Shaping a detailed agreement with the lawyers, setting timetables, compensation mechanisms and bank guarantees under the Sale Law.',
+        },
+      },
+      {
+        id: 'sv-5',
+        title: { he: 'ניהול הבנייה והאכלוס', en: 'Overseeing construction and occupancy' },
+        body: {
+          he: 'תקשורת שוטפת מול היזם והרשויות, סיוע בשלבי הרישוי והבנייה - עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
+          en: 'Ongoing communication with the developer and the authorities, support through licensing and construction - up to the handover inspection and the key to the new apartment.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'services-comparison',
+    type: 'COMPARISON',
+    order: 2,
+    hidden: false,
+    baseline: {
+      label: { he: 'עצמאי', en: 'On your own' },
+      points: [
+        {
+          id: 'sc-b-time',
+          title: { he: 'זמן להסכם', en: 'Time to an agreement' },
+          body: { he: 'שנים, עם עיכובים.', en: 'Years, with delays.' },
+        },
+        {
+          id: 'sc-b-power',
+          title: { he: 'כוח מיקוח', en: 'Bargaining position' },
+          body: { he: 'מוגבל.', en: 'Limited.' },
+        },
+        {
+          id: 'sc-b-clarity',
+          title: { he: 'שקיפות', en: 'Transparency' },
+          body: { he: 'חוסר ודאות.', en: 'Uncertainty.' },
+        },
+      ],
+    },
+    organised: {
+      label: { he: 'עם מקדם', en: 'With an organiser' },
+      points: [
+        {
+          id: 'sc-o-time',
+          title: { he: 'זמן להסכם', en: 'Time to an agreement' },
+          body: {
+            he: 'תהליך מובנה עם לוחות זמנים.',
+            en: 'A structured process with timetables.',
+          },
+        },
+        {
+          id: 'sc-o-power',
+          title: { he: 'כוח מיקוח', en: 'Bargaining position' },
+          body: { he: 'גב מקצועי מול היזם.', en: 'Professional backing opposite the developer.' },
+        },
+        {
+          id: 'sc-o-clarity',
+          title: { he: 'שקיפות', en: 'Transparency' },
+          body: { he: 'עדכונים שוטפים, כתובת אחת.', en: 'Regular updates, a single point of contact.' },
+        },
+      ],
+    },
+  },
+  {
+    id: 'services-cta',
+    type: 'CTA',
+    order: 3,
+    hidden: false,
+    heading: {
+      he: 'רוצים לבדוק אם הבניין שלכם מתאים?',
+      en: 'Want to check whether your building is suitable?',
+    },
+    body: {
+      he: 'פנו לפגישת ייעוץ ראשונית - ללא עלות וללא התחייבות.',
+      en: 'Get in touch for an initial consultation - at no cost and with no obligation.',
+    },
+    ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: 'Check your building’s suitability' },
+    ctaHref: '/eligibility',
+  },
+]
+
 /* ══════════════════════════════════════════════════════════════════════════ */
 
 export const CORE_PAGES: readonly CmsPage[] = [
+  {
+    id: 'page-services',
+    slug: 'services',
+    title: { he: 'השירותים שלנו', en: 'Our services' },
+    publishState: 'published',
+    blocks: servicesBlocks,
+    seo: {
+      he: {
+        title: 'השירותים שלנו',
+        description:
+          'מעטפת מקצועית מלאה לבעלי דירות בהתחדשות עירונית: בדיקת היתכנות, התארגנות ונציגות, מכרז יזמים, ליווי עד לחתימה וניהול הבנייה והאכלוס.',
+      },
+      en: {
+        title: 'Our services',
+        description:
+          'A complete professional envelope for apartment owners in urban renewal: feasibility, organising and representation, a developer tender, support to signature, and oversight through construction and occupancy.',
+      },
+    },
+    updatedAt: '2026-09-14T00:00:00.000Z',
+    updatedByName: 'Mock content',
+  },
   {
     id: 'page-about',
     slug: 'about',

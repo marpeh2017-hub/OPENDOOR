@@ -31,6 +31,7 @@ export const PRIMARY_NAV_KEYS = [
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'about', href: '/about' },
+  { key: 'services', href: '/services' },
   { key: 'whyOrganizer', href: '/why-organizer' },
   { key: 'howWeWork', href: '/how-we-work' },
   { key: 'projects', href: '/projects' },
@@ -68,6 +69,7 @@ export const FOOTER_GROUPS: readonly { titleKey: string; items: readonly NavItem
   {
     titleKey: 'urbanRenewal',
     items: [
+      { key: 'services', href: '/services' },
       { key: 'howWeWork', href: '/how-we-work' },
       { key: 'projects', href: '/projects' },
     ],
