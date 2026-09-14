@@ -1,8 +1,5 @@
 import { HeroSection } from '@/components/sections/hero'
-import { StatsSection } from '@/components/sections/stats'
 import { BenefitsSection } from '@/components/sections/benefits'
-import { ProjectsSection } from '@/components/sections/projects'
-import { TestimonialsSection } from '@/components/sections/testimonials'
 import { CtaSection } from '@/components/sections/cta'
 import { ContactSection } from '@/components/sections/contact'
 import { Header } from '@/components/layout/header'
@@ -14,10 +11,7 @@ export default function HomePage() {
       <Header />
       <main id="main-content">
         <HeroSection />
-        <StatsSection />
         <BenefitsSection />
-        <ProjectsSection />
-        <TestimonialsSection />
         <CtaSection />
         <ContactSection />
       </main>

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
+import { CreateLeadDto } from './dto/create-lead.dto'
 
 @Injectable()
 export class LeadsService {
@@ -44,9 +45,11 @@ export class LeadsService {
     return lead
   }
 
-  async create(data: any, tenantId: string) {
+  async create(data: CreateLeadDto, tenantId: string) {
+    // tenantId is taken from the request context, never from the body: the DTO
+    // has no tenantId field, so a caller cannot write a lead into another tenant.
     return this.prisma.lead.create({
-      data: { ...data, tenantId },
+      data: { ...data, tenantId } as any,
     })
   }
 

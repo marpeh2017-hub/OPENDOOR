@@ -2,9 +2,10 @@ import { Link } from '@/i18n/routing'
 import { CONTACT_ANCHOR } from '@/lib/links'
 import { ArrowLeft, Shield, CheckCircle2 } from 'lucide-react'
 
+// 'מעל 50 פרויקטים פעילים' and 'מעל 10,000 דיירים מרוצים' were removed: both
+// were hardcoded figures with no source behind them. Add a claim back here
+// only with documentation that supports it.
 const trustBadges = [
-  'מעל 50 פרויקטים פעילים',
-  'מעל 10,000 דיירים מרוצים',
   'ירושלים ומרכז הארץ',
 ]
 

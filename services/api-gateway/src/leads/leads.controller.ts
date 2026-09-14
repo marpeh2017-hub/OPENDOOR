@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { LeadsService } from './leads.service'
+import { CreateLeadDto } from './dto/create-lead.dto'
 
 @ApiTags('leads')
 @ApiBearerAuth()
@@ -24,7 +25,8 @@ export class LeadsController {
   }
 
   @Post()
-  create(@Body() body: any, @Request() req: any) {
+  @ApiOperation({ summary: 'Create a lead' })
+  create(@Body() body: CreateLeadDto, @Request() req: any) {
     return this.leadsService.create(body, req.user?.tenantId ?? 'tnt_01')
   }
 
