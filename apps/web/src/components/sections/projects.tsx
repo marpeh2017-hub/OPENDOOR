@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { MapPin, Users, CheckCircle2, ArrowLeft } from 'lucide-react'
 
 const featuredProjects = [

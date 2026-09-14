@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { Shield, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -18,7 +18,14 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/90 backdrop-blur-sm">
+    <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:start-3 focus:z-[60] focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        דילוג לתוכן המרכזי
+      </a>
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/90 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
@@ -64,7 +71,9 @@ export function Header() {
         <button
           className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-menu"
+          aria-label={isMenuOpen ? 'סגירת התפריט' : 'פתיחת התפריט'}
         >
           {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -72,7 +81,7 @@ export function Header() {
 
       {/* Mobile dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-border bg-white px-4 pb-4">
+        <div id="mobile-menu" className="md:hidden border-t border-border bg-white px-4 pb-4">
           <nav className="flex flex-col gap-1 pt-3">
             {navLinks.map(({ href, label }) => (
               <Link
@@ -95,6 +104,7 @@ export function Header() {
           </nav>
         </div>
       )}
-    </header>
+      </header>
+    </>
   )
 }

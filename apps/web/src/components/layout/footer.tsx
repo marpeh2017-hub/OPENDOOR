@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { Shield } from 'lucide-react'
 
 const footerLinks = {
@@ -48,7 +48,7 @@ export function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">{title}</h4>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">{title}</h3>
               <ul className="space-y-2">
                 {links.map(({ label, href }) => (
                   <li key={href}>
