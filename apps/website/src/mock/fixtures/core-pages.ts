@@ -63,8 +63,8 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'הסיפור שלנו', en: 'Our story' },
     body: {
-      he: 'תהליכי פינוי-בינוי ותמ"א 38 הם הרבה מעבר לעסקת נדל"ן. מדובר בתהליך אנושי, מורכב ומשנה חיים - עבור אנשים שגדלו בבית הזה, גידלו בו ילדים, וקשרו אליו זיכרונות שאי אפשר לשים להם מחיר.\n\nראיתי לא פעם דיירים שמחפשים ייצוג מקצועי מול יזמים, רשויות ובירוקרטיה - בלי ייצוג אמיתי, בלי מידע ברור, בלי מישהו שעומד לצדם. החברה הוקמה כדי לשנות את זה.',
-      en: 'Evacuate-and-rebuild and TAMA 38 processes are far more than a property transaction. They are human, complex and life-changing - for people who grew up in this building, raised children in it, and formed memories no price can be put on.\n\nI have seen residents looking for professional representation opposite developers, authorities and bureaucracy - with no real representation, no clear information, and nobody standing beside them. The company was founded to change that.',
+      he: 'תהליכי פינוי-בינוי ותמ"א 38 הם הרבה מעבר לעסקת נדל"ן. מדובר בתהליך אנושי, מורכב ומשנה חיים - עבור אנשים שגדלו בבית הזה, גידלו בו ילדים, וקשרו אליו זיכרונות שאי אפשר לשים להם מחיר.\n\nראינו לא פעם דיירים שמחפשים ייצוג מקצועי מול יזמים, רשויות ובירוקרטיה - בלי ייצוג אמיתי, בלי מידע ברור, בלי מישהו שעומד לצדם. החברה הוקמה כדי לשנות את זה.',
+      en: 'Evacuate-and-rebuild and TAMA 38 processes are far more than a property transaction. They are human, complex and life-changing - for people who grew up in this building, raised children in it, and formed memories no price can be put on.\n\nWe have seen residents looking for professional representation opposite developers, authorities and bureaucracy - with no real representation, no clear information, and nobody standing beside them. The company was founded to change that.',
     },
   },
   {
