@@ -35,8 +35,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What does it cost us, the apartment owners?',
     },
     answer: {
-      he: 'אפס שקלים. כל תהליך ההתחדשות העירונית ממומן על ידי היזם - כולל שכר הטרחה של עורך הדין, המפקח והשמאי מטעמכם, שכר הדירה לתקופת הבנייה והובלת הציוד הלוך וחזור.',
-      en: 'Nothing. The whole urban-renewal process is funded by the developer - including the fees of the lawyer, supervisor and appraiser acting for you, the rent for the construction period, and moving costs both ways.',
+      he: 'בדרך כלל אפס שקלים. כל תהליך ההתחדשות העירונית ממומן על ידי היזם - כולל שכר הטרחה של עורך הדין, המפקח והשמאי מטעמכם, שכר הדירה לתקופת הבנייה והובלת הציוד הלוך וחזור.',
+      en: 'Usually nothing. The whole urban-renewal process is funded by the developer - including the fees of the lawyer, supervisor and appraiser acting for you, the rent for the construction period, and moving costs both ways.',
     },
   },
   {
@@ -61,8 +61,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What do we receive in exchange for our existing apartment?',
     },
     answer: {
-      he: 'תוספת מטראז’, מרפסת שמש, ממ"ד, חניה תת-קרקעית ומחסן - בבניין חדיש שמעלה משמעותית את ערך הנכס. התמורה המדויקת תלויה במדיניות הרשות המקומית ובכדאיות הכלכלית של הפרויקט.',
-      en: 'Additional floor area, a balcony, a protected room, underground parking and storage - in a modern building that raises the value of the property considerably. The exact consideration depends on local authority policy and on the financial viability of the project.',
+      he: 'תוספת מטראז’, מרפסת שמש, ממ"ד, חניה תת-קרקעית ומחסן - בבניין חדיש שמעלה משמעותית את ערך הנכס, בכפוף לכדאיות הכלכלית ולמדיניות הרשות. התמורה המדויקת נקבעת לכל פרויקט בנפרד.',
+      en: 'Additional floor area, a balcony, a protected room, underground parking and storage - in a modern building that raises the value of the property considerably, subject to financial viability and to local authority policy. The exact consideration is settled per project.',
     },
   },
   {
@@ -74,8 +74,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'Where do we live while the building is demolished?',
     },
     answer: {
-      he: 'היזם משלם שכר דירה חודשי בגובה מחיר השוק של דירתכם הנוכחית, לאורך כל תקופת הבנייה ועד קבלת המפתח לדירה החדשה.',
-      en: 'The developer pays monthly rent at the market rate for your current apartment, throughout construction and until you receive the key to the new one.',
+      he: 'ברוב הפרויקטים היזם משלם שכר דירה חודשי בגובה מחיר השוק של דירתכם הנוכחית, לאורך כל תקופת הבנייה ועד קבלת המפתח לדירה החדשה.',
+      en: 'In most projects the developer pays monthly rent at the market rate for your current apartment, throughout construction and until you receive the key to the new one.',
     },
   },
   {
