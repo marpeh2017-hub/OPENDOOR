@@ -1,4 +1,5 @@
 import { Phone, Mail, MapPin, MessageCircle } from 'lucide-react'
+import { ContactForm } from './contact-form'
 
 export function ContactSection() {
   return (
@@ -64,42 +65,7 @@ export function ContactSection() {
           </div>
 
           {/* Lead Form */}
-          <div className="card-surface p-8">
-            <h3 className="text-lg font-bold text-gray-800 mb-5">השאר פרטים וניצור קשר</h3>
-            <form className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">שם פרטי</label>
-                  <input type="text" className="w-full rounded-lg border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="ישראל" />
-                </div>
-                <div>
-                  <label className="form-label">שם משפחה</label>
-                  <input type="text" className="w-full rounded-lg border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="ישראלי" />
-                </div>
-              </div>
-              <div>
-                <label className="form-label">טלפון</label>
-                <input type="tel" dir="ltr" className="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="050-0000000" />
-              </div>
-              <div>
-                <label className="form-label">כתובת הנכס</label>
-                <input type="text" className="w-full rounded-lg border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="רחוב, מספר, עיר" />
-              </div>
-              <div>
-                <label className="form-label">הודעה (אופציונלי)</label>
-                <textarea rows={3} className="w-full rounded-lg border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="ספרו לנו על הנכס שלכם..." />
-              </div>
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-teal-500 py-3 text-sm font-semibold text-white shadow-teal hover:bg-teal-600 transition-colors"
-              >
-                שלח פרטים
-              </button>
-              <p className="text-xs text-gray-400 text-center">
-                הפרטים שלך שמורים אצלנו ולא יועברו לצד שלישי
-              </p>
-            </form>
-          </div>
+          <ContactForm />
         </div>
       </div>
     </section>
