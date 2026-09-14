@@ -83,8 +83,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
     order: 4,
     group: { he: 'ביטחון וערבויות', en: 'Security and guarantees' },
     question: {
-      he: 'איך מבטיחים שהיזם לא יפשוט רגל באמצע?',
-      en: 'How do you make sure the developer does not go under midway?',
+      he: 'מה קורה אם היזם נקלע לקשיים?',
+      en: 'What happens if the developer runs into difficulty?',
     },
     answer: {
       he: 'לא מתחילים בנייה בלי ערבויות בנקאיות לפי חוק המכר - ערבות בשווי הדירה החדשה, ערבות שכירות, ערבות בדק וערבות רישום. אם היזם נקלע לקשיים, הבנק נכנס לנעליו ומבטיח את השלמת הפרויקט.',
@@ -110,8 +110,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
     group: { he: 'מי אתם ומי אתם מייצגים?', en: 'Who you are and who you represent' },
     question: { he: 'מה בדיוק התפקיד שלכם?', en: 'What exactly is your role?' },
     answer: {
-      he: 'אנחנו מייצגים אתכם בלבד. מארגנים את המתחם, מביאים את בעלי המקצוע הטובים ביותר מטעמכם, מנהלים את המכרז מול היזמים - ומלווים אתכם עד לקבלת המפתח.',
-      en: 'We represent you and no one else. We organise the complex, bring in the best professionals on your behalf, run the tender with the developers - and stay with you until you receive the key.',
+      he: 'אנחנו מייצגים אתכם בלבד. מארגנים את המתחם, מביאים בעלי מקצוע מיטביים מטעמכם, מנהלים את המכרז מול היזמים - ומלווים אתכם עד לקבלת המפתח.',
+      en: 'We represent you and no one else. We organise the complex, bring in well-suited professionals on your behalf, run the tender with the developers - and stay with you until you receive the key.',
     },
   },
 ]

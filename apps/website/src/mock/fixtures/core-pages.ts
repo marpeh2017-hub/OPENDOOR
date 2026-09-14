@@ -63,8 +63,8 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'הסיפור שלנו', en: 'Our story' },
     body: {
-      he: 'תהליכי פינוי-בינוי ותמ"א 38 הם הרבה מעבר לעסקת נדל"ן. מדובר בתהליך אנושי, מורכב ומשנה חיים - עבור אנשים שגדלו בבית הזה, גידלו בו ילדים, וקשרו אליו זיכרונות שאי אפשר לשים להם מחיר.\n\nראיתי לא פעם דיירים שהולכים לאיבוד מול יזמים, רשויות ובירוקרטיה - בלי ייצוג אמיתי, בלי מידע ברור, בלי מישהו שעומד לצדם. הקמתי את החברה כדי לשנות את זה.',
-      en: 'Evacuate-and-rebuild and TAMA 38 processes are far more than a property transaction. They are human, complex and life-changing - for people who grew up in this building, raised children in it, and formed memories no price can be put on.\n\nI have seen residents lose their footing among developers, authorities and bureaucracy - with no real representation, no clear information, and nobody standing beside them. I founded the company to change that.',
+      he: 'תהליכי פינוי-בינוי ותמ"א 38 הם הרבה מעבר לעסקת נדל"ן. מדובר בתהליך אנושי, מורכב ומשנה חיים - עבור אנשים שגדלו בבית הזה, גידלו בו ילדים, וקשרו אליו זיכרונות שאי אפשר לשים להם מחיר.\n\nראיתי לא פעם דיירים שמחפשים ייצוג מקצועי מול יזמים, רשויות ובירוקרטיה - בלי ייצוג אמיתי, בלי מידע ברור, בלי מישהו שעומד לצדם. החברה הוקמה כדי לשנות את זה.',
+      en: 'Evacuate-and-rebuild and TAMA 38 processes are far more than a property transaction. They are human, complex and life-changing - for people who grew up in this building, raised children in it, and formed memories no price can be put on.\n\nI have seen residents looking for professional representation opposite developers, authorities and bureaucracy - with no real representation, no clear information, and nobody standing beside them. The company was founded to change that.',
     },
   },
   {
@@ -85,8 +85,8 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'ייצוג האינטרס שלכם בלבד', en: 'Representing your interest alone' },
     body: {
-      he: 'אנחנו בצד שלכם. דואגים שתקבלו את התמורה המרבית, הערבויות החזקות ביותר והיזם המתאים ביותר לפרויקט - לא מה שנוח ליזם.',
-      en: 'We are on your side. We work to secure the strongest consideration, the strongest guarantees and the developer best suited to the project - not what suits the developer.',
+      he: 'אנחנו בצד שלכם. דואגים שתקבלו תמורה מיטבית, ערבויות חזקות והיזם המתאים ביותר לפרויקט - לא מה שנוח ליזם.',
+      en: 'We are on your side. We work to secure sound consideration, strong guarantees and the developer best suited to the project - not what suits the developer.',
     },
   },
   {
@@ -96,8 +96,8 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'רגישות אנושית לצד מקצועיות', en: 'Human sensitivity alongside professionalism' },
     body: {
-      he: 'מבינים שבין הכתלים האלה יש קהילה, זיכרונות וחיים שלמים. אנחנו לא רק בונים בניין - אנחנו שומרים על מה שחשוב לכם.',
-      en: 'We understand that within these walls there is a community, memories and whole lives. We are not only building a building - we are protecting what matters to you.',
+      he: 'מבינים שבין הכתלים האלה יש קהילה, זיכרונות וחיים שלמים. אנחנו לא רק מלווים פרויקט - אנחנו שומרים על מה שחשוב לכם.',
+      en: 'We understand that within these walls there is a community, memories and whole lives. We are not only accompanying a project - we are protecting what matters to you.',
     },
   },
   {
@@ -617,8 +617,8 @@ const servicesBlocks: PageBlock[] = [
         id: 'sv-3',
         title: { he: 'מכרז יזמים תחרותי', en: 'A competitive developer tender' },
         body: {
-          he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים המובילים בשוק, ניהול המשא ומתן - כדי שתקבלו את התמורה והערבויות המרביות.',
-          en: 'Writing a technical specification and mandatory requirements, approaching leading developers, and running the negotiation - so that you receive the strongest consideration and guarantees.',
+          he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים מובילים בשוק, ניהול המשא ומתן - כדי שתקבלו תמורה מיטבית וערבויות חזקות.',
+          en: 'Writing a technical specification and mandatory requirements, approaching developers active in the market, and running the negotiation - so that you receive sound consideration and strong guarantees.',
         },
       },
       {
@@ -634,7 +634,7 @@ const servicesBlocks: PageBlock[] = [
       },
       {
         id: 'sv-5',
-        title: { he: 'ניהול הבנייה והאכלוס', en: 'Overseeing construction and occupancy' },
+        title: { he: 'פיקוח על הבנייה והאכלוס', en: 'Overseeing construction and occupancy' },
         body: {
           he: 'תקשורת שוטפת מול היזם והרשויות, סיוע בשלבי הרישוי והבנייה - עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
           en: 'Ongoing communication with the developer and the authorities, support through licensing and construction - up to the handover inspection and the key to the new apartment.',
