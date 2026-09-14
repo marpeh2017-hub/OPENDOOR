@@ -15,6 +15,8 @@ build/
 .env
 .env.local
 .env.*.local
+# Timestamped copies taken before editing .env — these hold real credentials.
+.env.backup-*
 !.env.example
 
 # Database
