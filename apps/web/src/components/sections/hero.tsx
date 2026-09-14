@@ -23,7 +23,7 @@ export function HeroSection() {
           {/* Badge */}
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-1.5 text-sm font-medium text-teal-700">
             <Shield size={14} />
-            המובילים בהתחדשות עירונית בישראל
+            מתמחים בהתחדשות עירונית בירושלים ומרכז הארץ
           </div>
 
           {/* Headline */}
