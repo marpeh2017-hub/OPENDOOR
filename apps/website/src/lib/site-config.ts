@@ -34,24 +34,31 @@ export const COMPANY = {
 /**
  * Accessibility statement details.
  *
- * TODO(accessibility): `coordinatorName` and `premises` must be filled in
- * before launch. Regulation 91 of the 2013 Service Accessibility Regulations
- * requires a named coordinator, and the statement has to describe the physical
- * offices as well as the website — that part needs a licensed premises
- * accessibility surveyor (מורשה נגישות מבנים, תשתיות וסביבה).
+ * The coordinator is named as regulation 91 of the 2013 Service Accessibility
+ * Regulations requires. Their phone and email are the company's published
+ * ones, so the statement reads them from CONTACT rather than repeating them
+ * here and letting the two drift apart.
+ *
+ * The premises sentence states what the owner confirmed. It is deliberately
+ * short and points a visitor with a specific need at the coordinator, because
+ * which adjustments a particular person needs is not something a sentence can
+ * settle. A survey by a licensed premises accessibility surveyor
+ * (מורשה נגישות מבנים, תשתיות וסביבה) is still worth commissioning; it would
+ * let this section describe parking, step-free access, the lift and the
+ * service position specifically.
  */
 export const ACCESSIBILITY = {
-  coordinatorName: TBD('שם רכז/ת הנגישות'),
-  coordinatorNameEn: TBD('accessibility coordinator name'),
+  coordinatorName: 'מיכאל רוזנבך',
+  coordinatorNameEn: 'Michael Rosenbach',
   /** Date of the technical audit described in the statement. */
   auditDate: '14 בספטמבר 2026',
   auditDateEn: '14 September 2026',
   statementDate: '14 בספטמבר 2026',
   statementDateEn: '14 September 2026',
-  premises: TBD(
-    'תיאור נגישות המשרדים: חניית נכים, גישה ללא מדרגות, מעלית, שירותי נכים ועמדת שירות - דורש בדיקת מורשה נגישות מבנים',
-  ),
-  premisesEn: TBD('description of physical office accessibility - pending a licensed surveyor'),
+  premises:
+    'משרדי החברה נגישים לאנשים עם מוגבלות. לבירור לגבי התאמה מסוימת לפני ההגעה, ניתן לפנות לרכז הנגישות בפרטים שלהלן.',
+  premisesEn:
+    'The company’s offices are accessible to people with disabilities. To ask about a particular adjustment before visiting, contact the accessibility coordinator using the details below.',
 } as const
 
 /** Shown as the "last updated" line on every legal page. */
