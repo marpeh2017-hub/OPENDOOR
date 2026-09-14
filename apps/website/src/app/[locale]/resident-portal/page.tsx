@@ -1,9 +1,17 @@
 import type { Metadata } from 'next'
-import { setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
 import { DirectContact } from '@/components/forms/direct-contact'
-export const metadata: Metadata = { title: 'תיק הדייר', robots: { index: false, follow: true } }
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'pages.residentPortal' })
+  return { title: t('title'), robots: { index: false, follow: true } }
+}
 export default async function ResidentPortalPage({
   params,
 }: {

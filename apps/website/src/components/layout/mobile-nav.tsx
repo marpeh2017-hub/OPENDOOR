@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Menu, X } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import { RESIDENT_PORTAL_HREF } from '@/lib/navigation'
@@ -23,6 +24,18 @@ import { RESIDENT_PORTAL_HREF } from '@/lib/navigation'
  *
  * `aria-expanded` and `aria-controls` on the trigger state the relationship,
  * and `role="dialog"` + `aria-modal` tell assistive tech the rest is inert.
+ *
+ * ── WHY THE DRAWER IS PORTALLED TO document.body ───────────────────────────
+ *
+ * The header carries `backdrop-blur`, and an element with a backdrop-filter
+ * becomes the containing block for its `position: fixed` descendants. Rendered
+ * in place, the drawer's `inset-0` resolved against the header's 64px bar
+ * instead of the viewport: the overlay collapsed to that height, and the nav
+ * items overflowed it and painted behind the page, where a tap reached the
+ * article underneath rather than the link. The portal moves the drawer out of
+ * that containing block, so `inset-0` means the viewport again.
+ *
+ * Do not move this back inline without first removing the blur.
  */
 export function MobileNav({
   items,
@@ -38,6 +51,10 @@ export function MobileNav({
   residentPortalLabel: string
 }) {
   const [open, setOpen] = useState(false)
+  // `createPortal` needs a DOM node, which does not exist during the server
+  // render. Mounting first keeps the server and first client render identical.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -99,7 +116,7 @@ export function MobileNav({
         <Menu className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      {open && (
+      {mounted && open && createPortal(
         <div className="fixed inset-0 z-drawer lg:hidden">
           <div
             className="absolute inset-0 bg-black/40"
@@ -153,7 +170,8 @@ export function MobileNav({
               </Link>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )

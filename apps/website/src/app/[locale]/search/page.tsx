@@ -1,11 +1,19 @@
 import type { Metadata } from 'next'
-import { setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { Locale } from '@urban-renewal/api-contracts'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
 import { Link } from '@/i18n/navigation'
 import { search } from '@/mock'
-export const metadata: Metadata = { title: 'חיפוש', robots: { index: false, follow: true } }
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'pages.search' })
+  return { title: t('title'), robots: { index: false, follow: true } }
+}
 export default async function SearchPage({
   params,
   searchParams,

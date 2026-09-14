@@ -9,8 +9,13 @@ export const CONTACT = {
   email: 'info@odg.co.il',
 } as const
 
-/** Marks a value the business still has to supply. Rendered highlighted. */
-export const TBD = (what: string) => `[[ ${what} — להשלמה ]]`
+/**
+ * Marks a value the business still has to supply. Rendered highlighted.
+ *
+ * Locale-neutral on purpose: the same constants feed the Hebrew and the
+ * English pages, so a Hebrew suffix here showed up untranslated on /en.
+ */
+export const TBD = (what: string) => `[[ TO BE COMPLETED: ${what} ]]`
 
 /**
  * Registered identity. The trading name "OpenDoor Group" is not enough on the
@@ -44,9 +49,9 @@ export const ACCESSIBILITY = {
   statementDate: '14 בספטמבר 2026',
   statementDateEn: '14 September 2026',
   premises: TBD(
-    'תיאור נגישות המשרדים: חניית נכים, גישה ללא מדרגות, מעלית, שירותי נכים ועמדת שירות — דורש בדיקת מורשה נגישות מבנים',
+    'תיאור נגישות המשרדים: חניית נכים, גישה ללא מדרגות, מעלית, שירותי נכים ועמדת שירות - דורש בדיקת מורשה נגישות מבנים',
   ),
-  premisesEn: TBD('description of physical office accessibility — pending a licensed surveyor'),
+  premisesEn: TBD('description of physical office accessibility - pending a licensed surveyor'),
 } as const
 
 /** Shown as the "last updated" line on every legal page. */
