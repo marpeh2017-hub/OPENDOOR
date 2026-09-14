@@ -3,16 +3,12 @@
 import { Link } from '@/i18n/routing'
 import { Shield, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { CONTACT_ANCHOR, PORTAL_URL } from '@/lib/links'
 
-const navLinks = [
-  { href: '/about',    label: 'אודות' },
-  { href: '/services', label: 'שירותים' },
-  { href: '/projects', label: 'פרויקטים' },
-  { href: '/blog',     label: 'בלוג' },
-  { href: '/faq',      label: 'שאלות נפוצות' },
-  { href: '/contact',  label: 'צור קשר' },
-]
+// Nav entries for /about, /services, /projects, /blog and /faq were removed:
+// none of those routes exist, so every one of them served a 404. Restore an
+// entry here only together with the page it points at.
+const navLinks: { href: string; label: string }[] = []
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -53,15 +49,15 @@ export function Header() {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/portal"
+          <a
+            href={PORTAL_URL}
             className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-600 border border-border hover:border-teal-200 transition-colors"
           >
             כניסת דיירים
-          </Link>
+          </a>
           <Link
-            href="/contact"
-            className="rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-white shadow-teal hover:bg-teal-600 transition-colors"
+            href={CONTACT_ANCHOR}
+            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-teal hover:bg-teal-700 transition-colors"
           >
             קביעת פגישה
           </Link>
@@ -94,10 +90,14 @@ export function Header() {
               </Link>
             ))}
             <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2">
-              <Link href="/portal" className="rounded-lg border border-border px-4 py-2.5 text-center text-sm font-medium">
+              <a href={PORTAL_URL} className="rounded-lg border border-border px-4 py-2.5 text-center text-sm font-medium">
                 כניסת דיירים
-              </Link>
-              <Link href="/contact" className="rounded-lg bg-teal-500 px-4 py-2.5 text-center text-sm font-semibold text-white">
+              </a>
+              <Link
+                href={CONTACT_ANCHOR}
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-lg bg-teal-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+              >
                 קביעת פגישה
               </Link>
             </div>

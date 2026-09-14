@@ -1,5 +1,4 @@
-import { Link } from '@/i18n/routing'
-import { MapPin, Users, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { MapPin, Users, CheckCircle2 } from 'lucide-react'
 
 const featuredProjects = [
   {
@@ -43,21 +42,11 @@ export function ProjectsSection() {
             <h2 className="text-3xl font-black text-gray-900 mb-2">פרויקטים נבחרים</h2>
             <p className="text-gray-600">חלק מהפרויקטים שאנחנו מנהלים</p>
           </div>
-          <Link
-            href="/projects"
-            className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-teal-500 hover:text-teal-600"
-          >
-            כל הפרויקטים <ArrowLeft size={15} />
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredProjects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/projects/${p.id}`}
-              className="card-surface overflow-hidden hover:shadow-lg transition-shadow group"
-            >
+            <article key={p.id} className="card-surface overflow-hidden group">
               {/* Image placeholder */}
               <div className="flex h-40 items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 text-5xl font-black text-teal-200 group-hover:from-teal-100 transition-colors">
                 {p.imgPlaceholder}
@@ -88,7 +77,7 @@ export function ProjectsSection() {
                   </div>
                 </div>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
       </div>

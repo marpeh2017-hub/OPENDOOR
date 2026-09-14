@@ -1,4 +1,5 @@
 import { Link } from '@/i18n/routing'
+import { CONTACT_ANCHOR } from '@/lib/links'
 import { ArrowLeft, Shield, CheckCircle2 } from 'lucide-react'
 
 const trustBadges = [
@@ -27,7 +28,7 @@ export function HeroSection() {
           {/* Headline */}
           <h1 className="mb-6 text-4xl font-black leading-tight text-gray-900 lg:text-6xl">
             פותחים את הדלת{' '}
-            <span className="text-teal-500">להתחדשות עירונית</span>
+            <span className="text-teal-600">להתחדשות עירונית</span>
             {' '}בטוחה, שקופה ומתקדמת
           </h1>
 
@@ -39,17 +40,11 @@ export function HeroSection() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
             <Link
-              href="/contact"
-              className="flex items-center gap-2 rounded-xl bg-teal-500 px-7 py-3.5 text-base font-semibold text-white shadow-teal hover:bg-teal-600 transition-all hover:shadow-lg"
+              href={CONTACT_ANCHOR}
+              className="flex items-center gap-2 rounded-xl bg-teal-600 px-7 py-3.5 text-base font-semibold text-white shadow-teal hover:bg-teal-700 transition-all hover:shadow-lg"
             >
               קביעת פגישת ייעוץ
               <ArrowLeft size={18} />
-            </Link>
-            <Link
-              href="/projects"
-              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-7 py-3.5 text-base font-semibold text-gray-700 hover:border-teal-300 hover:text-teal-600 transition-colors"
-            >
-              צפייה בפרויקטים
             </Link>
           </div>
 
@@ -57,7 +52,7 @@ export function HeroSection() {
           <div className="flex flex-wrap items-center justify-center gap-4">
             {trustBadges.map((badge) => (
               <div key={badge} className="flex items-center gap-1.5 text-sm text-gray-500">
-                <CheckCircle2 size={15} className="text-teal-500" />
+                <CheckCircle2 size={15} className="text-teal-600" />
                 {badge}
               </div>
             ))}

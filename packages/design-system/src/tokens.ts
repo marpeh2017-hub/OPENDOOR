@@ -26,7 +26,7 @@ export const colors = {
     200: '#d5d8db',
     300: '#b8bdc2',
     400: '#959ba2',
-    500: '#6D7378', // steel-gray – secondary UI
+    500: '#676D72', // steel-gray – secondary UI (4.88:1 on gray-50, AA)
     600: '#555a5f',
     700: '#43474b',
     800: '#3A3A3A', // dark-graphite – headings, primary text

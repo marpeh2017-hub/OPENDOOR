@@ -13,11 +13,11 @@ export const company = {
   /** Trading name, as already published across the site. */
   brandName: 'OpenDoor התחדשות עירונית',
 
-  /** TBD: the registered company name as it appears in the companies register. */
-  legalName: TBD('שם החברה הרשום'),
+  /** Registered company name, as in the companies register. */
+  legalName: 'קבוצת אופן דור יזמות והתחדשות בע"מ',
 
-  /** TBD: company number / licensed dealer number. */
-  registrationNumber: TBD('ח.פ. / ע.מ.'),
+  /** Company number. */
+  registrationNumber: '515856334',
 
   website: 'odg.co.il',
 
@@ -28,8 +28,11 @@ export const company = {
 
   generalEmail: 'info@odg.co.il',
 
-  /** TBD: address for privacy requests (access, correction, deletion). */
-  privacyEmail: TBD('כתובת דוא"ל לפניות בנושא פרטיות'),
+  /** Address for privacy requests (access, correction, deletion). */
+  privacyEmail: 'info@odg.co.il',
+
+  /** Phone for privacy requests. */
+  privacyPhone: '054-8018613',
 
   /** TBD: person responsible for privacy requests. */
   privacyOfficer: TBD('שם הממונה על הגנת הפרטיות'),
@@ -41,8 +44,8 @@ export const company = {
     email: TBD('דוא"ל רכז/ת הנגישות'),
   },
 
-  /** TBD: the court district to name as exclusive venue in the terms. */
-  jurisdiction: TBD('מחוז השיפוט (למשל: ירושלים / תל אביב)'),
+  /** Court district named as exclusive venue in the terms. */
+  jurisdiction: 'ירושלים',
 
   /** TBD: the date the accessibility audit was actually performed. */
   accessibilityAuditDate: TBD('תאריך בדיקת הנגישות'),
