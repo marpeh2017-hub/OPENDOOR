@@ -87,8 +87,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What happens if the developer runs into difficulty?',
     },
     answer: {
-      he: 'לא מתחילים בנייה בלי ערבויות בנקאיות לפי חוק המכר - ערבות בשווי הדירה החדשה, ערבות שכירות, ערבות בדק וערבות רישום. אם היזם נקלע לקשיים, הבנק נכנס לנעליו ומבטיח את השלמת הפרויקט.',
-      en: 'Construction does not begin without bank guarantees under the Sale Law - a guarantee for the value of the new apartment, a rent guarantee, a defects guarantee and a registration guarantee. If the developer runs into difficulty, the bank steps into its shoes and secures completion.',
+      he: 'לא מתחילים בנייה בלי ערבויות בנקאיות לפי חוק המכר - ערבות בשווי הדירה החדשה, ערבות שכירות, ערבות בדק וערבות רישום. הערבויות נועדו להבטיח את השלמת הפרויקט או את החזר שווי הדירה במקרה של קשיים.',
+      en: 'Construction does not begin without bank guarantees under the Sale Law - a guarantee for the value of the new apartment, a rent guarantee, a defects guarantee and a registration guarantee. The guarantees are intended to secure completion of the project, or repayment of the value of the apartment, should difficulties arise.',
     },
   },
   {
