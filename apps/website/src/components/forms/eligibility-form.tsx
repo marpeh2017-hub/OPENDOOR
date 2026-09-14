@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useFormIdentity } from '@/lib/forms/use-form-identity'
 import { useLocale, useTranslations } from 'next-intl'
 import {
   Field, FieldLabel, FieldDescription, FieldError,
@@ -88,10 +89,7 @@ export function EligibilityForm() {
   const [consentContact, setConsentContact] = useState(false)
   const [consentPrivacy, setConsentPrivacy] = useState(false)
   const [company, setCompany] = useState('')
-  const [formIdentity] = useState(() => ({
-    submissionId: crypto.randomUUID(),
-    renderedAt: new Date().toISOString(),
-  }))
+  const formIdentity = useFormIdentity()
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
   const [attempted, setAttempted] = useState(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'failed' | 'sent'>('idle')
@@ -159,7 +157,7 @@ export function EligibilityForm() {
       consentContact: true,
       consentPrivacy: true,
       ...(company ? { company } : {}),
-      metadata: buildSubmissionMetadata(`/${locale}/eligibility`, locale, formIdentity),
+      metadata: buildSubmissionMetadata(`/${locale}/eligibility`, locale, formIdentity.read()),
     }
 
     const outcome = await getLeadSubmissionService().submitEligibility(submission)
@@ -391,7 +389,7 @@ export function EligibilityForm() {
         error={errors.consentPrivacy}
         label={
           <>
-            {tForms('privacyConsentLabel')}{' '}
+            {`${tForms('privacyConsentLabel')}\u00A0`}
             <Link href="/privacy" className="underline underline-offset-2">
               {tForms('consentLinkText')}
             </Link>
