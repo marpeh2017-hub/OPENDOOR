@@ -53,21 +53,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ fieldErrors }, { status: 422 })
   }
 
-  // Explicit allow-list. Never spread the request body into the CRM payload:
-  // the leads endpoint accepts an untyped body, so anything forwarded would be
-  // written straight onto the Lead row (status, score, assignedToId, ...).
+  // Explicit allow-list, matching CreatePublicLeadDto on the API side. The
+  // intake endpoint sets source and status itself, so neither is sent here.
   const payload = {
     firstName: String(body.firstName).trim().slice(0, MAX.firstName),
     lastName: String(body.lastName).trim().slice(0, MAX.lastName),
     phone: normalizePhone(String(body.phone)),
     address: String(body.address ?? '').trim().slice(0, MAX.address) || undefined,
     notes: String(body.message ?? '').trim().slice(0, MAX.message) || undefined,
-    source: 'WEBSITE' as const,
-    language: 'he' as const,
   }
 
   try {
-    const res = await fetch(`${API_URL}/api/v1/leads`, {
+    const res = await fetch(`${API_URL}/api/v1/leads/intake`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

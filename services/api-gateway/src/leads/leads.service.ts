@@ -1,6 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
 import { CreateLeadDto } from './dto/create-lead.dto'
+import { CreatePublicLeadDto } from './dto/create-public-lead.dto'
+
+/**
+ * Tenant that public website submissions are filed under.
+ *
+ * TODO(multi-tenant): the marketing site is single-tenant today, so this is a
+ * constant. Resolve it from the request host or an explicit site identifier
+ * before a second tenant gets its own public site.
+ */
+const WEBSITE_TENANT_ID = process.env['WEBSITE_TENANT_ID'] ?? 'tnt_01'
 
 @Injectable()
 export class LeadsService {
@@ -50,6 +60,24 @@ export class LeadsService {
     // has no tenantId field, so a caller cannot write a lead into another tenant.
     return this.prisma.lead.create({
       data: { ...data, tenantId } as any,
+    })
+  }
+
+  /**
+   * Create a lead from the public website form. source and status are set
+   * here rather than taken from the request, so an anonymous caller cannot
+   * plant a lead that looks like it came from anywhere else or is further
+   * along the pipeline than it is.
+   */
+  async createFromWebsite(data: CreatePublicLeadDto) {
+    return this.prisma.lead.create({
+      data: {
+        ...data,
+        tenantId: WEBSITE_TENANT_ID,
+        source: 'WEBSITE',
+        status: 'NEW',
+        language: 'he',
+      } as any,
     })
   }
 
