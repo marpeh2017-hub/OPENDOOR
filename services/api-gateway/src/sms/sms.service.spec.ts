@@ -14,6 +14,9 @@
 import { Logger } from '@nestjs/common'
 import { SmsService, maskPhone } from './sms.service'
 
+// The service reaches the SDK through a dynamic import; this intercepts it.
+jest.mock('@vonage/server-sdk', () => ({ Vonage: jest.fn() }), { virtual: true })
+
 describe('SmsService — normalisation and simulation', () => {
   const ORIGINAL_ENV = { ...process.env }
 
@@ -165,6 +168,78 @@ describe('SmsService — normalisation and simulation', () => {
       // No provider configured, so it falls to the development branch rather
       // than transmitting — but it was never simulated on this path.
       expect(logged.join(' ')).not.toContain('SIMULATED SMS')
+    })
+  })
+
+  // ── What Vonage is actually handed, and what comes back ──────────────────
+
+  describe('the Vonage call itself', () => {
+    /** Captures the payload handed to the SDK. */
+    let sent: any[]
+    let reply: any
+
+    beforeEach(() => {
+      sent = []
+      reply = { messages: [{ status: '0', messageId: 'abc' }] }
+
+      const mod = require('@vonage/server-sdk')
+      mod.Vonage.mockImplementation(() => ({
+        sms: { send: jest.fn(async (payload: any) => { sent.push(payload); return reply }) },
+      }))
+
+      // The constructor picks the provider, so this must be set before it runs.
+      process.env.VONAGE_API_KEY = 'key'
+      process.env.VONAGE_API_SECRET = 'secret'
+    })
+
+    it('sends Hebrew as unicode — the bug that made an OTP arrive as ???', async () => {
+      await service().sendOtp('0548018613', '123456')
+
+      expect(sent).toHaveLength(1)
+      expect(sent[0].type).toBe('unicode')
+      // And the body is untouched — the fix is the alphabet, not the text.
+      expect(sent[0].text).toContain('קוד האימות שלך')
+    })
+
+    it('leaves an English message on GSM-7, which costs half as much', async () => {
+      await service().sendText('0548018613', 'Your code is 123456')
+      expect(sent[0].type).toBe('text')
+    })
+
+    it('sends the number in E.164', async () => {
+      await service().sendText('054-801-8613', 'hello')
+      expect(sent[0].to).toBe('+972548018613')
+    })
+
+    it('THROWS when Vonage rejects, instead of reporting success', async () => {
+      /*
+       * The old code awaited this call and discarded it. Vonage resolves on a
+       * rejection rather than throwing, so every rejected message looked like
+       * a delivered one — which is why the encoding bug survived until someone
+       * opened the dashboard.
+       */
+      reply = { messages: [{ status: '6', errorText: 'Invalid message' }] }
+      await expect(service().sendText('0548018613', 'שלום'))
+        .rejects.toThrow(/Vonage rejected .* status 6: Invalid message/)
+    })
+
+    it('explains a trial account rather than echoing status 29', async () => {
+      reply = { messages: [{ status: '29', errorText: 'Non-whitelisted destination' }] }
+      await expect(service().sendText('0548018613', 'שלום'))
+        .rejects.toThrow(/TRIAL account/)
+    })
+
+    it('never puts the message body in a rejection error', async () => {
+      // On the OTP path the body carries the code, and errors reach logs.
+      reply = { messages: [{ status: '6', errorText: 'Invalid message' }] }
+      await expect(service().sendOtp('0548018613', '987654'))
+        .rejects.toThrow(/^(?!.*987654).*$/s)
+    })
+
+    it('treats an empty response as a failure, not a success', async () => {
+      reply = {}
+      await expect(service().sendText('0548018613', 'שלום'))
+        .rejects.toThrow(/no response/)
     })
   })
 })

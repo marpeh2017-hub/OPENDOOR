@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { SmsProvider, SmsProviderName } from './sms.interface'
 import { normaliseIsraeliPhone } from '../messaging/phone'
 import { MessagingConfig } from '../messaging/messaging.config'
+import { planSmsEncoding } from './encoding'
 
 /** `+972501234567` → `*********567`. Never log a full subscriber number. */
 export function maskPhone(phone: string): string {
@@ -46,6 +47,25 @@ export function maskPhone(phone: string): string {
  * during the 2026-09-09 audit. The fix made then covered the pipeline. This
  * covers the rest.
  */
+/**
+ * The Vonage rejection codes worth explaining rather than echoing.
+ *
+ * Only the ones whose fix is not obvious from the text Vonage returns. `29`
+ * in particular reads as a permissions error and is really an account state:
+ * a trial account may only message numbers you have verified with Vonage.
+ */
+const VONAGE_STATUS_HINTS: Record<string, string> = {
+  '4':  ' — check VONAGE_API_KEY and VONAGE_API_SECRET.',
+  '9':  ' — the account is out of credit.',
+  '11': ' — SMS is not enabled on this Vonage account.',
+  '12': ' — the message is longer than the provider accepts.',
+  '15': ' — VONAGE_FROM is not a sender ID this destination accepts. Israeli' +
+        ' networks reject most alphanumeric sender IDs.',
+  '29': ' — the destination is not on the allow-list of a TRIAL account.' +
+        ' Verify the number in the Vonage dashboard, or upgrade the account.',
+  '33': ' — the number is deactivated.',
+}
+
 @Injectable()
 export class SmsService implements SmsProvider {
   private readonly logger = new Logger(SmsService.name)
@@ -195,11 +215,61 @@ export class SmsService implements SmsProvider {
       apiKey:    process.env.VONAGE_API_KEY!,
       apiSecret: process.env.VONAGE_API_SECRET!,
     })
-    await vonage.sms.send({
+    /*
+     * ── THE ALPHABET IS NOT OPTIONAL ────────────────────────────────────────
+     *
+     * Vonage defaults `type` to `text`, which means GSM 03.38 — an alphabet
+     * with no Hebrew in it. It does not reject a Hebrew message typed that
+     * way; it substitutes, and every character lands as `?`. The first real
+     * OTP this system sent arrived exactly like that: the digits survived,
+     * the Hebrew around them did not.
+     *
+     * `planSmsEncoding` picks the alphabet from the message itself rather
+     * than pinning `unicode` on, because UCS-2 halves the segment allowance
+     * (70 instead of 160) and would make every English message cost double.
+     */
+    const plan = planSmsEncoding(text)
+
+    if (plan.segments > 1) {
+      // Worth saying out loud: this is billed per part, and a Hebrew message
+      // crosses the line at 70 characters rather than 160.
+      this.logger.warn(
+        `SMS to ${maskPhone(phone)} is ${plan.length} ${plan.type === 'unicode' ? 'characters' : 'septets'} ` +
+        `and will be sent as ${plan.segments} segments (${plan.perSegment} per segment, ${plan.type}) — billed as ${plan.segments} messages`,
+      )
+    }
+
+    const result = await vonage.sms.send({
       to:   phone,
       from: process.env.VONAGE_FROM ?? 'OpenDoor',
       text,
+      type: plan.type,
     })
+
+    /*
+     * ── AND THE RESULT IS NOT OPTIONAL EITHER ───────────────────────────────
+     *
+     * This call used to be awaited and discarded. Vonage does not throw on a
+     * rejected message — it resolves with `messages[0].status`, where '0' is
+     * the only success. Every message this repository sent before today was
+     * REJECTED, and the only reason anybody found out was that someone opened
+     * the Vonage dashboard and looked.
+     *
+     * A send that cannot fail is a send that cannot be trusted to have worked,
+     * which also means the encoding fix above could not be verified without
+     * this one.
+     */
+    const outcome = result?.messages?.[0]
+    if (!outcome || outcome.status !== '0') {
+      const status = outcome?.status ?? 'no response'
+      const detail = outcome?.errorText ?? 'no detail returned'
+      // The message body never enters this error: on the OTP path it carries
+      // the code, and errors travel into logs and trackers.
+      throw new Error(
+        `Vonage rejected the SMS to ${maskPhone(phone)} — status ${status}: ${detail}` +
+        (VONAGE_STATUS_HINTS[status] ?? ''),
+      )
+    }
   }
 
   private async sendTwilio(phone: string, text: string): Promise<void> {
