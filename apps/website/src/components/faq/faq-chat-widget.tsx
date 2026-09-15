@@ -9,6 +9,7 @@ interface ChatMessage {
 }
 
 const STORAGE_KEY = 'odg-faq-chat-history'
+const STARTED_AT_KEY = 'odg-faq-chat-started-at'
 const GREETING = 'שלום! אני כאן לענות על שאלות בנושא התחדשות עירונית. במה אוכל לעזור?'
 const UNAVAILABLE_MESSAGE = 'נסה שוב מאוחר יותר.'
 
@@ -47,10 +48,23 @@ export function FaqChatWidget() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const startedAtRef = useRef<string>('')
 
   useEffect(() => {
     const history = loadHistory()
     setMessages(history.length > 0 ? history : [{ role: 'assistant', content: GREETING }])
+
+    // Anchors the lead endpoint's anti-spam "time on form" check to when this
+    // conversation actually began, not to whenever a lead happens to be
+    // submitted — persisted so a page reload mid-conversation doesn't reset
+    // the clock and make a genuine conversation look freshly started.
+    try {
+      const existing = window.sessionStorage.getItem(STARTED_AT_KEY)
+      startedAtRef.current = existing || new Date().toISOString()
+      if (!existing) window.sessionStorage.setItem(STARTED_AT_KEY, startedAtRef.current)
+    } catch {
+      startedAtRef.current = new Date().toISOString()
+    }
   }, [])
 
   useEffect(() => {
@@ -75,7 +89,7 @@ export function FaqChatWidget() {
       const response = await fetch('/api/faq-chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, chatStartedAt: startedAtRef.current }),
       })
 
       if (!response.ok) {
