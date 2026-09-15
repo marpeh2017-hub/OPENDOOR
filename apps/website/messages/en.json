@@ -1,0 +1,372 @@
+{
+  "brand": {
+    "name": "OpenDoor Group",
+    "tagline": "Representing and organising apartment owners in urban renewal",
+    "wordmarkTagline": "Urban renewal"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Our services",
+    "whyOrganizer": "Why an organiser",
+    "howWeWork": "How we work",
+    "projects": "Projects",
+    "knowledge": "Knowledge",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "trust": "Trust",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skipToContent": "Skip to main content",
+    "primaryNavigation": "Primary navigation",
+    "languageSwitcher": "Select language",
+    "breadcrumb": "Breadcrumb",
+    "search": "Search"
+  },
+  "cta": {
+    "eligibility": "Talk to us about your building",
+    "residentPortal": "About the resident portal",
+    "eligibilityShort": "Talk to us"
+  },
+  "footer": {
+    "company": "Company",
+    "urbanRenewal": "Urban renewal",
+    "knowledge": "Knowledge",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "accessibility": "Accessibility",
+    "rights": "All rights reserved"
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The link may have changed or the page removed.",
+    "genericTitle": "Something went wrong",
+    "genericBody": "The page could not be loaded. You can try again.",
+    "retry": "Try again",
+    "backHome": "Back to home"
+  },
+  "pages": {
+    "about": {
+      "title": "About"
+    },
+    "services": {
+      "title": "Our services"
+    },
+    "whyOrganizer": {
+      "title": "Why an organising company"
+    },
+    "howWeWork": {
+      "title": "How we work"
+    },
+    "projects": {
+      "title": "Projects"
+    },
+    "trust": {
+      "title": "Trust"
+    },
+    "knowledge": {
+      "title": "Knowledge centre",
+      "empty": "Looking for an explanation of the process? Start with How we work, or contact us with a question. Articles will appear here once approved."
+    },
+    "faq": {
+      "title": "FAQ",
+      "empty": "Wondering how to begin, what the representation does, or who is involved? Send us your question. General answers will appear here once approved."
+    },
+    "contact": {
+      "title": "Contact"
+    },
+    "eligibility": {
+      "title": "Check your building's suitability"
+    },
+    "search": {
+      "title": "Search"
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "notice": "For questions about information privacy on the OpenDoor Group website, please contact us.",
+      "contactLink": "Contact us"
+    },
+    "terms": {
+      "title": "Terms of use",
+      "notice": "For questions about using the OpenDoor Group website, please contact us.",
+      "contactLink": "Contact us"
+    },
+    "accessibility": {
+      "title": "Accessibility statement"
+    },
+    "residentPortal": {
+      "title": "Resident portal"
+    }
+  },
+  "links": {
+    "allProjects": "All projects",
+    "knowledgeCentre": "Knowledge centre",
+    "allQuestions": "All questions",
+    "contact": "Contact us",
+    "whyOrganizer": "Why work with an organising company?",
+    "howWeWork": "How we work",
+    "enquiryIntro": "Contact us for an initial conversation about your building."
+  },
+  "stages": {
+    "INITIAL_REVIEW": "Initial review",
+    "FEASIBILITY": "Feasibility",
+    "OWNER_ORGANIZATION": "Owner organisation",
+    "REPRESENTATION_FORMED": "Representation formed",
+    "PROFESSIONAL_SELECTION": "Professional selection",
+    "DEVELOPER_TENDER": "Examining and selecting a developer",
+    "DEVELOPER_SELECTED": "Developer selected",
+    "AGREEMENTS": "Agreements",
+    "PLANNING": "Planning",
+    "PERMIT_AND_BUILD": "Permit and construction",
+    "DELIVERY": "Delivery"
+  },
+  "ui": {
+    "demonstration": "Illustrative",
+    "currentStage": "Current stage",
+    "transparencyEyebrow": "Transparency in practice",
+    "menu": "Menu",
+    "opensInNewTab": "opens in a new tab"
+  },
+  "journey": {
+    "city": "The city",
+    "threshold": "The threshold",
+    "process": "The process",
+    "project": "The project",
+    "transparency": "Transparency",
+    "portal": "Resident area"
+  },
+  "projects": {
+    "emptyTitle": "Projects will be published here once the owners have approved.",
+    "emptyBody": "Project information will appear here after review and approval for publication. Contact us directly about your building or a particular complex.",
+    "eyebrow": "Urban renewal in Israel",
+    "standfirst": "Complexes where we represent and organise the apartment owners. Each project shows the information verified as of its update date.",
+    "verifiedOnly": "Each project shows verified information only. A missing figure does not mean nothing is happening; it means nobody has verified that figure for publication yet."
+  },
+  "forms": {
+    "optionalDivider": "Want to tell us more? The fields below are optional.",
+    "required": "Required",
+    "optional": "Optional",
+    "selectPlaceholder": "Choose an option",
+    "submitting": "Sending",
+    "contactConsentLabel": "I agree that OpenDoor Group may contact me about this enquiry.",
+    "privacyConsentLabel": "I have read and accept the",
+    "consentLinkText": "privacy policy",
+    "errorSummaryTitle": "We could not send this. Some details are missing or need fixing.",
+    "failureTitle": "Your details were not sent.",
+    "failureBody": "Everything you entered is still here. You can try again.",
+    "retry": "Try again",
+    "noCost": "OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.",
+    "errors": {
+      "addressRequired": "We need the building address to look at the complex.",
+      "cityRequired": "Please tell us which city the building is in.",
+      "nameRequired": "We need a name so we know who to contact.",
+      "phoneRequired": "We need a phone number to get back to you.",
+      "phoneInvalid": "That phone number looks incomplete. Hyphens and spaces are fine.",
+      "emailInvalid": "That email address does not look right.",
+      "apartmentsInvalid": "An approximate number is fine, for example 24.",
+      "leadTypeRequired": "Choose how you are connected to this enquiry.",
+      "projectTypeRequired": "Choose what you would like us to review.",
+      "messageRequired": "Tell us how we can help.",
+      "contactConsentRequired": "Please agree that we may contact you about this enquiry.",
+      "privacyConsentRequired": "Please accept the privacy policy to send this."
+    },
+    "loadingLabel": "Loading"
+  },
+  "eligibility": {
+    "title": "Urban renewal suitability check",
+    "heading": "Start with a conversation about your building",
+    "standfirst": "Considering urban renewal, talking with neighbours, or already represented? Tell us where things stand and what you would like to understand.",
+    "addressLabel": "Building or complex address",
+    "addressHint": "Street and number is enough. No block or parcel number needed.",
+    "cityLabel": "City",
+    "nameLabel": "Full name",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
+    "apartmentsLabel": "Approximate number of apartments",
+    "apartmentsHint": "A rough estimate is fine.",
+    "leadTypeLabel": "Who is contacting us?",
+    "projectTypeLabel": "What would you like us to review?",
+    "organizingLabel": "How organised are the owners?",
+    "notesLabel": "Anything else",
+    "submit": "Send my details",
+    "successTitle": "Thank you, we have your details.",
+    "successBody": "We will carry out an initial review and contact you about the next steps.",
+    "successLinkIntro": "In the meantime, you can read how the process works, from the first review to completion.",
+    "asideTitle": "Before contacting us",
+    "aside1": "Have the building address and your main question ready.",
+    "aside2": "If you know, mention whether there is a representation or an existing process.",
+    "aside3": "An enquiry does not confirm feasibility or commit anyone to a project.",
+    "privacyTitle": "Your details",
+    "privacyBody": "Contact details and a building address are sufficient for an initial enquiry. No identity documents are needed.",
+    "org": {
+      "NOT_STARTED": "We have not started organising",
+      "EARLY_CONVERSATION": "Neighbours have started talking",
+      "REPRESENTATION_FORMED": "We have a residents' committee",
+      "PROCESS_ACTIVE": "A process is already under way"
+    },
+    "leadTypes": {
+      "OWNER": "Apartment owner",
+      "REPRESENTATIVE": "Owners' representative",
+      "LAWYER": "Lawyer",
+      "DEVELOPER": "Developer representative",
+      "GENERAL": "General enquiry"
+    },
+    "projectInterests": {
+      "UNKNOWN": "Not sure yet",
+      "TAMA_38": "TAMA 38",
+      "PINUY_BINUY": "Pinuy-binuy",
+      "RIGHTS_CHECK": "Rights and feasibility review",
+      "OWNER_ORGANIZING": "Owners organising"
+    }
+  },
+  "contactPage": {
+    "title": "Contact us",
+    "heading": "How can we help?",
+    "standfirst": "A question about urban renewal, your building or a process already underway? Call or email us.",
+    "nameLabel": "Full name",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
+    "messageLabel": "How can we help?",
+    "submit": "Send enquiry",
+    "successTitle": "Thank you, we have your message.",
+    "successBody": "We will be in touch.",
+    "asideEyebrow": "Enquiries about your building",
+    "asideTitle": "Not yet organised?",
+    "asideBody": "Start with the building address and your questions. The initial enquiry page explains what to prepare."
+  },
+  "journeyPage": {
+    "asksLabel": "What is asked of you:"
+  },
+  "projectFilters": {
+    "label": "Filter",
+    "all": "All"
+  },
+  "projectTypes": {
+    "PINUY_BINUY": "Pinuy binuy",
+    "TAMA_38_1": "TAMA 38/1",
+    "TAMA_38_2": "TAMA 38/2",
+    "COMBINED": "Combined route",
+    "OTHER": "Other route"
+  },
+  "phases": {
+    "ORGANISING": {
+      "name": "Organising",
+      "description": "First review, owners organising, and forming a representation."
+    },
+    "EVALUATION": {
+      "name": "Evaluation and choice",
+      "description": "Appointing professionals, settling needs, and comparing alternatives."
+    },
+    "PLANNING": {
+      "name": "Planning",
+      "description": "Agreements, design, and progress with the municipality and planning institutions."
+    },
+    "EXECUTION": {
+      "name": "Execution",
+      "description": "Permits, construction, oversight and handover."
+    }
+  },
+  "phaseState": {
+    "completed": "Completed",
+    "current": "Current stage",
+    "upcoming": "Ahead"
+  },
+  "milestones": {
+    "completed": "Completed",
+    "current": "Under way",
+    "upcoming": "Ahead",
+    "noDate": "no date"
+  },
+  "projectRole": {
+    "eyebrow": "Our role in this project",
+    "heading": "We organise the owners’ side of the table.",
+    "body1": "We gather the information, coordinate the professionals the owners have appointed, and bring alternatives that can actually be compared. The decisions stay with the owners.",
+    "body2": "We are not the developer and we do not carry out construction. Nor do we replace independent legal, valuation or planning advice: that comes from professionals the owners appoint, and the responsibility stays with them."
+  },
+  "projectSections": {
+    "stageEyebrow": "Where the process stands",
+    "stageHeading": "Current stage",
+    "stageIntro": "The process is described in four parts. Projects do not advance in a fixed sequence: parts run in parallel and some stages repeat. This division is descriptive and carries no statutory meaning.",
+    "timelineEyebrow": "What has happened, and what is ahead",
+    "timelineHeading": "Project record",
+    "timelineIntro": "Completed milestones are recorded with the date they occurred. Milestones ahead are described without a date: they depend on things no party controls, and they are not a commitment to a date.",
+    "factsEyebrow": "What is known about the complex",
+    "factsHeading": "Project information",
+    "galleryEyebrow": "Images",
+    "galleryHeading": "The complex",
+    "noFactsEyebrow": "Information status",
+    "noFactsHeading": "No figures have been published for this complex yet.",
+    "noFactsBody1": "Figures about this complex are published here only after they have been checked and verified. We do not publish estimates and we do not fill the gap with guesses.",
+    "noFactsBody2": "The complex identity appears at the top of this page. Further information will be shown after review and approval for publication."
+  },
+  "projectFacts": {
+    "city": "City",
+    "neighborhood": "Neighbourhood",
+    "address": "Address",
+    "existingUnits": "Existing units",
+    "proposedUnits": "Planned units",
+    "buildingCount": "Buildings in the complex",
+    "track": "Route",
+    "planningStatus": "Planning status",
+    "approvals": "Approvals",
+    "permits": "Permits",
+    "developer": "Developer",
+    "developerNote": "The developer is a separate party in the process. OpenDoor Group is paid only by the developer; apartment owners do not pay the company directly.",
+    "dates": "Dates",
+    "estimate": "estimate",
+    "type": {
+      "PINUY_BINUY": "Pinuy binuy",
+      "TAMA_38_1": "TAMA 38/1",
+      "TAMA_38_2": "TAMA 38/2",
+      "COMBINED": "Combined route",
+      "OTHER": "Other route"
+    }
+  },
+  "planningStatus": {
+    "PRE_PLANNING": "No plan submitted yet",
+    "PLAN_SUBMITTED": "Plan submitted",
+    "PLAN_DEPOSITED": "Plan deposited",
+    "PLAN_APPROVED": "Plan approved",
+    "PERMIT_STAGE": "Permit stage",
+    "UNDER_CONSTRUCTION": "Under construction"
+  },
+  "verification": {
+    "heading": "About the information on this page",
+    "checked": "The figures in this section have been checked and verified by us. Last updated:",
+    "absent": "A figure that has not been verified does not appear here at all. A missing figure does not mean zero, and it does not mean nothing is happening.",
+    "planningMayChange": "Planning information can change during the process and is not a final approval.",
+    "approvalsMayChange": "Approvals and permits reflect the position at the date checked and can change."
+  },
+  "projectImages": {
+    "projectPhoto": "Photograph of this project",
+    "context": "Context photograph, not this project",
+    "contextCaption": "Does not depict this project.",
+    "patternCaption": "Schematic drawing of the complex. Not a photograph, not a rendering, and not a depiction of the proposed design."
+  },
+  "residentBridge": {
+    "heading": "An apartment owner in this project?",
+    "body": "This page carries the general information about the project and is open to everyone. Personal information, documents and running updates go to the owners in the complex directly, and are not published here.",
+    "comingSoon": "The digital environment for owners is being built. Until it is available, information is delivered in meetings, in written summaries, and directly through the representation.",
+    "signIn": "Owner sign in",
+    "about": "About the owners’ environment",
+    "whatIsWhere": "What is where",
+    "publicHeading": "On this page",
+    "public1": "Project identity and location",
+    "public2": "The stage the process has reached",
+    "public3": "Verified figures",
+    "public4": "The milestone record",
+    "privateHeading": "In the planned resident area",
+    "private1": "Running updates",
+    "private2": "Documents about the apartment",
+    "private3": "Meeting summaries",
+    "private4": "Requests to the representation"
+  },
+  "projectPreview": {
+    "banner": "Development preview. This record is not published and is not publicly reachable.",
+    "state": "State: {state}",
+    "indexBanner": "Development preview. Test cards only; none of these is published.",
+    "indexTitle": "Projects · preview"
+  }
+}

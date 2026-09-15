@@ -1,12 +1,14 @@
-import { Suspense } from 'react'
-import { KpiCards }              from '@/components/dashboard/kpi-cards'
+import { KpiCards }               from '@/components/dashboard/kpi-cards'
 import { SignatureProgressChart } from '@/components/dashboard/signature-progress-chart'
-import { ProjectStagesChart }    from '@/components/dashboard/project-stages-chart'
-import { LeadsFunnelChart }      from '@/components/dashboard/leads-funnel-chart'
-import { ActiveProjectsTable }   from '@/components/dashboard/active-projects-table'
-import { RecentActivityFeed }    from '@/components/dashboard/recent-activity-feed'
-import { UpcomingTasksList }     from '@/components/dashboard/upcoming-tasks-list'
-import { CardSkeleton }          from '@/components/ui/skeletons'
+import { ProjectStagesChart }     from '@/components/dashboard/project-stages-chart'
+import { LeadsFunnelChart }       from '@/components/dashboard/leads-funnel-chart'
+import { ActiveProjectsTable }    from '@/components/dashboard/active-projects-table'
+import { RecentActivityFeed }     from '@/components/dashboard/recent-activity-feed'
+import { UpcomingTasksList }      from '@/components/dashboard/upcoming-tasks-list'
+
+// Every panel below is a client component that fetches through the BFF proxy
+// and renders its own loading / empty / error state, so no Suspense boundaries
+// are needed here (they date from when these were async server components).
 
 export default function DashboardPage() {
   return (
@@ -20,46 +22,28 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Row */}
-      <Suspense fallback={
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
-        </div>
-      }>
-        <KpiCards />
-      </Suspense>
+      <KpiCards />
 
       {/* Charts Row 1 — signature progress + project stages */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <Suspense fallback={<CardSkeleton className="h-64" />}>
-            <SignatureProgressChart />
-          </Suspense>
+          <SignatureProgressChart />
         </div>
-        <Suspense fallback={<CardSkeleton className="h-64" />}>
-          <ProjectStagesChart />
-        </Suspense>
+        <ProjectStagesChart />
       </div>
 
       {/* Charts Row 2 — leads funnel + upcoming tasks */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <Suspense fallback={<CardSkeleton className="h-56" />}>
-            <LeadsFunnelChart />
-          </Suspense>
+          <LeadsFunnelChart />
         </div>
-        <Suspense fallback={<CardSkeleton className="h-56" />}>
-          <UpcomingTasksList />
-        </Suspense>
+        <UpcomingTasksList />
       </div>
 
       {/* Tables Row — active projects + activity feed */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Suspense fallback={<CardSkeleton className="h-80" />}>
-          <ActiveProjectsTable />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton className="h-80" />}>
-          <RecentActivityFeed />
-        </Suspense>
+        <ActiveProjectsTable />
+        <RecentActivityFeed />
       </div>
     </div>
   )

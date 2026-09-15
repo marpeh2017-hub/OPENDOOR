@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProjectsTable }      from '@/components/projects/projects-table'
 import { ProjectsStats }      from '@/components/projects/projects-stats'
 import { ProjectsFilters }    from '@/components/projects/projects-filters'
 import { NewProjectWizard }   from '@/components/projects/new-project-wizard'
-import { CardSkeleton }       from '@/components/ui/skeletons'
 
 export default function ProjectsPage() {
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -25,19 +24,11 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
-      <Suspense fallback={
-        <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
-        </div>
-      }>
-        <ProjectsStats />
-      </Suspense>
+      <ProjectsStats />
 
       <div className="card-surface">
         <ProjectsFilters />
-        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">טוען פרויקטים...</div>}>
-          <ProjectsTable />
-        </Suspense>
+        <ProjectsTable />
       </div>
 
       <NewProjectWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />

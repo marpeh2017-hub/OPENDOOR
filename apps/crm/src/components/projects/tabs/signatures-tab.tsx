@@ -1,90 +1,93 @@
-import { Send, Eye, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+'use client'
+
+import { Eye, CheckCircle2, XCircle, Clock, HelpCircle, PhoneOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
+import { useSignatureReport } from '@/hooks/use-signatures'
 
 const STATUS_CONFIG = {
-  SIGNED:   { label: 'חתם',       icon: CheckCircle2, cls: 'text-green-600 bg-green-50' },
-  VIEWED:   { label: 'צפה',       icon: Eye,          cls: 'text-blue-600 bg-blue-50' },
-  SENT:     { label: 'נשלח',      icon: Send,         cls: 'text-teal-600 bg-teal-50' },
-  PENDING:  { label: 'ממתין',     icon: Clock,        cls: 'text-yellow-600 bg-yellow-50' },
-  REJECTED: { label: 'סרב',       icon: XCircle,      cls: 'text-red-600 bg-red-50' },
-  DRAFT:    { label: 'טיוטה',     icon: Clock,        cls: 'text-gray-500 bg-gray-50' },
+  SIGNED:        { label: 'חתם',          icon: CheckCircle2, cls: 'text-green-600 bg-green-50' },
+  INTERESTED:    { label: 'מעוניין',       icon: Eye,          cls: 'text-blue-600 bg-blue-50' },
+  CONTACTED:     { label: 'נוצר קשר',     icon: Eye,          cls: 'text-teal-600 bg-teal-50' },
+  UNDECIDED:     { label: 'מתלבט',        icon: HelpCircle,   cls: 'text-yellow-600 bg-yellow-50' },
+  OBJECTING:     { label: 'מתנגד',        icon: XCircle,      cls: 'text-red-600 bg-red-50' },
+  NOT_CONTACTED: { label: 'לא נוצר קשר', icon: Clock,        cls: 'text-gray-500 bg-gray-50' },
+  UNREACHABLE:   { label: 'לא זמין',      icon: PhoneOff,     cls: 'text-orange-600 bg-orange-50' },
 } as const
 
-const mockSigs = [
-  { id: '1', resident: 'ישראל ישראלי', apt: '4',  sentAt: '01.03.2025', status: 'SIGNED',   signedAt: '05.03.2025' },
-  { id: '2', resident: 'שרה כהן',      apt: '7',  sentAt: '01.03.2025', status: 'VIEWED',   signedAt: null },
-  { id: '3', resident: 'מרים אברהם',   apt: '1',  sentAt: '01.03.2025', status: 'SIGNED',   signedAt: '03.03.2025' },
-  { id: '4', resident: 'יוסי פרץ',     apt: '9',  sentAt: '10.03.2025', status: 'PENDING',  signedAt: null },
-  { id: '5', resident: 'רחל גולן',     apt: '15', sentAt: '10.03.2025', status: 'SENT',     signedAt: null },
-  { id: '6', resident: 'דוד לוי',      apt: '12', sentAt: null,         status: 'DRAFT',    signedAt: null },
-]
+const SIGNED_STATUSES  = ['SIGNED']
+const PENDING_STATUSES = ['INTERESTED', 'CONTACTED', 'UNDECIDED']
 
 export function ProjectSignaturesTab({ projectId }: { projectId: string }) {
+  const { data, isLoading, isError, error, refetch } = useSignatureReport(projectId)
+
+  if (isLoading) return <div className="card-surface"><RowsSkeleton rows={6} /></div>
+
+  if (isError || !data) {
+    return <QueryError message="שגיאה בטעינת דוח החתימות" error={error} onRetry={() => refetch()} />
+  }
+
+  const residents = data.residents ?? []
   const counts = {
-    SIGNED: mockSigs.filter(s => s.status === 'SIGNED').length,
-    pending: mockSigs.filter(s => ['SENT','VIEWED','PENDING'].includes(s.status)).length,
-    DRAFT: mockSigs.filter(s => s.status === 'DRAFT').length,
+    signed:    residents.filter(r => SIGNED_STATUSES.includes(r.signatureStatus)).length,
+    pending:   residents.filter(r => PENDING_STATUSES.includes(r.signatureStatus)).length,
+    objecting: residents.filter(r => r.signatureStatus === 'OBJECTING').length,
   }
 
   return (
     <div className="space-y-4">
-      {/* Stats */}
+      {/* Stats — real figures from the signature report */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card-surface p-4 text-center">
-          <p className="text-2xl font-black text-green-600">{counts.SIGNED}</p>
+          <p className="text-2xl font-black text-green-600">{counts.signed}</p>
           <p className="text-xs text-muted-foreground mt-1">חתמו</p>
         </div>
         <div className="card-surface p-4 text-center">
           <p className="text-2xl font-black text-teal-600">{counts.pending}</p>
-          <p className="text-xs text-muted-foreground mt-1">ממתינים</p>
+          <p className="text-xs text-muted-foreground mt-1">בתהליך</p>
         </div>
         <div className="card-surface p-4 text-center">
-          <p className="text-2xl font-black text-muted-foreground">{counts.DRAFT}</p>
-          <p className="text-xs text-muted-foreground mt-1">טיוטות</p>
+          <p className="text-2xl font-black text-red-600">{counts.objecting}</p>
+          <p className="text-xs text-muted-foreground mt-1">מתנגדים</p>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Per-resident status */}
       <div className="card-surface overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">מעקב חתימות</h3>
-          <Button size="sm" className="bg-primary hover:bg-primary/90 gap-2 h-8">
-            <Send size={13} /> שלח לכולם
-          </Button>
+          <p className="text-xs text-muted-foreground">
+            {data.signedUnits} מתוך {data.totalUnits} יחידות · {data.percentage}%
+          </p>
         </div>
-        <div className="divide-y divide-border">
-          {mockSigs.map(sig => {
-            const cfg = STATUS_CONFIG[sig.status as keyof typeof STATUS_CONFIG]
-            const Icon = cfg.icon
-            return (
-              <div key={sig.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 group">
-                <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0', cfg.cls)}>
-                  <Icon size={14} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{sig.resident}</p>
-                  <p className="text-xs text-muted-foreground">דירה {sig.apt}{sig.sentAt ? ` · נשלח ${sig.sentAt}` : ''}</p>
-                </div>
-                <div className="flex items-center gap-2">
+
+        {residents.length === 0 ? (
+          <EmptyState message="אין דיירים לדיווח" hint="דוח החתימות יתמלא לאחר שיוך דיירים" />
+        ) : (
+          <div className="divide-y divide-border">
+            {residents.map(r => {
+              const cfg = STATUS_CONFIG[r.signatureStatus as keyof typeof STATUS_CONFIG]
+                ?? { label: r.signatureStatus, icon: Clock, cls: 'text-gray-500 bg-gray-50' }
+              const Icon = cfg.icon
+              return (
+                <div key={r.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20">
+                  <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0', cfg.cls)}>
+                    <Icon size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{r.firstName} {r.lastName}</p>
+                    {r.phone && (
+                      <p className="text-xs text-muted-foreground font-mono" dir="ltr">{r.phone}</p>
+                    )}
+                  </div>
                   <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', cfg.cls)}>
                     {cfg.label}
                   </span>
-                  {sig.status !== 'SIGNED' && sig.status !== 'DRAFT' && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" title="שלח תזכורת">
-                      <RefreshCw size={13} />
-                    </Button>
-                  )}
-                  {sig.status === 'DRAFT' && (
-                    <Button variant="ghost" size="sm" className="h-7 text-xs opacity-0 group-hover:opacity-100 gap-1.5">
-                      <Send size={12} /> שלח
-                    </Button>
-                  )}
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

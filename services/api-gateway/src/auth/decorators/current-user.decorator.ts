@@ -6,6 +6,13 @@ export interface CurrentUserPayload {
   role:      string
   tenantId:  string
   sessionId: string
+  /**
+   * Present on resident-portal sessions only, and guaranteed present there:
+   * `JwtStrategy` rejects a RESIDENT token that lacks them rather than letting
+   * an endpoint scope a query by `undefined`.
+   */
+  projectId?:  string
+  residentId?: string
 }
 
 /** Injects the current authenticated user from the request.

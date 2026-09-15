@@ -6,21 +6,27 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:generate": "prisma generate --schema=prisma/schema.postgres.prisma",
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.postgres.prisma",
+    "db:deploy": "prisma migrate deploy --schema=prisma/schema.postgres.prisma",
+    "db:push": "prisma db push --schema=prisma/schema.postgres.prisma",
+    "db:seed": "cross-env NODE_ENV=development tsx prisma/seed.ts",
+    "db:studio": "prisma studio --schema=prisma/schema.postgres.prisma",
+    "db:generate:sqlite": "prisma generate --schema=prisma/schema.prisma",
+    "db:migrate:sqlite": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:push:sqlite": "prisma db push --schema=prisma/schema.prisma",
+    "db:studio:sqlite": "prisma studio --schema=prisma/schema.prisma"
   },
   "dependencies": {
-    "@prisma/client": "^6.1.0"
+    "@prisma/client": "^6.19.3"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "cross-env NODE_ENV=development tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "prisma": "^6.1.0",
-    "typescript": "*",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "typescript": "*"
   }
 }

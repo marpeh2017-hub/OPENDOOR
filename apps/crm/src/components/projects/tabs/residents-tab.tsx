@@ -1,13 +1,14 @@
+'use client'
+
 import Link from 'next/link'
-import { MoreHorizontal, Phone, MessageSquare, FileSignature } from 'lucide-react'
+import { Phone, MessageSquare } from 'lucide-react'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
+import { useResidents } from '@/hooks/use-residents'
 
 const STATUS_CONFIG = {
   SIGNED:        { label: 'חתם',           className: 'bg-green-100 text-green-700 border-green-200' },
@@ -19,23 +20,13 @@ const STATUS_CONFIG = {
   UNREACHABLE:   { label: 'לא זמין',       className: 'bg-orange-100 text-orange-700 border-orange-200' },
 } as const
 
-const mockResidents = [
-  { id: '1', name: 'ישראל ישראלי',  apt: '4',  floor: 2, phone: '050-1234567', status: 'SIGNED',        risk: 10 },
-  { id: '2', name: 'שרה כהן',       apt: '7',  floor: 3, phone: '052-9876543', status: 'INTERESTED',    risk: 25 },
-  { id: '3', name: 'דוד לוי',       apt: '12', floor: 4, phone: '054-5551234', status: 'OBJECTING',     risk: 85 },
-  { id: '4', name: 'מרים אברהם',    apt: '1',  floor: 1, phone: '053-1112233', status: 'SIGNED',        risk: 5  },
-  { id: '5', name: 'יוסי פרץ',      apt: '9',  floor: 3, phone: '050-4445566', status: 'NOT_CONTACTED', risk: 50 },
-  { id: '6', name: 'רחל גולן',      apt: '15', floor: 5, phone: '058-7778899', status: 'UNDECIDED',     risk: 60 },
-  { id: '7', name: 'אבי שפירא',     apt: '3',  floor: 1, phone: '054-3334455', status: 'CONTACTED',     risk: 30 },
-]
-
 function RiskBar({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-1.5">
       <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
         <div
           className={cn('h-full rounded-full', score >= 70 ? 'bg-red-500' : score >= 40 ? 'bg-orange-400' : 'bg-green-500')}
-          style={{ width: `${score}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
         />
       </div>
       <span className="text-xs text-muted-foreground tabular-nums">{score}</span>
@@ -44,6 +35,22 @@ function RiskBar({ score }: { score: number }) {
 }
 
 export function ProjectResidentsTab({ projectId }: { projectId: string }) {
+  const { data, isLoading, isError, error, refetch } = useResidents({ projectId, limit: 200 })
+
+  if (isLoading) return <div className="card-surface"><RowsSkeleton rows={6} /></div>
+
+  if (isError || !data) {
+    return <QueryError message="שגיאה בטעינת הדיירים" error={error} onRetry={() => refetch()} />
+  }
+
+  if (data.data.length === 0) {
+    return (
+      <div className="card-surface">
+        <EmptyState message="אין דיירים רשומים בפרויקט" hint="דיירים יופיעו לאחר שיוך דירות" />
+      </div>
+    )
+  }
+
   return (
     <div className="card-surface overflow-hidden">
       <Table>
@@ -58,36 +65,45 @@ export function ProjectResidentsTab({ projectId }: { projectId: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {mockResidents.map(r => {
-            const status = STATUS_CONFIG[r.status as keyof typeof STATUS_CONFIG]
+          {data.data.map(r => {
+            const status = STATUS_CONFIG[r.signatureStatus as keyof typeof STATUS_CONFIG]
+              ?? { label: r.signatureStatus, className: 'bg-gray-100 text-gray-600 border-gray-200' }
+            const apt = r.apartment
             return (
               <TableRow key={r.id} className="group hover:bg-muted/20">
                 <TableCell>
                   <Link href={`/residents/${r.id}`} className="font-medium text-foreground hover:text-primary">
-                    {r.name}
+                    {r.firstName} {r.lastName}
                   </Link>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  דירה {r.apt} · קומה {r.floor}
+                  {apt ? `דירה ${apt.apartmentNumber}${apt.floor != null ? ` · קומה ${apt.floor}` : ''}` : '—'}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground font-mono" dir="ltr">{r.phone}</TableCell>
+                <TableCell className="text-sm text-muted-foreground font-mono" dir="ltr">{r.phone ?? '—'}</TableCell>
                 <TableCell>
                   <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border', status.className)}>
                     {status.label}
                   </span>
                 </TableCell>
-                <TableCell><RiskBar score={r.risk} /></TableCell>
+                <TableCell><RiskBar score={r.riskScore ?? 0} /></TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="שיחה">
-                      <Phone size={13} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="WhatsApp">
-                      <MessageSquare size={13} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="חתימה">
-                      <FileSignature size={13} />
-                    </Button>
+                    {r.phone && !r.doNotContact && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="שיחה" asChild>
+                          <a href={`tel:${r.phone}`}><Phone size={13} /></a>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="WhatsApp" asChild>
+                          <a
+                            href={`https://wa.me/${r.phone.replace(/\D/g, '').replace(/^0/, '972')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageSquare size={13} />
+                          </a>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
