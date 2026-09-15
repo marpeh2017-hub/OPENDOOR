@@ -46,10 +46,11 @@ export function ImageGallery({ images, labels, priority = false }: {
 
   if (!slides.length) return null
   const choose = (value: number) => { setPaused(true); setIndex((value + slides.length) % slides.length) }
-  const buttonClass = 'inline-flex h-11 min-w-11 items-center justify-center rounded-full bg-white text-teal-800 shadow-sm hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700'
+  const buttonClass = 'inline-flex h-11 w-11 items-center justify-center rounded-sm text-white transition-opacity duration-200 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+  const iconClass = 'rounded-sm bg-black/60 p-1'
   return (
     <div ref={root} role="region" aria-roledescription="carousel" aria-label={labels.gallery}
-      className="relative overflow-hidden bg-surface-sunken"
+      className="group relative overflow-hidden bg-surface-sunken"
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onFocusCapture={(event) => { if (!(event.target as HTMLElement).closest('[data-playback]')) setPaused(true) }}>
       <div className="relative h-[280px] sm:h-[380px] lg:h-[min(52vw,570px)]">
@@ -69,12 +70,12 @@ export function ImageGallery({ images, labels, priority = false }: {
         ))}
       </div>
       {slides.length > 1 && (
-        <div className="absolute inset-x-0 bottom-4 flex items-center justify-center gap-2" aria-label={labels.gallery}>
-          <button type="button" className={buttonClass} aria-label={labels.previous} onClick={() => choose(current - 1)}><ChevronLeft className="rtl:rotate-180" size={20} /></button>
-          <span className="rounded-full bg-white px-4 py-3 text-sm tabular-nums text-teal-900" aria-live={paused ? 'polite' : 'off'}>{labels.image} {current + 1} / {slides.length}</span>
-          <button type="button" className={buttonClass} aria-label={labels.next} onClick={() => choose(current + 1)}><ChevronRight className="rtl:rotate-180" size={20} /></button>
-          {!reduced && <button data-playback type="button" className={buttonClass} aria-label={paused ? labels.play : labels.pause} onClick={() => setPaused((value) => !value)}>{paused ? <Play size={18} /> : <Pause size={18} />}</button>}
-        </div>
+        <>
+          <button type="button" className={`${buttonClass} absolute start-1 top-1/2 -translate-y-1/2 sm:start-3`} aria-label={labels.previous} onClick={() => choose(current - 1)}><ChevronLeft aria-hidden="true" className={`${iconClass} rtl:rotate-180`} size={26} /></button>
+          <span className="sr-only" aria-live={paused ? 'polite' : 'off'}>{labels.image} {current + 1} / {slides.length}</span>
+          <button type="button" className={`${buttonClass} absolute end-1 top-1/2 -translate-y-1/2 sm:end-3`} aria-label={labels.next} onClick={() => choose(current + 1)}><ChevronRight aria-hidden="true" className={`${iconClass} rtl:rotate-180`} size={26} /></button>
+          {!reduced && <button data-playback type="button" className={`${buttonClass} absolute bottom-1 end-1 sm:bottom-2 sm:end-3`} aria-label={paused ? labels.play : labels.pause} onClick={() => setPaused((value) => !value)}>{paused ? <Play aria-hidden="true" className={iconClass} size={24} /> : <Pause aria-hidden="true" className={iconClass} size={24} />}</button>}
+        </>
       )}
     </div>
   )
