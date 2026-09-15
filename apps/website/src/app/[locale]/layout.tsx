@@ -8,6 +8,7 @@ import { routing, LOCALE_DIRECTION, type AppLocale } from '@/i18n/routing'
 import { SiteHeader } from '@/components/layout/site-header'
 import { SiteFooter } from '@/components/layout/site-footer'
 import { SkipLink } from '@/components/layout/skip-link'
+import { SiteChatWidget } from '@/components/faq/site-chat-widget'
 import '@urban-renewal/design-system/src/globals.css'
 // Imported after the shared sheet so its corrections win. See the file.
 import '../globals.css'
@@ -116,6 +117,7 @@ export default async function LocaleLayout({
             {children}
           </main>
           <SiteFooter />
+          <SiteChatWidget />
         </NextIntlClientProvider>
       </body>
     </html>

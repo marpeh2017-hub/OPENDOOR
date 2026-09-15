@@ -7,7 +7,6 @@ import { Section } from '@/components/blocks/section'
 import { getCmsFaqItems } from '@/lib/cms-source'
 import { FAQ_SEED } from '@/mock/fixtures/faq'
 import { makeLocalizer } from '@/lib/localize'
-import { FaqChatWidget } from '@/components/faq/faq-chat-widget'
 
 /**
  * Frequently asked questions — real content, managed in the Site Manager.
@@ -128,7 +127,6 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
           </Link>
         </div>
       </Section>
-      {locale === 'he' && <FaqChatWidget />}
     </>
   )
 }

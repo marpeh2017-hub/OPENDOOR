@@ -119,7 +119,11 @@ export function FaqChatWidget() {
   }
 
   return (
-    <div dir="rtl" className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
+    // z-[45]: above the sticky header (z-header, 30) and page content, but
+    // below the mobile nav drawer (z-drawer, 50) — so the drawer's
+    // full-screen overlay covers this button instead of the two competing
+    // for the same corner of the screen. See design-system/src/tokens.ts.
+    <div dir="rtl" className="fixed bottom-4 right-4 z-[45] sm:bottom-6 sm:right-6">
       {open && (
         <div
           role="dialog"
