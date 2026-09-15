@@ -228,7 +228,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ reply })
   } catch (error) {
-    console.error('faq-chat: Claude API request failed', error)
+    // Logged as several plain-string lines, not one object, because a
+    // terminal that folds/truncates a printed object (common on Windows
+    // consoles, or when output is piped) can silently drop the one field
+    // that explains the failure. Each line here stands on its own.
+    console.error('faq-chat: Claude API request failed')
+    console.error('faq-chat: error.name =', error instanceof Error ? error.name : typeof error)
+    console.error('faq-chat: error.message =', error instanceof Error ? error.message : String(error))
+    if (error instanceof Anthropic.APIError) {
+      console.error('faq-chat: error.status =', error.status)
+    }
     return NextResponse.json({ error: 'unavailable' }, { status: 503 })
   }
 }
