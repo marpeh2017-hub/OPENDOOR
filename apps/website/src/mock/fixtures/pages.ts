@@ -37,14 +37,13 @@ const homepageBlocks: PageBlock[] = [
     type: 'HERO',
     order: 0,
     hidden: false,
-    eyebrow: { he: 'חברה מארגנת, לא יזם', en: 'An organising company, not the developer' },
     heading: {
-      he: 'OpenDoor Group מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית',
-      en: 'OpenDoor Group represents and organises apartment owners in urban-renewal processes',
+      he: 'הבניין מתחדש. אתם במרכז.',
+      en: 'A new chapter for your building. Led by you.',
     },
     subheading: {
-      he: 'אנחנו מרכזים את המידע, מתאמים בין אנשי המקצוע ומלווים את בחינת החלופות. אתם מבינים מה עומד על הפרק ומקבלים את ההחלטות.',
-      en: 'We organise the information, coordinate the professionals and help compare alternatives. You understand the options and make the decisions.',
+      he: 'OpenDoor Group מארגנת ומייצגת בעלי דירות בהתחדשות עירונית. אנחנו מלווים. אתם מחליטים.',
+      en: 'OpenDoor Group organises and represents apartment owners through urban renewal. We guide. You decide.',
     },
     primaryCtaLabel: {
       he: 'דברו איתנו על הבניין שלכם',
@@ -70,8 +69,8 @@ const homepageBlocks: PageBlock[] = [
       en: 'You are the owners. We manage the way through.',
     },
     intro: {
-      he: 'בתהליך התחדשות עירונית לכל צד יש תפקיד אחר ואינטרס אחר, וזה טבעי. OpenDoor Group מארגנת ומייצגת את הצד של בעלי הדירות.',
-      en: 'In an urban-renewal process each side has a different role and a different interest, which is natural. OpenDoor organises and represents the owners\u2019 side.',
+      he: 'מהשיחה הראשונה ועד להחלטות המשותפות — לצד בעלי הדירות.',
+      en: 'From the first conversation to shared decisions — alongside the owners.',
     },
     items: [
       {
@@ -79,8 +78,8 @@ const homepageBlocks: PageBlock[] = [
         icon: 'route',
         title: { he: 'ניהול התהליך', en: 'Managing the process' },
         body: {
-          he: 'תהליך התחדשות עירונית כולל החלטות, מסמכים ואנשי מקצוע רבים. אנחנו מרכזים את העבודה ואת העדכונים, כדי שתוכלו לעקוב אחר ההתקדמות ולהבין מה נדרש מכם.',
-          en: 'Urban renewal involves decisions, documents and many professionals. We coordinate the work and updates so owners can follow progress and understand what they need to do.',
+          he: 'מרכזים את אנשי המקצוע, המסמכים והעדכונים. אתם יודעים מה הצעד הבא.',
+          en: 'Professionals, documents and updates, coordinated. You know what comes next.',
         },
       },
       {
@@ -88,8 +87,8 @@ const homepageBlocks: PageBlock[] = [
         icon: 'users',
         title: { he: 'כוח מאורגן לבעלי הדירות', en: 'Organised standing for owners' },
         body: {
-          he: 'בעל דירה בודד מול גורם מקצועי מאורגן נמצא בעמדה שונה מקבוצה מאורגנת עם ייצוג. הארגון הוא מה שמאפשר לבעלי הדירות להגיע לשולחן עם עמדה משותפת.',
-          en: 'A single owner facing an organised professional party is in a different position from an organised group with representation. Organisation is what lets owners come to the table with a shared position.',
+          he: 'בונים נציגות ועמדה משותפת, כדי להגיע לתהליך כקבוצה מאורגנת.',
+          en: 'Build a representative group and a shared position, together.',
         },
       },
       {
@@ -100,8 +99,8 @@ const homepageBlocks: PageBlock[] = [
           en: 'Choosing the professionals and the developer',
         },
         body: {
-          he: 'עורכי דין, שמאים, אדריכלים ויזמים נבחרים על ידי בעלי הדירות. תפקידנו להביא חלופות, להשוות ביניהן ולוודא שההחלטה מתקבלת על בסיס מידע.',
-          en: 'Lawyers, appraisers, architects and developers are chosen by the owners. Our role is to bring alternatives, compare them, and make sure the decision rests on information.',
+          he: 'אנחנו מרכזים ומשווים חלופות. בעלי הדירות בוחרים את אנשי המקצוע והיזם.',
+          en: 'We bring and compare alternatives. The owners choose the professionals and developer.',
         },
       },
     ],
@@ -115,8 +114,8 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'מה זו חברה מארגנת?', en: 'What is an organising company?' },
     body: {
-      he: 'תהליך התחדשות עירונית מפגיש בעלי דירות עם יזמים, עורכי דין, שמאים, אדריכלים ורשויות התכנון. לכל אחד מהם תפקיד מוגדר, וכולם נדרשים כדי שפרויקט יצא לפועל.\n\nחברה מארגנת אינה יזם ואינה מבצעת את הבנייה. תפקידה הוא לארגן את בעלי הדירות, לרכז את העבודה מול אנשי המקצוע, ולנהל את התהליך לאורך זמן, מהעמדה של בעלי הדירות.\n\nהתשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
-      en: 'An urban-renewal process brings together apartment owners, developers, lawyers, appraisers, architects and planning authorities. Each has a defined role, and all of them are needed for a project to happen.\n\nAn organising company is not the developer and does not carry out the construction. Its role is to organise the owners, coordinate the work with the professionals, and manage the process over time, from the owners\u2019 side of the table.\n\nOpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.',
+      he: 'אנחנו מארגנים את בעלי הדירות ומרכזים את העבודה מול אנשי המקצוע. אנחנו לא היזם ולא חברת הבנייה. ההחלטות נשארות שלכם.',
+      en: 'We organise the owners and coordinate the professionals. We are not the developer or the construction company. The decisions remain yours.',
     },
 
     /**

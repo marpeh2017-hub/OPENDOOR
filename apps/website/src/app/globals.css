@@ -24,22 +24,22 @@
  * has not been reviewed. The upstream fix is flagged for its own decision.
  *
  * Measured: teal-700 is 7.34:1 on white, 7.15:1 on the page surface.
- * `body a` rather than `a` so this beats the base-layer rule regardless of the
- * order the two sheets end up in.
+ * Keep specificity at one element: these defaults must not override CTA
+ * utilities such as text-white, including during hover.
  */
-body a {
+:where(body) a {
   color: #1b5f62;
 }
-body a:hover {
+:where(body) a:where(:hover) {
   color: #164a4c;
 }
 
 /* The dark trust section inverts the ground, so the corrected link colour would
    be unreadable inside it. Scoped to that surface only. */
-.bg-surface-inverse a {
+:where(.bg-surface-inverse) a {
   color: #7dd0d2;
 }
-.bg-surface-inverse a:hover {
+:where(.bg-surface-inverse) a:where(:hover) {
   color: #aee4e5;
 }
 
@@ -130,7 +130,9 @@ body a:hover {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
   outline: 2px solid #0f766e;
   outline-offset: 4px;
 }

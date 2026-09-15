@@ -50,15 +50,13 @@ export function EditorialImage({
   /** `sizes` for the responsive srcset. Required whenever an asset exists:
    *  without it Next serves a desktop-width file to a 375px phone. */
   sizes = '100vw',
-  /** Suppresses the caption. Legitimate only where the surrounding copy
-   *  already states what the image shows and that it is city context. */
-  captionHidden = false,
   /** Deterministic seed for the `pattern` fallback. */
   patternSlug = 'opendoor',
   /** Resolves the asset's alt text and caption. Both are authored content now,
    *  and alt text in the wrong language is worse than none: a screen reader
    *  announces it regardless. */
   t,
+  captionHidden = false,
 }: {
   slot: ImageSlotSpec
   className?: string
@@ -70,12 +68,13 @@ export function EditorialImage({
 }) {
   const Fallback = FALLBACKS[slot.fallback]
   const asset = slot.asset
+  if (slot.hidden) return null
 
   // An EDITORIAL_CONTEXT photograph must say what it is. The drawing does not
   // need to: it is visibly a drawing and therefore claims nothing.
-  // Captions are managed by the surrounding page copy. Keep the image itself
-  // clean and avoid repeating the editorial label beneath every asset.
-  const needsCaption = false
+  // Authored marketing layouts may suppress repeated captions. The asset's
+  // classification and descriptive alt remain unchanged.
+  const needsCaption = !captionHidden && asset?.imageType !== 'VERIFIED_PROJECT_PHOTO'
 
   return (
     <figure className="relative m-0">

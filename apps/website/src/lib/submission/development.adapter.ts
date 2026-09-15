@@ -41,15 +41,13 @@ import type { LeadSubmissionService, SubmissionOutcome } from './types'
  * is a lead that is already lost.
  */
 
-function logIntent(kind: string, payload: unknown): void {
+function logIntent(kind: string): void {
   // Development only. Production never reaches this adapter — see `index.ts`,
   // which refuses to construct it outside development.
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
     console.info(
-      `[LeadSubmission:development] ${kind} was NOT sent. No API is configured.\n` +
-        'This adapter never reports success. Payload that would have been sent:',
-      payload,
+      `[LeadSubmission:development] ${kind} was NOT sent. No API is configured.`,
     )
   }
 }
@@ -67,14 +65,14 @@ export function createDevelopmentAdapter(): LeadSubmissionService {
     async submitContact(
       submission: ContactSubmission,
     ): Promise<SubmissionOutcome<ContactSubmissionResult>> {
-      logIntent('Contact submission', submission)
+      logIntent('Contact submission')
       return NOT_CONFIGURED
     },
 
     async submitEligibility(
       submission: EligibilitySubmission,
     ): Promise<SubmissionOutcome<EligibilitySubmissionResult>> {
-      logIntent('Eligibility submission', submission)
+      logIntent('Eligibility submission')
       return NOT_CONFIGURED
     },
   }

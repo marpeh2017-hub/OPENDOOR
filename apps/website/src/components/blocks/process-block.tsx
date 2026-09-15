@@ -3,6 +3,8 @@ import { Section, SectionHeading } from './section'
 import type { Localizer } from '@/lib/localize'
 import { Reveal } from '@/components/brand/reveal'
 import { STROKE } from '@/components/brand/architecture'
+import { ContextFigure } from '@/components/brand/context-figure'
+import { getImageSlot } from '@/mock/fixtures/images'
 
 /**
  * "כך אנחנו עובדים" — the signature process section.
@@ -28,8 +30,34 @@ import { STROKE } from '@/components/brand/architecture'
  * a five-stage process that a phone user has to swipe through is a process
  * three of five people will never see the end of.
  */
-export function ProcessBlockView({ block, t }: { block: FeatureGridBlock; t: Localizer }) {
+export async function ProcessBlockView({ block, t }: { block: FeatureGridBlock; t: Localizer }) {
   const count = block.items.length
+
+  // Stable homepage stage IDs only: never assign a process illustration to
+  // arbitrary CMS content or imply that these are photographs of our work.
+  const illustrations: Record<string, string> = {
+    'ph-1': 'st-1', 'ph-2': 'st-3', 'ph-3': 'st-6', 'ph-4': 'st-7', 'ph-5': 'st-8',
+  }
+  if (block.id === 'home-process' && block.items.every((item) => illustrations[item.id])) {
+    const slots = await Promise.all(block.items.map((item) => getImageSlot(`PROCESS_STAGE_${illustrations[item.id].replace('st-', '')}`)))
+    return (
+      <Section tone="sunken" size="lg">
+        <SectionHeading heading={block.heading} t={t} size="lg" />
+        <ol className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {block.items.map((item, index) => (
+            <li key={item.id}>
+              {slots[index].asset && <ContextFigure asset={slots[index].asset} t={t} uniform captionHidden />}
+              <h3 className="mt-4 flex min-h-14 items-baseline gap-3 text-xl font-semibold text-gray-900">
+                <span className="shrink-0 text-sm tabular-nums text-teal-700">{String(index + 1).padStart(2, '0')}{' '}</span>
+                {t(item.title)}
+              </h3>
+              <p className="mt-2 text-base leading-relaxed text-gray-600">{t(item.body)}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
+    )
+  }
 
   return (
     <Section tone="sunken" size="lg" grid>

@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { getPublicMediaUrl } from './cms-source'
-import type { PublicProject, MediaAsset } from '@urban-renewal/api-contracts'
+import type { PublicProject, MediaAsset, ProjectType } from '@urban-renewal/api-contracts'
 
 // Adapt only the frozen public projection. Never merge it with drafts or fixtures.
 export function projectFromPublication(row: {
@@ -10,6 +10,8 @@ export function projectFromPublication(row: {
   seo?: PublicProject['seo']
 }): PublicProject | null {
   const p = row.content
+  const projectTypes: ProjectType[] = ['PINUY_BINUY', 'TAMA_38_1', 'TAMA_38_2', 'COMBINED', 'OTHER']
+  const projectType = projectTypes.find((type) => type === p?.type)
   if (!p?.name?.he || !p?.location?.city?.he) return null
   const result: PublicProject = {
     id: row.slug,
@@ -28,6 +30,7 @@ export function projectFromPublication(row: {
     summary: p.summary ?? { he: '' },
     description: p.description,
     role: p.role,
+    ...(projectType ? { type: projectType } : {}),
     featured: true,
     visibility: 'public',
     publishState: 'published',

@@ -42,7 +42,7 @@ export function normalisePhone(input: string): string {
   const digits = trimmed.replace(/\D/g, '')
 
   // +972 50 123 4567 / 00972... / 972... → 050 123 4567
-  if (trimmed.startsWith('+972') || digits.startsWith('972')) {
+  if (/^(?:00)?972/.test(digits)) {
     const national = digits.replace(/^(00)?972/, '')
     return national.startsWith('0') ? national : `0${national}`
   }
@@ -51,6 +51,7 @@ export function normalisePhone(input: string): string {
 }
 
 export function isValidPhone(input: string): boolean {
+  if (!/^\+?[\d\s().-]+$/.test(input.trim())) return false
   const normalised = normalisePhone(input)
 
   // Israeli numbers are 9 digits (landline, e.g. 02-1234567) or 10 (mobile,
@@ -89,6 +90,7 @@ export function isPresent(input: string): boolean {
  */
 export function isValidApartmentCount(input: string): boolean {
   if (!isPresent(input)) return true
+  if (!/^\d+$/.test(input.trim())) return false
   const value = Number(input.trim())
   return Number.isInteger(value) && value > 0 && value <= 2000
 }

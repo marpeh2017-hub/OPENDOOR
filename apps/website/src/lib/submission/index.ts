@@ -2,6 +2,7 @@ import type { Locale, SubmissionMetadata } from '@urban-renewal/api-contracts'
 import { createApiAdapter } from './api.adapter'
 import { createDevelopmentAdapter } from './development.adapter'
 import type { LeadSubmissionService } from './types'
+export { submitSafely } from './safe-submit'
 
 export type {
   LeadSubmissionService,

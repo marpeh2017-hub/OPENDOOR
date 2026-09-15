@@ -1,6 +1,6 @@
-import type { MediaAsset } from '@urban-renewal/api-contracts'
+import { slotImages, type MediaAsset } from '@urban-renewal/api-contracts'
 import { getCmsImageSlots, getPublicMediaUrl } from '@/lib/cms-source'
-import { residentMeeting } from '@/content/editorial-assets'
+import { residentMeeting, stageImages } from '@/content/editorial-assets'
 
 /**
  * ══════════════════════════════════════════════════════════════════════════
@@ -55,9 +55,16 @@ export interface ImageSlotSpec {
   fallback: 'hillside' | 'chords-bridge' | 'light-rail' | 'pattern'
   /** null until a licensed asset is supplied. */
   asset: MediaAsset | null
+  hidden?: boolean
 }
 
 export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
+  ...Object.fromEntries(Object.entries(stageImages).map(([id, entry]) => {
+    const slotId = `PROCESS_STAGE_${id.replace('st-', '')}`
+    return [slotId, { id: slotId, purpose: entry.title, orientation: 'landscape', desktopRatio: '4 / 3', mobileRatio: '4 / 3',
+      minResolution: '1200 × 900', altIntent: entry.title, claim: 'EDITORIAL_CONTEXT', direction: entry.title,
+      fallback: 'pattern', asset: entry.asset } satisfies ImageSlotSpec]
+  })),
   RESIDENT_MEETING: {
     id: 'RESIDENT_MEETING', purpose: 'Editorial image in the designated process-page media position.',
     orientation: 'landscape', desktopRatio: '16 / 9', mobileRatio: '4 / 3', minResolution: '1600 × 900',
@@ -70,9 +77,9 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     id: 'HERO_JERUSALEM_ARCHITECTURE',
     purpose:
       'The first thing a visitor sees, revealed through the OpenDoor threshold. Establishes place and subject before a word is read.',
-    orientation: 'portrait',
-    desktopRatio: '3 / 4',
-    mobileRatio: '16 / 10',
+    orientation: 'panoramic',
+    desktopRatio: '21 / 9',
+    mobileRatio: '4 / 3',
     minResolution: '1600 × 2133 (desktop 2×); a separate 1200 × 750 crop for mobile',
     altIntent:
       'Describe the residential fabric shown: stone-faced apartment buildings on a Jerusalem hillside, without naming a project or implying OpenDoor involvement.',
@@ -213,21 +220,29 @@ export async function getImageSlot(id: keyof typeof IMAGE_SLOTS): Promise<ImageS
   const spec = IMAGE_SLOTS[id]
   const assigned = (await getCmsImageSlots())[id]
   if (!assigned) return spec
+  if (assigned.disabled) return { ...spec, asset: null, hidden: true }
+  const images = await getSlotGallery(id)
+  return { ...spec, asset: images[0] ?? null }
+}
 
-  // Resolved to a real, fetchable URL HERE, server-side, so the renderer
-  // (`EditorialImage`) needs no CMS awareness at all — it already knows how
-  // to draw an `asset` or fall back to the pattern, and that is unchanged.
-  const url = await getPublicMediaUrl(assigned.storageKey)
-  if (!url) return spec // signing failed; behave exactly as if unassigned
+const terrace: MediaAsset = {
+  id: 'jerusalem-terrace-sunset', kind: 'image', url: '/images/editorial/jerusalem-terrace-sunset.png',
+  width: 2056, height: 765, imageType: 'EDITORIAL_CONTEXT',
+  alt: { he: 'מרפסת המשקיפה על קו הרקיע של ירושלים בשקיעה', en: 'A terrace overlooking the Jerusalem skyline at sunset' },
+}
 
-  const asset: MediaAsset = {
-    id: assigned.storageKey,
-    kind: 'image',
-    url,
-    alt: assigned.alt,
-    imageType: assigned.classification as MediaAsset['imageType'],
+/** Only published CMS media is resolved. An explicit empty assignment stays empty. */
+export async function getSlotGallery(id: string): Promise<MediaAsset[]> {
+  const assigned = (await getCmsImageSlots())[id]
+  if (!assigned) {
+    const fallback = IMAGE_SLOTS[id]?.asset
+    return id === 'HERO_JERUSALEM_ARCHITECTURE' ? [terrace, ...(fallback ? [fallback] : [])] : fallback ? [fallback] : []
   }
-  return { ...spec, asset }
+  const resolved = await Promise.all(slotImages(assigned).map(async (image, index): Promise<MediaAsset | null> => {
+    const url = await getPublicMediaUrl(image.storageKey)
+    return url ? { id: `${id}-${index}`, kind: 'image', url, alt: image.alt, imageType: image.classification } : null
+  }))
+  return resolved.filter((image): image is MediaAsset => image !== null)
 }
 
 /** Slots still waiting on a licensed asset. Used by the review report; also the

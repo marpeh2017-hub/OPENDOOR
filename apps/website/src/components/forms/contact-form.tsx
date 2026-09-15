@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useFormIdentity } from '@/lib/forms/use-form-identity'
 import { useLocale, useTranslations } from 'next-intl'
 import {
@@ -8,7 +8,7 @@ import {
 } from '@urban-renewal/ui'
 import type { ContactSubmission, Locale } from '@urban-renewal/api-contracts'
 import { Link } from '@/i18n/navigation'
-import { buildSubmissionMetadata, getLeadSubmissionService } from '@/lib/submission'
+import { buildSubmissionMetadata, getLeadSubmissionService, submitSafely } from '@/lib/submission'
 import { isPresent, isValidEmail, isValidPhone, normalisePhone } from '@/lib/validation'
 import { ErrorSummary, SubmissionFailureNotice, SubmissionSuccess } from './form-parts'
 
@@ -48,17 +48,20 @@ export function ContactForm() {
   const formIdentity = useFormIdentity()
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
   const [attempted, setAttempted] = useState(false)
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const submissionLock = useRef(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'failed' | 'sent'>('idle')
+  const [failureReason, setFailureReason] = useState<string | null>(null)
 
-  function validate(): Partial<Record<FieldName, string>> {
+  function validate(candidate = values): Partial<Record<FieldName, string>> {
     const next: Partial<Record<FieldName, string>> = {}
-    if (!isPresent(values.fullName)) next.fullName = tErrors('nameRequired')
-    if (!isPresent(values.phone)) next.phone = tErrors('phoneRequired')
-    else if (!isValidPhone(values.phone)) next.phone = tErrors('phoneInvalid')
-    if (isPresent(values.email) && !isValidEmail(values.email)) {
+    if (!isPresent(candidate.fullName)) next.fullName = tErrors('nameRequired')
+    if (!isPresent(candidate.phone)) next.phone = tErrors('phoneRequired')
+    else if (!isValidPhone(candidate.phone)) next.phone = tErrors('phoneInvalid')
+    if (isPresent(candidate.email) && !isValidEmail(candidate.email)) {
       next.email = tErrors('emailInvalid')
     }
-    if (!isPresent(values.message)) next.message = tErrors('messageRequired')
+    if (!isPresent(candidate.message)) next.message = tErrors('messageRequired')
     if (!consentContact) next.consentContact = tErrors('contactConsentRequired')
     if (!consentPrivacy) next.consentPrivacy = tErrors('privacyConsentRequired')
     return next
@@ -67,9 +70,11 @@ export function ContactForm() {
   function update(name: keyof typeof values, value: string) {
     setValues((current) => ({ ...current, [name]: value }))
     if (attempted && errors[name]) {
+      const updatedError = validate({ ...values, [name]: value })[name]
       setErrors((current) => {
         const next = { ...current }
-        delete next[name]
+        if (updatedError) next[name] = updatedError
+        else delete next[name]
         return next
       })
     }
@@ -77,13 +82,17 @@ export function ContactForm() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (status === 'sending') return
+    if (submissionLock.current) return
 
     setAttempted(true)
     const found = validate()
     setErrors(found)
-    if (Object.keys(found).length > 0) return
+    if (Object.keys(found).length > 0) {
+      setSubmitAttempt((attempt) => attempt + 1)
+      return
+    }
 
+    submissionLock.current = true
     setStatus('sending')
 
     const submission: ContactSubmission = {
@@ -97,8 +106,15 @@ export function ContactForm() {
       metadata: buildSubmissionMetadata(`/${locale}/contact`, locale, formIdentity.read()),
     }
 
-    const outcome = await getLeadSubmissionService().submitContact(submission)
-    setStatus(outcome.ok ? 'sent' : 'failed')
+    const outcome = await submitSafely(() => getLeadSubmissionService().submitContact(submission))
+    submissionLock.current = false
+    if (outcome.ok) {
+      setFailureReason(null)
+      setStatus('sent')
+    } else {
+      setFailureReason(outcome.reason)
+      setStatus('failed')
+    }
   }
 
   if (status === 'sent') {
@@ -113,7 +129,7 @@ export function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      <ErrorSummary title={tForms('errorSummaryTitle')} errors={summary} />
+      <ErrorSummary title={tForms('errorSummaryTitle')} errors={summary} submitAttempt={submitAttempt} />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="contact-fullName" required error={errors.fullName}>
@@ -228,9 +244,16 @@ export function ContactForm() {
       {status === 'failed' && (
         <SubmissionFailureNotice
           title={tForms('failureTitle')}
-          body={tForms('failureBody')}
+          body={failureReason === 'RATE_LIMITED'
+            ? tForms('failureRateLimited')
+            : failureReason === 'REJECTED'
+              ? tForms('failureRejected')
+              : tForms('failureBody')}
           retryLabel={tForms('retry')}
-          onRetry={() => setStatus('idle')}
+          onRetry={() => {
+            setFailureReason(null)
+            setStatus('idle')
+          }}
         />
       )}
 

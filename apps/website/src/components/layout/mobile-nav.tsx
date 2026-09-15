@@ -64,6 +64,15 @@ export function MobileNav({
     const previouslyFocused = document.activeElement as HTMLElement | null
     const { overflow } = document.body.style
     document.body.style.overflow = 'hidden'
+    // The portal is a sibling of the page; make background content truly inert.
+    const background = Array.from(document.body.children)
+      .filter((node): node is HTMLElement => node instanceof HTMLElement && node.id !== 'mobile-nav-overlay')
+      .map((node) => ({ node, inert: node.inert }))
+    background.forEach(({ node }) => { node.inert = true })
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    const onResize = () => { if (desktop.matches) setOpen(false) }
+    desktop.addEventListener('change', onResize)
+    onResize()
 
     // Move focus into the panel so the next Tab is inside it.
     panelRef.current?.querySelector<HTMLElement>('a, button')?.focus()
@@ -97,6 +106,8 @@ export function MobileNav({
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = overflow
+      desktop.removeEventListener('change', onResize)
+      background.forEach(({ node, inert }) => { node.inert = inert })
       // Return focus where the user left it, not to the top of the page.
       ;(previouslyFocused ?? triggerRef.current)?.focus()
     }
@@ -117,7 +128,7 @@ export function MobileNav({
       </button>
 
       {mounted && open && createPortal(
-        <div className="fixed inset-0 z-drawer lg:hidden">
+        <div id="mobile-nav-overlay" className="fixed inset-0 z-drawer lg:hidden">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}

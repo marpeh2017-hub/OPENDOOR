@@ -36,16 +36,19 @@ import { STROKE } from '@/components/brand/architecture'
 export function ErrorSummary({
   title,
   errors,
+  submitAttempt,
 }: {
   title: string
   /** Field id → message. Order is the form's field order, not object order. */
   errors: { id: string; message: string }[]
+  submitAttempt: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (errors.length > 0) ref.current?.focus()
-  }, [errors.length])
+    // Only failed submissions move focus, never a keystroke or checkbox edit.
+    if (submitAttempt > 0) ref.current?.focus()
+  }, [submitAttempt])
 
   if (errors.length === 0) return null
 

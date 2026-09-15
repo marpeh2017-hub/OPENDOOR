@@ -5,6 +5,7 @@ import { Reveal } from '@/components/brand/reveal'
 import { ProjectPattern, STROKE } from '@/components/brand/architecture'
 import { ContextFigure } from '@/components/brand/context-figure'
 import { stageImages } from '@/content/editorial-assets'
+import { getImageSlot } from '@/mock/fixtures/images'
 import { getTranslations } from 'next-intl/server'
 
 /**
@@ -107,7 +108,7 @@ export async function JourneyBlockView({
   )
 }
 
-function StageRow({
+async function StageRow({
   stage,
   index,
   t,
@@ -155,7 +156,9 @@ function StageRow({
   )
 
   const assignment = illustrated ? stageImages[stage.id] : undefined
-  const asset = assignment?.title === stage.title.he ? assignment.asset : undefined
+  const asset = assignment?.title === stage.title.he
+    ? (await getImageSlot(`PROCESS_STAGE_${stage.id.replace('st-', '')}`)).asset
+    : undefined
   const graphic = asset ? <ContextFigure asset={asset} t={t} /> : (
     <div className="aspect-[16/9] overflow-hidden bg-surface-sunken">
       {/* Deterministic per stage, so the eight marks differ from one another

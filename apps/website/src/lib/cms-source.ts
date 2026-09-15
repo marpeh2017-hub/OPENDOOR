@@ -1,4 +1,6 @@
 import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
+import { slotImages, type SiteSlotAssignment } from '@urban-renewal/api-contracts'
+import { cache } from 'react'
 
 /** Migrated pages are served only from an active CMS publication.
  * Missing, withdrawn or unreachable content fails closed; it never revives a code fixture.
@@ -263,11 +265,7 @@ export async function getPublicMediaUrl(storageKey: string): Promise<string | nu
 //  IMAGE SLOT ASSIGNMENT — Pass 4G
 // ══════════════════════════════════════════════════════════════════════════
 
-export interface CmsSlotAssignment {
-  storageKey: string
-  alt: { he: string; en?: string }
-  classification: string
-}
+export type CmsSlotAssignment = SiteSlotAssignment
 
 /**
  * Every CMS-assigned image slot, published slots only, or an empty object.
@@ -277,7 +275,7 @@ export interface CmsSlotAssignment {
  * per-slot fetch: seven slots would otherwise be seven network round trips
  * for one page render.
  */
-export async function getCmsImageSlots(): Promise<Record<string, CmsSlotAssignment>> {
+export const getCmsImageSlots = cache(async (): Promise<Record<string, CmsSlotAssignment>> => {
   const base = gatewayBase()
   if (!base) return {}
   try {
@@ -290,17 +288,12 @@ export async function getCmsImageSlots(): Promise<Record<string, CmsSlotAssignme
     if (!slots || typeof slots !== 'object') return {}
     const out: Record<string, CmsSlotAssignment> = {}
     for (const [id, raw] of Object.entries(slots)) {
-      const s = raw as Partial<CmsSlotAssignment> | null
-      if (s && typeof s.storageKey === 'string' && s.alt?.he) {
-        out[id] = {
-          storageKey: s.storageKey,
-          alt: s.alt as CmsSlotAssignment['alt'],
-          classification: s.classification ?? 'EDITORIAL_CONTEXT',
-        }
-      }
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue
+      const s = raw as CmsSlotAssignment
+      out[id] = { slides: slotImages(s), disabled: s.disabled === true }
     }
     return out
   } catch {
     return {}
   }
-}
+})

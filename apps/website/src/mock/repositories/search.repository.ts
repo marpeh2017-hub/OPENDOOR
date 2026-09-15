@@ -36,15 +36,21 @@ export async function search(
 
   const results: SearchResult[] = []
 
-  for (const slug of ['about', 'why-organizer', 'how-we-work', 'trust']) {
-    const page = await getPageBySlug(slug)
+  const slugs = ['about', 'why-organizer', 'how-we-work', 'trust']
+  const [pages, projects, articles, faq] = await Promise.all([
+    Promise.all(slugs.map((slug) => getPageBySlug(slug))),
+    getProjects({ limit: 100 }),
+    getKnowledgeArticles({ limit: 200, locale }),
+    getFaqItems(undefined, locale),
+  ])
+  for (const [index, page] of pages.entries()) {
+    const slug = slugs[index]
     if (!page) continue
     const title = resolveContent(page.title, locale, 'SOURCE') ?? ''
     const excerpt = page.seo?.[locale]?.description ?? page.seo?.he?.description ?? ''
     if (`${title} ${excerpt}`.toLowerCase().includes(q))
       results.push({ kind: 'page', title, excerpt, href: `/${slug}` })
   }
-  const projects = await getProjects({ limit: 100 })
   for (const p of projects.items) {
     // Matches against every language a value has, so an English query finds a
     // project whose English name exists and a Hebrew one always works. The
@@ -63,7 +69,7 @@ export async function search(
     }
   }
 
-  for (const a of (await getKnowledgeArticles({ limit: 200, locale })).items) {
+  for (const a of articles.items) {
     if ([a.title, a.summary].join(' ').toLowerCase().includes(q)) {
       results.push({
         kind: 'article',
@@ -74,7 +80,7 @@ export async function search(
     }
   }
 
-  for (const f of await getFaqItems(undefined, locale)) {
+  for (const f of faq) {
     if ([f.question, f.answer].join(' ').toLowerCase().includes(q)) {
       results.push({ kind: 'faq', title: f.question, excerpt: f.answer, href: '/faq' })
     }

@@ -72,31 +72,39 @@ export async function generateMetadata({
 
 export default async function ProjectsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ city?: string | string[]; type?: string | string[] }>
 }) {
   const { locale } = await params
   setRequestLocale(locale)
 
   const t = makeLocalizer(locale as Locale)
 
-  const [tPages, tProjects, page, cities, types] = await Promise.all([
+  const [tPages, tProjects, cities, types, query, allProjects] = await Promise.all([
     getTranslations('pages.projects'),
     getTranslations('projects'),
-    getProjects({ limit: 100 }),
     getProjectCities(),
     getProjectTypes(),
+    searchParams,
+    getProjects({ limit: 100 }),
   ])
+  const active = {
+    ...(typeof query.city === 'string' && cities.includes(query.city) ? { city: query.city } : {}),
+    ...(types.find((type) => type === query.type) ? { type: types.find((type) => type === query.type) } : {}),
+  }
+  const page = active.city || active.type ? await getProjects({ limit: 100, ...active }) : allProjects
 
   // Computed, not read from a query string. See the block comment above: this
   // is false today, and it is what a future activation switches on.
   const showFilters = shouldShowFilters({
-    total: page.total,
+    total: allProjects.total,
     cityCount: cities.length,
     typeCount: types.length,
   })
 
-  if (page.total === 0) {
+  if (allProjects.total === 0) {
     return (
       <>
         <PageHeader title={tPages('title')} />
@@ -116,11 +124,8 @@ export default async function ProjectsPage({
       />
 
       <Section size="lg">
-        {/* Unreachable while `showFilters` is false, which is deliberate and
-            is why the component, its props and this call site all stay: turning
-            filtering on is an edit here, not a rebuild. `active` is empty
-            because this route no longer reads a query string. */}
-        {showFilters && <ProjectFilters cities={cities} types={types} active={{}} />}
+        {(showFilters || active.city || active.type) && <ProjectFilters cities={cities} types={types} active={active} />}
+        {page.total === 0 && <p role="status" className="py-8 text-gray-700">{tProjects('noFilterResults')}</p>}
 
         <ul className={`grid gap-8 sm:grid-cols-2 lg:grid-cols-3 ${showFilters ? 'mt-10' : ''}`}>
           {page.items.map((project) => (

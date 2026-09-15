@@ -138,6 +138,7 @@
     "portal": "Resident area"
   },
   "projects": {
+    "noFilterResults": "No projects match these filters. Try another city or project type.",
     "emptyTitle": "Projects will be published here once the owners have approved.",
     "emptyBody": "Project information will appear here after review and approval for publication. Contact us directly about your building or a particular complex.",
     "eyebrow": "Urban renewal in Israel",
@@ -156,6 +157,8 @@
     "errorSummaryTitle": "We could not send this. Some details are missing or need fixing.",
     "failureTitle": "Your details were not sent.",
     "failureBody": "Everything you entered is still here. You can try again.",
+    "failureRateLimited": "There were too many attempts in a short time. Your details are still here; please try again in a few minutes.",
+    "failureRejected": "Some details did not pass validation. Review the fields, fix what is needed and try again.",
     "retry": "Try again",
     "noCost": "OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.",
     "errors": {

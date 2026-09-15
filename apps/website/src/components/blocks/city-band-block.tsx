@@ -36,7 +36,7 @@ export async function CityBandBlockView({ block, t }: { block: MediaBlock; t: Lo
       ? await getImageSlot(block.slotId as keyof typeof IMAGE_SLOTS)
       : null
 
-  if (!slot) return null
+  if (!slot || slot.hidden) return null
 
   return (
     <section className="relative overflow-x-clip bg-surface-page py-4 sm:py-6">

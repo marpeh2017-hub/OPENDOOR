@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useFormIdentity } from '@/lib/forms/use-form-identity'
 import { useLocale, useTranslations } from 'next-intl'
 import {
@@ -15,7 +15,8 @@ import type {
   OrganizingStatusAnswer,
 } from '@urban-renewal/api-contracts'
 import { Link } from '@/i18n/navigation'
-import { buildSubmissionMetadata, getLeadSubmissionService } from '@/lib/submission'
+import { ISRAEL_CITY_SUGGESTIONS } from '@/lib/israel-cities'
+import { buildSubmissionMetadata, getLeadSubmissionService, submitSafely } from '@/lib/submission'
 import {
   isPresent, isValidApartmentCount, isValidEmail, isValidPhone, normalisePhone,
 } from '@/lib/validation'
@@ -92,19 +93,22 @@ export function EligibilityForm() {
   const formIdentity = useFormIdentity()
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
   const [attempted, setAttempted] = useState(false)
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const submissionLock = useRef(false)
   const [status, setStatus] = useState<'idle' | 'sending' | 'failed' | 'sent'>('idle')
+  const [failureReason, setFailureReason] = useState<string | null>(null)
 
-  function validate(): Partial<Record<FieldName, string>> {
+  function validate(candidate = values): Partial<Record<FieldName, string>> {
     const next: Partial<Record<FieldName, string>> = {}
-    if (!isPresent(values.address)) next.address = tErrors('addressRequired')
-    if (!isPresent(values.city)) next.city = tErrors('cityRequired')
-    if (!isPresent(values.fullName)) next.fullName = tErrors('nameRequired')
-    if (!isPresent(values.phone)) next.phone = tErrors('phoneRequired')
-    else if (!isValidPhone(values.phone)) next.phone = tErrors('phoneInvalid')
-    if (isPresent(values.email) && !isValidEmail(values.email)) {
+    if (!isPresent(candidate.address)) next.address = tErrors('addressRequired')
+    if (!isPresent(candidate.city)) next.city = tErrors('cityRequired')
+    if (!isPresent(candidate.fullName)) next.fullName = tErrors('nameRequired')
+    if (!isPresent(candidate.phone)) next.phone = tErrors('phoneRequired')
+    else if (!isValidPhone(candidate.phone)) next.phone = tErrors('phoneInvalid')
+    if (isPresent(candidate.email) && !isValidEmail(candidate.email)) {
       next.email = tErrors('emailInvalid')
     }
-    if (!isValidApartmentCount(values.apartments)) {
+    if (!isValidApartmentCount(candidate.apartments)) {
       next.apartments = tErrors('apartmentsInvalid')
     }
     if (!leadType) next.leadType = tErrors('leadTypeRequired')
@@ -118,9 +122,11 @@ export function EligibilityForm() {
   function update(name: keyof typeof values, value: string) {
     setValues((current) => ({ ...current, [name]: value }))
     if (attempted && errors[name]) {
+      const updatedError = validate({ ...values, [name]: value })[name]
       setErrors((current) => {
         const next = { ...current }
-        delete next[name]
+        if (updatedError) next[name] = updatedError
+        else delete next[name]
         return next
       })
     }
@@ -130,13 +136,17 @@ export function EligibilityForm() {
     event.preventDefault()
     // Guards a double submit from a second click or an Enter keypress while
     // the first request is still open.
-    if (status === 'sending') return
+    if (submissionLock.current) return
 
     setAttempted(true)
     const found = validate()
     setErrors(found)
-    if (Object.keys(found).length > 0) return
+    if (Object.keys(found).length > 0) {
+      setSubmitAttempt((attempt) => attempt + 1)
+      return
+    }
 
+    submissionLock.current = true
     setStatus('sending')
 
     const submission: EligibilitySubmission = {
@@ -160,8 +170,15 @@ export function EligibilityForm() {
       metadata: buildSubmissionMetadata(`/${locale}/eligibility`, locale, formIdentity.read()),
     }
 
-    const outcome = await getLeadSubmissionService().submitEligibility(submission)
-    setStatus(outcome.ok ? 'sent' : 'failed')
+    const outcome = await submitSafely(() => getLeadSubmissionService().submitEligibility(submission))
+    submissionLock.current = false
+    if (outcome.ok) {
+      setFailureReason(null)
+      setStatus('sent')
+    } else {
+      setFailureReason(outcome.reason)
+      setStatus('failed')
+    }
   }
 
   if (status === 'sent') {
@@ -197,7 +214,7 @@ export function EligibilityForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      <ErrorSummary title={tForms('errorSummaryTitle')} errors={summary} />
+      <ErrorSummary title={tForms('errorSummaryTitle')} errors={summary} submitAttempt={submitAttempt} />
 
       <div className="grid gap-5 sm:grid-cols-[1.5fr_0.5fr]">
         <Field id="eligibility-address" required error={errors.address}>
@@ -216,9 +233,15 @@ export function EligibilityForm() {
           <Input
             controlSize="comfortable"
             autoComplete="address-level2"
+            list="eligibility-city-suggestions"
             value={values.city}
             onChange={(e) => update('city', e.target.value)}
           />
+          <datalist id="eligibility-city-suggestions">
+            {ISRAEL_CITY_SUGGESTIONS.map((city) => (
+              <option key={city} value={city} />
+            ))}
+          </datalist>
         </Field>
       </div>
 
@@ -402,9 +425,16 @@ export function EligibilityForm() {
       {status === 'failed' && (
         <SubmissionFailureNotice
           title={tForms('failureTitle')}
-          body={tForms('failureBody')}
+          body={failureReason === 'RATE_LIMITED'
+            ? tForms('failureRateLimited')
+            : failureReason === 'REJECTED'
+              ? tForms('failureRejected')
+              : tForms('failureBody')}
           retryLabel={tForms('retry')}
-          onRetry={() => setStatus('idle')}
+          onRetry={() => {
+            setFailureReason(null)
+            setStatus('idle')
+          }}
         />
       )}
 

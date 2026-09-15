@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { routing, type AppLocale } from '@/i18n/routing'
+import { localeLocation } from '@/lib/locale-location'
 
 const LABELS: Record<AppLocale, string> = { he: 'עברית', en: 'English' }
 
@@ -31,9 +32,11 @@ export function LanguageSwitcher() {
         id="language-switcher"
         value={locale}
         onChange={(event) => {
-          router.replace(pathname, { locale: event.target.value as AppLocale })
+          router.replace(localeLocation(pathname, window.location.search, window.location.hash), {
+            locale: event.target.value as AppLocale,
+          })
         }}
-        className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700"
+        className="min-h-[44px] min-w-[44px] rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700"
       >
         {routing.locales.map((code) => (
           <option key={code} value={code}>

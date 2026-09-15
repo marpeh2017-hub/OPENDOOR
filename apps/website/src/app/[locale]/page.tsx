@@ -160,7 +160,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             break
 
           case 'MEDIA':
-            rendered = <CityBandBlockView block={block} t={t} />
+            // The city panorama now opens the page in the managed hero gallery.
+            rendered = block.id === 'home-city-rail' ? null : <CityBandBlockView block={block} t={t} />
             break
 
           case 'CTA':
@@ -176,6 +177,19 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         }
 
         if (!rendered) return null
+
+        // Keep detailed product explanations available without making every
+        // first-time visitor read three long sections before reaching contact.
+        if (block.type === 'PORTAL' || block.type === 'PROJECT_TRANSPARENCY' || block.type === 'TRUST') {
+          return (
+            <details key={block.id} className="mx-auto max-w-7xl border-b border-gray-200 px-4 lg:px-8">
+              <summary className="cursor-pointer py-6 text-xl font-semibold text-teal-800">
+                {t(block.heading)}
+              </summary>
+              {rendered}
+            </details>
+          )
+        }
 
         return (
           <Fragment key={block.id}>

@@ -83,7 +83,14 @@ export function TextSectionBlockView({
 
         {/* Absent for a plain text section — the layout collapses to one
             column and nothing looks unfinished. */}
-        {block.roleMap && <RoleMapView map={block.roleMap} t={t} />}
+        {block.roleMap && (
+          <details className="self-start rounded-sm border border-gray-200 p-5">
+            <summary className="min-h-11 cursor-pointer text-lg font-semibold text-teal-700">
+              {t({ he: 'מי עושה מה בתהליך?', en: 'Who does what in the process?' })}
+            </summary>
+            <div className="mt-6"><RoleMapView map={block.roleMap} t={t} /></div>
+          </details>
+        )}
       </div>
     </Section>
   )
