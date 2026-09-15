@@ -8,6 +8,8 @@ import { PortalProfileService } from './portal-profile.service'
 import { ContactUpdateRequestDto, UpdatePortalProfileDto } from './dto/portal-profile.dto'
 import { PortalSupportService } from './portal-support.service'
 import { CreateSupportTicketDto, CreateTicketReplyDto } from './dto/portal-support.dto'
+import { PortalChatService } from './portal-chat.service'
+import { PortalChatDto } from './dto/portal-chat.dto'
 import { PortalScopeService } from './portal-scope.service'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current-user.decorator'
@@ -41,6 +43,7 @@ export class PortalDashboardController {
     private readonly messages: PortalMessagesService,
     private readonly profile: PortalProfileService,
     private readonly support: PortalSupportService,
+    private readonly chat: PortalChatService,
     private readonly scopes: PortalScopeService,
   ) {}
 
@@ -208,6 +211,23 @@ export class PortalDashboardController {
   async downloadDocument(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     const scope = await this.scopes.resolve(user)
     return this.documents.downloadUrl(scope, id)
+  }
+
+  // ── AI assistant ─────────────────────────────────────────────────────────
+
+  /**
+   * The conversation is the only thing the request body may name. The
+   * resident's identity, project, signature status, messages and documents
+   * all come from `PortalScope` — same rule as every route above.
+   */
+  @Post('chat')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "AI assistant, scoped to the signed-in resident's own project" })
+  @ApiResponse({ status: 503, description: 'The AI provider is not configured or unavailable.' })
+  async chatReply(@CurrentUser() user: CurrentUserPayload, @Body() dto: PortalChatDto) {
+    const scope = await this.scopes.resolve(user)
+    const reply = await this.chat.reply(scope, dto.messages)
+    return { reply }
   }
 }
 

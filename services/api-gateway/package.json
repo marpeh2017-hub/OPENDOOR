@@ -15,6 +15,7 @@
     "test:feasibility": "jest --config jest.unit.config.js src/feasibility && jest --config jest.config.js --runInBand test/feasibility"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
     "@aws-sdk/client-s3": "^3.716.0",
     "@aws-sdk/s3-request-presigner": "^3.716.0",
     "@nestjs/common": "^10.4.15",
