@@ -57,11 +57,11 @@ export default async function LoginPage({
           <OtpLoginForm locale={locale} />
         </div>
 
-        <p className="mt-4 text-center text-xs text-gray-400">
+        <p className="mt-4 text-center text-xs text-gray-600">
           בכניסה לפורטל אתה מאשר את{' '}
-          <a href={`/${locale}/terms`} className="underline">תנאי השימוש</a>
+          <a href={`/${locale}/terms`} className="text-teal-700 underline">תנאי השימוש</a>
           {' '}ואת{' '}
-          <a href={`/${locale}/privacy`} className="underline">מדיניות הפרטיות</a>
+          <a href={`/${locale}/privacy`} className="text-teal-700 underline">מדיניות הפרטיות</a>
         </p>
       </div>
     </main>
