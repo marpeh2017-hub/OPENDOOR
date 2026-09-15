@@ -193,7 +193,18 @@ export async function POST(request: Request) {
   const messages: ChatMessage[] = rawMessages.slice(-MAX_HISTORY_MESSAGES)
   const userMessageCount = messages.filter((m) => m.role === 'user').length
 
-  const client = new Anthropic({ apiKey })
+  // A workspace-scoped API key (created under a specific workspace in
+  // console.anthropic.com -> Settings -> Workspaces, rather than the
+  // organization's default key) requires this header on every request, or
+  // the API rejects the call with "This API key is not scoped to a
+  // workspace...". Omitted entirely when unset, rather than sent empty, so
+  // an organization-scoped key (which doesn't need or want this header)
+  // keeps working unchanged.
+  const workspaceId = process.env['ANTHROPIC_WORKSPACE_ID']
+  const client = new Anthropic({
+    apiKey,
+    ...(workspaceId ? { defaultHeaders: { 'anthropic-workspace-id': workspaceId } } : {}),
+  })
 
   try {
     const response = await client.messages.create({
