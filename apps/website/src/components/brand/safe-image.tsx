@@ -20,10 +20,11 @@ export function SafeImage({
       </>
     )
   // Signed media URLs are already served by storage and must not be cached by an image proxy.
-  // eslint-disable-next-line @next/next/no-img-element
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- Signed storage URLs must bypass the image proxy.
     <img
       {...props}
+      alt={props.alt ?? ''}
       loading={priority ? 'eager' : (props.loading ?? 'lazy')}
       style={{
         ...(fill

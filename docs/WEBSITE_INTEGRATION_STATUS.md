@@ -38,3 +38,25 @@ were verified byte-identical to main. No database changes or deployment.
 
 This branch is for review only. Do not merge to main or deploy until these
 remaining checks and the user's visual review are complete.
+
+## Follow-up — September 15
+
+- Local, ignored env files now contain only the existing local API address,
+  CMS tenant slug and website preview URL (no credentials copied).
+- CRM production build passed.
+- Website lint configuration added using installed ESLint/Next packages.
+  Scoped source/config lint passes with zero errors and four existing unused
+  suppression warnings. Unit tests remain 23/23; website TypeScript passed again.
+- Connected website preview: http://127.0.0.1:4306/he (`WEBSITE_PREVIEW=true`,
+  separate `.next-preview` directory). Existing 4303/4304 servers untouched.
+- CRM preview: http://127.0.0.1:4305/he/site/media.
+- HTTP 200 verified on the connected preview: /he, /en, /he/how-we-work,
+  /he/about, /he/trust, /he/why-organizer. The prior CMS 404 blocker is resolved.
+- Local API started with message worker, meeting reminders and notification
+  cleanup explicitly disabled, messaging simulation enabled. No data written.
+- API startup warns FIELD_ENCRYPTION_KEY is not set and a dev fallback is used.
+  This must be resolved against the intended existing key before write tests;
+  do not generate a replacement key or migrate encrypted data as a workaround.
+- Browser transport is still closed. Authenticated media selection, publication,
+  actual carousel interaction and responsive QA remain unverified.
+- No merge to main or production deployment.

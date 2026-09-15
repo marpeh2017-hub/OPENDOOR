@@ -62,6 +62,7 @@ export function MobileNav({
     if (!open) return
 
     const previouslyFocused = document.activeElement as HTMLElement | null
+    const trigger = triggerRef.current
     const { overflow } = document.body.style
     document.body.style.overflow = 'hidden'
     // The portal is a sibling of the page; make background content truly inert.
@@ -109,7 +110,7 @@ export function MobileNav({
       desktop.removeEventListener('change', onResize)
       background.forEach(({ node, inert }) => { node.inert = inert })
       // Return focus where the user left it, not to the top of the page.
-      ;(previouslyFocused ?? triggerRef.current)?.focus()
+      ;(previouslyFocused ?? trigger)?.focus()
     }
   }, [open])
 
