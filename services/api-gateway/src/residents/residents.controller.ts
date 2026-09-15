@@ -12,7 +12,7 @@ import { CreateResidentDto } from './dto/create-resident.dto'
 import { UpdateResidentDto } from './dto/update-resident.dto'
 import {
   UpdateSignatureStatusDto, AddResidentActivityDto, SetResidentActiveDto,
-  MoveResidentDto, BulkResidentStatusDto, SetPortalAccessDto,
+  MoveResidentDto, BulkResidentStatusDto, SetPortalInboxDto,
 } from './dto/resident-actions.dto'
 
 /** Roles allowed to edit resident records and their engagement state. */
@@ -84,16 +84,16 @@ export class ResidentsController {
    * door who discovers somebody wants to stop receiving texts and read things
    * in the app instead.
    */
-  @Patch(':id/portal-access')
+  @Patch(':id/portal-inbox')
   @Roles(...RESIDENT_WRITE_ROLES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Enable or disable the resident's portal inbox" })
-  setPortalAccess(
+  setPortalInbox(
     @Param('id') id: string,
-    @Body() dto: SetPortalAccessDto,
+    @Body() dto: SetPortalInboxDto,
     @Request() req: any,
   ) {
-    return mapDomainErrors(() => this.residentsService.setPortalAccess(id, dto, actorFrom(req)))
+    return mapDomainErrors(() => this.residentsService.setPortalInbox(id, dto, actorFrom(req)))
   }
 
   @Delete(':id')

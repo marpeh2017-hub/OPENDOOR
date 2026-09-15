@@ -178,6 +178,12 @@ async function main() {
     { id: 'apt_004', number: '4',  floor: 2 },
     { id: 'apt_005', number: '5',  floor: 3 },
     { id: 'apt_006', number: '6',  floor: 3 },
+    // Own units for the shared-phone test residents below (res_08, res_09) —
+    // kept separate from each other and from apt_001 so that "two residents
+    // sharing a phone" and "two residents sharing an apartment" stay two
+    // independent test cases, not the same data doing double duty.
+    { id: 'apt_007', number: '7',  floor: 4 },
+    { id: 'apt_008', number: '8',  floor: 4 },
   ]
   for (const a of aptData) {
     await prisma.apartment.upsert({
@@ -215,6 +221,22 @@ async function main() {
     { id: 'res_04', firstName: 'שרה',  lastName: 'אברהם', phone: '0534449876', email: 'sara.avraham@gmail.com', aptId: 'apt_004', sig: ResidentSignatureStatus.UNDECIDED },
     { id: 'res_05', firstName: 'יוסי', lastName: 'מזרחי', phone: '0523334455', email: 'yossi.m@gmail.com',       aptId: 'apt_005', sig: ResidentSignatureStatus.SIGNED },
     { id: 'res_06', firstName: 'מירי', lastName: 'שפירא', phone: '0512223344', email: 'miri.s@gmail.com',        aptId: 'apt_006', sig: ResidentSignatureStatus.NOT_CONTACTED },
+
+    // ── Deliberate edge-case fixtures ──────────────────────────────────────
+    // Two co-owners/occupants of ONE apartment, each their own Resident row
+    // with their own phone. Tests that apartment-scoped views (documents,
+    // signatures, the resident list) correctly show both, and that nothing
+    // keyed only on apartmentId silently collapses to one.
+    { id: 'res_07', firstName: 'מיכל', lastName: 'כהן',   phone: '0501112233', email: 'michal.cohen@gmail.com', aptId: 'apt_001', sig: ResidentSignatureStatus.UNDECIDED },
+
+    // Two residents, two DIFFERENT apartments, the SAME phone number —
+    // households where one number is the contact of record for both units.
+    // Tests that phone-keyed lookups (OTP resolution, dedupe-by-phone) return
+    // BOTH residents rather than silently picking one, and that a send to
+    // this number is attributed to the right resident, not just the first
+    // match.
+    { id: 'res_08', firstName: 'נחום', lastName: 'פרץ',   phone: '0507778899', email: 'nachum.peretz@gmail.com', aptId: 'apt_007', sig: ResidentSignatureStatus.NOT_CONTACTED },
+    { id: 'res_09', firstName: 'אורלי', lastName: 'דיין',  phone: '0507778899', email: 'orly.dayan@gmail.com',    aptId: 'apt_008', sig: ResidentSignatureStatus.INTERESTED },
   ]
 
   for (const r of residentsData) {
@@ -230,7 +252,7 @@ async function main() {
         phone:           r.phone,
         email:           r.email,
         signatureStatus: r.sig,
-        portalEnabled:   r.sig === ResidentSignatureStatus.SIGNED,
+        portalInboxEnabled: r.sig === ResidentSignatureStatus.SIGNED,
       },
     })
   }
@@ -368,6 +390,52 @@ async function main() {
     },
   })
   console.log('✅ Tasks seeded')
+
+  // ── Support ticket with an internal-only staff note ─────────────────────────
+  // For res_01 deliberately: that resident is also the one with a real phone
+  // number (see the note above `residentsData`), so testing the portal as
+  // res_01 exercises this in the same session — including confirming the
+  // internal reply below is filtered out of whatever the resident-facing
+  // ticket thread reads, not just given `isInternal: false` items to render.
+  const ticket1 = await prisma.supportTicket.upsert({
+    where:  { id: 'tkt_01' },
+    update: {},
+    create: {
+      id:          'tkt_01',
+      tenantId:    tenant.id,
+      residentId:  'res_01',
+      category:    'DOCUMENTS',
+      subject:     'מתי אקבל את נוסח ההסכם המעודכן?',
+      description: 'שלום, ביקשתי לפני שבועיים את הנוסח המעודכן של הסכם ההתקשרות ועדיין לא קיבלתי. אפשר לעדכן?',
+      status:      'IN_PROGRESS',
+      priority:    'MEDIUM',
+      assigneeId:  pm.id,
+    },
+  })
+  await prisma.ticketReply.upsert({
+    where:  { id: 'rep_01' },
+    update: {},
+    create: {
+      id:         'rep_01',
+      ticketId:   ticket1.id,
+      authorId:   pm.id,
+      isInternal: false,
+      body:       'שלום דוד, מעדכן שהנוסח המתוקן בבדיקה משפטית ויישלח השבוע.',
+    },
+  })
+  // Staff-only — must never reach the resident's own view of this ticket.
+  await prisma.ticketReply.upsert({
+    where:  { id: 'rep_02' },
+    update: {},
+    create: {
+      id:         'rep_02',
+      ticketId:   ticket1.id,
+      authorId:   pm.id,
+      isInternal: true,
+      body:       'לבדוק מול עו"ד לפני שליחה — יש סעיף שנוי במחלוקת בפרק הפיצויים.',
+    },
+  })
+  console.log('✅ Support ticket + internal note seeded')
 
   // ── Audit log ──────────────────────────────────────────────────────────────
   const auditEntries = [

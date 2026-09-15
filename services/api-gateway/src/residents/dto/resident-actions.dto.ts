@@ -62,7 +62,7 @@ export class BulkResidentStatusDto {
  * authenticated session, so there is no field here through which a caller could
  * point the grant at somebody else.
  */
-export class SetPortalAccessDto {
+export class SetPortalInboxDto {
   @ApiProperty({ description: 'Whether the PORTAL channel may be used for this resident' })
   @IsBoolean()
   enabled!: boolean

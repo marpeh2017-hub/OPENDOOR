@@ -54,7 +54,7 @@ export class PortalProfileService {
         signatureStatus: true, isObjecting: true,
         language: true, preferredChannel: true,
         whatsappOptIn: true, smsOptIn: true, emailOptIn: true,
-        doNotContact: true, portalEnabled: true,
+        doNotContact: true, portalInboxEnabled: true,
         // `nationalId` and `notes` are deliberately not selected. The first is
         // PII that no API response carries; the second is staff's internal
         // commentary ABOUT this person, which they should not read about
@@ -103,7 +103,7 @@ export class PortalProfileService {
         // should be able to SEE that it is recorded, and ask for it to be
         // lifted, rather than wondering why the project has gone quiet.
         doNotContact: resident.doNotContact,
-        portalInboxEnabled: resident.portalEnabled,
+        portalInboxEnabled: resident.portalInboxEnabled,
       },
       /** So the page can say "we already have your request" instead of a second one. */
       pendingContactRequest: pending,

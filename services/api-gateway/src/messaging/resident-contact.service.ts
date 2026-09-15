@@ -87,7 +87,7 @@ export class ResidentContactService {
       select: {
         id: true, isActive: true, phone: true, phone2: true, email: true,
         preferredChannel: true, whatsappOptIn: true, smsOptIn: true, emailOptIn: true,
-        doNotContact: true, portalEnabled: true,
+        doNotContact: true, portalInboxEnabled: true,
       },
     })
   }
@@ -163,7 +163,7 @@ export class ResidentContactService {
             break
           case 'PORTAL':
             // Pull, not push — no opt-in required. See the class comment.
-            if (r.portalEnabled) {
+            if (r.portalInboxEnabled) {
               return { residentId: id, channel, toPhone: null, toEmail: null, rationale: 'portal inbox' }
             }
             break

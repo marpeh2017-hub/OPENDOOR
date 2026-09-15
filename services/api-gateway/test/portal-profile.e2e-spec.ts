@@ -273,7 +273,7 @@ describe('Resident portal profile (e2e)', () => {
       ['doNotContact', true],
       ['signatureStatus', 'SIGNED'],
       ['isObjecting', true],
-      ['portalEnabled', true],
+      ['portalInboxEnabled', true],
       ['tenantId', 'someone-elses-tenant'],
       ['apartmentId', 'someone-elses-apartment'],
     ]

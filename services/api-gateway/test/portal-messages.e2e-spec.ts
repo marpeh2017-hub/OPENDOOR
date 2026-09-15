@@ -13,7 +13,7 @@
  * ── AND THE WRITER THAT WAS MISSING ─────────────────────────────────────────
  *
  * Unlike documents, the message WRITE side already existed and is in use.
- * What did not exist was any way to turn on `Resident.portalEnabled` — the gate
+ * What did not exist was any way to turn on `Resident.portalInboxEnabled` — the gate
  * `ResidentContactService` checks before it will route anything down the PORTAL
  * channel. Only the seed ever set it, so the channel built specifically for
  * this page was unreachable for every resident created through the API. The
@@ -123,7 +123,7 @@ describe('Resident portal messages (e2e)', () => {
         data: {
           tenantId: tenant.id, apartmentId: apartment.id,
           firstName, lastName: 'Levi', phone: `05099${flatNo.padStart(5, '0')}`,
-          isActive: true, portalEnabled: false,
+          isActive: true, portalInboxEnabled: false,
         },
         select: { id: true },
       })).id
@@ -446,12 +446,12 @@ describe('Resident portal messages (e2e)', () => {
   // ══════════════════════════════════════════════════════════════════════════
 
   describe('portal access, from the CRM', () => {
-    const accessApi = (residentId: string) => `/api/v1/residents/${residentId}/portal-access`
+    const accessApi = (residentId: string) => `/api/v1/residents/${residentId}/portal-inbox`
 
     afterEach(async () => {
       await prisma.resident.updateMany({
         where: { id: { in: [A.residentId, A.neighbourId] } },
-        data: { portalEnabled: false },
+        data: { portalInboxEnabled: false },
       })
       // The audit log is append-only by design, so a test that counts entries
       // has to start from a known state rather than from whatever the previous
@@ -463,13 +463,13 @@ describe('Resident portal messages (e2e)', () => {
       const res = await api().patch(accessApi(A.residentId)).set(asManagerA())
         .send({ enabled: true })
       expect(res.status).toBe(200)
-      expect(res.body.portalEnabled).toBe(true)
+      expect(res.body.portalInboxEnabled).toBe(true)
       expect(res.body.changed).toBe(true)
 
       const row = await prisma.resident.findUniqueOrThrow({
-        where: { id: A.residentId }, select: { portalEnabled: true },
+        where: { id: A.residentId }, select: { portalInboxEnabled: true },
       })
-      expect(row.portalEnabled).toBe(true)
+      expect(row.portalInboxEnabled).toBe(true)
     })
 
     it('is idempotent and says so, rather than writing a second audit entry', async () => {
@@ -508,9 +508,9 @@ describe('Resident portal messages (e2e)', () => {
       expect(res.status).toBe(404)
 
       const row = await prisma.resident.findUniqueOrThrow({
-        where: { id: B.residentId }, select: { portalEnabled: true },
+        where: { id: B.residentId }, select: { portalInboxEnabled: true },
       })
-      expect(row.portalEnabled).toBe(false)
+      expect(row.portalInboxEnabled).toBe(false)
     })
 
     it('REFUSES a manager from another tenant', async () => {
@@ -548,7 +548,7 @@ describe('Resident portal messages (e2e)', () => {
        */
       await prisma.resident.update({
         where: { id: A.residentId },
-        data: { whatsappOptIn: false, smsOptIn: false, emailOptIn: false, portalEnabled: false },
+        data: { whatsappOptIn: false, smsOptIn: false, emailOptIn: false, portalInboxEnabled: false },
       })
 
       const contact = app.get(ResidentContactService)

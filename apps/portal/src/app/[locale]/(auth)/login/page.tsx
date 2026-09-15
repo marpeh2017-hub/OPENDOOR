@@ -25,7 +25,10 @@ export default async function LoginPage({
   const notice = reason ? REASONS[reason] ?? 'ההתחברות פגה. יש להתחבר מחדש.' : null
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white px-4">
+    // The whole screen is the login task, so it is one <main> rather than a
+    // <main> nested inside a bare wrapper div — nothing on this page sits
+    // outside a landmark.
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white px-4">
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-500 shadow-teal">
@@ -33,7 +36,7 @@ export default async function LoginPage({
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800">OpenDoor</h1>
-          <p className="text-sm text-gray-500">התחדשות עירונית</p>
+          <p className="text-sm text-gray-600">התחדשות עירונית</p>
         </div>
       </div>
 
@@ -47,7 +50,7 @@ export default async function LoginPage({
           )}
           <div className="mb-6 text-center">
             <h2 className="text-xl font-bold text-gray-800">כניסה לפורטל</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-600 mt-1">
               הזן את מספר הטלפון שלך לקבלת קוד אימות
             </p>
           </div>
@@ -56,11 +59,11 @@ export default async function LoginPage({
 
         <p className="mt-4 text-center text-xs text-gray-400">
           בכניסה לפורטל אתה מאשר את{' '}
-          <a href="/terms" className="underline">תנאי השימוש</a>
+          <a href={`/${locale}/terms`} className="underline">תנאי השימוש</a>
           {' '}ואת{' '}
-          <a href="/privacy" className="underline">מדיניות הפרטיות</a>
+          <a href={`/${locale}/privacy`} className="underline">מדיניות הפרטיות</a>
         </p>
       </div>
-    </div>
+    </main>
   )
 }

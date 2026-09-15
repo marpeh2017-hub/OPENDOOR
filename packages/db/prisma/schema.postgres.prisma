@@ -1222,8 +1222,11 @@ model Resident {
   doNotContactReason    String?
 
   // Portal access
-  portalUserId  String?  @unique  // links to User with role=RESIDENT
-  portalEnabled Boolean  @default(false)
+  portalUserId  String?  @unique  // links to User with role=RESIDENT — can they log in at all
+  // Narrower than the above: only whether the in-portal message inbox is
+  // reachable as a delivery channel. Renamed from `portalEnabled`, which read
+  // as the login gate and was not.
+  portalInboxEnabled Boolean @default(false)
 
   notes     String?
   tags      String[] @default([])

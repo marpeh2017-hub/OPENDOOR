@@ -10,7 +10,7 @@ import type { CreateResidentDto } from './dto/create-resident.dto'
 import type { UpdateResidentDto } from './dto/update-resident.dto'
 import type {
   UpdateSignatureStatusDto, AddResidentActivityDto, SetResidentActiveDto,
-  MoveResidentDto, BulkResidentStatusDto, SetPortalAccessDto,
+  MoveResidentDto, BulkResidentStatusDto, SetPortalInboxDto,
 } from './dto/resident-actions.dto'
 
 /**
@@ -386,11 +386,14 @@ export class ResidentsService {
    * the one channel needing no opt-in, because it is pull rather than push and
    * puts nothing on anybody's phone.
    *
-   * The gate on all of that is `Resident.portalEnabled`, and nothing in the
-   * product ever wrote to it: only the seed set it. So the channel built
-   * specifically for the resident portal was unreachable for every resident
-   * created through the API — the same shape of gap as `ResidentDocument`,
-   * where a table the portal reads had no writer at all.
+   * The gate on all of that is `Resident.portalInboxEnabled` — named
+   * `portalEnabled` originally, which read as "can this resident use the
+   * portal at all" and was not that; login is `Resident.portalUserId`,
+   * checked nowhere in this method. Nothing in the product ever wrote to this
+   * flag either: only the seed set it. So the channel built specifically for
+   * the resident portal was unreachable for every resident created through
+   * the API — the same shape of gap as `ResidentDocument`, where a table the
+   * portal reads had no writer at all.
    *
    * ── WHY THE TENANT CHECK IS THE TRAVERSAL ────────────────────────────────
    *
@@ -400,13 +403,13 @@ export class ResidentsService {
    * communication channel to them is a grant, and a grant should not rest on
    * the weaker of two available checks. Same rule as document sharing.
    */
-  async setPortalAccess(id: string, dto: SetPortalAccessDto, actor: AuditActor) {
+  async setPortalInbox(id: string, dto: SetPortalInboxDto, actor: AuditActor) {
     const before = await this.prisma.resident.findFirst({
       where: {
         id,
         apartment: { building: { complex: { project: { tenantId: actor.tenantId } } } },
       },
-      select: { id: true, portalEnabled: true, isActive: true },
+      select: { id: true, portalInboxEnabled: true, isActive: true },
     })
     if (!before) throw DomainError.notFound('RESIDENT_NOT_FOUND', `דייר ${id} לא נמצא`)
 
@@ -418,21 +421,21 @@ export class ResidentsService {
       )
     }
 
-    if (before.portalEnabled === dto.enabled) {
-      return { id: before.id, portalEnabled: before.portalEnabled, changed: false }
+    if (before.portalInboxEnabled === dto.enabled) {
+      return { id: before.id, portalInboxEnabled: before.portalInboxEnabled, changed: false }
     }
 
     return this.prisma.$transaction(async (tx) => {
       const after = await tx.resident.update({
         where: { id },
-        data: { portalEnabled: dto.enabled },
-        select: { id: true, portalEnabled: true },
+        data: { portalInboxEnabled: dto.enabled },
+        select: { id: true, portalInboxEnabled: true },
       })
       await this.audit.record(actor, {
         action: 'UPDATE', entity: 'Resident', entityId: id,
         changes: {
-          before: { portalEnabled: before.portalEnabled },
-          after: { portalEnabled: dto.enabled },
+          before: { portalInboxEnabled: before.portalInboxEnabled },
+          after: { portalInboxEnabled: dto.enabled },
         },
         metadata: { grant: dto.enabled ? 'PORTAL_INBOX_ENABLED' : 'PORTAL_INBOX_DISABLED' },
       }, tx)

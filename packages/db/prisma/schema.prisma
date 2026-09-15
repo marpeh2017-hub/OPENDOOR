@@ -481,8 +481,12 @@ model Resident {
   emailOptIn          Boolean                 @default(true)
   doNotContact        Boolean                 @default(false)
   doNotContactReason  String?
+  // `portalUserId` is whether the resident can log in at all; this field is
+  // narrower — only whether their in-portal message inbox is reachable as a
+  // delivery channel. Renamed from `portalEnabled`, which read as the login
+  // gate and was not.
   portalUserId        String?                 @unique
-  portalEnabled       Boolean                 @default(false)
+  portalInboxEnabled  Boolean                 @default(false)
   notes               String?
   tags                String                  @default("[]")
   createdAt           DateTime                @default(now())
