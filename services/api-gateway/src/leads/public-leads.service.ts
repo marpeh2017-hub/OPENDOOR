@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { AutomationRunnerService } from '../automations/automation-runner.service'
 import { PrismaService } from '../prisma.service'
 import { AuditService } from '../common/audit/audit.service'
+import { LeadNotificationService } from './lead-notification.service'
 import type { PublicLeadDto } from './dto/public-lead.dto'
 
 const MIN_TIME_ON_FORM_MS = 3_000
@@ -35,6 +36,7 @@ export class PublicLeadsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly automations: AutomationRunnerService,
+    private readonly notifications: LeadNotificationService,
   ) {}
 
   private async resolveTenantId(): Promise<string> {
@@ -228,6 +230,24 @@ export class PublicLeadsService {
       }
       throw error
     }
+
+    /*
+     * Tell the office. Placed here, after the transaction has committed, for
+     * the same reason the automation dispatch is: a message about a row that
+     * later rolled back is a phone call to somebody whose enquiry does not
+     * exist. `notify` does not throw — see the service.
+     */
+    await this.notifications.notify(tenantId, {
+      id: lead.id,
+      firstName,
+      lastName,
+      phone,
+      email: dto.email ?? null,
+      city: dto.city ?? null,
+      address: dto.address ?? null,
+      notes: dto.message ?? null,
+      formType: dto.kind,
+    })
 
     await this.automations.dispatch({
       trigger: 'LEAD_CREATED',

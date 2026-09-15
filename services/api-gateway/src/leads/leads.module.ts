@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common'
 import { AutomationsModule } from '../automations/automations.module'
+import { MessagingModule } from '../messaging/messaging.module'
 import { LeadsController } from './leads.controller'
 import { LeadsService }    from './leads.service'
 import { PublicLeadsController } from './public-leads.controller'
 import { PublicLeadsService }    from './public-leads.service'
+import { LeadNotificationService } from './lead-notification.service'
 
 /**
  * `PublicLeadsController` is the system's only unauthenticated write surface.
@@ -15,8 +17,10 @@ import { PublicLeadsService }    from './public-leads.service'
 @Module({
   // Imported for `AutomationRunnerService`, which this module's service calls
   // after a domain event commits.
-  imports: [AutomationsModule],
+  // `MessagingModule` supplies `OutboundMessageService`, which the new-lead
+  // alert enqueues through so it inherits the outbox rather than sending direct.
+  imports: [AutomationsModule, MessagingModule],
   controllers: [LeadsController, PublicLeadsController],
-  providers: [LeadsService, PublicLeadsService],
+  providers: [LeadsService, PublicLeadsService, LeadNotificationService],
 })
 export class LeadsModule {}
