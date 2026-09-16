@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -44,6 +44,10 @@ const navItems = [
       { href: '/buildings', icon: Building2,      label: 'מבנים' },
       { href: '/owners',    icon: KeyRound,       label: 'בעלים' },
       { href: '/gis',       icon: Map,            label: 'מפה' },
+      // The Site Manager. Filed here, not under "מערכת", because that is
+      // where someone scanning for "site management" actually looks — see
+      // the group below for why it isn't a renamed "מערכת" instead.
+      { href: '/site',      icon: Globe,          label: 'מנהל האתר' },
     ],
   },
   {
@@ -69,11 +73,6 @@ const navItems = [
   {
     group: 'מערכת',
     items: [
-      // The Site Manager. ONE entry, because everything under `/site` has its
-      // own rail: adding nine more destinations here would bury both sets and
-      // blur the distinction between managing a renewal process and managing
-      // what the public can read.
-      { href: '/site', icon: Globe, label: 'מנהל האתר' },
       { href: '/settings', icon: Settings, label: 'הגדרות' },
     ],
   },
@@ -86,6 +85,30 @@ const navItems = [
  */
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
+  const navRef = useRef<HTMLElement>(null)
+  const [showScrollHint, setShowScrollHint] = useState(false)
+
+  // The rail holds five groups and can run past the viewport on a short
+  // window (a laptop with browser chrome, not just a phone). Without this,
+  // whatever falls below the fold — "מנהל האתר" was the one that shipped a
+  // report — looks like the list simply ended, because nothing here hints
+  // that a scrollbar is even relevant.
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const update = () => {
+      const scrollable = el.scrollHeight > el.clientHeight + 1
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
+      setShowScrollHint(scrollable && !atBottom)
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
 
   return (
     <div className="flex h-full w-64 flex-col border-l border-border bg-white shadow-sm">
@@ -101,46 +124,55 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        {navItems.map((group) => (
-          <div key={group.group} className="mb-4">
-            {/* gray-600, not gray-400: a 12px semibold label needs 4.5:1 and
-                gray-400 gives 2.80:1 on white. */}
-            <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-600">
-              {group.group}
-            </p>
-            <ul className="space-y-0.5 px-2">
-              {group.items.map(({ href, icon: Icon, label }) => {
-                const isActive = pathname.includes(href) && href !== '/'
-                  || (href === '/' && (pathname.endsWith('/') || pathname.match(/\/[a-z]{2}$/)))
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      onClick={onNavigate}
-                      className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-teal-50 text-teal-600'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                      )}
-                    >
-                      <Icon
-                        size={18}
+      <div className="relative min-h-0 flex-1">
+        <nav ref={navRef} className="h-full overflow-y-auto py-4">
+          {navItems.map((group) => (
+            <div key={group.group} className="mb-4">
+              {/* gray-600, not gray-400: a 12px semibold label needs 4.5:1 and
+                  gray-400 gives 2.80:1 on white. */}
+              <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-600">
+                {group.group}
+              </p>
+              <ul className="space-y-0.5 px-2">
+                {group.items.map(({ href, icon: Icon, label }) => {
+                  const isActive = pathname.includes(href) && href !== '/'
+                    || (href === '/' && (pathname.endsWith('/') || pathname.match(/\/[a-z]{2}$/)))
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        onClick={onNavigate}
                         className={cn(
-                          'flex-shrink-0',
-                          isActive ? 'text-teal-500' : 'text-gray-400',
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-teal-50 text-teal-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                         )}
-                      />
-                      {label}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+                      >
+                        <Icon
+                          size={18}
+                          className={cn(
+                            'flex-shrink-0',
+                            isActive ? 'text-teal-500' : 'text-gray-400',
+                          )}
+                        />
+                        {label}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+        <div
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent transition-opacity duration-200',
+            showScrollHint ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </div>
 
       {/* User footer */}
       <div className="border-t border-border p-3">
