@@ -1,5 +1,12 @@
 # Website integration handoff
 
+> **Resolved and closed — 2026-09-16.** Every change this branch introduced
+> was verified, file-by-file against its fork point, to already be present on
+> `feat/odg-website-phase1` (as commits `4be4a89`/`ee383be`/`8abbff8`). The
+> `codex/website-integration` branch and its worktree have been deleted. See
+> `docs/CRM_WEBSITE_QA_2026-09-16.md` for that verification and everything
+> else done in the same session. This file is kept for history only.
+
 Integration branch: `codex/website-integration`, based on main `f3e62d0`.
 Source design worktree: `website-prelaunch`, based on `3e1efa6` (left untouched).
 Main branch and its existing pnpm-lock.yaml modification were not changed.
