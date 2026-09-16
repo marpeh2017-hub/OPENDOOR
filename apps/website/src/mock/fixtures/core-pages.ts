@@ -338,7 +338,7 @@ const howWeWorkBlocks: PageBlock[] = [
         id: 'st-2',
         title: { he: 'היכרות עם בעלי הדירות', en: 'Meeting the owners' },
         body: {
-          he: 'פגישה עם הדיירים, הסבר על התהליך ומענה על שאלות. בשלב הזה אנחנו בעיקר מקשיבים: לכל בניין יש היסטוריה משלו, וכדאי להכיר אותה לפני שמתחילים.',
+          he: 'פגישה עם בעלי הדירות, הסבר על התהליך ומענה על שאלות. בשלב הזה אנחנו בעיקר מקשיבים: לכל בניין יש היסטוריה משלו, וכדאי להכיר אותה לפני שמתחילים.',
           en: 'A meeting with the residents, an explanation of the process, and answers to questions. Mostly we listen: every building has its own history, and it is worth knowing before anything starts.',
         },
         asks: {
@@ -354,7 +354,7 @@ const howWeWorkBlocks: PageBlock[] = [
           en: 'Choosing a representation from among the owners, to centralise communication and bring matters to all the owners for decision.',
         },
         asks: {
-          he: 'לבחור נציגים מקרב הדיירים, ולהסכים על דרך העבודה מולם.',
+          he: 'לבחור נציגים מקרב בעלי הדירות, ולהסכים על דרך העבודה מולם.',
           en: 'Choose representatives from among the residents, and agree how you will work with them.',
         },
       },
@@ -577,7 +577,7 @@ const servicesBlocks: PageBlock[] = [
     eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
     heading: { he: 'מעטפת מקצועית מלאה', en: 'A complete professional envelope' },
     standfirst: {
-      he: 'מובילים את הדיירים ממתחם ישן לבית חדש, בבטחה ובשקיפות.',
+      he: 'מובילים את בעלי הדירות ממתחם ישן לבית חדש, בבטחה ובשקיפות.',
       en: 'Leading residents from an ageing complex to a new home, safely and transparently.',
     },
   },
@@ -668,7 +668,7 @@ const servicesBlocks: PageBlock[] = [
       ],
     },
     organised: {
-      label: { he: 'עם מקדם', en: 'With an organiser' },
+      label: { he: 'עם חברה מארגנת', en: 'With an organiser' },
       points: [
         {
           id: 'sc-o-time',

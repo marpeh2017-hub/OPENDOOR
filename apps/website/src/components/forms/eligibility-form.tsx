@@ -339,7 +339,7 @@ export function EligibilityForm() {
 
       <fieldset className="border-0 p-0">
         <legend className="mb-2 block text-sm font-medium text-gray-800">
-          {t('organizingLabel')}
+          {t('organizingLabel')}{' '}
           <span className="ms-1.5 text-xs font-normal text-gray-600">{tForms('optional')}</span>
         </legend>
         <RadioGroup
