@@ -32,7 +32,11 @@ const PROFILE_INCLUDE = {
       financing: true,
       timelinePhases: { orderBy: { createdAt: 'asc' } },
       cashFlowAllocations: { orderBy: { periodStart: 'asc' } },
-      compensations: { orderBy: { createdAt: 'asc' } },
+      // `ownerApartment` is loaded because the engine checks that every
+      // compensation line is actually tied to a real apartment before it will
+      // let a report be approved. Without the relation the check cannot tell a
+      // missing link from an unloaded one.
+      compensations: { include: { ownerApartment: true }, orderBy: { createdAt: 'asc' } },
     },
     orderBy: [{ isBaseline: 'desc' }, { createdAt: 'asc' }],
   },

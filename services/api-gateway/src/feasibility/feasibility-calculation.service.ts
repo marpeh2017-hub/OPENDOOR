@@ -3,11 +3,32 @@ import Decimal from 'decimal.js'
 import { DomainError } from '../common/errors/domain-error'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
-import { annualizeMonthlyRate, irr, monthlyRateFromAnnual, npv } from './financial-math'
+import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
 import type { CreateFeasibilitySnapshotDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
 import { FeasibilityService } from './feasibility.service'
+import { type ReplacementAllocation, replacementAllocationSummary } from './replacement-allocation'
 
 Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP })
+
+/**
+ * Owner-replacement allocations, when this schema carries them.
+ *
+ * The `FeasibilityReplacementAllocation` model lives on a parallel branch and
+ * is not in this schema yet, so `unitMix` rows arrive without the relation.
+ * Reading it defensively makes every allocation check below INERT rather than
+ * broken: with no allocations there is nothing to reconcile, and the checks
+ * that run off scalar columns — the compensation-to-apartment link, and
+ * replacement units against committed apartments — still run and still block
+ * approval.
+ *
+ * Typed to the exact shape the relation must provide rather than `any`, so the
+ * day the model lands this is the contract it has to satisfy, and deleting
+ * this helper is the whole migration.
+ */
+function replacementAllocationsOf(line: unknown): ReplacementAllocation[] {
+  const allocations = (line as { replacementAllocations?: ReplacementAllocation[] }).replacementAllocations
+  return Array.isArray(allocations) ? allocations : []
+}
 
 type Severity = 'CRITICAL' | 'WARNING' | 'INFO'
 type ValidationIssue = { code: string; severity: Severity; message: string; entityId?: string }
@@ -16,6 +37,10 @@ type CashFlowPeriod = { periodStart: string; inflows: string; outflows: string; 
 
 function amount(value: Decimal.Value) { return new Decimal(value).toFixed(2) }
 function read(value: { toString(): string } | null | undefined) { return new Decimal(value?.toString() ?? '0') }
+
+/** צורת הקלט הטעון, נגזרת מהשירות עצמו כדי שלא תוכל להיפרד ממנו בשקט. */
+export type LoadedFeasibilityProfile = NonNullable<Awaited<ReturnType<FeasibilityService['find']>>>
+export type LoadedFeasibilityScenario = LoadedFeasibilityProfile['scenarios'][number]
 
 /**
  * Authoritative calculation layer. It receives only normalised Prisma values,
@@ -27,12 +52,29 @@ function read(value: { toString(): string } | null | undefined) { return new Dec
 export class FeasibilityCalculationService {
   constructor(private readonly feasibility: FeasibilityService, private readonly prisma: PrismaService, private readonly audit: AuditService) {}
 
-  async calculate(projectId: string, scenarioId: string, tenantId: string) {
+  /**
+   * טוען פרופיל ותרחיש פעם אחת. מופרד מ-`compute` כדי שניתוח הרגישות
+   * יוכל להריץ את אותו מנוע בדיוק על קלט מותאם, בלי לגעת שוב במסד.
+   */
+  private async load(projectId: string, scenarioId: string, tenantId: string) {
     const profile = await this.feasibility.find(projectId, tenantId)
     if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים עדיין פרופיל דוח אפס לפרויקט')
     const scenario = profile.scenarios.find((row) => row.id === scenarioId)
     if (!scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
+    return { profile, scenario }
+  }
 
+  async calculate(projectId: string, scenarioId: string, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    return this.compute(profile, scenario)
+  }
+
+  /**
+   * המנוע עצמו. פונקציה טהורה מעל קלט טעון: אין בה גישה למסד ואין בה
+   * תלות ב-`projectId`. זו הנקודה שמאפשרת לרגישות להיות הרצה אמיתית
+   * ולא הכפלה של תוצאה קפואה.
+   */
+  compute(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario) {
     const issues: ValidationIssue[] = []
     const revenue: CalculationLine[] = []
     const costs: CalculationLine[] = []
@@ -73,6 +115,11 @@ export class FeasibilityCalculationService {
     }
 
     for (const line of scenario.unitMix) {
+      if (!line.disposition || line.disposition === 'UNCLASSIFIED') {
+        issues.push({ code: 'UNIT_DISPOSITION_MISSING', severity: 'CRITICAL', message: `לשורת התמהיל „${line.label}” חסר שיוך ליזם, לתמורה או ליחידות קיימות. היא אינה נכללת בהכנסות עד לסיווג.`, entityId: line.id })
+        continue
+      }
+      if (line.disposition !== 'DEVELOPER_SALE') continue
       const unitCount = new Decimal(line.unitCount)
       let unitValue: Decimal | null = null
       let formula = ''
@@ -141,25 +188,103 @@ export class FeasibilityCalculationService {
     const allocatedRevenueBySource = new Map<string, Decimal>()
     const allocatedCostsBySource = new Map<string, Decimal>()
     const allocatedCompensationBySource = new Map<string, Decimal>()
+    const costAllocationSchedule = new Map<string, Array<{ month: string; amount: Decimal }>>()
+    const nonCanonicalPeriods = new Set<string>()
     const periods = new Map<string, { inflows: Decimal; outflows: Decimal }>()
     const debtMovementByPeriod = new Map<string, Decimal>()
     for (const allocation of scenario.cashFlowAllocations) {
-      const month = allocation.periodStart.toISOString().slice(0, 10)
+      // הדלי הוא חודש קלנדרי. תאריך שאינו הראשון בחודש נכנס לחודש שלו,
+      // ומדווח — כדי שהנרמול יהיה גלוי ולא שקט.
+      const month = `${allocation.periodStart.toISOString().slice(0, 7)}-01`
+      if (allocation.periodStart.toISOString().slice(0, 10) !== month) nonCanonicalPeriods.add(allocation.periodStart.toISOString().slice(0, 10))
       const period = periods.get(month) ?? { inflows: new Decimal(0), outflows: new Decimal(0) }
       const value = read(allocation.amount)
       if (allocation.direction === 'INFLOW') period.inflows = period.inflows.plus(value)
       else period.outflows = period.outflows.plus(value)
       periods.set(month, period)
       if (allocation.sourceKind === 'REVENUE' && allocation.sourceLineId) allocatedRevenueBySource.set(allocation.sourceLineId, (allocatedRevenueBySource.get(allocation.sourceLineId) ?? new Decimal(0)).plus(value))
-      if (allocation.sourceKind === 'COST' && allocation.sourceLineId) allocatedCostsBySource.set(allocation.sourceLineId, (allocatedCostsBySource.get(allocation.sourceLineId) ?? new Decimal(0)).plus(value))
+      if (allocation.sourceKind === 'COST' && allocation.sourceLineId) {
+        allocatedCostsBySource.set(allocation.sourceLineId, (allocatedCostsBySource.get(allocation.sourceLineId) ?? new Decimal(0)).plus(value))
+        // התאריך נשמר לצד הסכום: התייקרות היא פונקציה של מתי ההוצאה מתרחשת,
+        // ולא של גודלה בלבד, ולכן סכום בלי מועד אינו מספיק כאן.
+        costAllocationSchedule.set(allocation.sourceLineId, [...(costAllocationSchedule.get(allocation.sourceLineId) ?? []), { month, amount: value }])
+      }
       if (allocation.sourceKind === 'COMPENSATION' && allocation.sourceLineId) allocatedCompensationBySource.set(allocation.sourceLineId, (allocatedCompensationBySource.get(allocation.sourceLineId) ?? new Decimal(0)).plus(value))
       if (allocation.sourceKind === 'DEBT') debtMovementByPeriod.set(month, (debtMovementByPeriod.get(month) ?? new Decimal(0)).plus(allocation.direction === 'INFLOW' ? value : value.negated()))
+    }
+    if (nonCanonicalPeriods.size > 0) {
+      issues.push({ code: 'CASH_FLOW_PERIOD_NOT_MONTH_START', severity: 'WARNING', message: `${nonCanonicalPeriods.size} הקצאות תזרים אינן בתחילת חודש ושויכו לחודש שלהן. בדקו את מועדי ההקצאה.` })
     }
     this.reconcileAllocations(expectedRevenueBySource, allocatedRevenueBySource, 'REVENUE', issues)
     const expectedDirectCosts = new Map([...expectedCostsBySource].filter(([id]) => !scenario.compensations.some((line) => line.id === id)))
     const expectedCompensation = new Map(compensation.map((line) => [line.id, new Decimal(line.amount)]))
     this.reconcileAllocations(expectedDirectCosts, allocatedCostsBySource, 'COST', issues)
     this.reconcileAllocations(expectedCompensation, allocatedCompensationBySource, 'COMPENSATION', issues)
+
+    // ── התייקרות ורזרבה ──────────────────────────────────────────────────────
+    //
+    // שני השדות האלה נקלטו עד כה ולא השפיעו על דבר. הם מיושמים כשורות עלות
+    // *נגזרות ונפרדות*, ולא כהגדלה של שורת הבסיס, משתי סיבות:
+    //
+    // 1. פיוס. שורת הבסיס חייבת להמשיך להתאים בדיוק להקצאות התזרים שהמשתמש
+    //    הזין. הגדלת השורה עצמה היתה שוברת את הפיוס לכל שורה עם התייקרות.
+    // 2. עקיבות. תוספת נפרדת עם נוסחה משלה ניתנת להסבר מול בעל מקצוע;
+    //    מספר מנופח בתוך שורת הבסיס אינו.
+    //
+    // ההתייקרות מחושבת מהמועד הקובע של הפרופיל עד מועד ההוצאה בפועל, לפי
+    // ההקצאה שהמשתמש קבע. תוספת שאין לה מועד אינה ניתנת לחישוב, ולכן שורה
+    // עם שיעור התייקרות וללא הקצאת תזרים מסומנת ואינה מומצאת.
+    const valuationDay = profile.valuationDate.toISOString().slice(0, 10)
+    const escalationLines: CalculationLine[] = []
+    const upliftOutflowByPeriod = new Map<string, Decimal>()
+    const addUpliftOutflow = (month: string, value: Decimal) => {
+      upliftOutflowByPeriod.set(month, (upliftOutflowByPeriod.get(month) ?? new Decimal(0)).plus(value))
+    }
+    for (const line of scenario.costLines) {
+      const escalationRate = line.escalationRate ? read(line.escalationRate) : new Decimal(0)
+      const contingencyRate = line.contingencyRate ? read(line.contingencyRate) : new Decimal(0)
+      if (escalationRate.isZero() && contingencyRate.isZero()) continue
+      if (escalationRate.lt(0) || contingencyRate.lt(0)) {
+        issues.push({ code: 'COST_UPLIFT_RATE_NEGATIVE', severity: 'CRITICAL', message: `לשורה „${line.label}” יש שיעור התייקרות או רזרבה שלילי.`, entityId: line.id })
+        continue
+      }
+      const schedule = costAllocationSchedule.get(line.id) ?? []
+      if (schedule.length === 0) {
+        issues.push({ code: 'COST_UPLIFT_WITHOUT_SCHEDULE', severity: 'WARNING', message: `לשורה „${line.label}” הוגדרה התייקרות או רזרבה, אך אין לה הקצאת תזרים ולכן התוספת אינה מחושבת.`, entityId: line.id })
+        continue
+      }
+      if (escalationRate.gt(0)) {
+        let escalationUplift = new Decimal(0)
+        for (const entry of schedule) {
+          const years = new Decimal(daysBetween(valuationDay, entry.month)).div(365)
+          const uplift = entry.amount.mul(new Decimal(1).plus(escalationRate).pow(years).minus(1))
+          escalationUplift = escalationUplift.plus(uplift)
+          addUpliftOutflow(entry.month, uplift)
+        }
+        escalationLines.push({ id: `${line.id}:escalation`, label: `${line.label} · התייקרות`, category: line.category, amount: amount(escalationUplift), formula: `Σ הקצאה × ((1 + ${escalationRate.toFixed(8)}) ^ (ימים מהמועד הקובע ${valuationDay} עד מועד ההוצאה ÷ 365) − 1)` })
+      }
+      if (contingencyRate.gt(0)) {
+        // רזרבה אינה תלוית זמן. היא נפרסת יחסית להקצאות כדי שהיא תופיע
+        // בתזרים באותם חודשים שבהם ההוצאה עצמה מתרחשת.
+        const scheduleTotal = schedule.reduce((sum, entry) => sum.plus(entry.amount), new Decimal(0))
+        let contingencyUplift = new Decimal(0)
+        for (const entry of schedule) {
+          const uplift = entry.amount.mul(contingencyRate)
+          contingencyUplift = contingencyUplift.plus(uplift)
+          addUpliftOutflow(entry.month, uplift)
+        }
+        escalationLines.push({ id: `${line.id}:contingency`, label: `${line.label} · רזרבה`, category: line.category, amount: amount(contingencyUplift), formula: `הקצאת תזרים לשורה (${amount(scheduleTotal)}) × ${contingencyRate.toFixed(8)}` })
+      }
+    }
+    if (escalationLines.length > 0) {
+      costs.push(...escalationLines)
+      totalCosts = totalCosts.plus(escalationLines.reduce((sum, line) => sum.plus(line.amount), new Decimal(0)))
+      for (const [month, value] of upliftOutflowByPeriod) {
+        const period = periods.get(month)
+        if (period) period.outflows = period.outflows.plus(value)
+      }
+    }
+
     const financingCosts: CalculationLine[] = []
     let outstandingDebt = new Decimal(0)
     let peakDebt = new Decimal(0)
@@ -177,30 +302,62 @@ export class FeasibilityCalculationService {
       financingFees = arrangementFee.plus(guaranteeFee)
     }
     if (scenario.financing?.annualInterestRate && debtMovementByPeriod.size === 0) issues.push({ code: 'DEBT_DRAWDOWN_MISSING', severity: 'WARNING', message: 'הוזנה ריבית אך אין משיכות/החזרי חוב בתזרים; עלות מימון אינה מחושבת.' })
+    // מועד המשיכה הראשונה הוא נקודת האפס של הגרייס ושל תקופת המימון כאחד.
+    // בלעדיו אין ממה לספור, ולכן שני השדות אינם מיושמים בשקט על ציר שרירותי.
+    const drawdownPeriods = [...debtMovementByPeriod.entries()].filter(([, movement]) => movement.gt(0)).map(([month]) => month).sort()
+    const firstDrawdownPeriod = drawdownPeriods[0] ?? null
+    const graceMonths = scenario.financing?.graceMonths ?? 0
+    const financingMonths = scenario.financing?.financingMonths ?? null
+    if (graceMonths > 0 && !firstDrawdownPeriod) issues.push({ code: 'GRACE_WITHOUT_DRAWDOWN', severity: 'WARNING', message: 'הוגדרו חודשי גרייס אך אין משיכת חוב בתזרים; הגרייס אינו מיושם.' })
+    if (financingMonths !== null && !firstDrawdownPeriod) issues.push({ code: 'FINANCING_TERM_WITHOUT_DRAWDOWN', severity: 'WARNING', message: 'הוגדרה תקופת מימון אך אין משיכת חוב בתזרים; התקופה אינה נבדקת.' })
+    const withinGrace = (periodStart: string) => Boolean(firstDrawdownPeriod) && graceMonths > 0 && monthlyPeriodDistance(firstDrawdownPeriod!, periodStart) < graceMonths
+    let lastPeriodWithDebt: string | null = null
+
     let cumulative = new Decimal(0)
     let peakNegative = new Decimal(0)
     const projectPeriodFlows: Decimal[] = []
     const equityPeriodFlows: Decimal[] = []
     let equityInvested = new Decimal(0)
     let equityDistributed = new Decimal(0)
-    const cashFlow: CashFlowPeriod[] = [...periods.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([periodStart, values], index) => {
+    // ── ציר חודשי רציף (P0-3) ────────────────────────────────────────────────
+    //
+    // עד לשינוי הזה הציר נבנה מהחודשים שבהם *היתה* תנועה בלבד. חודש בלי
+    // תנועה פשוט לא היה קיים, ולכן חוב שנמשך ביולי ונפרע ביוני שאחריו נשא
+    // ריבית של שלושה חודשים במקום שנים־עשר, ו-IRR חושב על ציר מכווץ.
+    // חודש שקט הוא חודש שקרה.
+    const periodAxis = continuousMonthlyPeriodAxis([...periods.keys()])
+    const cashFlow: CashFlowPeriod[] = periodAxis.map((periodStart, index) => {
+      const values = periods.get(periodStart) ?? { inflows: new Decimal(0), outflows: new Decimal(0) }
       if (index === 0 && financingFees.gt(0)) {
         values.outflows = values.outflows.plus(financingFees)
         if (arrangementFeeRate.gt(0)) financingCosts.push({ id: 'arrangement-fee', label: 'עמלת סידור מימון', category: 'FINANCING', amount: amount(configuredDebt!.mul(arrangementFeeRate)), formula: 'סך חוב מוגדר × שיעור עמלת סידור' })
         if (guaranteeFeeRate.gt(0)) financingCosts.push({ id: 'guarantee-fee', label: 'עמלת ערבויות', category: 'FINANCING', amount: amount(configuredDebt!.mul(guaranteeFeeRate)), formula: 'סך חוב מוגדר × שיעור עמלת ערבויות' })
       }
       const debtMovement = debtMovementByPeriod.get(periodStart) ?? new Decimal(0)
+      const openingDebt = outstandingDebt
       const endingDebt = outstandingDebt.plus(debtMovement)
+      // החוב "חי" בחודש גם אם נפרע בתוכו. מדידה לפי יתרת סוף חודש בלבד
+      // היתה מקצרת את תקופת המימון בדיוק בחודש הפירעון.
+      if (openingDebt.gt(0) || debtMovement.gt(0)) lastPeriodWithDebt = periodStart
       if (endingDebt.isNegative()) issues.push({ code: 'DEBT_BALANCE_NEGATIVE', severity: 'CRITICAL', message: 'החזר חוב גדול מיתרת החוב בתזרים.', entityId: periodStart })
       let interest = new Decimal(0)
+      let capitalisedInterest = new Decimal(0)
       if (scenario.financing?.annualInterestRate && debtMovementByPeriod.size > 0) {
-        const daysInMonth = new Date(Date.UTC(Number(periodStart.slice(0, 4)), Number(periodStart.slice(5, 7)), 0)).getUTCDate()
-        interest = outstandingDebt.plus(endingDebt).div(2).mul(read(scenario.financing.annualInterestRate)).mul(daysInMonth).div(365)
-        values.outflows = values.outflows.plus(interest)
-        financingCosts.push({ id: `interest:${periodStart}`, label: `ריבית מימון ${periodStart}`, category: 'FINANCING', amount: amount(interest), formula: 'יתרת חוב ממוצעת × ריבית שנתית × ימים ÷ 365' })
+        interest = averageMonthlyDebtInterest(outstandingDebt, debtMovement, read(scenario.financing.annualInterestRate), periodStart)
+        // תקופת גרייס: הריבית נצברת ואינה משולמת. היא נזקפת ליתרת החוב,
+        // ולכן היא נושאת ריבית בעצמה בחודשים הבאים — וזו בדיוק המשמעות
+        // הכלכלית של גרייס, להבדיל מהנחה.
+        const inGrace = withinGrace(periodStart)
+        if (inGrace) {
+          capitalisedInterest = interest
+          financingCosts.push({ id: `interest:${periodStart}`, label: `ריבית מימון ${periodStart} · נצברת בגרייס`, category: 'FINANCING', amount: amount(interest), formula: `יתרת חוב ממוצעת × ריבית שנתית × ימים ÷ 365, נזקפת לקרן (גרייס ${graceMonths} חודשים מ-${firstDrawdownPeriod})` })
+        } else {
+          values.outflows = values.outflows.plus(interest)
+          financingCosts.push({ id: `interest:${periodStart}`, label: `ריבית מימון ${periodStart}`, category: 'FINANCING', amount: amount(interest), formula: 'יתרת חוב ממוצעת × ריבית שנתית × ימים ÷ 365' })
+        }
         accumulatedInterest = accumulatedInterest.plus(interest)
       }
-      outstandingDebt = endingDebt
+      outstandingDebt = endingDebt.plus(capitalisedInterest)
       if (outstandingDebt.greaterThan(peakDebt)) peakDebt = outstandingDebt
       const net = values.inflows.minus(values.outflows)
       const debtDrawOrRepayment = debtMovement
@@ -209,7 +366,7 @@ export class FeasibilityCalculationService {
         .reduce((sum, allocation) => sum.plus(allocation.direction === 'INFLOW' ? read(allocation.amount) : read(allocation.amount).negated()), new Decimal(0))
       // Project IRR is unlevered: debt/equity movements and calculated interest
       // are excluded. Equity IRR uses explicit investor contributions/distributions.
-      projectPeriodFlows.push(net.minus(debtDrawOrRepayment).minus(equityMovement).plus(interest))
+      projectPeriodFlows.push(net.minus(debtDrawOrRepayment).minus(equityMovement).plus(interest.minus(capitalisedInterest)))
       equityPeriodFlows.push(equityMovement.negated())
       if (equityMovement.gt(0)) equityInvested = equityInvested.plus(equityMovement)
       if (equityMovement.lt(0)) equityDistributed = equityDistributed.plus(equityMovement.abs())
@@ -222,6 +379,86 @@ export class FeasibilityCalculationService {
     costs.push(...financingCosts)
     totalCosts = totalCosts.plus(accumulatedInterest).plus(financingFees)
 
+    // ── LTC, LTV ותקופת המימון ───────────────────────────────────────────────
+    //
+    // שלושת אלה אינם מניעים חישוב אלא אמות מידה. כך הם נקראים בגיליון תנאים
+    // של גוף מממן, וכך הם נבדקים כאן: החוב בפועל נמדד מולם, וחריגה מסומנת.
+    // הם *לא* משמשים לגזירת סכום חוב — גזירה כזו היתה מחייבת גם לוח משיכות
+    // מומצא, וזה בדיוק מה שהמפרט אוסר.
+    //
+    // המדידה היא לפי חוב השיא, לא לפי החוב המוגדר: בליווי בנייה החשיפה
+    // המרבית היא המדד שהגוף המממן בוחן.
+    const measuredDebt = peakDebt.gt(0) ? peakDebt : (configuredDebt ?? new Decimal(0))
+    const measuredDebtBasis = peakDebt.gt(0) ? 'חוב שיא בתזרים' : 'סכום חוב מוגדר'
+    const actualLtc = totalCosts.gt(0) && measuredDebt.gt(0) ? measuredDebt.div(totalCosts) : null
+    const actualLtv = totalRevenue.gt(0) && measuredDebt.gt(0) ? measuredDebt.div(totalRevenue) : null
+    const ltcLimit = scenario.financing?.ltc ? read(scenario.financing.ltc) : null
+    const ltvLimit = scenario.financing?.ltv ? read(scenario.financing.ltv) : null
+    for (const [key, limit] of [['LTC', ltcLimit], ['LTV', ltvLimit]] as const) {
+      if (limit && (limit.lte(0) || limit.gt(1))) issues.push({ code: 'FINANCING_RATIO_LIMIT_INVALID', severity: 'CRITICAL', message: `מגבלת ${key} חייבת להיות שבר גדול מ־0 ולא גדול מ־1.` })
+    }
+    if (ltcLimit && ltcLimit.gt(0) && ltcLimit.lte(1) && actualLtc && actualLtc.gt(ltcLimit)) {
+      issues.push({ code: 'LTC_LIMIT_EXCEEDED', severity: 'CRITICAL', message: `החוב חורג ממגבלת ה־LTC: ${actualLtc.mul(100).toFixed(2)}% מול מגבלה של ${ltcLimit.mul(100).toFixed(2)}%.` })
+    }
+    if (ltvLimit && ltvLimit.gt(0) && ltvLimit.lte(1) && actualLtv && actualLtv.gt(ltvLimit)) {
+      issues.push({ code: 'LTV_LIMIT_EXCEEDED', severity: 'CRITICAL', message: `החוב חורג ממגבלת ה־LTV: ${actualLtv.mul(100).toFixed(2)}% מול מגבלה של ${ltvLimit.mul(100).toFixed(2)}%.` })
+    }
+    if ((ltcLimit || ltvLimit) && measuredDebt.lte(0)) {
+      issues.push({ code: 'FINANCING_RATIO_WITHOUT_DEBT', severity: 'WARNING', message: 'הוגדרו מגבלות LTC/LTV אך אין חוב שניתן למדוד מולן.' })
+    }
+    let financingTermUsedMonths: number | null = null
+    if (financingMonths !== null && firstDrawdownPeriod) {
+      if (financingMonths <= 0) {
+        issues.push({ code: 'FINANCING_TERM_INVALID', severity: 'CRITICAL', message: 'תקופת המימון חייבת להיות חיובית.' })
+      } else {
+        // אורך הניצול נמדד עד החודש האחרון שבו נותרה יתרת חוב, ועוד חודש
+        // אחד משום שהחודש הראשון עצמו נספר.
+        financingTermUsedMonths = lastPeriodWithDebt ? monthlyPeriodDistance(firstDrawdownPeriod, lastPeriodWithDebt) + 1 : 0
+        if (financingTermUsedMonths > financingMonths) {
+          issues.push({ code: 'FINANCING_TERM_EXCEEDED', severity: 'CRITICAL', message: `החוב נותר פתוח ${financingTermUsedMonths} חודשים מול תקופת מימון של ${financingMonths} חודשים; נדרשת הארכה או שינוי לוח ההחזר.` })
+        }
+      }
+    }
+    // ── הון עצמי מוגדר מול הון עצמי בפועל ────────────────────────────────
+    //
+    // `equityAmount` הוא ההון שהיזם התחייב להעמיד. הוא נבדק באותו היגיון
+    // שבו נבדקות מגבלות ה־LTC/LTV שלמעלה: מודדים את המצב בפועל ומשווים
+    // מולו. הוא *לא* משמש לגזירת תנועות הון — ההון בפועל מגיע מהקצאות
+    // התזרים המתוארכות, וגזירה ממנו היתה ממציאה לוח הזרמות שלא הוזן.
+    //
+    // ולכן הוא גם אינו אמור להזיז את ה־NPV של הפרויקט: כמה הון היזם מעמיד
+    // אינו משנה כמה הפרויקט מרוויח. הוא קובע אם התוכנית ממומנת, ועל כך
+    // הבדיקות כאן.
+    const committedEquity = scenario.financing?.equityAmount ? read(scenario.financing.equityAmount) : null
+    let equityFundingGap: Decimal | null = null
+    if (committedEquity) {
+      if (committedEquity.lt(0)) {
+        issues.push({ code: 'FINANCING_EQUITY_INVALID', severity: 'CRITICAL', message: 'ההון העצמי המוגדר אינו יכול להיות שלילי.' })
+      } else {
+        // מקורות מול שימושים: חוב נמדד ועוד הון מוגדר חייבים לכסות את סך
+        // העלויות. פער כאן אינו אזהרה — זו תוכנית שאינה ממומנת.
+        const committedFunding = measuredDebt.plus(committedEquity)
+        if (totalCosts.gt(0) && committedFunding.lt(totalCosts)) {
+          equityFundingGap = totalCosts.minus(committedFunding)
+          issues.push({
+            code: 'FUNDING_GAP',
+            severity: 'CRITICAL',
+            message: `מקורות המימון אינם מכסים את העלויות: חוב ${amount(measuredDebt)} ועוד הון עצמי ${amount(committedEquity)} מול עלויות ${amount(totalCosts)} — חסרים ${amount(equityFundingGap)}.`,
+          })
+        }
+        if (committedEquity.gt(0) && equityInvested.lte(0)) {
+          issues.push({ code: 'EQUITY_NOT_DRAWN', severity: 'WARNING', message: 'הוגדר הון עצמי אך אין הקצאות תזרים מסוג EQUITY, ולכן הוא אינו מוזרם בפועל בתזרים.' })
+        } else if (equityInvested.gt(committedEquity)) {
+          issues.push({
+            code: 'EQUITY_COMMITMENT_EXCEEDED',
+            severity: 'CRITICAL',
+            message: `ההון העצמי שנדרש בתזרים (${amount(equityInvested)}) גדול מההון שהוגדר (${amount(committedEquity)}).`,
+          })
+        }
+      }
+    }
+    if (outstandingDebt.gt('0.01')) issues.push({ code: 'DEBT_NOT_REPAID', severity: 'CRITICAL', message: `בתום התזרים נותרה יתרת חוב של ${amount(outstandingDebt)}; הרווח המוצג אינו סופי כל עוד החוב אינו נפרע.` })
+
     if (totalRevenue.lte(0)) issues.push({ code: 'REVENUE_ZERO', severity: 'CRITICAL', message: 'לא ניתן להציג כדאיות: סך ההכנסות הוא אפס.' })
     if (totalCosts.lte(0)) issues.push({ code: 'COST_ZERO', severity: 'CRITICAL', message: 'לא ניתן להציג כדאיות: סך העלויות הוא אפס.' })
     if (!scenario.financing) issues.push({ code: 'FINANCING_MISSING', severity: 'WARNING', message: 'טרם הוזנו הנחות מימון; ריבית, חוב שיא והון עצמי אינם מחושבים.' })
@@ -230,16 +467,34 @@ export class FeasibilityCalculationService {
     const profitBeforeFinancing = totalRevenue.minus(totalCostsBeforeFinancing)
     const projectProfit = totalRevenue.minus(totalCosts)
     const annualDiscountRate = profile.assumptions.find((assumption) => assumption.key === 'annual-discount-rate')?.value
-    const projectIrrMonthly = irr(projectPeriodFlows)
-    const equityIrrMonthly = irr(equityPeriodFlows)
-    const projectIrrAnnual = projectIrrMonthly ? annualizeMonthlyRate(projectIrrMonthly) : null
-    const equityIrrAnnual = equityIrrMonthly ? annualizeMonthlyRate(equityIrrMonthly) : null
-    if (!projectIrrMonthly) issues.push({ code: 'PROJECT_IRR_UNAVAILABLE', severity: 'WARNING', message: 'לא ניתן לחשב IRR לפרויקט: דרושים תזרימים חיוביים ושליליים מלאים.' })
-    if (!equityIrrMonthly) issues.push({ code: 'EQUITY_IRR_UNAVAILABLE', severity: 'WARNING', message: 'לא ניתן לחשב IRR להון העצמי: דרושים תזרימים חיוביים ושליליים מלאים.' })
+    // ── בסיס התשואה (P0-4) ───────────────────────────────────────────────────
+    //
+    // IRR תקופתי לגיטימי רק כשהמרווח בין התקופות אחיד. אחרי P0-3 הציר אחיד
+    // מעצם בנייתו, אבל זו הנחה שצריכה להיות *נבדקת* ולא מונחת: אם הציר
+    // יפסיק להיות אחיד, המנוע יעבור ל-XIRR לפי ימים בפועל במקום להמשיך
+    // לחשב כאילו כל פער שווה.
+    const axisIsUniform = isUniformMonthlyAxis(periodAxis)
+    if (!axisIsUniform && periodAxis.length > 1) {
+      issues.push({ code: 'CASH_FLOW_AXIS_NOT_UNIFORM', severity: 'INFO', message: 'ציר התזרים אינו אחיד; התשואה מחושבת לפי XIRR על ימים בפועל.' })
+    }
+    const datedProjectFlows = projectPeriodFlows.map((flowAmount, index) => ({ date: periodAxis[index]!, amount: flowAmount }))
+    const datedEquityFlows = equityPeriodFlows.map((flowAmount, index) => ({ date: periodAxis[index]!, amount: flowAmount }))
+    // XIRR נשמר גם כשהציר אחיד: זה המספר שהשמאי יראה בגיליון שלו מול
+    // הפונקציה XIRR של Excel, והוא נדרש כדי שהדוח יהיה בר־בדיקה מבחוץ.
+    const projectXirrAnnual = xirr(datedProjectFlows)
+    const equityXirrAnnual = xirr(datedEquityFlows)
+    const projectIrrMonthly = axisIsUniform ? irr(projectPeriodFlows) : null
+    const equityIrrMonthly = axisIsUniform ? irr(equityPeriodFlows) : null
+    const projectIrrAnnual = projectIrrMonthly ? annualizeMonthlyRate(projectIrrMonthly) : projectXirrAnnual
+    const equityIrrAnnual = equityIrrMonthly ? annualizeMonthlyRate(equityIrrMonthly) : equityXirrAnnual
+    if (!projectIrrAnnual) issues.push({ code: 'PROJECT_IRR_UNAVAILABLE', severity: 'WARNING', message: 'לא ניתן לחשב IRR לפרויקט: דרושים תזרימים חיוביים ושליליים מלאים.' })
+    if (!equityIrrAnnual) issues.push({ code: 'EQUITY_IRR_UNAVAILABLE', severity: 'WARNING', message: 'לא ניתן לחשב IRR להון העצמי: דרושים תזרימים חיוביים ושליליים מלאים.' })
     if (!annualDiscountRate) issues.push({ code: 'DISCOUNT_RATE_MISSING', severity: 'WARNING', message: 'לא ניתן לחשב NPV ללא הנחת annual-discount-rate במרשם ההנחות.' })
     const periodicDiscountRate = annualDiscountRate ? monthlyRateFromAnnual(read(annualDiscountRate)) : null
-    const projectNpv = periodicDiscountRate ? npv(projectPeriodFlows, periodicDiscountRate) : null
-    const equityNpv = periodicDiscountRate ? npv(equityPeriodFlows, periodicDiscountRate) : null
+    const projectNpv = !annualDiscountRate ? null
+      : axisIsUniform ? npv(projectPeriodFlows, periodicDiscountRate!) : xnpv(datedProjectFlows, read(annualDiscountRate))
+    const equityNpv = !annualDiscountRate ? null
+      : axisIsUniform ? npv(equityPeriodFlows, periodicDiscountRate!) : xnpv(datedEquityFlows, read(annualDiscountRate))
     const minimumProfitMargin = profile.assumptions.find((assumption) => assumption.key === 'minimum-profit-margin')?.value
     const minimumProjectIrrAnnual = profile.assumptions.find((assumption) => assumption.key === 'minimum-project-irr-annual')?.value
     const actualProfitMargin = totalRevenue.gt(0) ? projectProfit.div(totalRevenue) : null
@@ -252,7 +507,7 @@ export class FeasibilityCalculationService {
     if (minimumProjectIrrAnnual && projectIrrAnnual && read(minimumProjectIrrAnnual).gte(0) && read(minimumProjectIrrAnnual).lt(1) && projectIrrAnnual.lt(read(minimumProjectIrrAnnual))) {
       issues.push({ code: 'PROJECT_IRR_BELOW_TARGET', severity: 'WARNING', message: 'IRR הפרויקט נמוך מיעד המינימום שהוגדר בתרחיש.' })
     }
-    const totalSaleableArea = scenario.unitMix.reduce((sum, line) => sum.plus(read(line.saleableAreaSqm).mul(line.unitCount)), new Decimal(0))
+    const totalSaleableArea = scenario.unitMix.filter((line) => line.disposition === 'DEVELOPER_SALE').reduce((sum, line) => sum.plus(read(line.saleableAreaSqm).mul(line.unitCount)), new Decimal(0))
       .plus(scenario.revenueLines.reduce((sum, line) => sum.plus(read(line.saleableAreaSqm)), new Decimal(0)))
     const constructionLines = scenario.costLines.filter((line) => line.category === 'CONSTRUCTION')
     const constructionQuantity = constructionLines.reduce((sum, line) => sum.plus(read(line.quantity)), new Decimal(0))
@@ -286,6 +541,50 @@ export class FeasibilityCalculationService {
       }
     }
     const rightsUnitCount = profile.planningRights.reduce((sum, right) => sum.plus(right.unitCount ?? 0), new Decimal(0))
+    const replacementHoldings = scenario.compensations.filter((line) => read(line.replacementAreaSqm).gt(0) || read(line.replacementValue).gt(0))
+    const replacementApartments = new Set(replacementHoldings.map((line) => line.ownerApartment?.apartmentId).filter((id): id is string => Boolean(id)))
+    const replacementUnits = scenario.unitMix.filter((line) => line.disposition === 'OWNER_REPLACEMENT').reduce((sum, line) => sum + line.unitCount, 0)
+    const allocationReferences = new Set<string>()
+    const allocatedHoldings = new Set<string>()
+    let allocationsComplete = true
+    for (const line of scenario.unitMix) {
+      const allocations = replacementAllocationsOf(line)
+      if (line.disposition !== 'OWNER_REPLACEMENT') {
+        if (allocations.length) {
+          allocationsComplete = false
+          issues.push({ code: 'REPLACEMENT_ALLOCATION_ON_SALE_UNITS', severity: 'CRITICAL', message: 'קיימות הקצאות תמורה על שורת תמהיל שאינה מסווגת כתמורה.', entityId: line.id })
+        }
+        continue
+      }
+      const summary = replacementAllocationSummary(allocations)
+      if (summary.invalid || summary.incomplete || summary.overallocated || summary.unitCount !== line.unitCount) {
+        allocationsComplete = false
+        issues.push({ code: 'REPLACEMENT_ALLOCATION_INCOMPLETE', severity: 'CRITICAL', message: `הקצאות התמורה בשורה „${line.label}” אינן מכסות את מלוא הדירות והזכויות.`, entityId: line.id })
+      }
+      const lineReferences = new Set(allocations.map((allocation) => allocation.unitReference))
+      for (const reference of lineReferences) {
+        if (allocationReferences.has(reference)) {
+          allocationsComplete = false
+          issues.push({ code: 'REPLACEMENT_REFERENCE_DUPLICATE', severity: 'CRITICAL', message: `דירת התמורה „${reference}” מופיעה ביותר משורת תמהיל אחת.`, entityId: line.id })
+        }
+        allocationReferences.add(reference)
+      }
+      for (const allocation of allocations) allocatedHoldings.add(allocation.ownerApartmentId)
+    }
+    if (replacementHoldings.some((holding) => !allocatedHoldings.has(holding.ownerApartmentId))) {
+      allocationsComplete = false
+      issues.push({ code: 'REPLACEMENT_HOLDING_UNALLOCATED', severity: 'CRITICAL', message: 'קיימת תמורה בדירה לבעל זכויות ללא הקצאה פרטנית של דירת תמורה.' })
+    }
+    if (replacementHoldings.some((line) => !line.ownerApartment?.apartmentId)) {
+      issues.push({ code: 'COMPENSATION_OWNERSHIP_LINK_MISSING', severity: 'CRITICAL', message: 'לחלק מדירות התמורה חסר קישור תקין לדירה במרשם הבעלות.' })
+    }
+    if (replacementUnits < replacementApartments.size) {
+      issues.push({ code: 'REPLACEMENT_UNITS_BELOW_COMMITMENTS', severity: replacementUnits === 0 ? 'CRITICAL' : 'WARNING', message: `בתמהיל ${replacementUnits} דירות תמורה מול ${replacementApartments.size} דירות קיימות עם תמורה בדירה. יש לאמת הקצאות פרטניות; אין להניח יחס של דירה אחת לכל נכס. בעלים משותפים נספרים לפי דירה אחת.` })
+    } else if (replacementUnits > 0 && replacementApartments.size === 0 && allocatedHoldings.size === 0) {
+      issues.push({ code: 'REPLACEMENT_OWNERSHIP_EVIDENCE_MISSING', severity: 'CRITICAL', message: 'הוזנו דירות תמורה בתמהיל אך אין תמורות בדירה המקושרות למרשם הבעלות.' })
+    } else if (replacementUnits > replacementApartments.size) {
+      issues.push({ code: 'REPLACEMENT_ALLOCATION_REVIEW_REQUIRED', severity: 'WARNING', message: 'מספר דירות התמורה גדול ממספר הדירות הקיימות המקושרות. יש לאמת הקצאות פרטניות, לרבות יותר מדירת תמורה אחת לנכס.' })
+    }
     const mixUnitCount = scenario.unitMix.reduce((sum, line) => sum.plus(line.unitCount), new Decimal(0))
     if (rightsUnitCount.gt(0) && mixUnitCount.gt(rightsUnitCount)) {
       issues.push({ code: 'UNIT_MIX_EXCEEDS_RIGHTS', severity: 'CRITICAL', message: 'מספר היחידות בתמהיל גדול ממספר היחידות בזכויות התכנון.' })
@@ -357,16 +656,38 @@ export class FeasibilityCalculationService {
       residualLandValue = totalRevenue.minus(totalCosts.minus(landCosts)).minus(requiredDeveloperProfit)
     }
     const hasCritical = issues.some((issue) => issue.severity === 'CRITICAL')
-    const feasibilityStatus = hasCritical ? 'DATA_INCOMPLETE' : residualLandValue === null ? 'CONDITIONAL' : residualLandValue.gte(0) && projectProfit.gte(0) ? 'FEASIBLE' : 'NOT_FEASIBLE'
+    const feasibilityStatus = hasCritical ? 'DATA_INCOMPLETE' : residualLandValue === null || requiredDeveloperProfit === null ? 'CONDITIONAL' : residualLandValue.gte(0) && projectProfit.gte(requiredDeveloperProfit) ? 'FEASIBLE' : 'NOT_FEASIBLE'
     const criticalCount = issues.filter((issue) => issue.severity === 'CRITICAL').length
     const warningCount = issues.filter((issue) => issue.severity === 'WARNING').length
     return {
-      engineVersion: '1.0.0', currency: 'ILS', vatBasis: 'VAT_EXCLUDED',
+      engineVersion: '1.1.0', currency: 'ILS', vatBasis: 'VAT_EXCLUDED',
+      unitSummary: {
+        totalUnits: scenario.unitMix.reduce((sum, line) => sum + line.unitCount, 0),
+        developerSaleUnits: scenario.unitMix.filter((line) => line.disposition === 'DEVELOPER_SALE').reduce((sum, line) => sum + line.unitCount, 0),
+        ownerReplacementUnits: scenario.unitMix.filter((line) => line.disposition === 'OWNER_REPLACEMENT').reduce((sum, line) => sum + line.unitCount, 0),
+        retainedUnits: scenario.unitMix.filter((line) => line.disposition === 'RETAINED').reduce((sum, line) => sum + line.unitCount, 0),
+        unclassifiedUnits: scenario.unitMix.filter((line) => !line.disposition || line.disposition === 'UNCLASSIFIED').reduce((sum, line) => sum + line.unitCount, 0),
+        replacementHoldingCount: replacementHoldings.length,
+        replacementExistingApartmentCount: replacementApartments.size,
+        replacementAllocationsComplete: allocationsComplete,
+        allocatedReplacementUnits: allocationReferences.size,
+      },
       scenario: { id: scenario.id, name: scenario.name, kind: scenario.kind, isBaseline: scenario.isBaseline },
       revenue: { lines: revenue, total: amount(totalRevenue) },
       costs: { lines: costs, total: amount(totalCosts) },
       compensation: { lines: compensation, directCashCost: amount(compensation.reduce((sum, line) => sum.plus(line.amount), new Decimal(0))) },
-      financing: { accumulatedInterest: amount(accumulatedInterest), financingFees: amount(financingFees), peakDebt: amount(peakDebt), debtBalance: amount(outstandingDebt) },
+      financing: {
+        accumulatedInterest: amount(accumulatedInterest), financingFees: amount(financingFees),
+        peakDebt: amount(peakDebt), debtBalance: amount(outstandingDebt),
+        measuredDebt: amount(measuredDebt), measuredDebtBasis,
+        actualLtc: actualLtc ? actualLtc.toFixed(8) : null, ltcLimit: ltcLimit ? ltcLimit.toFixed(8) : null,
+        actualLtv: actualLtv ? actualLtv.toFixed(8) : null, ltvLimit: ltvLimit ? ltvLimit.toFixed(8) : null,
+        graceMonths, graceAppliedFrom: graceMonths > 0 ? firstDrawdownPeriod : null,
+        financingMonths, financingTermUsedMonths,
+        committedEquity: committedEquity ? amount(committedEquity) : null,
+        equityInvested: amount(equityInvested),
+        equityFundingGap: equityFundingGap ? amount(equityFundingGap) : null,
+      },
       profitability: {
         profit: amount(projectProfit),
         profitBeforeFinancing: amount(profitBeforeFinancing),
@@ -375,10 +696,13 @@ export class FeasibilityCalculationService {
         isFinal: false,
       },
       returns: {
+        basis: axisIsUniform ? 'PERIODIC_MONTHLY' : 'ACTUAL_DAYS_365',
         projectIrrMonthly: projectIrrMonthly?.toFixed(10) ?? null,
         projectIrrAnnual: projectIrrAnnual?.toFixed(10) ?? null,
+        projectXirrAnnual: projectXirrAnnual?.toFixed(10) ?? null,
         equityIrrMonthly: equityIrrMonthly?.toFixed(10) ?? null,
         equityIrrAnnual: equityIrrAnnual?.toFixed(10) ?? null,
+        equityXirrAnnual: equityXirrAnnual?.toFixed(10) ?? null,
         discountRateAnnual: annualDiscountRate?.toString() ?? null,
         projectNpv: projectNpv ? amount(projectNpv) : null,
         equityNpv: equityNpv ? amount(equityNpv) : null,
@@ -430,107 +754,139 @@ export class FeasibilityCalculationService {
         peakFundingRequirement: amount(peakNegative.abs()),
         reconciliationComplete: !issues.some((issue) => issue.code === 'CASH_FLOW_ALLOCATION_MISSING' || issue.code === 'CASH_FLOW_RECONCILIATION_MISMATCH'),
       },
-      dataQuality: { criticalCount, warningCount, confidenceScore: dataConfidenceScore },
+      dataQuality: {
+        criticalCount, warningCount, confidenceScore: dataConfidenceScore,
+        scoreBasis: 'SOURCE_OR_VERIFICATION_COVERAGE',
+        evidenceRowCount: evidenceRows.length,
+        sourceLinkedRowCount: evidenceRows.filter((row) => Boolean(row.sourceId)).length,
+        professionallyVerifiedRowCount: evidenceRows.filter((row) => row.isVerified).length,
+      },
       validation: issues,
     }
   }
 
+  /**
+   * מחיל מקדמי רגישות על *הקלט* ומחזיר עותק מותאם.
+   *
+   * זה הלב של P0-2. הגרסה הקודמת הכפילה את הפלט הקפוא של חישוב הבסיס,
+   * ולכן פספסה בהגדרה כל דבר שאינו יחס ליניארי: ריבית על יתרה שהשתנתה,
+   * עלות אחוזית שבסיסה זז, התייקרות שנגזרת מהוצאה שגדלה, חריגה מ-LTC
+   * שנוצרה רק בתרחיש הרגיש, ורווח שנשחק עד כדי שינוי מסקנת הכדאיות.
+   *
+   * כאן מותאם הקלט והמנוע רץ מחדש במלואו, ולכן כל אלה נכללים מעצמם.
+   * הקצאות התזרים מותאמות יחד עם השורות שלהן, כדי שהפיוס יישאר תקף.
+   */
+  private applySensitivityFactors(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario, factors: Map<string, Decimal>) {
+    const sale = factors.get('SALE_PRICE') ?? null
+    const construction = factors.get('CONSTRUCTION_COST') ?? null
+    const land = factors.get('LAND_COST') ?? null
+    const interest = factors.get('INTEREST_RATE') ?? null
+    const discount = factors.get('DISCOUNT_RATE') ?? null
+    const scale = (value: { toString(): string } | null | undefined, factor: Decimal | null) => value === null || value === undefined || !factor ? value : read(value).mul(factor).toString()
+    const costFactorFor = (category: string) => category === 'CONSTRUCTION' ? construction : category === 'LAND' ? land : null
+    const costFactorByLineId = new Map(scenario.costLines.map((line) => [line.id, costFactorFor(line.category)]))
+
+    const adjustedProfile = discount
+      ? { ...profile, assumptions: profile.assumptions.map((assumption) => assumption.key === 'annual-discount-rate' ? { ...assumption, value: scale(assumption.value, discount) } : assumption) }
+      : profile
+
+    const adjustedScenario = {
+      ...scenario,
+      unitMix: scenario.unitMix.map((line) => ({
+        ...line,
+        fixedUnitPrice: scale(line.fixedUnitPrice, sale), pricePerSqm: scale(line.pricePerSqm, sale),
+        parkingPrice: scale(line.parkingPrice, sale), balconyPricePerSqm: scale(line.balconyPricePerSqm, sale),
+        storagePricePerSqm: scale(line.storagePricePerSqm, sale),
+      })),
+      revenueLines: scenario.revenueLines.map((line) => ({
+        ...line,
+        // שטחים ושיעורי היוון אינם מחיר ואינם מוזזים; רק המחיר עצמו.
+        pricePerSqm: scale(line.pricePerSqm, sale), fixedUnitPrice: scale(line.fixedUnitPrice, sale),
+        annualNoi: scale(line.annualNoi, sale),
+      })),
+      costLines: scenario.costLines.map((line) => {
+        const factor = costFactorByLineId.get(line.id) ?? null
+        return factor ? { ...line, unitCost: scale(line.unitCost, factor), fixedAmount: scale(line.fixedAmount, factor) } : line
+      }),
+      cashFlowAllocations: scenario.cashFlowAllocations.map((allocation) => {
+        const factor = allocation.sourceKind === 'REVENUE' ? sale
+          : allocation.sourceKind === 'COST' && allocation.sourceLineId ? costFactorByLineId.get(allocation.sourceLineId) ?? null
+          : null
+        return factor ? { ...allocation, amount: scale(allocation.amount, factor) } : allocation
+      }),
+      financing: scenario.financing && interest
+        ? { ...scenario.financing, annualInterestRate: scale(scenario.financing.annualInterestRate, interest) }
+        : scenario.financing,
+    }
+
+    return { profile: adjustedProfile as LoadedFeasibilityProfile, scenario: adjustedScenario as LoadedFeasibilityScenario }
+  }
+
   async sensitivity(projectId: string, scenarioId: string, dto: CreateSensitivityDto, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    return this.computeSensitivity(profile, scenario, dto)
+  }
+
+  private computeSensitivity(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario, dto: CreateSensitivityDto) {
+    const scenarioId = scenario.id
     if (dto.secondaryVariable && (!dto.secondaryChanges || dto.secondaryVariable === dto.primaryVariable)) throw DomainError.validation('FEASIBILITY_SENSITIVITY_INVALID', 'לרגישות דו־משתנית יש לבחור משתנה שני שונה ורשימת שינויים.')
     if (!dto.secondaryVariable && dto.secondaryChanges) throw DomainError.validation('FEASIBILITY_SENSITIVITY_INVALID', 'נבחרו ערכי שינוי שניים ללא משתנה שני.')
-    const base = await this.calculate(projectId, scenarioId, tenantId)
-    const profile = await this.feasibility.find(projectId, tenantId)
-    const scenario = profile?.scenarios.find((row) => row.id === scenarioId)
-    if (!scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
-    const revenue = new Decimal(base.revenue.total)
-    const costs = new Decimal(base.costs.total)
-    const constructionCosts = base.costs.lines.filter((line) => line.category === 'CONSTRUCTION').reduce((sum, line) => sum.plus(line.amount), new Decimal(0))
-    const landCosts = base.costs.lines.filter((line) => line.category === 'LAND').reduce((sum, line) => sum.plus(line.amount), new Decimal(0))
-    const constructionCostLineIds = new Set(scenario.costLines.filter((line) => line.category === 'CONSTRUCTION').map((line) => line.id))
-    const landCostLineIds = new Set(scenario.costLines.filter((line) => line.category === 'LAND').map((line) => line.id))
-    const interestByPeriod = new Map(base.costs.lines.filter((line) => line.id.startsWith('interest:')).map((line) => [line.id.slice('interest:'.length), read(line.amount)]))
-    const annualDiscountRate = base.returns.discountRateAnnual ? read(base.returns.discountRateAnnual) : null
-    const requiredDeveloperProfitMargin = base.valuation.requiredDeveloperProfitMargin ? read(base.valuation.requiredDeveloperProfitMargin) : null
-    const allocationsByPeriod = new Map<string, typeof scenario.cashFlowAllocations>()
-    for (const allocation of scenario.cashFlowAllocations) {
-      const period = allocation.periodStart.toISOString().slice(0, 10)
-      allocationsByPeriod.set(period, [...(allocationsByPeriod.get(period) ?? []), allocation])
-    }
+    const base = this.compute(profile, scenario)
+
     const evaluate = (primary: string, secondary?: string) => {
       const factors = new Map<string, Decimal>([[dto.primaryVariable, new Decimal(1).plus(new Decimal(primary).div(100))]])
       if (dto.secondaryVariable && secondary !== undefined) factors.set(dto.secondaryVariable, new Decimal(1).plus(new Decimal(secondary).div(100)))
-      const adjustedRevenue = factors.has('SALE_PRICE') ? revenue.mul(factors.get('SALE_PRICE')!) : revenue
-      const saleFactor = factors.get('SALE_PRICE') ?? new Decimal(1)
-      const constructionFactor = factors.get('CONSTRUCTION_COST') ?? new Decimal(1)
-      const landFactor = factors.get('LAND_COST') ?? new Decimal(1)
-      const interestFactor = factors.get('INTEREST_RATE') ?? new Decimal(1)
-      const discountFactor = factors.get('DISCOUNT_RATE') ?? new Decimal(1)
-      const adjustedLandCosts = landCosts.mul(landFactor)
-      const adjustedCosts = costs
-        .plus(constructionCosts.mul(constructionFactor.minus(1)))
-        .plus(landCosts.mul(landFactor.minus(1)))
-        .plus(new Decimal(base.financing.accumulatedInterest).mul(interestFactor.minus(1)))
-      const profit = adjustedRevenue.minus(adjustedCosts)
-      let cumulative = new Decimal(0)
-      let peakNegative = new Decimal(0)
-      const projectFlows: Decimal[] = []
-      for (const period of base.cashFlow.periods) {
-        let inflows = read(period.inflows)
-        let outflows = read(period.outflows)
-        let debtMovement = new Decimal(0)
-        let equityMovement = new Decimal(0)
-        for (const allocation of allocationsByPeriod.get(period.periodStart) ?? []) {
-          const value = read(allocation.amount)
-          if (allocation.sourceKind === 'REVENUE') inflows = inflows.plus(value.mul(saleFactor.minus(1)))
-          if (allocation.sourceKind === 'COST' && allocation.sourceLineId && constructionCostLineIds.has(allocation.sourceLineId)) outflows = outflows.plus(value.mul(constructionFactor.minus(1)))
-          if (allocation.sourceKind === 'COST' && allocation.sourceLineId && landCostLineIds.has(allocation.sourceLineId)) outflows = outflows.plus(value.mul(landFactor.minus(1)))
-          if (allocation.sourceKind === 'DEBT') debtMovement = debtMovement.plus(allocation.direction === 'INFLOW' ? value : value.negated())
-          if (allocation.sourceKind === 'EQUITY') equityMovement = equityMovement.plus(allocation.direction === 'INFLOW' ? value : value.negated())
-        }
-        outflows = outflows.plus((interestByPeriod.get(period.periodStart) ?? new Decimal(0)).mul(interestFactor.minus(1)))
-        const net = inflows.minus(outflows)
-        cumulative = cumulative.plus(net)
-        if (cumulative.lt(peakNegative)) peakNegative = cumulative
-        // Financing timing remains unchanged for price/cost sensitivity. The
-        // base calculation's interest is added back because project IRR is
-        // unlevered, exactly as in calculate().
-        projectFlows.push(net.minus(debtMovement).minus(equityMovement).plus((interestByPeriod.get(period.periodStart) ?? new Decimal(0)).mul(interestFactor)))
-      }
-      const hasCompleteTiming = base.cashFlow.reconciliationComplete
-      const monthlyIrr = hasCompleteTiming ? irr(projectFlows) : null
-      const annualIrr = monthlyIrr ? annualizeMonthlyRate(monthlyIrr) : null
-      const adjustedDiscountRate = annualDiscountRate ? annualDiscountRate.mul(discountFactor) : null
-      const projectNpv = hasCompleteTiming && adjustedDiscountRate ? npv(projectFlows, monthlyRateFromAnnual(adjustedDiscountRate)) : null
-      const residualLandValue = requiredDeveloperProfitMargin ? adjustedRevenue.minus(adjustedCosts.minus(adjustedLandCosts)).minus(adjustedRevenue.mul(requiredDeveloperProfitMargin)) : null
+      const adjusted = this.applySensitivityFactors(profile, scenario, factors)
+      const result = this.compute(adjusted.profile, adjusted.scenario)
+      const newIssues = result.validation.filter((issue) => !base.validation.some((baseIssue) => baseIssue.code === issue.code && baseIssue.entityId === issue.entityId))
       return {
         primaryChangePercent: primary,
         ...(secondary !== undefined ? { secondaryChangePercent: secondary } : {}),
-        revenue: amount(adjustedRevenue), costs: amount(adjustedCosts), profit: amount(profit),
-        profitMargin: adjustedRevenue.gt(0) ? profit.div(adjustedRevenue).toFixed(8) : null,
-        projectIrrAnnual: annualIrr?.toFixed(10) ?? null,
-        projectNpv: projectNpv ? amount(projectNpv) : null,
-        equityRequirement: amount(peakNegative.abs()),
-        residualLandValue: residualLandValue ? amount(residualLandValue) : null,
+        revenue: result.revenue.total, costs: result.costs.total, profit: result.profitability.profit,
+        profitMargin: result.profitability.profitMargin,
+        projectIrrAnnual: result.returns.projectIrrAnnual,
+        projectNpv: result.returns.projectNpv,
+        equityRequirement: result.cashFlow.peakFundingRequirement,
+        residualLandValue: result.valuation.residualLandValue,
+        // מסקנת הכדאיות היא מה שהרגישות באמת נשאלת עליה. הכפלת פלט קפוא
+        // מעולם לא יכלה לענות עליה, משום שהיא לא הריצה את הבדיקות.
+        feasibilityStatus: result.feasibility.status,
+        peakDebt: result.financing.peakDebt,
+        accumulatedInterest: result.financing.accumulatedInterest,
+        // תקלות שנולדו *בגלל* השינוי, ולא כאלה שהיו כבר בבסיס: חריגה
+        // מ-LTC שנפתחה רק כאן היא בדיוק סוג הממצא שהרגישות נועדה לחשוף.
+        triggeredIssues: newIssues.map((issue) => ({ code: issue.code, severity: issue.severity, message: issue.message })),
       }
     }
+
     const rows = dto.primaryChanges.map((change) => dto.secondaryVariable ? { primaryChangePercent: change, values: dto.secondaryChanges!.map((secondary) => evaluate(change, secondary)) } : evaluate(change))
     return {
       scenarioId, primaryVariable: dto.primaryVariable, secondaryVariable: dto.secondaryVariable ?? null, rows,
-      notes: base.cashFlow.reconciliationComplete ? ['IRR, NPV ודרישת ההון מחושבים מתזרים חודשי מותאם; מועדי התזרים הקיימים נשמרים.'] : ['IRR ו־NPV אינם מוצגים ברגישות זו משום שהתזרים הבסיסי אינו מפויס במלואו. השלימו הקצאות תזרים לכל שורה לפני הסתמכות על מדדי תשואה.'],
+      engineVersion: base.engineVersion,
+      method: 'FULL_RECALCULATION',
+      baseline: {
+        revenue: base.revenue.total, costs: base.costs.total, profit: base.profitability.profit,
+        projectIrrAnnual: base.returns.projectIrrAnnual, projectNpv: base.returns.projectNpv,
+        feasibilityStatus: base.feasibility.status,
+      },
+      notes: base.cashFlow.reconciliationComplete
+        ? ['כל שורה בטבלה היא הרצה מלאה של מנוע החישוב על קלט מותאם, ולא הכפלה של תוצאת הבסיס. ריבית, עלויות אחוזיות, התייקרות ובדיקות המימון מחושבות מחדש בכל תא.']
+        : ['כל שורה היא הרצה מלאה של המנוע, אך התזרים הבסיסי אינו מפויס במלואו ולכן IRR ו-NPV אינם אמינים. השלימו הקצאות תזרים לכל שורה לפני הסתמכות על מדדי תשואה.'],
     }
   }
 
   async createSnapshot(projectId: string, scenarioId: string, actor: AuditActor, dto?: CreateFeasibilitySnapshotDto) {
     const profile = await this.feasibility.find(projectId, actor.tenantId)
     if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים עדיין פרופיל דוח אפס לפרויקט')
-    if (!profile.scenarios.some((scenario) => scenario.id === scenarioId)) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
+    const scenario = profile.scenarios.find((scenario) => scenario.id === scenarioId)
+    if (!scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, tenantId: actor.tenantId },
       select: { id: true, name: true, code: true, address: true, city: true },
     })
     if (!project) throw DomainError.notFound('PROJECT_NOT_FOUND', 'הפרויקט לא נמצא או אינו שייך ל־tenant')
-    const output = await this.calculate(projectId, scenarioId, actor.tenantId)
-    const sensitivity = dto?.sensitivity ? await this.sensitivity(projectId, scenarioId, dto.sensitivity, actor.tenantId) : null
+    const output = this.compute(profile, scenario)
+    const sensitivity = dto?.sensitivity ? this.computeSensitivity(profile, scenario, dto.sensitivity) : null
     // Freeze appendix metadata with the input snapshot. File bytes stay in the
     // document library; we never copy S3 keys or signed URLs into a report.
     const documentIds = profile.sources.map((source) => source.documentId).filter((id): id is string => Boolean(id))

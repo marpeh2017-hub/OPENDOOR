@@ -351,6 +351,17 @@ enum FeasibilitySourceType {
   OTHER
 }
 
+/// How a unit-mix line is disposed of. Only DEVELOPER_SALE units may produce
+/// sale revenue; owner-replacement and retained units are built but not sold.
+/// UNCLASSIFIED is the safe default: it earns nothing until somebody says what
+/// the line is, so an unreviewed import cannot silently inflate revenue.
+enum FeasibilityUnitDisposition {
+  UNCLASSIFIED
+  DEVELOPER_SALE
+  OWNER_REPLACEMENT
+  RETAINED
+}
+
 enum FeasibilityScenarioKind {
   BASE
   CONSERVATIVE
@@ -2363,6 +2374,7 @@ model FeasibilityUnitMixLine {
   label              String
   rooms              Decimal?            @db.Decimal(5, 2)
   unitCount          Int
+  disposition        FeasibilityUnitDisposition @default(UNCLASSIFIED)
   netAreaSqm         Decimal?            @db.Decimal(18, 4)
   grossAreaSqm       Decimal?            @db.Decimal(18, 4)
   saleableAreaSqm    Decimal?            @db.Decimal(18, 4)
