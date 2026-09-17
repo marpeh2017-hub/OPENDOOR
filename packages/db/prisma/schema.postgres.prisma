@@ -362,6 +362,18 @@ enum FeasibilityUnitDisposition {
   RETAINED
 }
 
+/// Where a regulatory threshold comes from. An appraiser has to be able to say
+/// which authority a number carries, because a statutory rate and a company
+/// convention do not defend a report equally.
+enum FeasibilityRuleAuthority {
+  STATUTE
+  REGULATION
+  MUNICIPAL_PLAN
+  BANK_GUIDANCE
+  COMPANY_STANDARD
+  MARKET_CONVENTION
+}
+
 enum FeasibilityScenarioKind {
   BASE
   CONSERVATIVE
@@ -651,6 +663,7 @@ model Tenant {
   cmsVerifications     CmsVerification[]
   cmsVerificationAudit CmsVerificationAudit[]
   cmsMediaReferences   CmsMediaReference[]
+  feasibilityRules     FeasibilityRule[]
 
   @@index([slug])
   @@map("tenants")
@@ -2279,6 +2292,58 @@ model FeasibilityAssumption {
 
 /// A distinct area line makes the area used by every later calculation
 /// explicit. Values are Decimal sqm, never generic Float `area` fields.
+/// A regulatory or standard threshold, versioned by the date it takes effect.
+///
+/// WHY THIS EXISTS. Thresholds used to live only as per-profile assumptions,
+/// which meant every project re-typed the VAT rate, the betterment levy or the
+/// required developer margin, and nothing recorded which version of a rule a
+/// given report relied on. When a rate changes, old reports must keep being
+/// read against the rule that applied on their determining date — not against
+/// today's. A registry keyed on `effectiveFrom` is what makes that possible.
+///
+/// RESOLUTION IS BY THE PROFILE'S `valuationDate` (the מועד קובע), which the
+/// engine already treats as the determining date elsewhere.
+///
+/// `sourceReference` is required, not optional: a threshold nobody can cite is
+/// not a regulatory rule, it is a guess with a number attached.
+model FeasibilityRule {
+  id              String                   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Stable identifier the engine looks a rule up by, e.g. `vat-rate`.
+  /// Deliberately the same vocabulary as `FeasibilityAssumption.key`, so a
+  /// project-level assumption can be recognised as an override of a rule.
+  code            String
+  name            String
+  authority       FeasibilityRuleAuthority
+  /// Null means the rule applies everywhere; otherwise the municipality or
+  /// district it is limited to. A local parking standard must not silently
+  /// apply to a project in another city.
+  jurisdiction    String?
+
+  numericValue    Decimal?                 @db.Decimal(18, 6)
+  textValue       String?
+  unit            String?
+
+  /// The window the rule governs. `effectiveUntil` null means "still in force".
+  effectiveFrom   DateTime
+  effectiveUntil  DateTime?
+
+  sourceReference String
+  sourceUrl       String?
+  notes           String?
+  isActive        Boolean                  @default(true)
+
+  createdById     String
+  updatedById     String
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([tenantId, code, effectiveFrom])
+  @@map("feasibility_rules")
+}
+
 model FeasibilityAreaLine {
   id                 String             @id @default(cuid())
   feasibilityProfileId String

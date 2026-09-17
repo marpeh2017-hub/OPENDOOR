@@ -5,10 +5,12 @@ import { FeasibilityReportVersionService } from './feasibility-report-version.se
 import { FeasibilityExcelExportService } from './feasibility-excel-export.service'
 import { FeasibilityPdfExportService } from './feasibility-pdf-export.service'
 import { FeasibilityService } from './feasibility.service'
+import { FeasibilityRulesController } from './feasibility-rules.controller'
+import { FeasibilityRulesService } from './feasibility-rules.service'
 
 @Module({
-  controllers: [FeasibilityController],
-  providers: [FeasibilityService, FeasibilityCalculationService, FeasibilityReportVersionService, FeasibilityExcelExportService, FeasibilityPdfExportService],
-  exports: [FeasibilityService, FeasibilityCalculationService, FeasibilityReportVersionService, FeasibilityExcelExportService, FeasibilityPdfExportService],
+  controllers: [FeasibilityController, FeasibilityRulesController],
+  providers: [FeasibilityService, FeasibilityRulesService, FeasibilityCalculationService, FeasibilityReportVersionService, FeasibilityExcelExportService, FeasibilityPdfExportService],
+  exports: [FeasibilityService, FeasibilityRulesService, FeasibilityCalculationService, FeasibilityReportVersionService, FeasibilityExcelExportService, FeasibilityPdfExportService],
 })
 export class FeasibilityModule {}
