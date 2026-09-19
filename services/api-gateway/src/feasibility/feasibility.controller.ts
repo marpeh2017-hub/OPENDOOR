@@ -14,7 +14,7 @@ import {
   CreateFeasibilityCompensationLineDto, UpdateFeasibilityCompensationLineDto,
   CreateComparableAdjustmentDto, CreateComparableTransactionDto, UpdateComparableAdjustmentDto, UpdateComparableTransactionDto,
   CreateFeasibilitySnapshotDto,
-  CreateSensitivityDto,
+  CreateSensitivityDto, CreateGoalSeekDto,
   CreateFeasibilityReportVersionDto,
   TransitionFeasibilityReportVersionDto,
   UpsertFeasibilityFinancingDto,
@@ -300,6 +300,13 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Run deterministic one- or two-variable sensitivity without changing scenario inputs' })
   sensitivity(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateSensitivityDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.sensitivity(projectId, scenarioId, dto, tenantFrom(req)))
+  }
+
+  @Post('scenarios/:scenarioId/goal-seek')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Solve for the input that reaches a target metric; reports failure rather than inventing a reachable answer' })
+  goalSeek(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateGoalSeekDto, @Request() req: any) {
+    return mapDomainErrors(() => this.calculations.goalSeek(projectId, scenarioId, dto, tenantFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/snapshots')

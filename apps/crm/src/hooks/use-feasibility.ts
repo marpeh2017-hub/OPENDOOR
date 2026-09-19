@@ -344,3 +344,44 @@ export function useFeasibilityDeviations(profileId: string | null) {
     staleTime: 60_000,
   })
 }
+
+// ── Goal Seek ──────────────────────────────────────────────────────────────
+
+export type FeasibilityGoalSeekMetric =
+  'PROFIT' | 'PROFIT_ON_COST' | 'PROFIT_MARGIN' | 'PROJECT_NPV' | 'PROJECT_IRR_ANNUAL' | 'RESIDUAL_LAND_VALUE'
+
+export type FeasibilityGoalSeekInput = {
+  variable: FeasibilitySensitivityVariable
+  metric: FeasibilityGoalSeekMetric
+  target: string
+  maxChangePercent?: string
+}
+
+export type FeasibilityGoalSeek = {
+  variable: FeasibilitySensitivityVariable
+  metric: FeasibilityGoalSeekMetric
+  target: string
+  converged: boolean
+  status: 'CONVERGED' | 'ALREADY_AT_TARGET' | 'UNREACHABLE_WITHIN_RANGE'
+  searchedRangePercent: string
+  evaluations: number
+  requiredChangePercent: string
+  requiredFactor: string
+  baseValue: string
+  achievedValue: string
+  remainingGap: string
+  resulting: {
+    revenue: string; costs: string; profit: string
+    profitOnCost: string | null; profitMargin: string | null
+    projectNpv: string | null; projectIrrAnnual: string | null
+    peakDebt: string; feasibilityStatus: string
+  }
+  triggeredIssues: Array<{ code: string; severity: string; message: string }>
+}
+
+export function useRunFeasibilityGoalSeek(projectId: string) {
+  return useMutation({
+    mutationFn: ({ scenarioId, dto }: { scenarioId: string; dto: FeasibilityGoalSeekInput }) =>
+      api.post<FeasibilityGoalSeek>(`/projects/${projectId}/feasibility/scenarios/${scenarioId}/goal-seek`, dto),
+  })
+}

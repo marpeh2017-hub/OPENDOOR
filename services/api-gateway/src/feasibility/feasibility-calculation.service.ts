@@ -4,7 +4,7 @@ import { DomainError } from '../common/errors/domain-error'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
-import type { CreateFeasibilitySnapshotDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
+import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
 import { FeasibilityService } from './feasibility.service'
 import { type ReplacementAllocation, replacementAllocationSummary } from './replacement-allocation'
 
@@ -803,6 +803,183 @@ export class FeasibilityCalculationService {
     return { profile: adjustedProfile as LoadedFeasibilityProfile, scenario: adjustedScenario as LoadedFeasibilityScenario }
   }
 
+  /**
+   * Solve for the input that hits a target — the inverse of the grid above.
+   *
+   * ── WHY BISECTION AND NOT A FORMULA ────────────────────────────────────
+   *
+   * There is no closed form. The metric depends on the full engine run:
+   * interest capitalises on a balance the change itself moved, percentage
+   * costs sit on a base that shifted, an LTC covenant can trip part-way
+   * through the range. Inverting any of that analytically would mean a second
+   * model of the engine, which would then disagree with it. So the engine is
+   * run, repeatedly, and the answer is whichever input it actually produces.
+   *
+   * ── WHY THE SEARCH IS BOUNDED, AND WHY FAILURE IS REPORTED ─────────────
+   *
+   * An unbounded search always finds something. A sale price 40x the base
+   * clears almost any profit target, and returning it as "the answer" states
+   * a falsehood in the language of a solution. The range is capped, and a
+   * target outside it comes back `converged: false` with the range searched
+   * and the closest value reached — an honest "not within these bounds"
+   * rather than a number nobody should act on.
+   *
+   * Non-monotonic metrics get the same treatment: bracketing looks for a real
+   * sign change and refuses to interpolate across one it never found.
+   *
+   * ── WHY THE ANSWER CARRIES THE ISSUES IT CREATES ───────────────────────
+   *
+   * Reaching a profit target by moving a price can breach an LTC covenant or
+   * leave debt unrepaid. Those are findings ABOUT the solution, and a solver
+   * that returned the number without them would be handing over a plan whose
+   * cost is recorded somewhere the reader was not looking.
+   */
+  async goalSeek(projectId: string, scenarioId: string, dto: CreateGoalSeekDto, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    const base = this.compute(profile, scenario)
+
+    const target = new Decimal(dto.target)
+    const maxChange = new Decimal(dto.maxChangePercent ?? '300')
+    if (maxChange.lte(0)) {
+      throw DomainError.validation('FEASIBILITY_GOAL_SEEK_RANGE_INVALID', 'טווח החיפוש חייב להיות חיובי', 'maxChangePercent')
+    }
+
+    const baseValue = readMetric(base, dto.metric)
+    if (baseValue === null) {
+      // e.g. profit-on-cost with no costs, or IRR on a cash flow that never
+      // turns positive. Solving towards a target the base cannot even express
+      // would mean inventing the starting point.
+      throw DomainError.validation(
+        'FEASIBILITY_GOAL_SEEK_METRIC_UNAVAILABLE',
+        `המדד המבוקש אינו מוגדר בתרחיש הבסיס, ולכן אי אפשר לחתור אליו`,
+        'metric',
+      )
+    }
+
+    /** The metric after moving the chosen input by `changePercent`. */
+    const evaluateAt = (changePercent: Decimal) => {
+      const factor = new Decimal(1).plus(changePercent.div(100))
+      const adjusted = this.applySensitivityFactors(profile, scenario, new Map([[dto.variable, factor]]))
+      const result = this.compute(adjusted.profile, adjusted.scenario)
+      return { result, value: readMetric(result, dto.metric) }
+    }
+
+    /*
+     * Bracket first. Step outward from the base in both directions until the
+     * difference changes sign; only then is there something to bisect. The
+     * steps are coarse on purpose — this is looking for a crossing, not
+     * precision, and every step is a full engine run.
+     */
+    const STEPS = 24
+    const step = maxChange.div(STEPS)
+    let lo: { change: Decimal; value: Decimal } | null = null
+    let hi: { change: Decimal; value: Decimal } | null = null
+    let closest: { change: Decimal; value: Decimal } = { change: new Decimal(0), value: baseValue }
+    let evaluations = 1
+
+    const consider = (change: Decimal) => {
+      const { value } = evaluateAt(change)
+      evaluations += 1
+      if (value === null) return
+      if (value.minus(target).abs().lt(closest.value.minus(target).abs())) closest = { change, value }
+      const point = { change, value }
+      if (value.minus(target).isZero()) { lo = point; hi = point; return }
+      if (baseValue.lt(target) ? value.gte(target) : value.lte(target)) {
+        if (!hi || change.abs().lt(hi.change.abs())) hi = point
+      } else if (!lo || change.abs().gt(lo.change.abs())) {
+        lo = point
+      }
+    }
+
+    if (baseValue.minus(target).isZero()) {
+      return this.goalSeekResult(dto, base, base, new Decimal(0), baseValue, baseValue, target, true, 'ALREADY_AT_TARGET', maxChange, 1)
+    }
+
+    lo = { change: new Decimal(0), value: baseValue }
+    for (let i = 1; i <= STEPS && !hi; i += 1) {
+      consider(step.mul(i))
+      if (!hi) consider(step.mul(-i))
+    }
+
+    if (!hi) {
+      const { result } = evaluateAt(closest.change)
+      return this.goalSeekResult(
+        dto, base, result, closest.change, baseValue, closest.value, target, false,
+        'UNREACHABLE_WITHIN_RANGE', maxChange, evaluations,
+      )
+    }
+
+    /*
+     * Bisect between the last point on the base's side and the first point
+     * past the target. 40 halvings take a 300% range below 1e-9, far under any
+     * tolerance that matters for a price per square metre.
+     */
+    let low = (lo as { change: Decimal; value: Decimal }).change
+    let high = (hi as { change: Decimal; value: Decimal }).change
+    let best = hi as { change: Decimal; value: Decimal }
+    for (let i = 0; i < 40; i += 1) {
+      const mid = low.plus(high).div(2)
+      const { value } = evaluateAt(mid)
+      evaluations += 1
+      if (value === null) break
+      best = { change: mid, value }
+      if (value.minus(target).isZero()) break
+      if (baseValue.lt(target) ? value.lt(target) : value.gt(target)) low = mid
+      else high = mid
+    }
+
+    const solved = evaluateAt(best.change)
+    return this.goalSeekResult(
+      dto, base, solved.result, best.change, baseValue, solved.value ?? best.value, target, true,
+      'CONVERGED', maxChange, evaluations,
+    )
+  }
+
+  private goalSeekResult(
+    dto: CreateGoalSeekDto,
+    base: ReturnType<FeasibilityCalculationService['compute']>,
+    solved: ReturnType<FeasibilityCalculationService['compute']>,
+    change: Decimal,
+    baseValue: Decimal,
+    achieved: Decimal,
+    target: Decimal,
+    converged: boolean,
+    status: 'CONVERGED' | 'ALREADY_AT_TARGET' | 'UNREACHABLE_WITHIN_RANGE',
+    maxChange: Decimal,
+    evaluations: number,
+  ) {
+    const newIssues = solved.validation.filter((issue) => !base.validation.some((baseIssue) => baseIssue.code === issue.code && baseIssue.entityId === issue.entityId))
+    return {
+      variable: dto.variable,
+      metric: dto.metric,
+      target: target.toString(),
+      converged,
+      status,
+      searchedRangePercent: `±${maxChange.toString()}`,
+      evaluations,
+      requiredChangePercent: change.toFixed(6),
+      /** The multiplier to apply to the input, for a caller that would rather scale than add a percentage. */
+      requiredFactor: new Decimal(1).plus(change.div(100)).toFixed(8),
+      baseValue: baseValue.toString(),
+      achievedValue: achieved.toString(),
+      /** Signed gap that remains. Zero on a converged run, the shortfall otherwise. */
+      remainingGap: achieved.minus(target).toString(),
+      resulting: {
+        revenue: solved.revenue.total,
+        costs: solved.costs.total,
+        profit: solved.profitability.profit,
+        profitOnCost: solved.profitability.profitOnCost,
+        profitMargin: solved.profitability.profitMargin,
+        projectNpv: solved.returns.projectNpv,
+        projectIrrAnnual: solved.returns.projectIrrAnnual,
+        peakDebt: solved.financing.peakDebt,
+        feasibilityStatus: solved.feasibility.status,
+      },
+      /** Problems the solution introduces that the base did not have. */
+      triggeredIssues: newIssues.map((issue) => ({ code: issue.code, severity: issue.severity, message: issue.message })),
+    }
+  }
+
   async sensitivity(projectId: string, scenarioId: string, dto: CreateSensitivityDto, tenantId: string) {
     const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
     return this.computeSensitivity(profile, scenario, dto)
@@ -913,4 +1090,21 @@ export class FeasibilityCalculationService {
       }
     }
   }
+}
+
+/**
+ * One metric out of a computed result, as a Decimal or null.
+ *
+ * Null is returned, never zero. A profit-on-cost that does not exist because
+ * there are no costs is not a profit-on-cost of zero, and a solver that
+ * treated it as one would converge on nonsense.
+ */
+function readMetric(result: { profitability: { profit: string; profitOnCost: string | null; profitMargin: string | null }; returns: { projectNpv: string | null; projectIrrAnnual: string | null }; valuation: { residualLandValue: string | null } }, metric: CreateGoalSeekDto['metric']): Decimal | null {
+  const raw = metric === 'PROFIT' ? result.profitability.profit
+    : metric === 'PROFIT_ON_COST' ? result.profitability.profitOnCost
+    : metric === 'PROFIT_MARGIN' ? result.profitability.profitMargin
+    : metric === 'PROJECT_NPV' ? result.returns.projectNpv
+    : metric === 'PROJECT_IRR_ANNUAL' ? result.returns.projectIrrAnnual
+    : result.valuation.residualLandValue
+  return raw === null || raw === undefined ? null : new Decimal(raw)
 }

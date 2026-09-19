@@ -15,6 +15,7 @@ import {
   type FeasibilityCalculation, type FeasibilityScenario, type FeasibilitySensitivity, type FeasibilitySensitivityInput, type FeasibilitySensitivityVariable, type FeasibilitySource, useRunFeasibilitySensitivity,
 } from '@/hooks/use-feasibility'
 import { FeasibilityAnalysis, FeasibilityScenarioComparison, FeasibilitySensitivityMatrix } from './feasibility-analysis'
+import { FeasibilityGoalSeekPanel } from './feasibility-goal-seek'
 import { FeasibilityEconomicsPanel } from './feasibility-economics-panel'
 
 const SCENARIO_KINDS: Array<[FeasibilityScenario['kind'], string]> = [
@@ -145,6 +146,7 @@ function ScenarioCard({ projectId, scenario, sources, canEdit, onDuplicate, dupl
       <FeasibilityAnalysis calculation={calculation} />
     </div>}
     {sensitivityResult && <FeasibilitySensitivityMatrix result={sensitivityResult} />}
+    <FeasibilityGoalSeekPanel projectId={projectId} scenarioId={scenario.id} />
   </article>
 }
 

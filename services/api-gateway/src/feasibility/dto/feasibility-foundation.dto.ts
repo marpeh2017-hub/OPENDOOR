@@ -472,6 +472,36 @@ export class CreateSensitivityDto {
   secondaryChanges?: string[]
 }
 
+/**
+ * Solve for the input that hits a target, rather than sweeping inputs to see
+ * where they land. The inverse of the sensitivity grid, over the same levers.
+ */
+export class CreateGoalSeekDto {
+  @IsIn(['SALE_PRICE', 'CONSTRUCTION_COST', 'LAND_COST', 'INTEREST_RATE', 'DISCOUNT_RATE'])
+  variable!: 'SALE_PRICE' | 'CONSTRUCTION_COST' | 'LAND_COST' | 'INTEREST_RATE' | 'DISCOUNT_RATE'
+
+  /**
+   * What is being aimed at. Ratios (PROFIT_ON_COST, PROFIT_MARGIN,
+   * PROJECT_IRR_ANNUAL) are decimal fractions, not percentages: 0.2, never 20.
+   * The engine stores them that way, and accepting both would make 20 mean
+   * either a fifth or twenty times depending on the metric.
+   */
+  @IsIn(['PROFIT', 'PROFIT_ON_COST', 'PROFIT_MARGIN', 'PROJECT_NPV', 'PROJECT_IRR_ANNUAL', 'RESIDUAL_LAND_VALUE'])
+  metric!: 'PROFIT' | 'PROFIT_ON_COST' | 'PROFIT_MARGIN' | 'PROJECT_NPV' | 'PROJECT_IRR_ANNUAL' | 'RESIDUAL_LAND_VALUE'
+
+  @Matches(/^-?\d+(\.\d+)?$/)
+  target!: string
+
+  /**
+   * How far the solver may move the input, as a percentage either way.
+   * Bounded because an unbounded search will always find SOMETHING, and a
+   * "solution" at +4000% on the sale price is not an answer, it is a way of
+   * saying the target is unreachable while looking like it is not.
+   */
+  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
+  maxChangePercent?: string
+}
+
 export class CreateFeasibilitySnapshotDto {
   @IsOptional() @ValidateNested() @Type(() => CreateSensitivityDto)
   sensitivity?: CreateSensitivityDto
