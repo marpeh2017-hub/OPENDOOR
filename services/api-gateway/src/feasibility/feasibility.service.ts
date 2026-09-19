@@ -9,6 +9,7 @@ import {
   CreateFeasibilityAreaDto, CreateFeasibilityAssumptionDto,
   CreateFeasibilityProfileDto, CreateFeasibilitySourceDto, CreateGushChelkaDto, UpdateGushChelkaDto, UpdateFeasibilitySourceDto,
   CreatePlanningRightDto, UpdatePlanningRightDto, CreateFeasibilityScenarioDto, CreateUnitMixLineDto, UpdateUnitMixLineDto,
+  CreateReplacementAllocationDto, UpdateReplacementAllocationDto,
   CreateFeasibilityRevenueLineDto, CreateFeasibilityCostLineDto,
   UpdateFeasibilityRevenueLineDto, UpdateFeasibilityCostLineDto,
   CreateFeasibilityCashFlowAllocationDto, CreateFeasibilityTimelinePhaseDto, UpdateFeasibilityCashFlowAllocationDto, UpdateFeasibilityProfileDto, UpdateFeasibilityAssumptionDto, UpdateFeasibilityAreaDto,
@@ -26,7 +27,15 @@ const PROFILE_INCLUDE = {
   comparableTransactions: { include: { adjustments: { orderBy: { createdAt: 'asc' } } }, orderBy: { transactionDate: 'desc' } },
   scenarios: {
     include: {
-      unitMix: { orderBy: { createdAt: 'asc' } },
+      // `replacementAllocations` is loaded for the same reason `ownerApartment`
+      // below is: the engine reconciles owner-replacement flats against these
+      // rows before it will let a report be approved, and an unloaded relation
+      // is indistinguishable from an empty one — which is exactly how those
+      // checks sat inert from 0cbdefb until the model landed.
+      unitMix: {
+        include: { replacementAllocations: { orderBy: { createdAt: 'asc' } } },
+        orderBy: { createdAt: 'asc' },
+      },
       revenueLines: { orderBy: { createdAt: 'asc' } },
       costLines: { orderBy: { createdAt: 'asc' } },
       financing: true,
@@ -57,6 +66,26 @@ function date(value: string | undefined): Date | undefined {
  * DTO uses undefined for an absent calculation basis. Keep that distinction
  * when validating a partial update: null must not accidentally count as a
  * second revenue/cost basis. */
+/**
+ * A share must be a proper fraction: 0 < numerator <= denominator, both whole.
+ *
+ * The engine's `replacementAllocationSummary` already rejects anything else as
+ * `invalid`, but it does so at CALCULATION time, which is hours after the typo
+ * and in a different screen. Refusing 3/2 at the write is the difference
+ * between a field error and an unexplained critical issue on a report.
+ */
+function assertProperFraction(numerator: number | undefined, denominator: number | undefined): void {
+  const n = numerator ?? 1
+  const d = denominator ?? 1
+  if (!Number.isSafeInteger(n) || !Number.isSafeInteger(d) || n <= 0 || d <= 0 || n > d) {
+    throw DomainError.validation(
+      'REPLACEMENT_SHARE_INVALID',
+      'חלק ההקצאה חייב להיות שבר תקין: מונה חיובי שאינו גדול מהמכנה',
+      'shareNumerator',
+    )
+  }
+}
+
 function existingDecimal(value: Prisma.Decimal | null | undefined): string | undefined {
   return value == null ? undefined : value.toString()
 }
@@ -363,7 +392,7 @@ export class FeasibilityService {
       if (!source) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
       const name = await this.nextCopyName(tx, profile.id, source.name)
       const copy = await tx.feasibilityScenario.create({ data: { feasibilityProfileId: profile.id, tenantId: actor.tenantId, name, kind: 'CUSTOM', description: source.description, probability: source.probability, createdById: actor.userId, updatedById: actor.userId } })
-      if (source.unitMix.length) await tx.feasibilityUnitMixLine.createMany({ data: source.unitMix.map((line) => ({ scenarioId: copy.id, label: line.label, rooms: line.rooms, unitCount: line.unitCount, netAreaSqm: line.netAreaSqm, grossAreaSqm: line.grossAreaSqm, saleableAreaSqm: line.saleableAreaSqm, balconyAreaSqm: line.balconyAreaSqm, storageAreaSqm: line.storageAreaSqm, parkingSpaces: line.parkingSpaces, floorFrom: line.floorFrom, floorTo: line.floorTo, orientation: line.orientation, pricePerSqm: line.pricePerSqm, fixedUnitPrice: line.fixedUnitPrice, balconyPricePerSqm: line.balconyPricePerSqm, parkingPrice: line.parkingPrice, storagePricePerSqm: line.storagePricePerSqm, adjustmentFactor: line.adjustmentFactor, classification: line.classification, confidence: line.confidence, isVerified: line.isVerified, sourceId: line.sourceId, sourceDate: line.sourceDate, notes: line.notes, createdById: actor.userId, updatedById: actor.userId })) })
+      if (source.unitMix.length) await tx.feasibilityUnitMixLine.createMany({ data: source.unitMix.map((line) => ({ scenarioId: copy.id, label: line.label, rooms: line.rooms, unitCount: line.unitCount, netAreaSqm: line.netAreaSqm, grossAreaSqm: line.grossAreaSqm, saleableAreaSqm: line.saleableAreaSqm, balconyAreaSqm: line.balconyAreaSqm, storageAreaSqm: line.storageAreaSqm, parkingSpaces: line.parkingSpaces, floorFrom: line.floorFrom, floorTo: line.floorTo, orientation: line.orientation, pricePerSqm: line.pricePerSqm, fixedUnitPrice: line.fixedUnitPrice, balconyPricePerSqm: line.balconyPricePerSqm, parkingPrice: line.parkingPrice, storagePricePerSqm: line.storagePricePerSqm, adjustmentFactor: line.adjustmentFactor, disposition: line.disposition, classification: line.classification, confidence: line.confidence, isVerified: line.isVerified, sourceId: line.sourceId, sourceDate: line.sourceDate, notes: line.notes, createdById: actor.userId, updatedById: actor.userId })) })
       await this.audit.record(actor, { action: 'CREATE', entity: 'FeasibilityScenario', entityId: copy.id, metadata: { copiedFromId: source.id, feasibilityProfileId: profile.id } }, tx)
       return copy
     })
@@ -375,7 +404,7 @@ export class FeasibilityService {
     await this.assertSource(profile.id, dto.sourceId)
     const scenario = await this.prisma.feasibilityScenario.findFirst({ where: { id: scenarioId, tenantId: actor.tenantId, feasibilityProfileId: profile.id }, select: { id: true } })
     if (!scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
-    return this.mutateChild(profile.id, actor, 'FeasibilityUnitMixLine', (tx) => tx.feasibilityUnitMixLine.create({ data: { scenarioId, label: dto.label, unitCount: dto.unitCount, rooms: decimal(dto.rooms), netAreaSqm: decimal(dto.netAreaSqm), grossAreaSqm: decimal(dto.grossAreaSqm), saleableAreaSqm: decimal(dto.saleableAreaSqm), balconyAreaSqm: decimal(dto.balconyAreaSqm), storageAreaSqm: decimal(dto.storageAreaSqm), parkingSpaces: dto.parkingSpaces, floorFrom: dto.floorFrom, floorTo: dto.floorTo, orientation: dto.orientation, pricePerSqm: decimal(dto.pricePerSqm), fixedUnitPrice: decimal(dto.fixedUnitPrice), balconyPricePerSqm: decimal(dto.balconyPricePerSqm), parkingPrice: decimal(dto.parkingPrice), storagePricePerSqm: decimal(dto.storagePricePerSqm), adjustmentFactor: decimal(dto.adjustmentFactor), classification: dto.classification, confidence: dto.confidence, isVerified: dto.isVerified, sourceId: dto.sourceId, sourceDate: date(dto.sourceDate), notes: dto.notes, createdById: actor.userId, updatedById: actor.userId } }))
+    return this.mutateChild(profile.id, actor, 'FeasibilityUnitMixLine', (tx) => tx.feasibilityUnitMixLine.create({ data: { scenarioId, label: dto.label, unitCount: dto.unitCount, rooms: decimal(dto.rooms), netAreaSqm: decimal(dto.netAreaSqm), grossAreaSqm: decimal(dto.grossAreaSqm), saleableAreaSqm: decimal(dto.saleableAreaSqm), balconyAreaSqm: decimal(dto.balconyAreaSqm), storageAreaSqm: decimal(dto.storageAreaSqm), parkingSpaces: dto.parkingSpaces, floorFrom: dto.floorFrom, floorTo: dto.floorTo, orientation: dto.orientation, pricePerSqm: decimal(dto.pricePerSqm), fixedUnitPrice: decimal(dto.fixedUnitPrice), balconyPricePerSqm: decimal(dto.balconyPricePerSqm), parkingPrice: decimal(dto.parkingPrice), storagePricePerSqm: decimal(dto.storagePricePerSqm), adjustmentFactor: decimal(dto.adjustmentFactor), disposition: dto.disposition, classification: dto.classification, confidence: dto.confidence, isVerified: dto.isVerified, sourceId: dto.sourceId, sourceDate: date(dto.sourceDate), notes: dto.notes, createdById: actor.userId, updatedById: actor.userId } }))
   }
 
   async updateUnitMixLine(projectId: string, scenarioId: string, lineId: string, dto: UpdateUnitMixLineDto, actor: AuditActor) {
@@ -392,7 +421,7 @@ export class FeasibilityService {
           ...(dto.netAreaSqm !== undefined ? { netAreaSqm: decimal(dto.netAreaSqm) } : {}), ...(dto.grossAreaSqm !== undefined ? { grossAreaSqm: decimal(dto.grossAreaSqm) } : {}), ...(dto.saleableAreaSqm !== undefined ? { saleableAreaSqm: decimal(dto.saleableAreaSqm) } : {}),
           ...(dto.balconyAreaSqm !== undefined ? { balconyAreaSqm: decimal(dto.balconyAreaSqm) } : {}), ...(dto.storageAreaSqm !== undefined ? { storageAreaSqm: decimal(dto.storageAreaSqm) } : {}), ...(dto.parkingSpaces !== undefined ? { parkingSpaces: dto.parkingSpaces } : {}),
           ...(dto.floorFrom !== undefined ? { floorFrom: dto.floorFrom } : {}), ...(dto.floorTo !== undefined ? { floorTo: dto.floorTo } : {}), ...(dto.orientation !== undefined ? { orientation: dto.orientation } : {}), ...(dto.pricePerSqm !== undefined ? { pricePerSqm: decimal(dto.pricePerSqm) } : {}), ...(dto.fixedUnitPrice !== undefined ? { fixedUnitPrice: decimal(dto.fixedUnitPrice) } : {}),
-          ...(dto.balconyPricePerSqm !== undefined ? { balconyPricePerSqm: decimal(dto.balconyPricePerSqm) } : {}), ...(dto.parkingPrice !== undefined ? { parkingPrice: decimal(dto.parkingPrice) } : {}), ...(dto.storagePricePerSqm !== undefined ? { storagePricePerSqm: decimal(dto.storagePricePerSqm) } : {}), ...(dto.adjustmentFactor !== undefined ? { adjustmentFactor: decimal(dto.adjustmentFactor) } : {}),
+          ...(dto.balconyPricePerSqm !== undefined ? { balconyPricePerSqm: decimal(dto.balconyPricePerSqm) } : {}), ...(dto.parkingPrice !== undefined ? { parkingPrice: decimal(dto.parkingPrice) } : {}), ...(dto.storagePricePerSqm !== undefined ? { storagePricePerSqm: decimal(dto.storagePricePerSqm) } : {}), ...(dto.adjustmentFactor !== undefined ? { adjustmentFactor: decimal(dto.adjustmentFactor) } : {}), ...(dto.disposition !== undefined ? { disposition: dto.disposition } : {}),
           ...(dto.classification !== undefined ? { classification: dto.classification } : {}), ...(dto.confidence !== undefined ? { confidence: dto.confidence } : {}), ...(dto.isVerified !== undefined ? { isVerified: dto.isVerified } : {}), ...(dto.sourceId !== undefined ? { sourceId: dto.sourceId } : {}), ...(dto.sourceDate !== undefined ? { sourceDate: date(dto.sourceDate) } : {}), ...(dto.notes !== undefined ? { notes: dto.notes } : {}), updatedById: actor.userId,
         },
       })
@@ -410,6 +439,121 @@ export class FeasibilityService {
       await this.audit.record(actor, { action: 'DELETE', entity: 'FeasibilityUnitMixLine', entityId: line.id, metadata: { feasibilityProfileId: profile.id, scenarioId, label: line.label } }, tx)
       return { id: line.id, deleted: true }
     })
+  }
+
+  // ── Owner-replacement allocations ──────────────────────────────────────
+
+  /**
+   * Allocate one replacement flat, or a share of one, to an existing holding.
+   *
+   * ── WHY THIS EXISTS SEPARATELY FROM THE UNIT-MIX LINE ──────────────────
+   *
+   * A unit-mix line says "eight 4-room replacement flats". Which flat goes to
+   * which owner, and in what share between co-owners, is a different fact with
+   * a different source, and it is the fact the engine reconciles before it
+   * will approve a report.
+   *
+   * ── THE CHECKS HERE, AND THE ONES DELIBERATELY LEFT TO THE ENGINE ──────
+   *
+   * Refused here: a line that is not OWNER_REPLACEMENT (an allocation on a
+   * flat the developer is selling is a category error, not a degree of
+   * incompleteness), a holding from another tenant, and a share that is not a
+   * proper fraction.
+   *
+   * NOT refused here: partial and over-allocation. A scenario is built up one
+   * row at a time, and a half-allocated unit is a normal intermediate state —
+   * the engine reports it as REPLACEMENT_ALLOCATION_INCOMPLETE and blocks
+   * APPROVAL, which is the correct place to insist on it. Refusing the write
+   * would make it impossible to enter the second half of a pair.
+   */
+  async addReplacementAllocation(projectId: string, scenarioId: string, lineId: string, dto: CreateReplacementAllocationDto, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    const line = await this.requireReplacementLine(profile.id, scenarioId, lineId, actor.tenantId)
+    await this.assertOwnerApartment(dto.ownerApartmentId, actor.tenantId)
+    assertProperFraction(dto.shareNumerator, dto.shareDenominator)
+
+    return this.mutateChild(profile.id, actor, 'FeasibilityReplacementAllocation', (tx) => tx.feasibilityReplacementAllocation.create({
+      data: {
+        unitMixLineId: line.id,
+        unitReference: dto.unitReference.trim(),
+        ownerApartmentId: dto.ownerApartmentId,
+        shareNumerator: dto.shareNumerator ?? 1,
+        shareDenominator: dto.shareDenominator ?? 1,
+        notes: dto.notes,
+        createdById: actor.userId,
+        updatedById: actor.userId,
+      },
+    }))
+  }
+
+  async updateReplacementAllocation(projectId: string, scenarioId: string, lineId: string, allocationId: string, dto: UpdateReplacementAllocationDto, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    const line = await this.requireReplacementLine(profile.id, scenarioId, lineId, actor.tenantId)
+    const before = await this.prisma.feasibilityReplacementAllocation.findFirst({ where: { id: allocationId, unitMixLineId: line.id } })
+    if (!before) throw DomainError.notFound('FEASIBILITY_REPLACEMENT_ALLOCATION_NOT_FOUND', 'הקצאת התמורה אינה שייכת לשורת התמהיל')
+    if (dto.ownerApartmentId !== undefined) await this.assertOwnerApartment(dto.ownerApartmentId, actor.tenantId)
+    assertProperFraction(dto.shareNumerator ?? before.shareNumerator, dto.shareDenominator ?? before.shareDenominator)
+
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.feasibilityReplacementAllocation.update({
+        where: { id: before.id },
+        data: {
+          ...(dto.unitReference !== undefined ? { unitReference: dto.unitReference.trim() } : {}),
+          ...(dto.ownerApartmentId !== undefined ? { ownerApartmentId: dto.ownerApartmentId } : {}),
+          ...(dto.shareNumerator !== undefined ? { shareNumerator: dto.shareNumerator } : {}),
+          ...(dto.shareDenominator !== undefined ? { shareDenominator: dto.shareDenominator } : {}),
+          ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
+          updatedById: actor.userId,
+        },
+      })
+      await this.audit.record(actor, { action: 'UPDATE', entity: 'FeasibilityReplacementAllocation', entityId: row.id, changes: { before: { unitReference: before.unitReference, shareNumerator: before.shareNumerator, shareDenominator: before.shareDenominator }, after: { unitReference: row.unitReference, shareNumerator: row.shareNumerator, shareDenominator: row.shareDenominator } }, metadata: { feasibilityProfileId: profile.id, scenarioId, unitMixLineId: line.id } }, tx)
+      return row
+    })
+  }
+
+  async deleteReplacementAllocation(projectId: string, scenarioId: string, lineId: string, allocationId: string, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    const line = await this.requireReplacementLine(profile.id, scenarioId, lineId, actor.tenantId)
+    const allocation = await this.prisma.feasibilityReplacementAllocation.findFirst({ where: { id: allocationId, unitMixLineId: line.id }, select: { id: true, unitReference: true } })
+    if (!allocation) throw DomainError.notFound('FEASIBILITY_REPLACEMENT_ALLOCATION_NOT_FOUND', 'הקצאת התמורה אינה שייכת לשורת התמהיל')
+    return this.prisma.$transaction(async (tx) => {
+      await tx.feasibilityReplacementAllocation.delete({ where: { id: allocation.id } })
+      await this.audit.record(actor, { action: 'DELETE', entity: 'FeasibilityReplacementAllocation', entityId: allocation.id, metadata: { feasibilityProfileId: profile.id, scenarioId, unitMixLineId: line.id, unitReference: allocation.unitReference } }, tx)
+      return { id: allocation.id, deleted: true }
+    })
+  }
+
+  /** The line must exist in this scenario AND be the kind that can hold allocations. */
+  private async requireReplacementLine(profileId: string, scenarioId: string, lineId: string, tenantId: string) {
+    const line = await this.prisma.feasibilityUnitMixLine.findFirst({
+      where: { id: lineId, scenarioId, scenario: { feasibilityProfileId: profileId, tenantId } },
+      select: { id: true, disposition: true, label: true },
+    })
+    if (!line) throw DomainError.notFound('FEASIBILITY_UNIT_MIX_LINE_NOT_FOUND', 'שורת תמהיל הדירות אינה שייכת לתרחיש או לפרויקט')
+    if (line.disposition !== 'OWNER_REPLACEMENT') {
+      throw DomainError.validation(
+        'REPLACEMENT_ALLOCATION_ON_SALE_UNITS',
+        `שורת התמהיל „${line.label}” אינה מסווגת כתמורה לדיירים, ולכן אי אפשר להקצות ממנה דירות תמורה`,
+        'disposition',
+      )
+    }
+    return line
+  }
+
+  /**
+   * The holding must belong to the caller's tenant.
+   *
+   * `OwnerApartment` has no tenant column of its own — it is reached through
+   * owner → tenant, the same traversal `compensation-candidates` uses. A
+   * holding from another tenant is a 404 rather than a 403: the caller must not
+   * learn that the id exists.
+   */
+  private async assertOwnerApartment(ownerApartmentId: string, tenantId: string) {
+    const holding = await this.prisma.ownerApartment.findFirst({
+      where: { id: ownerApartmentId, owner: { tenantId } },
+      select: { id: true },
+    })
+    if (!holding) throw DomainError.notFound('FEASIBILITY_OWNER_APARTMENT_NOT_FOUND', 'הבעלות המבוקשת אינה קיימת בארגון זה')
   }
 
   async addRevenueLine(projectId: string, scenarioId: string, dto: CreateFeasibilityRevenueLineDto, actor: AuditActor) {

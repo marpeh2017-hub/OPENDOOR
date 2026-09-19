@@ -10,25 +10,6 @@ import { type ReplacementAllocation, replacementAllocationSummary } from './repl
 
 Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP })
 
-/**
- * Owner-replacement allocations, when this schema carries them.
- *
- * The `FeasibilityReplacementAllocation` model lives on a parallel branch and
- * is not in this schema yet, so `unitMix` rows arrive without the relation.
- * Reading it defensively makes every allocation check below INERT rather than
- * broken: with no allocations there is nothing to reconcile, and the checks
- * that run off scalar columns — the compensation-to-apartment link, and
- * replacement units against committed apartments — still run and still block
- * approval.
- *
- * Typed to the exact shape the relation must provide rather than `any`, so the
- * day the model lands this is the contract it has to satisfy, and deleting
- * this helper is the whole migration.
- */
-function replacementAllocationsOf(line: unknown): ReplacementAllocation[] {
-  const allocations = (line as { replacementAllocations?: ReplacementAllocation[] }).replacementAllocations
-  return Array.isArray(allocations) ? allocations : []
-}
 
 type Severity = 'CRITICAL' | 'WARNING' | 'INFO'
 type ValidationIssue = { code: string; severity: Severity; message: string; entityId?: string }
@@ -548,7 +529,7 @@ export class FeasibilityCalculationService {
     const allocatedHoldings = new Set<string>()
     let allocationsComplete = true
     for (const line of scenario.unitMix) {
-      const allocations = replacementAllocationsOf(line)
+      const allocations: ReplacementAllocation[] = line.replacementAllocations
       if (line.disposition !== 'OWNER_REPLACEMENT') {
         if (allocations.length) {
           allocationsComplete = false

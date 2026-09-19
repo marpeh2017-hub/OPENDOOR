@@ -70,6 +70,12 @@ const build = (overrides: Overrides = {}) => {
       saleableAreaSqm: null, pricePerSqm: null, parkingSpaces: 0, parkingPrice: null,
       balconyAreaSqm: null, balconyPricePerSqm: null, storageAreaSqm: null, storagePricePerSqm: null,
       sourceId: 'source-1', isVerified: true,
+      // The relation is loaded for real now (feasibility.service.ts's include),
+      // so the engine reads it directly instead of through a helper that
+      // shrugged off an absent one. A fixture that omits it is an unloaded
+      // relation, and the engine is supposed to fail loudly on that — which is
+      // the whole point of having removed the shrug.
+      replacementAllocations: [],
     }],
     revenueLines: [],
     costLines: [{

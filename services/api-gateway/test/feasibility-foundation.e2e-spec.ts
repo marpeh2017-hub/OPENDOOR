@@ -18,28 +18,28 @@ const deletedFixtureIds: string[] = []
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- * SKIPPED — the Zero Report / Development Feasibility Engine is being developed
- * separately, through a different approach, and is out of scope for this
- * codebase for now.
+ * RE-ENABLED. This was `describe.skip` from 2026-08-26 (be7eef7), on the
+ * grounds that the engine was "being developed separately, through a different
+ * approach". That stopped being true: 0cbdefb and e1c7d81 changed this engine
+ * in THIS repository, with this suite blind to both.
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * Nothing here is deleted and no product code under `src/feasibility/` has been
- * touched. The suite is skipped rather than removed so it stays greppable, its
- * assertions remain as documentation of the intended behaviour, and re-enabling
- * it is a one-word change.
+ * The skip note named its own condition for coming back — "give it a
+ * `beforeAll` purge so it is not order-dependent" — and `purgeFixtures` below
+ * is that purge.
  *
- * WHY SKIP RATHER THAN LEAVE IT RUNNING: this suite is state-dependent. All of
- * its cleanup lives in `afterAll`, with no `beforeAll` purge, so a run that is
- * interrupted part-way leaves rows behind that fail the NEXT run. That produced
- * three phantom failures during an audit — failures that belonged to the
- * excluded area and were not defects in it. Keeping it in the green-bar count
- * means every future run can be poisoned by an interruption in code nobody here
- * is maintaining.
+ * The defect it described was real. Every fixture here is cleaned up in
+ * `afterAll` only, so a run interrupted part-way (Ctrl-C, a timeout, a crashed
+ * worker) left rows behind that failed the NEXT run, inside code the failure
+ * had nothing to do with. Purging on the way IN as well as on the way out makes
+ * a poisoned run self-healing: the next run starts clean whatever the last one
+ * did.
  *
- * To re-enable: change `describe.skip` back to `describe`, and give it a
- * `beforeAll` purge so it is not order-dependent.
+ * The purge is keyed on the `FEAS-` project-code prefix that every fixture here
+ * carries, so it cannot reach seeded or real data — including feasibility
+ * profiles attached to genuine projects.
  */
-describe.skip('Feasibility foundation (e2e)', () => {
+describe('Feasibility foundation (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let dataQuality: DataQualityEngine
@@ -92,6 +92,11 @@ describe.skip('Feasibility foundation (e2e)', () => {
     prisma = app.get(PrismaService)
     dataQuality = app.get(DataQualityEngine)
     pdfExport = app.get(FeasibilityPdfExportService)
+
+    // Before anything is created: clear whatever an interrupted earlier run
+    // left behind. See the note above the describe for why this is the
+    // condition on which the suite was re-enabled.
+    await purgeFixtures(prisma)
 
     const login = await http().post('/api/v1/auth/login').send({ email: 'admin@opendoor.co.il', password: 'demo1234' })
     expect(login.status).toBe(200)
@@ -247,9 +252,15 @@ describe.skip('Feasibility foundation (e2e)', () => {
     expect(base.body.isBaseline).toBe(true)
 
     const unitMix = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${base.body.id}/unit-mix`).set(auth()).send({
-      label: '4 חדרים', unitCount: 12, saleableAreaSqm: '100.1250', pricePerSqm: '30000.0000', adjustmentFactor: '1.00000000', sourceId,
+      label: '4 חדרים', unitCount: 12, saleableAreaSqm: '100.1250', pricePerSqm: '30000.0000', adjustmentFactor: '1.00000000', disposition: 'DEVELOPER_SALE', sourceId,
     })
     expect(unitMix.status).toBe(201)
+    // Regression guard. `disposition` gates ALL unit-mix revenue, and it shipped
+    // in 0cbdefb with no DTO field and no write path — the API rejected it with
+    // 400 and every line stayed UNCLASSIFIED, so no unit mix could earn
+    // anything. Asserting the round-trip, not just the 201, is what would have
+    // caught that.
+    expect(unitMix.body.disposition).toBe('DEVELOPER_SALE')
     // Decimal values retain their exact numeric value; PostgreSQL may omit
     // non-significant trailing zeroes when serialising them.
     expect(unitMix.body.saleableAreaSqm).toBe('100.125')
@@ -359,7 +370,10 @@ describe.skip('Feasibility foundation (e2e)', () => {
 
     const calculation = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/calculate`).set(auth()).send()
     expect(calculation.status).toBe(201)
-    expect(calculation.body.engineVersion).toBe('1.0.0')
+    // 1.1.0 since 0cbdefb: financing inputs now reach the engine and the
+    // sensitivity grid recomputes. The numbers asserted below are unchanged by
+    // that bump, which is the point of asserting both.
+    expect(calculation.body.engineVersion).toBe('1.1.0')
     expect(calculation.body.revenue.total).toBe('42057000.00')
     expect(calculation.body.costs.total).toBe('500000.00')
     expect(calculation.body.profitability.profitBeforeFinancing).toBe('41557000.00')
@@ -418,7 +432,7 @@ describe.skip('Feasibility foundation (e2e)', () => {
     expect(snapshot.status).toBe(201)
     const snapshots = await http().get(`/api/v1/projects/${projectId}/feasibility/snapshots`).set(auth())
     expect(snapshots.status).toBe(200)
-    expect(snapshots.body[0]).toMatchObject({ id: snapshot.body.id, scenarioId, engineVersion: '1.0.0' })
+    expect(snapshots.body[0]).toMatchObject({ id: snapshot.body.id, scenarioId, engineVersion: '1.1.0' })
 
     const report = await http().post(`/api/v1/projects/${projectId}/feasibility/reports`).set(auth()).send({ snapshotId: snapshot.body.id, title: 'דוח אפס — טיוטה' })
     expect(report.status).toBe(201)
@@ -428,11 +442,11 @@ describe.skip('Feasibility foundation (e2e)', () => {
     expect(reports.body).toHaveLength(1)
     const frozenReport = await http().get(`/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}`).set(auth())
     expect(frozenReport.status).toBe(200)
-    expect(frozenReport.body.snapshot.outputSnapshot).toMatchObject({ engineVersion: '1.0.0', profitability: { profit: '41557000.00' } })
+    expect(frozenReport.body.snapshot.outputSnapshot).toMatchObject({ engineVersion: '1.1.0', profitability: { profit: '41557000.00' } })
     expect(frozenReport.body.snapshot.inputSnapshot.project).toMatchObject({ id: projectId, name: MARKER, code: MARKER, city: 'ירושלים' })
     expect(frozenReport.body.comparisonSnapshot).toMatchObject({
       scenarios: expect.arrayContaining([
-        expect.objectContaining({ scenarioId, snapshotId: snapshot.body.id, engineVersion: '1.0.0', output: expect.objectContaining({ profitability: expect.objectContaining({ profit: '41557000.00' }) }) }),
+        expect.objectContaining({ scenarioId, snapshotId: snapshot.body.id, engineVersion: '1.1.0', output: expect.objectContaining({ profitability: expect.objectContaining({ profit: '41557000.00' }) }) }),
       ]),
     })
     expect(frozenReport.body.snapshot.sensitivitySnapshot).toMatchObject({ primaryVariable: 'SALE_PRICE', secondaryVariable: 'CONSTRUCTION_COST' })
@@ -623,3 +637,98 @@ describe.skip('Feasibility foundation (e2e)', () => {
     expect(candidateRead.status).toBe(404)
   })
 })
+
+/**
+ * Remove every fixture any previous run of THIS suite created.
+ *
+ * ── WHY IT IS KEYED ON THE PROJECT CODE ────────────────────────────────────
+ *
+ * Every project this suite makes carries `code: FEAS-<base36 timestamp>`, and
+ * every other row it makes hangs off that project — so the project code is the
+ * one handle that reaches the whole tree without a marker on each table, and
+ * without any chance of matching a seeded or real project.
+ *
+ * ── WHY THE ORDER IS EXPLICIT ──────────────────────────────────────────────
+ *
+ * Not every relation here cascades, so children are deleted before parents,
+ * deepest first. A `deleteMany` that trips a foreign key would throw inside
+ * `beforeAll` and fail the whole suite for a reason that has nothing to do with
+ * the code under test — which is exactly the failure mode this purge exists to
+ * end.
+ *
+ * Owners and documents are matched by the same marker string rather than by the
+ * project, because `Owner` has no project column and a `Document` may outlive
+ * the project row in the delete order.
+ */
+async function purgeFixtures(prisma: PrismaService): Promise<void> {
+  const stale = await prisma.project.findMany({
+    where: { code: { startsWith: 'FEAS-' } },
+    select: { id: true, code: true, tenantId: true },
+  })
+  if (stale.length === 0) return
+
+  for (const project of stale) {
+    const profile = await prisma.feasibilityProfile.findFirst({
+      where: { projectId: project.id },
+      select: { id: true },
+    })
+
+    if (profile) {
+      const scenarios = await prisma.feasibilityScenario.findMany({
+        where: { feasibilityProfileId: profile.id },
+        select: { id: true },
+      })
+      const scenarioIds = scenarios.map((row) => row.id)
+
+      if (scenarioIds.length > 0) {
+        const where = { scenarioId: { in: scenarioIds } }
+        await prisma.feasibilityCalculationSnapshot.deleteMany({ where })
+        await prisma.feasibilityCompensationLine.deleteMany({ where })
+        await prisma.feasibilityCashFlowAllocation.deleteMany({ where })
+        await prisma.feasibilityFinancingAssumption.deleteMany({ where })
+        await prisma.feasibilityTimelinePhase.deleteMany({ where })
+        await prisma.feasibilityCostLine.deleteMany({ where })
+        await prisma.feasibilityRevenueLine.deleteMany({ where })
+        await prisma.feasibilityUnitMixLine.deleteMany({ where })
+      }
+
+      await prisma.feasibilityReportVersion.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.feasibilityScenario.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.comparableAdjustment.deleteMany({
+        where: { comparableTransaction: { feasibilityProfileId: profile.id } },
+      })
+      await prisma.comparableTransaction.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.planningRight.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.feasibilityAreaLine.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.feasibilityAssumption.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.gushChelkaRecord.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.feasibilitySource.deleteMany({ where: { feasibilityProfileId: profile.id } })
+      await prisma.feasibilityProfile.delete({ where: { id: profile.id } })
+    }
+
+    await prisma.dataQualityIssue.deleteMany({ where: { projectId: project.id } })
+    await prisma.document.deleteMany({ where: { projectId: project.id } })
+
+    const buildings = await prisma.building.findMany({
+      where: { complex: { projectId: project.id } },
+      select: { id: true },
+    })
+    const buildingIds = buildings.map((row) => row.id)
+    if (buildingIds.length > 0) {
+      const apartments = await prisma.apartment.findMany({
+        where: { buildingId: { in: buildingIds } },
+        select: { id: true },
+      })
+      const apartmentIds = apartments.map((row) => row.id)
+      if (apartmentIds.length > 0) {
+        await prisma.ownerApartment.deleteMany({ where: { apartmentId: { in: apartmentIds } } })
+        await prisma.resident.deleteMany({ where: { apartmentId: { in: apartmentIds } } })
+        await prisma.apartment.deleteMany({ where: { id: { in: apartmentIds } } })
+      }
+      await prisma.building.deleteMany({ where: { id: { in: buildingIds } } })
+    }
+    await prisma.complex.deleteMany({ where: { projectId: project.id } })
+    await prisma.project.delete({ where: { id: project.id } })
+    await prisma.owner.deleteMany({ where: { tenantId: project.tenantId, fullName: project.code } })
+  }
+}

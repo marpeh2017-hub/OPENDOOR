@@ -89,7 +89,41 @@ data or expected results may be invented. Its status remains `PENDING_SOURCE`.
 ## Explicit non-goals for Phase 1
 
 - Project Health Score and Next Best Action.
-- PDF/Excel generation.
 - Automated appraisal conclusions.
 - New GIS provider or scraped planning data.
 - Duplicating CRM entities or manually copying existing apartment/owner data.
+
+## Delivered beyond this plan
+
+This document describes the intended STARTING POINT, and the engine has gone
+well past it. Recorded here so the document is not read as a description of
+what exists:
+
+- **PDF/Excel generation** was listed above as a Phase 1 non-goal and has been
+  removed from that list, because it is built and wired:
+  `feasibility-pdf-export.service.ts` and `feasibility-excel-export.service.ts`,
+  exposed as `POST .../reports/:reportId/export/{pdf,excel}`, reachable from the
+  CRM's report-versions panel for LOCKED reports. The PDF renderer shells out to
+  a local Chrome/Edge, so it needs `PDF_BROWSER_PATH` on any host where neither
+  sits at a default Windows path — which includes every Linux deployment.
+- **Scenarios, revenues, costs, compensation, financing, calculation snapshots
+  and exports** were staged to follow "only after this foundation is validated".
+  All of them exist.
+- **Owner-replacement allocations** (`FeasibilityReplacementAllocation`): which
+  replacement flat goes to which holding, in exact integer fractions. The engine
+  reconciled these from 0cbdefb against a relation that did not exist, so the
+  checks passed vacuously until the model landed.
+- **A dated regulatory rules registry** (`FeasibilityRule`), which this document
+  does not mention: rules resolved against the study's determining date, with
+  overlap treated as an error rather than settled by recency. Its deviations
+  view is surfaced read-only in the CRM's דוח אפס tab. The engine is
+  deliberately NOT wired to it — reporting a deviation moves no number.
+
+## Capability mapping — current state
+
+The nine capabilities above are still expressed through the global role model
+rather than as project-scoped grants, and only two lists exist today
+(`FEASIBILITY_VIEW_ROLES`, `FEASIBILITY_EDIT_ROLES` in
+`auth/roles.constants.ts`). Several distinct capabilities therefore share one
+enforcement point; that file documents which, and where the mapping is
+deliberately coarser than the list above implies.

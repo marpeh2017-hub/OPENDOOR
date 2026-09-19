@@ -9,7 +9,7 @@ import {
   FeasibilityProjectType, FeasibilityReportType, FeasibilitySourceType,
   FeasibilityScenarioKind, FeasibilityRevenueCategory, FeasibilityCostCategory,
   FeasibilityCashFlowDirection, FeasibilityCashFlowSourceKind,
-  FeasibilityCompensationStatus,
+  FeasibilityCompensationStatus, FeasibilityUnitDisposition,
   FeasibilityTimelinePhaseKind, FeasibilityVatTreatment, PlanningRightStatus,
 } from '@prisma/client'
 
@@ -239,9 +239,52 @@ export class CreateUnitMixLineDto extends ProvenanceDto {
   storagePricePerSqm?: string
   @IsOptional() @Matches(/^\d+(\.\d+)?$/)
   adjustmentFactor?: string
+
+  /**
+   * Who ends up holding the unit — and therefore whether it earns anything.
+   *
+   * The engine books sale revenue for `DEVELOPER_SALE` lines ONLY, and raises a
+   * critical `UNIT_DISPOSITION_MISSING` for anything left `UNCLASSIFIED`. That
+   * column and that gate shipped in 0cbdefb with no way to set the value: every
+   * line stayed `UNCLASSIFIED` forever, so no unit mix could earn revenue and no
+   * scenario could clear its critical issue. This field is the missing half.
+   *
+   * It stays OPTIONAL and the database default stays `UNCLASSIFIED`. Defaulting
+   * to `DEVELOPER_SALE` would silently credit every owner-replacement flat as
+   * income, which is the exact error the gate exists to prevent — an unset
+   * disposition has to fail loudly rather than earn quietly.
+   */
+  @IsOptional() @IsEnum(FeasibilityUnitDisposition)
+  disposition?: FeasibilityUnitDisposition
 }
 
 export class UpdateUnitMixLineDto extends PartialType(CreateUnitMixLineDto) {}
+
+/**
+ * One replacement flat (or a share of one) allocated to one existing holding.
+ *
+ * The share is an integer fraction rather than a decimal for the reason
+ * `OwnerApartment` uses one: three equal heirs hold a third each, and
+ * 0.333 x 3 is not a whole flat. The engine sums these in BigInt.
+ */
+export class CreateReplacementAllocationDto {
+  @IsString() @IsNotEmpty() @MaxLength(80)
+  unitReference!: string
+
+  @IsString() @IsNotEmpty() @MaxLength(128)
+  ownerApartmentId!: string
+
+  @IsOptional() @IsInt() @Min(1)
+  shareNumerator?: number
+
+  @IsOptional() @IsInt() @Min(1)
+  shareDenominator?: number
+
+  @IsOptional() @IsString() @MaxLength(500)
+  notes?: string
+}
+
+export class UpdateReplacementAllocationDto extends PartialType(CreateReplacementAllocationDto) {}
 
 export class CreateFeasibilityRevenueLineDto extends ProvenanceDto {
   @IsEnum(FeasibilityRevenueCategory)

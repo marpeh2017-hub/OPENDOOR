@@ -311,3 +311,36 @@ export function useTransitionFeasibilityReportVersion(projectId: string) {
   const qc = useQueryClient()
   return useMutation({ mutationFn: ({ reportId, status }: { reportId: string; status: 'REVIEW' | 'APPROVED' | 'LOCKED' }) => api.patch<FeasibilityReportVersion>(`/projects/${projectId}/feasibility/reports/${reportId}/status`, { status }), onSuccess: () => qc.invalidateQueries({ queryKey: reportKey(projectId) }) })
 }
+
+// ── Regulatory rules registry ──────────────────────────────────────────────
+
+export type FeasibilityRuleDeviation = {
+  code: string
+  ruleName: string
+  ruleValue: string | null
+  ruleUnit: string | null
+  assumptionValue: string | null
+  sourceReference: string
+  ruleId: string
+  status: 'MATCHES' | 'OVERRIDES' | 'UNSET'
+}
+
+export type FeasibilityDeviations = {
+  valuationDate: string
+  jurisdiction: string | null
+  deviations: FeasibilityRuleDeviation[]
+}
+
+/**
+ * How this study stands against the tenant's rules registry on its determining
+ * date. Read-only by construction — the endpoint applies nothing, it reports
+ * (see FeasibilityRulesService.deviationsForProfile).
+ */
+export function useFeasibilityDeviations(profileId: string | null) {
+  return useQuery({
+    queryKey: ['feasibility', 'deviations', profileId],
+    queryFn: () => api.get<FeasibilityDeviations>(`/feasibility/rules/deviations/${profileId}`),
+    enabled: Boolean(profileId),
+    staleTime: 60_000,
+  })
+}

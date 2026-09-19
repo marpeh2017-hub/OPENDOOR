@@ -7,7 +7,7 @@ import { mapDomainErrors } from '../common/errors/domain-error'
 import {
   CreateFeasibilityAreaDto, CreateFeasibilityAssumptionDto,
   CreateFeasibilityProfileDto, CreateFeasibilitySourceDto, CreateGushChelkaDto, UpdateGushChelkaDto, UpdateFeasibilitySourceDto,
-  CreatePlanningRightDto, UpdatePlanningRightDto, CreateFeasibilityScenarioDto, CreateUnitMixLineDto, UpdateUnitMixLineDto,
+  CreatePlanningRightDto, UpdatePlanningRightDto, CreateFeasibilityScenarioDto, CreateUnitMixLineDto, CreateReplacementAllocationDto, UpdateReplacementAllocationDto, UpdateUnitMixLineDto,
   CreateFeasibilityRevenueLineDto, CreateFeasibilityCostLineDto,
   UpdateFeasibilityRevenueLineDto, UpdateFeasibilityCostLineDto,
   CreateFeasibilityCashFlowAllocationDto, UpdateFeasibilityCashFlowAllocationDto, CreateFeasibilityTimelinePhaseDto, UpdateFeasibilityProfileDto, UpdateFeasibilityAssumptionDto, UpdateFeasibilityAreaDto,
@@ -149,6 +149,35 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Delete one explicit proposed unit-mix line and preserve audit history' })
   deleteUnitMixLine(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Param('lineId') lineId: string, @Request() req: any) {
     return mapDomainErrors(() => this.feasibility.deleteUnitMixLine(projectId, scenarioId, lineId, actorFrom(req)))
+  }
+
+  /**
+   * Which replacement flat goes to which owner holding.
+   *
+   * Nested under the unit-mix line rather than the scenario because an
+   * allocation has no meaning apart from the line it divides up, and because
+   * the line is where the OWNER_REPLACEMENT classification lives that decides
+   * whether allocations are legitimate here at all.
+   */
+  @Post('scenarios/:scenarioId/unit-mix/:lineId/replacement-allocations')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Allocate a replacement flat, or a share of one, to an existing owner holding' })
+  addReplacementAllocation(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Param('lineId') lineId: string, @Body() dto: CreateReplacementAllocationDto, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.addReplacementAllocation(projectId, scenarioId, lineId, dto, actorFrom(req)))
+  }
+
+  @Patch('scenarios/:scenarioId/unit-mix/:lineId/replacement-allocations/:allocationId')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Correct one replacement allocation' })
+  updateReplacementAllocation(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Param('lineId') lineId: string, @Param('allocationId') allocationId: string, @Body() dto: UpdateReplacementAllocationDto, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.updateReplacementAllocation(projectId, scenarioId, lineId, allocationId, dto, actorFrom(req)))
+  }
+
+  @Delete('scenarios/:scenarioId/unit-mix/:lineId/replacement-allocations/:allocationId')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Remove one replacement allocation and preserve audit history' })
+  deleteReplacementAllocation(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Param('lineId') lineId: string, @Param('allocationId') allocationId: string, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.deleteReplacementAllocation(projectId, scenarioId, lineId, allocationId, actorFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/revenue-lines')
