@@ -1,4 +1,8 @@
-import { Send, RefreshCw, Eye, MoreHorizontal, CheckCircle2, Clock, AlertCircle, Circle } from 'lucide-react'
+'use client'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Eye, CheckCircle2, Clock, AlertCircle, Circle, XCircle, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -8,137 +12,127 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
+import { useSignaturePackages } from '@/hooks/use-signatures'
+import { useProjects } from '@/hooks/use-projects'
 
-type SigStatus = 'SIGNED' | 'SENT' | 'OPENED' | 'EXPIRED' | 'NOT_SENT'
-
-const STATUS_CFG: Record<SigStatus, { label: string; icon: React.ElementType; cls: string; badge: string }> = {
-  SIGNED:   { label: 'חתם',       icon: CheckCircle2, cls: 'text-green-600', badge: 'bg-green-100 text-green-700 border-green-200' },
-  SENT:     { label: 'נשלח',      icon: Clock,        cls: 'text-blue-500',  badge: 'bg-blue-100 text-blue-700 border-blue-200' },
-  OPENED:   { label: 'נפתח',      icon: Eye,          cls: 'text-purple-500',badge: 'bg-purple-100 text-purple-700 border-purple-200' },
-  EXPIRED:  { label: 'פג תוקף',   icon: AlertCircle,  cls: 'text-red-600',   badge: 'bg-red-100 text-red-700 border-red-200' },
-  NOT_SENT: { label: 'לא נשלח',   icon: Circle,       cls: 'text-gray-400',  badge: 'bg-gray-100 text-gray-500 border-gray-200' },
+/**
+ * Mirrors the documented SignaturePackage.status lifecycle in
+ * packages/db/prisma/schema.postgres.prisma:
+ *   DRAFT → INTERNAL_REVIEW → APPROVED → SENT → PARTIALLY_SIGNED
+ *   → COMPLETED | DECLINED | EXPIRED | CANCELLED | SUPERSEDED
+ *
+ * Any status missing from this map falls through to the raw enum string, which
+ * is how untranslated values such as DECLINED previously leaked into the UI.
+ */
+const STATUS_CFG: Record<string, { label: string; icon: React.ElementType; badge: string }> = {
+  DRAFT:            { label: 'טיוטה',        icon: Circle,       badge: 'bg-gray-100 text-gray-500 border-gray-200' },
+  INTERNAL_REVIEW:  { label: 'בבדיקה פנימית', icon: Clock,       badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+  APPROVED:         { label: 'מאושר',        icon: CheckCircle2, badge: 'bg-teal-100 text-teal-700 border-teal-200' },
+  SENT:             { label: 'נשלח',         icon: Send,         badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+  PARTIALLY_SIGNED: { label: 'נחתם חלקית',   icon: Eye,          badge: 'bg-purple-100 text-purple-700 border-purple-200' },
+  COMPLETED:        { label: 'הושלם',        icon: CheckCircle2, badge: 'bg-green-100 text-green-700 border-green-200' },
+  DECLINED:         { label: 'נדחה',          icon: XCircle,      badge: 'bg-red-100 text-red-700 border-red-200' },
+  EXPIRED:          { label: 'פג תוקף',      icon: AlertCircle,  badge: 'bg-red-100 text-red-700 border-red-200' },
+  CANCELLED:        { label: 'בוטל',         icon: XCircle,      badge: 'bg-gray-100 text-gray-500 border-gray-200' },
+  SUPERSEDED:       { label: 'הוחלף',        icon: Circle,       badge: 'bg-gray-100 text-gray-500 border-gray-200' },
 }
 
-const mockSignatures = [
-  { id: 's1',  name: 'דוד כהן',     apt: '3/4',  project: 'הרצל 45, ת"א',    status: 'SIGNED'   as SigStatus, sentDate: '01.03.2024', signedDate: '15.03.2024', reminders: 1, assignee: 'אבי ש׳' },
-  { id: 's2',  name: 'רחל לוי',     apt: '2/8',  project: 'הרצל 45, ת"א',    status: 'EXPIRED'  as SigStatus, sentDate: '01.03.2024', signedDate: null,          reminders: 3, assignee: 'שרה מ׳' },
-  { id: 's3',  name: 'משה ברג',     apt: '1/5',  project: 'ביאליק 12, ר"ג',  status: 'OPENED'   as SigStatus, sentDate: '10.03.2024', signedDate: null,          reminders: 0, assignee: 'אבי ש׳' },
-  { id: 's4',  name: 'שרה אברהם',   apt: '4/2',  project: 'הרצל 45, ת"א',    status: 'SENT'     as SigStatus, sentDate: '20.03.2024', signedDate: null,          reminders: 0, assignee: 'שרה מ׳' },
-  { id: 's5',  name: 'יוסף שמואלי', apt: '1/1',  project: 'בן יהודה 88, ת"א', status: 'SIGNED'  as SigStatus, sentDate: '05.02.2024', signedDate: '18.02.2024', reminders: 0, assignee: 'אבי ש׳' },
-  { id: 's6',  name: 'מרים גולן',   apt: '2/11', project: 'ביאליק 12, ר"ג',  status: 'NOT_SENT' as SigStatus, sentDate: null,          signedDate: null,          reminders: 0, assignee: 'שרה מ׳' },
-  { id: 's7',  name: 'אבי פרץ',     apt: '3/7',  project: 'בן יהודה 88, ת"א', status: 'SIGNED'  as SigStatus, sentDate: '15.01.2024', signedDate: '28.01.2024', reminders: 1, assignee: 'אבי ש׳' },
-  { id: 's8',  name: 'חנה וייס',    apt: '5/3',  project: 'הרצל 45, ת"א',    status: 'SENT'     as SigStatus, sentDate: '25.03.2024', signedDate: null,          reminders: 0, assignee: 'שרה מ׳' },
-]
+function formatDate(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('he-IL')
+}
 
 export function SignaturesTable() {
+  const router = useRouter()
+  const { data, isLoading, isError, error, refetch } = useSignaturePackages()
+  // Used only to resolve projectId → project name for display.
+  const { data: projects } = useProjects({ limit: 200 })
+
+  if (isLoading) return <RowsSkeleton rows={6} />
+
+  if (isError || !data) {
+    return <QueryError message="שגיאה בטעינת חבילות החתימה" error={error} onRetry={() => refetch()} />
+  }
+
+  if (data.length === 0) {
+    return <EmptyState message="אין חבילות חתימה" hint="צרו חבילה חדשה כדי להתחיל תהליך חתימות" />
+  }
+
+  const projectName = new Map((projects?.data ?? []).map(p => [p.id, p.name]))
+
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="text-right font-semibold">דייר</TableHead>
-          <TableHead className="text-right font-semibold">פרויקט / דירה</TableHead>
+          <TableHead className="text-right font-semibold">חבילה</TableHead>
+          <TableHead className="text-right font-semibold">פרויקט</TableHead>
           <TableHead className="text-right font-semibold">סטטוס</TableHead>
-          <TableHead className="text-right font-semibold">תאריך שליחה</TableHead>
-          <TableHead className="text-right font-semibold">תאריך חתימה</TableHead>
-          <TableHead className="text-right font-semibold">תזכורות</TableHead>
-          <TableHead className="w-32" />
+          <TableHead className="text-right font-semibold w-48">חותמים</TableHead>
+          <TableHead className="text-right font-semibold">נוצר</TableHead>
+          <TableHead className="text-right font-semibold">הושלם</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {mockSignatures.map(sig => {
-          const status = STATUS_CFG[sig.status]
+        {data.map(pkg => {
+          const status = STATUS_CFG[pkg.status]
+            ?? { label: pkg.status, icon: Circle, badge: 'bg-gray-100 text-gray-500 border-gray-200' }
           const StatusIcon = status.icon
+          const total  = pkg.records?.length ?? 0
+          const signed = pkg.records?.filter(r => r.status === 'SIGNED').length ?? 0
+          const pct    = total > 0 ? Math.round((signed / total) * 100) : 0
           return (
-            <TableRow key={sig.id} className="group">
+            // The whole row navigates to the package detail. The <Link> in the
+            // first cell is kept so keyboard focus, middle-click and "open in
+            // new tab" still work — the row handler is a convenience on top.
+            <TableRow
+              key={pkg.id}
+              className="group cursor-pointer"
+              onClick={() => router.push(`/signatures/${pkg.id}`)}
+            >
               <TableCell>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                      {sig.name.slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{sig.name}</p>
-                    <p className="text-xs text-muted-foreground">{sig.assignee}</p>
+                <Link href={`/signatures/${pkg.id}`} className="flex items-center gap-2.5">
+                  <StatusIcon size={15} className="text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                      {pkg.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">גרסה {pkg.version}</p>
                   </div>
-                </div>
+                </Link>
               </TableCell>
 
-              <TableCell>
-                <p className="text-sm text-foreground">{sig.project}</p>
-                <p className="text-xs text-muted-foreground">דירה {sig.apt}</p>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex items-center gap-1.5">
-                  <StatusIcon size={14} className={status.cls} />
-                  <span className={cn(
-                    'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                    status.badge
-                  )}>
-                    {status.label}
-                  </span>
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <span className="text-sm text-muted-foreground">
-                  {sig.sentDate ?? '—'}
-                </span>
+              <TableCell className="text-sm text-muted-foreground">
+                {projectName.get(pkg.projectId) ?? '—'}
               </TableCell>
 
               <TableCell>
                 <span className={cn(
-                  'text-sm font-medium',
-                  sig.signedDate ? 'text-green-600' : 'text-muted-foreground'
+                  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                  status.badge,
                 )}>
-                  {sig.signedDate ?? '—'}
+                  {status.label}
                 </span>
               </TableCell>
 
               <TableCell>
-                {sig.reminders > 0
-                  ? <span className="text-sm text-muted-foreground">{sig.reminders} ×</span>
-                  : <span className="text-sm text-muted-foreground">—</span>
-                }
+                {total === 0 ? (
+                  <span className="text-sm text-muted-foreground">אין חותמים</span>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <Progress value={pct} className="h-1.5 flex-1" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+                      {signed}/{total}
+                    </span>
+                  </div>
+                )}
               </TableCell>
 
-              <TableCell>
-                <div className="flex items-center gap-1 justify-end">
-                  {(sig.status === 'NOT_SENT') && (
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
-                      <Send size={11} /> שלח
-                    </Button>
-                  )}
-                  {(sig.status === 'SENT' || sig.status === 'OPENED' || sig.status === 'EXPIRED') && (
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
-                      <RefreshCw size={11} /> תזכורת
-                    </Button>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100">
-                        <MoreHorizontal size={13} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>צפייה בבקשה</DropdownMenuItem>
-                      <DropdownMenuItem>העתקת קישור</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">ביטול בקשה</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">{formatDate(pkg.createdAt)}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{formatDate(pkg.completedAt)}</TableCell>
             </TableRow>
           )
         })}

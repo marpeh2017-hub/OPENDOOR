@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+const API_BASE = process.env.API_GATEWAY_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
 
 export async function POST(req: NextRequest) {
   const refreshToken = req.cookies.get('refresh_token')?.value
@@ -18,8 +18,15 @@ export async function POST(req: NextRequest) {
 
     if (!apiRes.ok) {
       const response = NextResponse.json({ message: 'פג תוקף — יש להתחבר מחדש' }, { status: 401 })
-      response.cookies.delete('access_token')
-      response.cookies.delete('refresh_token')
+      // `path` must match how each cookie was set, or the browser keeps it.
+      response.cookies.set('access_token', '', {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', maxAge: 0, path: '/',
+      })
+      response.cookies.set('refresh_token', '', {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', maxAge: 0, path: '/api/auth/refresh',
+      })
       return response
     }
 

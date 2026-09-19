@@ -1,0 +1,1105 @@
+-- ============================================================
+-- Urban Renewal OS – PostgreSQL initial migration
+-- Hand-authored from schema.postgres.prisma
+-- Run with: prisma migrate deploy
+-- ============================================================
+
+-- Required extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- ============================================================
+-- ENUMS
+-- ============================================================
+
+DO $$ BEGIN
+  CREATE TYPE "Language" AS ENUM ('he', 'en', 'ru', 'ar');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "UserRole" AS ENUM (
+    'SUPER_ADMIN', 'COMPANY_ADMIN', 'CEO', 'PROJECT_MANAGER',
+    'RESIDENT_RELATIONS_MANAGER', 'FIELD_AGENT', 'LAWYER',
+    'ARCHITECT', 'ENGINEER', 'DEVELOPER_REP', 'MUNICIPALITY_USER',
+    'EXTERNAL_CONSULTANT', 'RESIDENT'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ProjectStatus" AS ENUM ('ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED', 'ARCHIVED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ProjectStage" AS ENUM (
+    'DISCOVERY', 'FEASIBILITY', 'RESIDENT_ORGANIZATION', 'SIGNATURES',
+    'DEVELOPER_SELECTION', 'PLANNING', 'MUNICIPAL_APPROVAL', 'PERMIT',
+    'EVACUATION', 'CONSTRUCTION', 'DELIVERY', 'POST_DELIVERY'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "LeadStatus" AS ENUM (
+    'NEW', 'CONTACTED', 'MEETING_SCHEDULED', 'INTERESTED', 'NEGOTIATION', 'SIGNED', 'LOST'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "LeadSource" AS ENUM (
+    'WEBSITE', 'REFERRAL', 'WHATSAPP', 'PHONE', 'SOCIAL_MEDIA',
+    'CAMPAIGN', 'DOOR_TO_DOOR', 'EVENT', 'PARTNER', 'OTHER'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "SignatureStatus" AS ENUM (
+    'DRAFT', 'SENT', 'VIEWED', 'PENDING', 'SIGNED', 'REJECTED', 'EXPIRED'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "SignatureProvider" AS ENUM (
+    'DOCUSIGN', 'ADOBE_SIGN', 'SIGNNOW', 'COMSIGN', 'MANUAL'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "DocumentCategory" AS ENUM (
+    'CONTRACT', 'ID_DOCUMENT', 'LAND_REGISTRY', 'POWER_OF_ATTORNEY',
+    'PLANNING', 'ENGINEERING', 'FINANCIAL', 'MUNICIPALITY', 'MARKETING',
+    'MEETING_MINUTES', 'LEGAL', 'PERMIT', 'OTHER'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "DocumentStatus" AS ENUM (
+    'DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'EXPIRED', 'ARCHIVED'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "TaskType" AS ENUM (
+    'CALL', 'MEETING', 'SITE_VISIT', 'SIGNATURE_FOLLOWUP',
+    'LEGAL_REVIEW', 'DOCUMENT_COLLECTION', 'APPROVAL', 'GENERAL'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "TaskStatus" AS ENUM (
+    'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'OVERDUE'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "MessageChannel" AS ENUM (
+    'WHATSAPP', 'SMS', 'EMAIL', 'PUSH', 'IN_APP', 'PORTAL'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "MessageStatus" AS ENUM (
+    'QUEUED', 'SENT', 'DELIVERED', 'READ', 'FAILED'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "CommunicationDirection" AS ENUM ('INBOUND', 'OUTBOUND');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ResidentSignatureStatus" AS ENUM (
+    'NOT_CONTACTED', 'CONTACTED', 'INTERESTED', 'SIGNED',
+    'OBJECTING', 'UNDECIDED', 'UNREACHABLE'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "TicketPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "VoteStatus" AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "AutomationTrigger" AS ENUM (
+    'LEAD_CREATED', 'RESIDENT_CREATED', 'MEETING_COMPLETED', 'SIGNATURE_SENT',
+    'SIGNATURE_SIGNED', 'PROJECT_STAGE_CHANGED', 'DOCUMENT_UPLOADED',
+    'DEADLINE_REACHED', 'TASK_OVERDUE', 'CUSTOM'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "AutomationActionType" AS ENUM (
+    'CREATE_TASK', 'SEND_WHATSAPP', 'SEND_SMS', 'SEND_EMAIL',
+    'GENERATE_REPORT', 'UPDATE_STATUS', 'CREATE_NOTIFICATION', 'WEBHOOK'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "AuditAction" AS ENUM (
+    'LOGIN', 'LOGOUT', 'CREATE', 'READ', 'UPDATE', 'DELETE',
+    'EXPORT', 'DOWNLOAD', 'SIGN', 'APPROVE', 'REJECT', 'IMPERSONATE'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- TABLES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS "tenants" (
+  "id"           TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "name"         TEXT        NOT NULL,
+  "slug"         TEXT        NOT NULL,
+  "domain"       TEXT,
+  "logoUrl"      TEXT,
+  "primaryColor" TEXT        NOT NULL DEFAULT '#2F9DA0',
+  "website"      TEXT,
+  "email"        TEXT,
+  "phone"        TEXT,
+  "settings"     JSONB       NOT NULL DEFAULT '{}',
+  "features"     JSONB       NOT NULL DEFAULT '{}',
+  "isActive"     BOOLEAN     NOT NULL DEFAULT TRUE,
+  "trialEndsAt"  TIMESTAMP(3),
+  "plan"         TEXT        NOT NULL DEFAULT 'starter',
+  "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "tenants_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "tenants_slug_key"  ON "tenants"("slug");
+CREATE UNIQUE INDEX IF NOT EXISTS "tenants_domain_key" ON "tenants"("domain");
+CREATE INDEX        IF NOT EXISTS "tenants_slug_idx"   ON "tenants"("slug");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "users" (
+  "id"                TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"          TEXT        NOT NULL,
+  "email"             TEXT,
+  "phone"             TEXT,
+  "nationalId"        TEXT,
+  "firstName"         TEXT        NOT NULL,
+  "lastName"          TEXT        NOT NULL,
+  "avatarUrl"         TEXT,
+  "role"              "UserRole"  NOT NULL,
+  "language"          "Language"  NOT NULL DEFAULT 'he',
+  "isActive"          BOOLEAN     NOT NULL DEFAULT TRUE,
+  "isVerified"        BOOLEAN     NOT NULL DEFAULT FALSE,
+  "lastLoginAt"       TIMESTAMP(3),
+  "passwordHash"      TEXT,
+  "mfaEnabled"        BOOLEAN     NOT NULL DEFAULT FALSE,
+  "mfaSecret"         TEXT,
+  "notificationPrefs" JSONB       NOT NULL DEFAULT '{"email":true,"sms":true,"whatsapp":true,"push":true,"inApp":true}',
+  "createdAt"         TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"         TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "users_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "users_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "users_tenantId_email_key" ON "users"("tenantId", "email");
+CREATE UNIQUE INDEX IF NOT EXISTS "users_tenantId_phone_key" ON "users"("tenantId", "phone");
+CREATE INDEX        IF NOT EXISTS "users_tenantId_role_idx"  ON "users"("tenantId", "role");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "sessions" (
+  "id"           TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "userId"       TEXT        NOT NULL,
+  "token"        TEXT        NOT NULL,
+  "refreshToken" TEXT        NOT NULL,
+  "deviceInfo"   JSONB,
+  "ipAddress"    TEXT,
+  "expiresAt"    TIMESTAMP(3) NOT NULL,
+  "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "sessions_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "sessions_token_key"        ON "sessions"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "sessions_refreshToken_key" ON "sessions"("refreshToken");
+CREATE INDEX        IF NOT EXISTS "sessions_userId_idx"        ON "sessions"("userId");
+CREATE INDEX        IF NOT EXISTS "sessions_token_idx"         ON "sessions"("token");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "campaigns" (
+  "id"               TEXT            NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"         TEXT            NOT NULL,
+  "projectId"        TEXT,
+  "name"             TEXT            NOT NULL,
+  "description"      TEXT,
+  "channel"          "MessageChannel" NOT NULL,
+  "status"           TEXT            NOT NULL DEFAULT 'draft',
+  "scheduledAt"      TIMESTAMP(3),
+  "startedAt"        TIMESTAMP(3),
+  "completedAt"      TIMESTAMP(3),
+  "totalRecipients"  INTEGER         NOT NULL DEFAULT 0,
+  "sent"             INTEGER         NOT NULL DEFAULT 0,
+  "delivered"        INTEGER         NOT NULL DEFAULT 0,
+  "read"             INTEGER         NOT NULL DEFAULT 0,
+  "failed"           INTEGER         NOT NULL DEFAULT 0,
+  "templateId"       TEXT,
+  "createdAt"        TIMESTAMP(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"        TIMESTAMP(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "campaigns_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "campaigns_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "campaigns_tenantId_status_idx" ON "campaigns"("tenantId", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "leads" (
+  "id"                    TEXT         NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"              TEXT         NOT NULL,
+  "firstName"             TEXT         NOT NULL,
+  "lastName"              TEXT         NOT NULL,
+  "phone"                 TEXT,
+  "email"                 TEXT,
+  "address"               TEXT,
+  "city"                  TEXT,
+  "source"                "LeadSource" NOT NULL DEFAULT 'OTHER',
+  "campaignId"            TEXT,
+  "status"                "LeadStatus" NOT NULL DEFAULT 'NEW',
+  "score"                 INTEGER      NOT NULL DEFAULT 0,
+  "notes"                 TEXT,
+  "tags"                  TEXT[]       NOT NULL DEFAULT '{}',
+  "assignedToId"          TEXT,
+  "convertedToResidentId" TEXT,
+  "convertedAt"           TIMESTAMP(3),
+  "language"              "Language"   NOT NULL DEFAULT 'he',
+  "createdAt"             TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"             TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "leads_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "leads_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE,
+  CONSTRAINT "leads_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "campaigns"("id") ON DELETE SET NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "leads_convertedToResidentId_key" ON "leads"("convertedToResidentId");
+CREATE INDEX        IF NOT EXISTS "leads_tenantId_status_idx"       ON "leads"("tenantId", "status");
+CREATE INDEX        IF NOT EXISTS "leads_tenantId_assignedToId_idx"  ON "leads"("tenantId", "assignedToId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "lead_activities" (
+  "id"          TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "leadId"      TEXT        NOT NULL,
+  "type"        TEXT        NOT NULL,
+  "note"        TEXT,
+  "metadata"    JSONB,
+  "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "createdById" TEXT,
+
+  CONSTRAINT "lead_activities_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "lead_activities_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "lead_activities_leadId_idx" ON "lead_activities"("leadId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "projects" (
+  "id"               TEXT            NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"         TEXT            NOT NULL,
+  "code"             TEXT            NOT NULL,
+  "name"             TEXT            NOT NULL,
+  "description"      TEXT,
+  "city"             TEXT            NOT NULL,
+  "neighborhood"     TEXT,
+  "address"          TEXT,
+  "coordinates"      JSONB,
+  "status"           "ProjectStatus" NOT NULL DEFAULT 'ACTIVE',
+  "stage"            "ProjectStage"  NOT NULL DEFAULT 'DISCOVERY',
+  "startDate"        TIMESTAMP(3),
+  "targetEndDate"    TIMESTAMP(3),
+  "actualEndDate"    TIMESTAMP(3),
+  "totalUnits"       INTEGER         NOT NULL DEFAULT 0,
+  "signedUnits"      INTEGER         NOT NULL DEFAULT 0,
+  "signatureGoal"    INTEGER         NOT NULL DEFAULT 67,
+  "signatureActual"  DOUBLE PRECISION NOT NULL DEFAULT 0,
+  "projectManagerId" TEXT,
+  "lawyerId"         TEXT,
+  "architectId"      TEXT,
+  "developerRep"     TEXT,
+  "estimatedBudget"  DECIMAL(15,2),
+  "currency"         TEXT            NOT NULL DEFAULT 'ILS',
+  "settings"         JSONB           NOT NULL DEFAULT '{}',
+  "tags"             TEXT[]          NOT NULL DEFAULT '{}',
+  "createdAt"        TIMESTAMP(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"        TIMESTAMP(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "projects_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "projects_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "projects_tenantId_code_key"    ON "projects"("tenantId", "code");
+CREATE INDEX        IF NOT EXISTS "projects_tenantId_status_idx"  ON "projects"("tenantId", "status");
+CREATE INDEX        IF NOT EXISTS "projects_tenantId_stage_idx"   ON "projects"("tenantId", "stage");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "project_members" (
+  "id"        TEXT      NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "projectId" TEXT      NOT NULL,
+  "userId"    TEXT      NOT NULL,
+  "role"      "UserRole" NOT NULL,
+  "addedAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "project_members_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "project_members_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE,
+  CONSTRAINT "project_members_userId_fkey"    FOREIGN KEY ("userId")    REFERENCES "users"("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "project_members_projectId_userId_key" ON "project_members"("projectId", "userId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "project_stage_history" (
+  "id"          TEXT          NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "projectId"   TEXT          NOT NULL,
+  "stage"       "ProjectStage" NOT NULL,
+  "enteredAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "exitedAt"    TIMESTAMP(3),
+  "notes"       TEXT,
+  "changedById" TEXT,
+
+  CONSTRAINT "project_stage_history_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "project_stage_history_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "project_stage_history_projectId_idx" ON "project_stage_history"("projectId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "complexes" (
+  "id"          TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "projectId"   TEXT        NOT NULL,
+  "name"        TEXT        NOT NULL,
+  "address"     TEXT,
+  "coordinates" JSONB,
+  "status"      TEXT        NOT NULL DEFAULT 'active',
+  "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "complexes_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "complexes_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "complexes_projectId_idx" ON "complexes"("projectId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "buildings" (
+  "id"               TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "complexId"        TEXT        NOT NULL,
+  "address"          TEXT        NOT NULL,
+  "streetNumber"     TEXT,
+  "city"             TEXT,
+  "zipCode"          TEXT,
+  "coordinates"      JSONB,
+  "floors"           INTEGER,
+  "totalApartments"  INTEGER,
+  "constructionYear" INTEGER,
+  "buildingClass"    TEXT,
+  "status"           TEXT        NOT NULL DEFAULT 'active',
+  "createdAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "buildings_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "buildings_complexId_fkey" FOREIGN KEY ("complexId") REFERENCES "complexes"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "buildings_complexId_idx" ON "buildings"("complexId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "apartments" (
+  "id"              TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "buildingId"      TEXT        NOT NULL,
+  "apartmentNumber" TEXT        NOT NULL,
+  "floor"           INTEGER,
+  "sizeSqm"         DOUBLE PRECISION,
+  "rooms"           DOUBLE PRECISION,
+  "hasParking"      BOOLEAN     NOT NULL DEFAULT FALSE,
+  "parkingSpots"    INTEGER     NOT NULL DEFAULT 0,
+  "hasStorage"      BOOLEAN     NOT NULL DEFAULT FALSE,
+  "storageCount"    INTEGER     NOT NULL DEFAULT 0,
+  "hasBalcony"      BOOLEAN     NOT NULL DEFAULT FALSE,
+  "balconySqm"      DOUBLE PRECISION,
+  "notes"           TEXT,
+  "status"          TEXT        NOT NULL DEFAULT 'active',
+  "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "apartments_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "apartments_buildingId_fkey" FOREIGN KEY ("buildingId") REFERENCES "buildings"("id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "apartments_buildingId_apartmentNumber_key" ON "apartments"("buildingId", "apartmentNumber");
+CREATE INDEX        IF NOT EXISTS "apartments_buildingId_idx" ON "apartments"("buildingId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "owners" (
+  "id"              TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"        TEXT        NOT NULL,
+  "fullName"        TEXT        NOT NULL,
+  "nationalId"      TEXT,
+  "phone"           TEXT,
+  "email"           TEXT,
+  "addressAbroad"   TEXT,
+  "isEstate"        BOOLEAN     NOT NULL DEFAULT FALSE,
+  "guardianContact" TEXT,
+  "notes"           TEXT,
+  "residentId"      TEXT,
+  "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "owners_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "owners_residentId_key" ON "owners"("residentId");
+CREATE INDEX        IF NOT EXISTS "owners_tenantId_idx"   ON "owners"("tenantId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "owner_apartments" (
+  "id"               TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "ownerId"          TEXT        NOT NULL,
+  "apartmentId"      TEXT        NOT NULL,
+  "shareNumerator"   INTEGER     NOT NULL DEFAULT 1,
+  "shareDenominator" INTEGER     NOT NULL DEFAULT 1,
+  "viaInheritance"   BOOLEAN     NOT NULL DEFAULT FALSE,
+  "poaHolderId"      TEXT,
+  "acquiredAt"       TIMESTAMP(3),
+  "createdAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "owner_apartments_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "owner_apartments_ownerId_fkey"      FOREIGN KEY ("ownerId")     REFERENCES "owners"("id")     ON DELETE CASCADE,
+  CONSTRAINT "owner_apartments_apartmentId_fkey"  FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "owner_apartments_ownerId_apartmentId_key" ON "owner_apartments"("ownerId", "apartmentId");
+CREATE INDEX        IF NOT EXISTS "owner_apartments_apartmentId_idx"         ON "owner_apartments"("apartmentId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "signature_packages" (
+  "id"                 TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"           TEXT        NOT NULL,
+  "projectId"          TEXT        NOT NULL,
+  "version"            INTEGER     NOT NULL DEFAULT 1,
+  "status"             TEXT        NOT NULL DEFAULT 'DRAFT',
+  "title"              TEXT        NOT NULL,
+  "documentIds"        TEXT        NOT NULL DEFAULT '[]',
+  "documentHash"       TEXT,
+  "signingOrder"       TEXT        NOT NULL DEFAULT 'PARALLEL',
+  "verificationMethod" TEXT        NOT NULL DEFAULT 'SMS_OTP',
+  "expiresAt"          TIMESTAMP(3),
+  "approvedById"       TEXT,
+  "approvedAt"         TIMESTAMP(3),
+  "completedAt"        TIMESTAMP(3),
+  "cancelledAt"        TIMESTAMP(3),
+  "cancelReason"       TEXT,
+  "supersededById"     TEXT,
+  "createdById"        TEXT,
+  "createdAt"          TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"          TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "signature_packages_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "signature_packages_projectId_idx"          ON "signature_packages"("projectId");
+CREATE INDEX IF NOT EXISTS "signature_packages_tenantId_status_idx"    ON "signature_packages"("tenantId", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "signature_events" (
+  "id"        TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "packageId" TEXT        NOT NULL,
+  "recordId"  TEXT,
+  "type"      TEXT        NOT NULL,
+  "actorType" TEXT        NOT NULL DEFAULT 'SYSTEM',
+  "actorId"   TEXT,
+  "ip"        TEXT,
+  "userAgent" TEXT,
+  "metadata"  TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "signature_events_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "signature_events_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "signature_packages"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "signature_events_packageId_createdAt_idx" ON "signature_events"("packageId", "createdAt");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "signing_sessions" (
+  "id"           TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "recordId"     TEXT        NOT NULL,
+  "token"        TEXT        NOT NULL,
+  "otpHash"      TEXT,
+  "otpExpiresAt" TIMESTAMP(3),
+  "otpAttempts"  INTEGER     NOT NULL DEFAULT 0,
+  "verifiedAt"   TIMESTAMP(3),
+  "expiresAt"    TIMESTAMP(3) NOT NULL,
+  "revokedAt"    TIMESTAMP(3),
+  "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "signing_sessions_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "signing_sessions_recordId_key" ON "signing_sessions"("recordId");
+CREATE UNIQUE INDEX IF NOT EXISTS "signing_sessions_token_key"    ON "signing_sessions"("token");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "signature_records" (
+  "id"            TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"      TEXT        NOT NULL,
+  "packageId"     TEXT        NOT NULL,
+  "ownerId"       TEXT        NOT NULL,
+  "apartmentId"   TEXT        NOT NULL,
+  "method"        TEXT        NOT NULL DEFAULT 'DIGITAL',
+  "status"        TEXT        NOT NULL DEFAULT 'PENDING',
+  "signerRole"    TEXT        NOT NULL DEFAULT 'OWNER',
+  "required"      BOOLEAN     NOT NULL DEFAULT TRUE,
+  "signingOrder"  INTEGER     NOT NULL DEFAULT 0,
+  "declineReason" TEXT,
+  "signedAt"      TIMESTAMP(3),
+  "refusedAt"     TIMESTAMP(3),
+  "revokedAt"     TIMESTAMP(3),
+  "evidenceDocId" TEXT,
+  "witnessName"   TEXT,
+  "geoLat"        DOUBLE PRECISION,
+  "geoLng"        DOUBLE PRECISION,
+  "validatedById" TEXT,
+  "notes"         TEXT,
+  "createdAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "signature_records_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "signature_records_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "signature_packages"("id") ON DELETE CASCADE,
+  CONSTRAINT "signature_records_ownerId_fkey"   FOREIGN KEY ("ownerId")   REFERENCES "owners"("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "signature_records_packageId_ownerId_apartmentId_key" ON "signature_records"("packageId", "ownerId", "apartmentId");
+CREATE INDEX        IF NOT EXISTS "signature_records_apartmentId_idx"                   ON "signature_records"("apartmentId");
+CREATE INDEX        IF NOT EXISTS "signature_records_tenantId_status_idx"               ON "signature_records"("tenantId", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "threshold_rules" (
+  "id"          TEXT            NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"    TEXT            NOT NULL,
+  "projectId"   TEXT            NOT NULL,
+  "scope"       TEXT            NOT NULL DEFAULT 'PROJECT',
+  "buildingId"  TEXT,
+  "requiredPct" DOUBLE PRECISION NOT NULL DEFAULT 67,
+  "basis"       TEXT            NOT NULL DEFAULT 'SHARES',
+  "createdAt"   TIMESTAMP(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "threshold_rules_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "threshold_rules_projectId_scope_buildingId_key" ON "threshold_rules"("projectId", "scope", "buildingId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "residents" (
+  "id"                   TEXT                      NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"             TEXT                      NOT NULL,
+  "apartmentId"          TEXT                      NOT NULL,
+  "firstName"            TEXT                      NOT NULL,
+  "lastName"             TEXT                      NOT NULL,
+  "nationalId"           TEXT,
+  "phone"                TEXT,
+  "phone2"               TEXT,
+  "email"                TEXT,
+  "ownershipPercentage"  DOUBLE PRECISION          NOT NULL DEFAULT 100,
+  "isPrimaryContact"     BOOLEAN                   NOT NULL DEFAULT TRUE,
+  "signatureStatus"      "ResidentSignatureStatus" NOT NULL DEFAULT 'NOT_CONTACTED',
+  "isObjecting"          BOOLEAN                   NOT NULL DEFAULT FALSE,
+  "objectionReason"      TEXT,
+  "riskScore"            INTEGER                   NOT NULL DEFAULT 0,
+  "language"             "Language"                NOT NULL DEFAULT 'he',
+  "preferredChannel"     "MessageChannel"          NOT NULL DEFAULT 'WHATSAPP',
+  "whatsappOptIn"        BOOLEAN                   NOT NULL DEFAULT FALSE,
+  "smsOptIn"             BOOLEAN                   NOT NULL DEFAULT TRUE,
+  "emailOptIn"           BOOLEAN                   NOT NULL DEFAULT TRUE,
+  "doNotContact"         BOOLEAN                   NOT NULL DEFAULT FALSE,
+  "doNotContactReason"   TEXT,
+  "portalUserId"         TEXT,
+  "portalEnabled"        BOOLEAN                   NOT NULL DEFAULT FALSE,
+  "notes"                TEXT,
+  "tags"                 TEXT[]                    NOT NULL DEFAULT '{}',
+  "createdAt"            TIMESTAMP(3)              NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"            TIMESTAMP(3)              NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "residents_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "residents_apartmentId_fkey" FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "residents_portalUserId_key"        ON "residents"("portalUserId");
+CREATE INDEX        IF NOT EXISTS "residents_apartmentId_idx"          ON "residents"("apartmentId");
+CREATE INDEX        IF NOT EXISTS "residents_signatureStatus_idx"      ON "residents"("signatureStatus");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "resident_activities" (
+  "id"          TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "residentId"  TEXT        NOT NULL,
+  "type"        TEXT        NOT NULL,
+  "title"       TEXT        NOT NULL,
+  "note"        TEXT,
+  "metadata"    JSONB,
+  "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "createdById" TEXT,
+
+  CONSTRAINT "resident_activities_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "resident_activities_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "resident_activities_residentId_idx" ON "resident_activities"("residentId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "documents" (
+  "id"          TEXT               NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"    TEXT               NOT NULL,
+  "projectId"   TEXT,
+  "category"    "DocumentCategory" NOT NULL,
+  "status"      "DocumentStatus"   NOT NULL DEFAULT 'DRAFT',
+  "title"       TEXT               NOT NULL,
+  "description" TEXT,
+  "fileName"    TEXT               NOT NULL,
+  "fileSize"    INTEGER            NOT NULL,
+  "mimeType"    TEXT               NOT NULL,
+  "s3Key"       TEXT               NOT NULL,
+  "s3Bucket"    TEXT               NOT NULL,
+  "version"     INTEGER            NOT NULL DEFAULT 1,
+  "parentId"    TEXT,
+  "ocrText"     TEXT,
+  "ocrStatus"   TEXT               NOT NULL DEFAULT 'pending',
+  "language"    "Language"         NOT NULL DEFAULT 'he',
+  "isPublic"    BOOLEAN            NOT NULL DEFAULT FALSE,
+  "tags"        TEXT[]             NOT NULL DEFAULT '{}',
+  "expiresAt"   TIMESTAMP(3),
+  "createdById" TEXT               NOT NULL,
+  "createdAt"   TIMESTAMP(3)       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"   TIMESTAMP(3)       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "documents_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "documents_tenantId_fkey"  FOREIGN KEY ("tenantId")  REFERENCES "tenants"("id") ON DELETE CASCADE,
+  CONSTRAINT "documents_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id"),
+  CONSTRAINT "documents_parentId_fkey"  FOREIGN KEY ("parentId")  REFERENCES "documents"("id"),
+  CONSTRAINT "documents_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "documents_tenantId_category_idx"  ON "documents"("tenantId", "category");
+CREATE INDEX IF NOT EXISTS "documents_tenantId_projectId_idx" ON "documents"("tenantId", "projectId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "resident_documents" (
+  "id"         TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "residentId" TEXT        NOT NULL,
+  "documentId" TEXT        NOT NULL,
+  "addedAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "resident_documents_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "resident_documents_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id") ON DELETE CASCADE,
+  CONSTRAINT "resident_documents_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "documents"("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "resident_documents_residentId_documentId_key" ON "resident_documents"("residentId", "documentId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "signature_requests" (
+  "id"                TEXT               NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"          TEXT               NOT NULL,
+  "residentId"        TEXT               NOT NULL,
+  "documentId"        TEXT,
+  "provider"          "SignatureProvider" NOT NULL DEFAULT 'DOCUSIGN',
+  "externalId"        TEXT,
+  "status"            "SignatureStatus"  NOT NULL DEFAULT 'DRAFT',
+  "sentAt"            TIMESTAMP(3),
+  "viewedAt"          TIMESTAMP(3),
+  "signedAt"          TIMESTAMP(3),
+  "rejectedAt"        TIMESTAMP(3),
+  "expiresAt"         TIMESTAMP(3),
+  "rejectionReason"   TEXT,
+  "signatureImageUrl" TEXT,
+  "metadata"          JSONB,
+  "createdAt"         TIMESTAMP(3)       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"         TIMESTAMP(3)       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "signature_requests_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "signature_requests_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id"),
+  CONSTRAINT "signature_requests_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "documents"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "signature_requests_residentId_idx"      ON "signature_requests"("residentId");
+CREATE INDEX IF NOT EXISTS "signature_requests_tenantId_status_idx" ON "signature_requests"("tenantId", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "meetings" (
+  "id"                     TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"               TEXT        NOT NULL,
+  "projectId"              TEXT,
+  "title"                  TEXT        NOT NULL,
+  "description"            TEXT,
+  "location"               TEXT,
+  "isVirtual"              BOOLEAN     NOT NULL DEFAULT FALSE,
+  "meetingUrl"             TEXT,
+  "startTime"              TIMESTAMP(3) NOT NULL,
+  "endTime"                TIMESTAMP(3),
+  "aiSummary"              TEXT,
+  "aiSummaryGeneratedAt"   TIMESTAMP(3),
+  "notes"                  TEXT,
+  "status"                 TEXT        NOT NULL DEFAULT 'scheduled',
+  "createdAt"              TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"              TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "meetings_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "meetings_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "meetings_tenantId_projectId_idx" ON "meetings"("tenantId", "projectId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "meeting_attendees" (
+  "id"         TEXT     NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "meetingId"  TEXT     NOT NULL,
+  "userId"     TEXT,
+  "residentId" TEXT,
+  "attended"   BOOLEAN,
+  "role"       TEXT,
+
+  CONSTRAINT "meeting_attendees_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "meeting_attendees_meetingId_fkey"  FOREIGN KEY ("meetingId")  REFERENCES "meetings"("id") ON DELETE CASCADE,
+  CONSTRAINT "meeting_attendees_userId_fkey"     FOREIGN KEY ("userId")     REFERENCES "users"("id"),
+  CONSTRAINT "meeting_attendees_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "meeting_attendees_meetingId_userId_key"     ON "meeting_attendees"("meetingId", "userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "meeting_attendees_meetingId_residentId_key" ON "meeting_attendees"("meetingId", "residentId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "tasks" (
+  "id"          TEXT          NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"    TEXT          NOT NULL,
+  "type"        "TaskType"    NOT NULL DEFAULT 'GENERAL',
+  "title"       TEXT          NOT NULL,
+  "description" TEXT,
+  "status"      "TaskStatus"  NOT NULL DEFAULT 'PENDING',
+  "priority"    "TaskPriority" NOT NULL DEFAULT 'MEDIUM',
+  "assigneeId"  TEXT,
+  "createdById" TEXT,
+  "dueDate"     TIMESTAMP(3),
+  "completedAt" TIMESTAMP(3),
+  "projectId"   TEXT,
+  "leadId"      TEXT,
+  "residentId"  TEXT,
+  "meetingId"   TEXT,
+  "blockedById" TEXT,
+  "tags"        TEXT[]       NOT NULL DEFAULT '{}',
+  "notes"       TEXT,
+  "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "tasks_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "tasks_assigneeId_fkey"  FOREIGN KEY ("assigneeId")  REFERENCES "users"("id"),
+  CONSTRAINT "tasks_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id"),
+  CONSTRAINT "tasks_projectId_fkey"   FOREIGN KEY ("projectId")   REFERENCES "projects"("id"),
+  CONSTRAINT "tasks_leadId_fkey"      FOREIGN KEY ("leadId")      REFERENCES "leads"("id"),
+  CONSTRAINT "tasks_residentId_fkey"  FOREIGN KEY ("residentId")  REFERENCES "residents"("id"),
+  CONSTRAINT "tasks_meetingId_fkey"   FOREIGN KEY ("meetingId")   REFERENCES "meetings"("id"),
+  CONSTRAINT "tasks_blockedById_fkey" FOREIGN KEY ("blockedById") REFERENCES "tasks"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "tasks_tenantId_assigneeId_status_idx" ON "tasks"("tenantId", "assigneeId", "status");
+CREATE INDEX IF NOT EXISTS "tasks_tenantId_projectId_idx"         ON "tasks"("tenantId", "projectId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "communication_templates" (
+  "id"             TEXT            NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"       TEXT            NOT NULL,
+  "name"           TEXT            NOT NULL,
+  "channel"        "MessageChannel" NOT NULL,
+  "language"       "Language"      NOT NULL DEFAULT 'he',
+  "subject"        TEXT,
+  "body"           TEXT            NOT NULL,
+  "variables"      TEXT[]          NOT NULL DEFAULT '{}',
+  "isActive"       BOOLEAN         NOT NULL DEFAULT TRUE,
+  "isApproved"     BOOLEAN         NOT NULL DEFAULT FALSE,
+  "waTemplateName" TEXT,
+  "waCategory"     TEXT,
+  "createdAt"      TIMESTAMP(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"      TIMESTAMP(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "communication_templates_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "communication_templates_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "communication_templates_tenantId_name_channel_language_key"
+  ON "communication_templates"("tenantId", "name", "channel", "language");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "messages" (
+  "id"            TEXT                      NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"      TEXT                      NOT NULL,
+  "channel"       "MessageChannel"          NOT NULL,
+  "direction"     "CommunicationDirection"  NOT NULL,
+  "status"        "MessageStatus"           NOT NULL DEFAULT 'QUEUED',
+  "residentId"    TEXT,
+  "toPhone"       TEXT,
+  "toEmail"       TEXT,
+  "subject"       TEXT,
+  "body"          TEXT                      NOT NULL,
+  "templateId"    TEXT,
+  "sentAt"        TIMESTAMP(3),
+  "deliveredAt"   TIMESTAMP(3),
+  "readAt"        TIMESTAMP(3),
+  "failureReason" TEXT,
+  "externalId"    TEXT,
+  "metadata"      JSONB,
+  "campaignId"    TEXT,
+  "createdAt"     TIMESTAMP(3)              NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "messages_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "messages_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id"),
+  CONSTRAINT "messages_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "communication_templates"("id"),
+  CONSTRAINT "messages_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "campaigns"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "messages_tenantId_residentId_idx"        ON "messages"("tenantId", "residentId");
+CREATE INDEX IF NOT EXISTS "messages_tenantId_channel_status_idx"    ON "messages"("tenantId", "channel", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "support_tickets" (
+  "id"          TEXT            NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"    TEXT            NOT NULL,
+  "residentId"  TEXT,
+  "subject"     TEXT            NOT NULL,
+  "description" TEXT            NOT NULL,
+  "status"      "TicketStatus"  NOT NULL DEFAULT 'OPEN',
+  "priority"    "TicketPriority" NOT NULL DEFAULT 'MEDIUM',
+  "category"    TEXT,
+  "assigneeId"  TEXT,
+  "resolvedAt"  TIMESTAMP(3),
+  "closedAt"    TIMESTAMP(3),
+  "createdAt"   TIMESTAMP(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"   TIMESTAMP(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "support_tickets_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "support_tickets_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "support_tickets_tenantId_status_idx" ON "support_tickets"("tenantId", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "ticket_replies" (
+  "id"               TEXT     NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "ticketId"         TEXT     NOT NULL,
+  "authorId"         TEXT,
+  "authorResidentId" TEXT,
+  "body"             TEXT     NOT NULL,
+  "isInternal"       BOOLEAN  NOT NULL DEFAULT FALSE,
+  "createdAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "ticket_replies_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "ticket_replies_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE CASCADE
+);
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "votes" (
+  "id"                   TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"             TEXT        NOT NULL,
+  "projectId"            TEXT,
+  "title"                TEXT        NOT NULL,
+  "description"          TEXT,
+  "status"               "VoteStatus" NOT NULL DEFAULT 'DRAFT',
+  "type"                 TEXT        NOT NULL DEFAULT 'single_choice',
+  "options"              JSONB       NOT NULL,
+  "requiredParticipation" DOUBLE PRECISION NOT NULL DEFAULT 0.51,
+  "requiredMajority"     DOUBLE PRECISION NOT NULL DEFAULT 0.51,
+  "opensAt"              TIMESTAMP(3),
+  "closesAt"             TIMESTAMP(3),
+  "result"               JSONB,
+  "createdAt"            TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"            TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "votes_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "votes_tenantId_status_idx" ON "votes"("tenantId", "status");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "vote_responses" (
+  "id"              TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "voteId"          TEXT        NOT NULL,
+  "residentId"      TEXT        NOT NULL,
+  "selectedOptions" TEXT[]      NOT NULL,
+  "votedAt"         TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "ipAddress"       TEXT,
+
+  CONSTRAINT "vote_responses_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "vote_responses_voteId_fkey"     FOREIGN KEY ("voteId")     REFERENCES "votes"("id") ON DELETE CASCADE,
+  CONSTRAINT "vote_responses_residentId_fkey" FOREIGN KEY ("residentId") REFERENCES "residents"("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "vote_responses_voteId_residentId_key" ON "vote_responses"("voteId", "residentId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "automations" (
+  "id"            TEXT                NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"      TEXT                NOT NULL,
+  "projectId"     TEXT,
+  "name"          TEXT                NOT NULL,
+  "description"   TEXT,
+  "isActive"      BOOLEAN             NOT NULL DEFAULT TRUE,
+  "trigger"       "AutomationTrigger" NOT NULL,
+  "triggerConfig" JSONB               NOT NULL DEFAULT '{}',
+  "runCount"      INTEGER             NOT NULL DEFAULT 0,
+  "lastRunAt"     TIMESTAMP(3),
+  "createdAt"     TIMESTAMP(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"     TIMESTAMP(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "automations_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "automations_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE,
+  CONSTRAINT "automations_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "automations_tenantId_trigger_isActive_idx" ON "automations"("tenantId", "trigger", "isActive");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "automation_actions" (
+  "id"             TEXT                    NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "automationId"   TEXT                    NOT NULL,
+  "order"          INTEGER                 NOT NULL,
+  "type"           "AutomationActionType"  NOT NULL,
+  "config"         JSONB                   NOT NULL,
+  "delayMinutes"   INTEGER                 NOT NULL DEFAULT 0,
+
+  CONSTRAINT "automation_actions_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "automation_actions_automationId_fkey" FOREIGN KEY ("automationId") REFERENCES "automations"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "automation_actions_automationId_idx" ON "automation_actions"("automationId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "notifications" (
+  "id"        TEXT     NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "userId"    TEXT     NOT NULL,
+  "title"     TEXT     NOT NULL,
+  "body"      TEXT     NOT NULL,
+  "type"      TEXT     NOT NULL,
+  "link"      TEXT,
+  "isRead"    BOOLEAN  NOT NULL DEFAULT FALSE,
+  "readAt"    TIMESTAMP(3),
+  "metadata"  JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "notifications_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "notifications_userId_isRead_idx" ON "notifications"("userId", "isRead");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "saved_reports" (
+  "id"               TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"         TEXT        NOT NULL,
+  "projectId"        TEXT,
+  "name"             TEXT        NOT NULL,
+  "type"             TEXT        NOT NULL,
+  "config"           JSONB       NOT NULL,
+  "schedule"         JSONB,
+  "lastGeneratedAt"  TIMESTAMP(3),
+  "lastOutputUrl"    TEXT,
+  "createdById"      TEXT        NOT NULL,
+  "createdAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "saved_reports_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "saved_reports_tenantId_fkey"  FOREIGN KEY ("tenantId")  REFERENCES "tenants"("id") ON DELETE CASCADE,
+  CONSTRAINT "saved_reports_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "saved_reports_tenantId_idx" ON "saved_reports"("tenantId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "workflows" (
+  "id"        TEXT          NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"  TEXT          NOT NULL,
+  "name"      TEXT          NOT NULL,
+  "stage"     "ProjectStage",
+  "isActive"  BOOLEAN       NOT NULL DEFAULT TRUE,
+  "nodes"     JSONB         NOT NULL,
+  "edges"     JSONB         NOT NULL,
+  "createdAt" TIMESTAMP(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "workflows_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "workflows_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "workflows_tenantId_idx" ON "workflows"("tenantId");
+
+-- ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS "audit_logs" (
+  "id"        TEXT          NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "tenantId"  TEXT          NOT NULL,
+  "userId"    TEXT,
+  "action"    "AuditAction" NOT NULL,
+  "entity"    TEXT          NOT NULL,
+  "entityId"  TEXT,
+  "changes"   JSONB,
+  "metadata"  JSONB,
+  "ipAddress" TEXT,
+  "userAgent" TEXT,
+  "createdAt" TIMESTAMP(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "audit_logs_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE,
+  CONSTRAINT "audit_logs_userId_fkey"   FOREIGN KEY ("userId")   REFERENCES "users"("id")
+);
+
+CREATE INDEX IF NOT EXISTS "audit_logs_tenantId_userId_idx"          ON "audit_logs"("tenantId", "userId");
+CREATE INDEX IF NOT EXISTS "audit_logs_tenantId_entity_entityId_idx" ON "audit_logs"("tenantId", "entity", "entityId");
+CREATE INDEX IF NOT EXISTS "audit_logs_tenantId_createdAt_idx"        ON "audit_logs"("tenantId", "createdAt");
+
+-- ============================================================
+-- END OF MIGRATION
+-- ============================================================

@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { useCreateProject } from '@/hooks/use-projects'
+import { useUsers } from '@/hooks/use-users'
 
 const STEPS = [
   { id: 1, label: 'פרטי פרויקט' },
@@ -148,6 +150,7 @@ function Step1({ form, set }: { form: FormData; set: (k: keyof FormData, v: stri
 }
 
 function Step2({ form, set }: { form: FormData; set: (k: keyof FormData, v: string) => void }) {
+  const { data: users = [] } = useUsers()
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -156,9 +159,12 @@ function Step2({ form, set }: { form: FormData; set: (k: keyof FormData, v: stri
           <Select value={form.projectManager} onValueChange={v => set('projectManager', v)}>
             <SelectTrigger dir="rtl"><SelectValue placeholder="בחר מנהל" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="avi">אבי שמואלי</SelectItem>
-              <SelectItem value="sara">שרה מזרחי</SelectItem>
-              <SelectItem value="moshe">משה לוי</SelectItem>
+              {users.length === 0 && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">אין משתמשים זמינים</div>
+              )}
+              {users.map(u => (
+                <SelectItem key={u.id} value={u.id}>{u.firstName} {u.lastName}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -243,21 +249,45 @@ export function NewProjectWizard({
 }) {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(initialForm)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const createProject = useCreateProject()
 
   function setField(key: keyof FormData, value: string) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
   function handleSubmit() {
-    // TODO: POST to API
-    console.log('Creating project:', form)
-    onClose()
-    setStep(1)
-    setForm(initialForm)
+    setSubmitError(null)
+    createProject.mutate(
+      {
+        name:         form.name,
+        city:         form.city,
+        address:      form.address,
+        neighborhood: form.neighborhood || undefined,
+        description:  form.notes || undefined,
+        stage:        form.stage || undefined,
+        totalUnits:   form.totalUnits ? Number(form.totalUnits) : undefined,
+        startDate:     form.startDate  ? new Date(form.startDate).toISOString()  : undefined,
+        targetEndDate: form.targetDate ? new Date(form.targetDate).toISOString() : undefined,
+        signatureGoal: form.signatureThreshold ? Number(form.signatureThreshold) : undefined,
+        projectManagerId: form.projectManager || undefined,
+      },
+      {
+        onSuccess: () => {
+          onClose()
+          setStep(1)
+          setForm(initialForm)
+        },
+        onError: (err) => {
+          setSubmitError(err instanceof Error ? err.message : 'יצירת הפרויקט נכשלה')
+        },
+      },
+    )
   }
 
   function handleClose() {
     onClose()
+    setSubmitError(null)
     setTimeout(() => { setStep(1); setForm(initialForm) }, 300)
   }
 
@@ -282,6 +312,10 @@ export function NewProjectWizard({
           {step === 3 && <Step3 form={form} set={setField} />}
         </div>
 
+        {submitError && (
+          <p className="text-sm text-red-600 mt-2" role="alert">{submitError}</p>
+        )}
+
         <div className="flex items-center justify-between pt-4 border-t border-border mt-6">
           <Button
             variant="outline"
@@ -300,9 +334,13 @@ export function NewProjectWizard({
               <ChevronLeft size={15} />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="gap-2 bg-primary hover:bg-primary/90">
+            <Button
+              onClick={handleSubmit}
+              disabled={createProject.isPending}
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
               <Check size={15} />
-              צור פרויקט
+              {createProject.isPending ? 'יוצר...' : 'צור פרויקט'}
             </Button>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { BottomNav } from '@/components/layout/bottom-nav'
+import { ChatWidget } from '@/components/portal/chat-widget'
 
 export default function PortalDashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export default function PortalDashboardLayout({ children }: { children: React.Re
         {children}
       </main>
 
+      <ChatWidget />
       <BottomNav />
     </div>
   )

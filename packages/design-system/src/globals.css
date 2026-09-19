@@ -22,7 +22,20 @@
     --popover:      0 0% 100%;
     --popover-foreground: 0 0% 23%;
 
-    --primary:      182 54% 41%;        /* #2F9DA0 teal-500 */
+    /*
+     * teal-600, not teal-500. WHITE on teal-500 measures 3.26:1 and fails the
+     * AA minimum of 4.5:1 for normal text, so EVERY primary button in the CRM
+     * and the Portal was failing — not one button, the token.
+     *
+     * teal-600 is 5.12:1 with white and sits in the same hue family (183 vs
+     * 182), so the brand direction is unchanged; the swatch is one step
+     * darker.
+     *
+     * `--ring` deliberately stays teal-500: a focus ring is a non-text
+     * indicator, judged against WCAG 1.4.11's 3:1, and 3.26:1 already passes.
+     * Darkening it would dull the brand accent where it is legitimate.
+     */
+    --primary:      183 57% 31%;        /* #22797D teal-600 */
     --primary-foreground: 0 0% 100%;
 
     --secondary:    210 12% 96%;
@@ -31,7 +44,7 @@
     --muted:        210 12% 93%;
     --muted-foreground: 207 8% 44%;     /* steel-gray */
 
-    --accent:       182 54% 41%;
+    --accent:       183 57% 31%;
     --accent-foreground: 0 0% 100%;
 
     --destructive:  0 84% 60%;
@@ -61,7 +74,7 @@
     --popover:      220 13% 13%;
     --popover-foreground: 210 20% 90%;
 
-    --primary:      182 54% 41%;
+    --primary:      183 57% 31%;
     --primary-foreground: 0 0% 100%;
 
     --secondary:    220 13% 17%;
@@ -177,4 +190,74 @@
   .page-header {
     @apply flex items-center justify-between mb-6 pb-4 border-b border-border;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * PHASE 1 ADDITIONS — accessibility baseline
+ *
+ * Appended, not edited. Nothing above changes, so no existing screen shifts.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Visible focus on every interactive element (WCAG 2.1 AA, 2.4.7).
+ *
+ * `:focus-visible` rather than `:focus`, so a mouse click does not leave a ring
+ * behind while keyboard navigation still shows one.
+ *
+ * An OUTLINE, not a box-shadow: an outline is drawn outside the element's box
+ * and survives an ancestor with `overflow: hidden`, which is the usual reason a
+ * focus ring silently disappears inside cards and scroll containers.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #22797D;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* On the dark inverse surface the teal ring loses contrast; use white there. */
+.bg-surface-inverse :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: #FFFFFF;
+}
+
+/**
+ * Respect prefers-reduced-motion.
+ *
+ * Motion is reduced to a near-zero duration rather than removed outright:
+ * `animation: none` can leave an element stuck at frame zero of an entrance
+ * animation and therefore invisible. Collapsing the duration lets the animation
+ * complete instantly, so the end state is always reached.
+ *
+ * `scroll-behavior` is included because smooth scrolling is a common trigger
+ * for vestibular discomfort and is easy to forget.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/**
+ * Skip link.
+ *
+ * Off-screen until focused. Required so a keyboard user is not forced through
+ * the whole navigation on every page.
+ */
+.skip-link {
+  position: absolute;
+  inset-inline-start: 0;
+  top: -100%;
+  z-index: 90;
+  padding: 0.75rem 1.25rem;
+  background: #FFFFFF;
+  color: #1b5f62;
+  font-weight: 600;
+  border-radius: 0 0 0.5rem 0;
+}
+.skip-link:focus {
+  top: 0;
 }

@@ -8,6 +8,11 @@ import {
 } from '@prisma/client'
 import { createHash } from 'crypto'
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('ERROR: Seed script must not run in production. Set NODE_ENV=development.')
+  process.exit(1)
+}
+
 const prisma = new PrismaClient()
 
 // Simple SHA-256 hash for demo purposes (not bcrypt — no external dep needed for seed)
@@ -47,7 +52,7 @@ async function main() {
       firstName:    'מנהל',
       lastName:     'מערכת',
       role:         UserRole.COMPANY_ADMIN,
-      phone:        '0501234567',
+      phone:        '0548018613',
       isActive:     true,
       isVerified:   true,
     },
@@ -152,7 +157,10 @@ async function main() {
     create: {
       id:              'bldg_001',
       complexId:       complex.id,
-      address:         'הרצל 45',
+      // CreateBuildingDto documents `address` as the street NAME only — the
+      // number belongs in streetNumber. Seeding 'הרצל 45' here made the UI
+      // render 'הרצל 45 45'.
+      address:         'הרצל',
       streetNumber:    '45',
       city:            'תל אביב',
       floors:          8,
@@ -170,6 +178,12 @@ async function main() {
     { id: 'apt_004', number: '4',  floor: 2 },
     { id: 'apt_005', number: '5',  floor: 3 },
     { id: 'apt_006', number: '6',  floor: 3 },
+    // Own units for the shared-phone test residents below (res_08, res_09) —
+    // kept separate from each other and from apt_001 so that "two residents
+    // sharing a phone" and "two residents sharing an apartment" stay two
+    // independent test cases, not the same data doing double duty.
+    { id: 'apt_007', number: '7',  floor: 4 },
+    { id: 'apt_008', number: '8',  floor: 4 },
   ]
   for (const a of aptData) {
     await prisma.apartment.upsert({
@@ -188,13 +202,41 @@ async function main() {
   console.log('✅ Building structure seeded')
 
   // ── Residents ──────────────────────────────────────────────────────────────
+  //
+  // NOTE ON THE PHONE NUMBER 0548018613
+  //
+  // This is a REAL number belonging to the product owner, used deliberately so
+  // that SMS flows can be tested against a live handset. It replaced the
+  // generic placeholder 0501234567 after an end-to-end audit sent 24 real
+  // messages to that placeholder — a number nobody owned and nobody was
+  // watching, so a live-send misconfiguration produced no visible signal.
+  //
+  // Sending is still gated by MESSAGING_SIMULATE, which defaults to ON outside
+  // production and must be set explicitly IN production. Flipping it off is now
+  // the only way to reach this handset, and that is a deliberate act.
   const residentsData = [
-    { id: 'res_01', firstName: 'דוד',  lastName: 'כהן',   phone: '0501234567', email: 'david.cohen@gmail.com',  aptId: 'apt_001', sig: ResidentSignatureStatus.SIGNED },
+    { id: 'res_01', firstName: 'דוד',  lastName: 'כהן',   phone: '0548018613', email: 'david.cohen@gmail.com',  aptId: 'apt_001', sig: ResidentSignatureStatus.SIGNED },
     { id: 'res_02', firstName: 'רחל',  lastName: 'לוי',   phone: '0529876543', email: 'rachel.levi@gmail.com',   aptId: 'apt_002', sig: ResidentSignatureStatus.OBJECTING },
     { id: 'res_03', firstName: 'משה',  lastName: 'ברג',   phone: '0545551234', email: 'moshe.berg@walla.co.il',  aptId: 'apt_003', sig: ResidentSignatureStatus.INTERESTED },
     { id: 'res_04', firstName: 'שרה',  lastName: 'אברהם', phone: '0534449876', email: 'sara.avraham@gmail.com', aptId: 'apt_004', sig: ResidentSignatureStatus.UNDECIDED },
     { id: 'res_05', firstName: 'יוסי', lastName: 'מזרחי', phone: '0523334455', email: 'yossi.m@gmail.com',       aptId: 'apt_005', sig: ResidentSignatureStatus.SIGNED },
     { id: 'res_06', firstName: 'מירי', lastName: 'שפירא', phone: '0512223344', email: 'miri.s@gmail.com',        aptId: 'apt_006', sig: ResidentSignatureStatus.NOT_CONTACTED },
+
+    // ── Deliberate edge-case fixtures ──────────────────────────────────────
+    // Two co-owners/occupants of ONE apartment, each their own Resident row
+    // with their own phone. Tests that apartment-scoped views (documents,
+    // signatures, the resident list) correctly show both, and that nothing
+    // keyed only on apartmentId silently collapses to one.
+    { id: 'res_07', firstName: 'מיכל', lastName: 'כהן',   phone: '0501112233', email: 'michal.cohen@gmail.com', aptId: 'apt_001', sig: ResidentSignatureStatus.UNDECIDED },
+
+    // Two residents, two DIFFERENT apartments, the SAME phone number —
+    // households where one number is the contact of record for both units.
+    // Tests that phone-keyed lookups (OTP resolution, dedupe-by-phone) return
+    // BOTH residents rather than silently picking one, and that a send to
+    // this number is attributed to the right resident, not just the first
+    // match.
+    { id: 'res_08', firstName: 'נחום', lastName: 'פרץ',   phone: '0507778899', email: 'nachum.peretz@gmail.com', aptId: 'apt_007', sig: ResidentSignatureStatus.NOT_CONTACTED },
+    { id: 'res_09', firstName: 'אורלי', lastName: 'דיין',  phone: '0507778899', email: 'orly.dayan@gmail.com',    aptId: 'apt_008', sig: ResidentSignatureStatus.INTERESTED },
   ]
 
   for (const r of residentsData) {
@@ -210,11 +252,45 @@ async function main() {
         phone:           r.phone,
         email:           r.email,
         signatureStatus: r.sig,
-        portalEnabled:   r.sig === ResidentSignatureStatus.SIGNED,
+        portalInboxEnabled: r.sig === ResidentSignatureStatus.SIGNED,
       },
     })
   }
   console.log('✅ Residents seeded')
+
+  // ── Owners + ownership registry ────────────────────────────────────────────
+  // Owners drive the digital-signature flow (SignaturePackage → SignatureRecord),
+  // so at least one owner must exist with a fractional holding in an apartment.
+  const ownersData = [
+    { id: 'own_01', fullName: 'דוד כהן',    phone: '0548018613', email: 'david.cohen@gmail.com',  residentId: 'res_01', aptId: 'apt_001', num: 1, den: 1 },
+    { id: 'own_02', fullName: 'רחל לוי',    phone: '0529876543', email: 'rachel.levi@gmail.com',  residentId: 'res_02', aptId: 'apt_002', num: 1, den: 2 },
+    { id: 'own_03', fullName: 'יוסי מזרחי', phone: '0523334455', email: 'yossi.m@gmail.com',      residentId: 'res_05', aptId: 'apt_005', num: 1, den: 1 },
+  ]
+  for (const o of ownersData) {
+    await prisma.owner.upsert({
+      where:  { id: o.id },
+      update: {},
+      create: {
+        id:         o.id,
+        tenantId:   tenant.id,
+        fullName:   o.fullName,
+        phone:      o.phone,
+        email:      o.email,
+        residentId: o.residentId,
+      },
+    })
+    await prisma.ownerApartment.upsert({
+      where:  { ownerId_apartmentId: { ownerId: o.id, apartmentId: o.aptId } },
+      update: {},
+      create: {
+        ownerId:          o.id,
+        apartmentId:      o.aptId,
+        shareNumerator:   o.num,
+        shareDenominator: o.den,
+      },
+    })
+  }
+  console.log('✅ Owners + ownership registry seeded')
 
   // ── Leads ──────────────────────────────────────────────────────────────────
   const leadsData = [
@@ -314,6 +390,52 @@ async function main() {
     },
   })
   console.log('✅ Tasks seeded')
+
+  // ── Support ticket with an internal-only staff note ─────────────────────────
+  // For res_01 deliberately: that resident is also the one with a real phone
+  // number (see the note above `residentsData`), so testing the portal as
+  // res_01 exercises this in the same session — including confirming the
+  // internal reply below is filtered out of whatever the resident-facing
+  // ticket thread reads, not just given `isInternal: false` items to render.
+  const ticket1 = await prisma.supportTicket.upsert({
+    where:  { id: 'tkt_01' },
+    update: {},
+    create: {
+      id:          'tkt_01',
+      tenantId:    tenant.id,
+      residentId:  'res_01',
+      category:    'DOCUMENTS',
+      subject:     'מתי אקבל את נוסח ההסכם המעודכן?',
+      description: 'שלום, ביקשתי לפני שבועיים את הנוסח המעודכן של הסכם ההתקשרות ועדיין לא קיבלתי. אפשר לעדכן?',
+      status:      'IN_PROGRESS',
+      priority:    'MEDIUM',
+      assigneeId:  pm.id,
+    },
+  })
+  await prisma.ticketReply.upsert({
+    where:  { id: 'rep_01' },
+    update: {},
+    create: {
+      id:         'rep_01',
+      ticketId:   ticket1.id,
+      authorId:   pm.id,
+      isInternal: false,
+      body:       'שלום דוד, מעדכן שהנוסח המתוקן בבדיקה משפטית ויישלח השבוע.',
+    },
+  })
+  // Staff-only — must never reach the resident's own view of this ticket.
+  await prisma.ticketReply.upsert({
+    where:  { id: 'rep_02' },
+    update: {},
+    create: {
+      id:         'rep_02',
+      ticketId:   ticket1.id,
+      authorId:   pm.id,
+      isInternal: true,
+      body:       'לבדוק מול עו"ד לפני שליחה — יש סעיף שנוי במחלוקת בפרק הפיצויים.',
+    },
+  })
+  console.log('✅ Support ticket + internal note seeded')
 
   // ── Audit log ──────────────────────────────────────────────────────────────
   const auditEntries = [
