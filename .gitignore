@@ -59,9 +59,14 @@ prisma/migrations/dev/
 # Build caches
 *.tsbuildinfo
 
-# Redis persistence snapshot. NEVER commit: it contains live runtime state —
+# Redis persistence snapshots. NEVER commit: they contain live runtime state —
 # `jwt:revoked:*` session identifiers and `otp:resend:*` counters.
-dump.rdb
+#
+# Globbed rather than named, because `dump.rdb` is only the default:
+# `dbfilename` renames it, a per-port instance is conventionally
+# `redis-<port>.rdb`, and `redis-cli --rdb <file>` writes whatever it is told.
+# Every one of those holds the same session state as the default name.
+*.rdb
 
 # Database dumps. A dump contains every resident's personal data in plaintext,
 # including encrypted-at-rest columns in their encrypted form plus everything
