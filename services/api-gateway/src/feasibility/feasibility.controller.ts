@@ -15,7 +15,7 @@ import {
   CreateFeasibilityCompensationLineDto, UpdateFeasibilityCompensationLineDto,
   CreateComparableAdjustmentDto, CreateComparableTransactionDto, UpdateComparableAdjustmentDto, UpdateComparableTransactionDto,
   CreateFeasibilitySnapshotDto,
-  CreateSensitivityDto, CreateGoalSeekDto, CreateMonteCarloDto, CreateEquityTrancheDto, UpdateEquityTrancheDto,
+  CreateSensitivityDto, CreateGoalSeekDto, CreateMonteCarloDto, CreateEquityTrancheDto, UpdateEquityTrancheDto, UpdateFeasibilityScenarioDto,
   CreateFeasibilityReportVersionDto,
   TransitionFeasibilityReportVersionDto,
   UpsertFeasibilityFinancingDto,
@@ -122,6 +122,13 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Create an independent planning/economic scenario' })
   addScenario(@Param('projectId') projectId: string, @Body() dto: CreateFeasibilityScenarioDto, @Request() req: any) {
     return mapDomainErrors(() => this.feasibility.addScenario(projectId, dto, actorFrom(req)))
+  }
+
+  @Patch('scenarios/:scenarioId')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: "Edit a scenario's own attributes, including the non-cash consideration given for the land" })
+  updateScenario(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: UpdateFeasibilityScenarioDto, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.updateScenario(projectId, scenarioId, dto, actorFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/duplicate')

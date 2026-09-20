@@ -199,7 +199,21 @@ export class CreateFeasibilityScenarioDto {
 
   @IsOptional() @IsBoolean()
   isBaseline?: boolean
+
+  /**
+   * Market value of non-cash consideration for the land — finished flats
+   * handed to the seller in a combination deal.
+   *
+   * It is NOT a cash-flow entry and must not be entered as one: no money
+   * moves, so nothing is financed or repaid against it. It exists so the
+   * ratios divide by what the land actually cost. Omitted or `'0'`, every
+   * derived figure is the cash-only figure exactly.
+   */
+  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
+  considerationInKind?: string
 }
+
+export class UpdateFeasibilityScenarioDto extends PartialType(CreateFeasibilityScenarioDto) {}
 
 export class CreateUnitMixLineDto extends ProvenanceDto {
   @IsString() @IsNotEmpty() @MaxLength(160)
@@ -487,8 +501,8 @@ export class CreateGoalSeekDto {
    * their answer is a percentage change, because "the construction cost" is
    * not a single number that could be reported as one.
    */
-  @IsIn(['pricePerSqm', 'salePrice', 'constructionCost', 'landCost', 'interestRate', 'discountRate'])
-  solveFor!: 'pricePerSqm' | 'salePrice' | 'constructionCost' | 'landCost' | 'interestRate' | 'discountRate'
+  @IsIn(['pricePerSqm', 'salePrice', 'constructionCost', 'landCost', 'totalConsideration', 'interestRate', 'discountRate'])
+  solveFor!: 'pricePerSqm' | 'salePrice' | 'constructionCost' | 'landCost' | 'totalConsideration' | 'interestRate' | 'discountRate'
 
   /**
    * What is being aimed at. Ratios (profitOnCost, profitMargin,

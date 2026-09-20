@@ -214,9 +214,10 @@ export type FeasibilityCalculation = {
   engineVersion: string
   currency: string
   vatBasis: string
-  revenue: { total: string; lines: Array<{ id: string; label: string; category: string; amount: string; formula: string }> }
-  costs: { total: string; lines: Array<{ id: string; label: string; category: string; amount: string; formula: string }> }
-  profitability: { profit: string; profitBeforeFinancing: string; profitOnCost: string | null; profitMargin: string | null; isFinal: boolean }
+  revenue: { total: string; totalWithConsiderationInKind: string; lines: Array<{ id: string; label: string; category: string; amount: string; formula: string }> }
+  costs: { total: string; considerationInKind: string; totalWithConsiderationInKind: string; lines: Array<{ id: string; label: string; category: string; amount: string; formula: string }> }
+  /** `profitOnCost` divides by cost INCLUDING consideration in kind; `profitOnCashCost` is the cash-only ratio beside it. */
+  profitability: { profit: string; profitBeforeFinancing: string; profitOnCost: string | null; profitOnCashCost: string | null; profitMargin: string | null; isFinal: boolean }
   financing: { accumulatedInterest: string; financingFees: string; peakDebt: string; debtBalance: string }
   cashFlow: { periods: Array<{ periodStart: string; inflows: string; outflows: string; net: string; cumulative: string }>; peakFundingRequirement: string; reconciliationComplete: boolean }
   dataQuality: { criticalCount: number; warningCount: number; confidenceScore: number }
