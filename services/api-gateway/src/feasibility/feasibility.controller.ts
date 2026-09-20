@@ -1,7 +1,8 @@
 import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Request, StreamableFile } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
-import { FEASIBILITY_EDIT_ROLES, FEASIBILITY_VIEW_ROLES, MANAGER_ROLES } from '../auth/roles.constants'
+import { FEASIBILITY_EDIT_ROLES, FEASIBILITY_VIEW_ROLES, FEASIBILITY_EXPORT_ROLES, FEASIBILITY_RUN_CALCULATIONS_ROLES, FEASIBILITY_REPORT_TRANSITION_ROLES } from '../auth/roles.constants'
 import { actorFrom, tenantFrom } from '../common/actor'
 import { mapDomainErrors } from '../common/errors/domain-error'
 import {
@@ -289,21 +290,21 @@ export class FeasibilityController {
   }
 
   @Post('scenarios/:scenarioId/calculate')
-  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @Roles(...FEASIBILITY_RUN_CALCULATIONS_ROLES)
   @ApiOperation({ summary: 'Calculate live traceable feasibility outputs; no calculated value is persisted as an input' })
   calculate(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.calculate(projectId, scenarioId, tenantFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/sensitivity')
-  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @Roles(...FEASIBILITY_RUN_CALCULATIONS_ROLES)
   @ApiOperation({ summary: 'Run deterministic one- or two-variable sensitivity without changing scenario inputs' })
   sensitivity(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateSensitivityDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.sensitivity(projectId, scenarioId, dto, tenantFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/goal-seek')
-  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @Roles(...FEASIBILITY_RUN_CALCULATIONS_ROLES)
   @ApiOperation({ summary: 'Solve for the input that reaches a target metric; reports failure rather than inventing a reachable answer' })
   goalSeek(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateGoalSeekDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.goalSeek(projectId, scenarioId, dto, tenantFrom(req)))
@@ -336,7 +337,19 @@ export class FeasibilityController {
   }
 
   @Post('scenarios/:scenarioId/monte-carlo')
-  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @Roles(...FEASIBILITY_RUN_CALCULATIONS_ROLES)
+  /*
+   * A tighter throttle than the global one, because this is the only endpoint
+   * in the module whose cost is set by the CALLER rather than by the data: a
+   * single request may run the engine ten thousand times.
+   *
+   * This is not the access control — the role list above is — and it is not
+   * the cost bound either; the endpoint's own measured budget guard refuses a
+   * run it projects will exceed fifteen seconds. It is the third thing: a
+   * limit on how often one authorised user can spend that budget, which
+   * neither of the other two addresses.
+   */
+  @Throttle({ medium: { ttl: 60000, limit: 12 } })
   @ApiOperation({ summary: 'Run the engine over sampled inputs and return the distribution — P10/P50/P90, probability of loss and a histogram — rather than a single point estimate' })
   monteCarlo(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateMonteCarloDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.monteCarlo(projectId, scenarioId, dto, tenantFrom(req)))
@@ -381,7 +394,7 @@ export class FeasibilityController {
   }
 
   @Post('reports/:reportId/export/excel')
-  @Roles(...FEASIBILITY_VIEW_ROLES)
+  @Roles(...FEASIBILITY_EXPORT_ROLES)
   @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   @ApiOperation({ summary: 'Download an Excel workbook generated only from a locked report snapshot' })
   async exportExcel(@Param('projectId') projectId: string, @Param('reportId') reportId: string, @Request() req: any) {
@@ -390,7 +403,7 @@ export class FeasibilityController {
   }
 
   @Post('reports/:reportId/export/pdf')
-  @Roles(...FEASIBILITY_VIEW_ROLES)
+  @Roles(...FEASIBILITY_EXPORT_ROLES)
   @Header('Content-Type', 'application/pdf')
   @ApiOperation({ summary: 'Download an RTL PDF generated only from a locked report snapshot' })
   async exportPdf(@Param('projectId') projectId: string, @Param('reportId') reportId: string, @Request() req: any) {
@@ -399,7 +412,10 @@ export class FeasibilityController {
   }
 
   @Patch('reports/:reportId/status')
-  @Roles(...MANAGER_ROLES)
+  // The union of submit/approve/lock. Which of the three this caller may
+  // actually perform depends on the TARGET state, which a route decorator
+  // cannot see — so the service re-checks it. See FEASIBILITY_CAPABILITIES.
+  @Roles(...FEASIBILITY_REPORT_TRANSITION_ROLES)
   @ApiOperation({ summary: 'Advance report version through review, approval and lock; locked reports are immutable' })
   transitionReport(@Param('projectId') projectId: string, @Param('reportId') reportId: string, @Body() dto: TransitionFeasibilityReportVersionDto, @Request() req: any) {
     return mapDomainErrors(() => this.reportVersions.transition(projectId, reportId, dto.status, actorFrom(req)))

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { DomainError } from '../common/errors/domain-error'
+import { FEASIBILITY_CAPABILITIES } from '../auth/roles.constants'
 import { PrismaService } from '../prisma.service'
 import { FeasibilityService } from './feasibility.service'
 
@@ -101,7 +102,41 @@ export class FeasibilityReportVersionService {
     return report
   }
 
+  /**
+   * ── WHY THE ROLE CHECK IS HERE AND NOT ONLY ON THE ROUTE ─────────────────
+   *
+   * Submitting, approving and locking are three capabilities on one endpoint,
+   * and which one a request exercises depends on the TARGET state in its body.
+   * A route decorator cannot see that, so it can only hold the union — and the
+   * union of three tiers is the widest of them.
+   *
+   * Before this, the union was the only check, set to MANAGER_ROLES. That made
+   * approval and locking safe and submission impossible: an architect could
+   * build an entire model and not hand it in, so a manager submitted on their
+   * behalf and the audit trail recorded the wrong person asking for review.
+   * Widening the decorator to let engineers in would, without this, have let
+   * them approve their own work — which is the thing the REVIEW state exists
+   * to prevent.
+   */
+  private assertMayTransition(target: 'REVIEW' | 'APPROVED' | 'LOCKED', actor: AuditActor): void {
+    const capability = target === 'REVIEW' ? 'submit' : target === 'APPROVED' ? 'approve' : 'lock'
+    const allowed: readonly string[] = FEASIBILITY_CAPABILITIES[capability]
+    // `AuditActor.role` is optional, so an actor without one fails closed.
+    // A missing role is not a role that happens to be allowed.
+    if (!actor.role || !allowed.includes(actor.role)) {
+      throw DomainError.forbidden(
+        'FEASIBILITY_REPORT_TRANSITION_FORBIDDEN',
+        target === 'REVIEW'
+          ? 'אין לך הרשאה להגיש גרסת דוח לבדיקה'
+          : target === 'APPROVED'
+            ? 'אישור גרסת דוח שמור למנהלי הפרויקט — מי שבנה את המודל אינו מאשר אותו'
+            : 'נעילת גרסת דוח שמורה למנהלי הפרויקט',
+      )
+    }
+  }
+
   async transition(projectId: string, reportId: string, target: 'REVIEW' | 'APPROVED' | 'LOCKED', actor: AuditActor) {
+    this.assertMayTransition(target, actor)
     const profile = await this.feasibility.find(projectId, actor.tenantId)
     if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים פרופיל דוח אפס לפרויקט')
     const report = await this.prisma.feasibilityReportVersion.findFirst({

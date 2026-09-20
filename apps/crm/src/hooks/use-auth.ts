@@ -118,14 +118,53 @@ const MEETING_WRITE_ROLES = [
   'FIELD_AGENT', 'LAWYER', 'ARCHITECT', 'ENGINEER', 'DEVELOPER_REP',
 ]
 
+/**
+ * Mirrors FEASIBILITY_VIEW_ROLES.
+ *
+ * DEVELOPER_REP and MUNICIPALITY_USER are absent: the zero report is the
+ * promoter's own position in a negotiation the first of those is on the other
+ * side of, and the second has standing over planning rather than over a
+ * private company's profitability. This hook only HIDES the tab — the API
+ * returns 403 for those roles regardless, and the E2E suite asserts that
+ * independently so this list can never become the real boundary.
+ */
+const FEASIBILITY_VIEW_ROLES = [
+  'SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'RESIDENT_RELATIONS_MANAGER',
+  'FIELD_AGENT', 'LAWYER', 'ARCHITECT', 'ENGINEER', 'EXTERNAL_CONSULTANT',
+]
+
 /** Mirrors FEASIBILITY_EDIT_ROLES. Server RBAC remains authoritative. */
 const FEASIBILITY_EDIT_ROLES = [
   'SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'LAWYER', 'ARCHITECT', 'ENGINEER',
 ]
 
+export function useCanViewFeasibility(): boolean {
+  const { data } = useCurrentUser()
+  return Boolean(data?.role && FEASIBILITY_VIEW_ROLES.includes(data.role))
+}
+
 export function useCanEditFeasibility(): boolean {
   const { data } = useCurrentUser()
   return Boolean(data?.role && FEASIBILITY_EDIT_ROLES.includes(data.role))
+}
+
+/**
+ * Mirrors FEASIBILITY_EXPORT_ROLES — deliberately narrower than view.
+ *
+ * A screen leaves no copy; a PDF of the promoter's full economics is
+ * forwardable and permanent, and no access revocation reaches it afterwards.
+ * EXTERNAL_CONSULTANT may read the study and may not be the one to take the
+ * file out of the company.
+ */
+export function useCanExportFeasibility(): boolean {
+  const { data } = useCurrentUser()
+  return Boolean(data?.role && FEASIBILITY_EDIT_ROLES.includes(data.role))
+}
+
+/** Mirrors FEASIBILITY_APPROVE_ROLES / FEASIBILITY_LOCK_ROLES (both MANAGER_ROLES). */
+export function useCanApproveFeasibility(): boolean {
+  const { data } = useCurrentUser()
+  return Boolean(data?.role && ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER'].includes(data.role))
 }
 
 export function useCanWriteMeetings(): boolean {

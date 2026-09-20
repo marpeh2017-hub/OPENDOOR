@@ -55,6 +55,12 @@ describe('Feasibility foundation (e2e)', () => {
 
   const http = () => request(app.getHttpServer())
   const auth = (value = token) => ({ Authorization: `Bearer ${value}` })
+  /** The baseline scenario this suite built earlier, looked up the way the other tests do. */
+  const baselineScenarioId = async () => {
+    const profile = await http().get(`/api/v1/projects/${projectId}/feasibility`).set(auth())
+    return profile.body.scenarios.find((scenario: { isBaseline: boolean }) => scenario.isBaseline).id as string
+  }
+
   const tokenFor = (role: string, scopeTenant = tenantId) => jwt.sign({
     sub: userId, userId, tenantId: scopeTenant, role, sessionId: randomUUID(),
   }, { secret: process.env.JWT_SECRET, expiresIn: '10m' })
@@ -624,6 +630,98 @@ describe('Feasibility foundation (e2e)', () => {
     expect(review.status).toBe(200)
     const approval = await http().patch(`/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}/status`).set(auth()).send({ status: 'APPROVED' })
     expect(approval.status).toBe(409)
+  })
+
+  /**
+   * ── THE COUNTERPARTY ──────────────────────────────────────────────────────
+   *
+   * A zero report is the promoter's own position: residual land value,
+   * required profit margin, cost assumptions, each equity tranche's return.
+   * DEVELOPER_REP is the party on the other side of the negotiation over
+   * exactly those numbers, and until this was fixed every staff role could
+   * read them — and download them as a file.
+   *
+   * Asserted against the ENDPOINT rather than the role list, because a list
+   * can be right while a route quietly uses a different one.
+   */
+  it('refuses the counterparty and the municipal observer at every feasibility route', async () => {
+    for (const role of ['DEVELOPER_REP', 'MUNICIPALITY_USER']) {
+      const outsider = auth(tokenFor(role))
+      const scenarioId = await baselineScenarioId()
+
+      const read = await http().get(`/api/v1/projects/${projectId}/feasibility`).set(outsider)
+      expect(read.status).toBe(403)
+      const waterfall = await http().get(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/waterfall`).set(outsider)
+      expect(waterfall.status).toBe(403)
+      const calculate = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/calculate`).set(outsider).send()
+      expect(calculate.status).toBe(403)
+      const goalSeek = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/goal-seek`).set(outsider)
+        .send({ solveFor: 'pricePerSqm', targetMetric: 'profitOnCost', targetValue: '0.25' })
+      expect(goalSeek.status).toBe(403)
+      const monteCarlo = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/monte-carlo`).set(outsider)
+        .send({ runs: 100, seed: 1, variables: [{ field: 'pricePerSqm', distribution: 'normal', stdDevPct: '0.1' }] })
+      expect(monteCarlo.status).toBe(403)
+    }
+  })
+
+  /**
+   * Reading a figure on a screen and holding a file containing it are
+   * different acts. EXTERNAL_CONSULTANT performs the study, so they read it;
+   * the artifact that leaves the company should be released by the company.
+   *
+   * The distinction between 403 and any other status is the whole assertion:
+   * a 409 means the route was REACHED and the report simply is not locked,
+   * which is what proves the guard let that role through.
+   */
+  it('lets an outside consultant read the study but not export it', async () => {
+    const consultant = auth(tokenFor('EXTERNAL_CONSULTANT'))
+    const read = await http().get(`/api/v1/projects/${projectId}/feasibility`).set(consultant)
+    expect(read.status).toBe(200)
+
+    const snapshot = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${await baselineScenarioId()}/snapshots`).set(auth()).send()
+    const report = await http().post(`/api/v1/projects/${projectId}/feasibility/reports`).set(auth())
+      .send({ snapshotId: snapshot.body.id, title: 'דוח לבדיקת ייצוא' })
+
+    const consultantExport = await http().post(`/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}/export/excel`).set(consultant).send()
+    expect(consultantExport.status).toBe(403)
+
+    const managerExport = await http().post(`/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}/export/excel`).set(auth()).send()
+    expect(managerExport.status).not.toBe(403)
+  })
+
+  /**
+   * ── SUBMIT IS NOT APPROVE ─────────────────────────────────────────────────
+   *
+   * All three transitions share one route, so its decorator can only hold the
+   * union of the three tiers. This asserts the service re-checks the specific
+   * capability against the TARGET state: the same engineer, on the same route,
+   * may hand work in and may not sign it off.
+   *
+   * Before the split, the whole route required a manager — so the person who
+   * built the model could not submit it, and a manager submitted on their
+   * behalf while the audit trail named the wrong person.
+   */
+  it('lets the engineer who built the model submit it, and refuses to let them approve it', async () => {
+    const engineer = auth(tokenFor('ENGINEER'))
+    const snapshot = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${await baselineScenarioId()}/snapshots`).set(engineer).send()
+    expect(snapshot.status).toBe(201)
+    const report = await http().post(`/api/v1/projects/${projectId}/feasibility/reports`).set(engineer)
+      .send({ snapshotId: snapshot.body.id, title: 'דוח לבדיקת הרשאות מעבר' })
+    expect(report.status).toBe(201)
+    const path = `/api/v1/projects/${projectId}/feasibility/reports/${report.body.id}/status`
+
+    const submitted = await http().patch(path).set(engineer).send({ status: 'REVIEW' })
+    expect(submitted.status).toBe(200)
+    expect(submitted.body.status).toBe('REVIEW')
+
+    const selfApproval = await http().patch(path).set(engineer).send({ status: 'APPROVED' })
+    expect(selfApproval.status).toBe(403)
+    expect(selfApproval.body.code).toBe('FEASIBILITY_REPORT_TRANSITION_FORBIDDEN')
+
+    // ומנהל הפרויקט מגיע למסלול: מה שעוצר אותו כאן הוא כלל עסקי על מצב
+    // הדוח, לא ההרשאה — וזה בדיוק ההבדל שהטסט הזה קיים כדי להראות.
+    const managerApproval = await http().patch(path).set(auth()).send({ status: 'APPROVED' })
+    expect(managerApproval.status).not.toBe(403)
   })
 
   it('enforces role-based edit access and tenant isolation server-side', async () => {

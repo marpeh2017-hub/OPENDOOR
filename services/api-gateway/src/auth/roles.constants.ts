@@ -148,16 +148,82 @@ export const MEETING_WRITE_ROLES = [
 ] as const
 
 /**
- * Digital Zero Report / feasibility foundation.
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DIGITAL ZERO REPORT (feasibility) — the nine capabilities, and who holds them
+ * ════════════════════════════════════════════════════════════════════════════
  *
- * These are scoped capabilities expressed through the established global role
- * model, not new global roles. The mapping is deliberately conservative until
- * project-specific permission grants exist: technical and legal professionals
- * can maintain evidence-backed inputs, while approval/locking is introduced
- * only together with the report-version workflow.
+ * Phase 0 named nine capabilities — view, edit, run_calculations,
+ * manage_assumptions, approve, lock, export, sign, distribute — and left them
+ * as prose in a design document. Prose cannot be checked, and what was actually
+ * enforced was two lists: everything readable by every staff role, everything
+ * writable by six. `FEASIBILITY_CAPABILITIES` at the bottom of this section
+ * makes the mapping a real object, so a claim about who can do what is a thing
+ * a test can fail on rather than a paragraph somebody has to remember.
+ *
+ * ── WHAT A ZERO REPORT ACTUALLY CONTAINS ───────────────────────────────────
+ *
+ * This is the promoter's own position: residual land value, required developer
+ * profit margin, construction cost assumptions, the comparables the valuation
+ * leans on, and now each equity tranche's return. In a negotiation it is the
+ * reservation price. That is the fact the tiers below are cut against.
  */
-export const FEASIBILITY_VIEW_ROLES = STAFF_ROLES
 
+/**
+ * Read a project's feasibility workspace.
+ *
+ * ── WHY THIS IS NO LONGER `STAFF_ROLES` ────────────────────────────────────
+ *
+ * Two roles are removed, and the reasoning is the one already established for
+ * `RESIDENT_SHARE_ROLES`: a role that may read a project is not thereby
+ * entitled to read the promoter's position in a negotiation it is on the other
+ * side of.
+ *
+ *   - DEVELOPER_REP is the COUNTERPARTY. The promoter and the developer
+ *     negotiate over exactly these numbers, and a developer's representative
+ *     who can open the zero report can read the promoter's residual land
+ *     value and required profit margin before sitting down. This is the
+ *     load-bearing exclusion, and it was open: every staff role could read,
+ *     and — worse — export.
+ *   - MUNICIPALITY_USER is an external regulator's observer. They have
+ *     standing over planning, not over a private company's profitability, and
+ *     a figure that reaches a municipal account is a figure that can be asked
+ *     about in a planning forum.
+ *
+ * EXTERNAL_CONSULTANT deliberately STAYS. A feasibility study is routinely
+ * performed by an outside appraiser, and that appraiser is this role; removing
+ * them would break the primary professional workflow to close a hole they are
+ * not standing in. What they may not do is EXPORT — see below.
+ *
+ * FIELD_AGENT also stays, and this is the one genuinely open question in this
+ * file rather than a settled answer. A field agent at a resident's door has no
+ * use for residual land value, and theirs is the most widely issued and most
+ * frequently rotated staff account. The case for removing them is real; the
+ * case against is that it is a workflow decision, not a security one, and
+ * nothing observable here says which resident-facing screen leans on this.
+ * Recorded so the next person decides it deliberately instead of inheriting it.
+ */
+export const FEASIBILITY_VIEW_ROLES = [
+  'SUPER_ADMIN',
+  'COMPANY_ADMIN',
+  'PROJECT_MANAGER',
+  'RESIDENT_RELATIONS_MANAGER',
+  'FIELD_AGENT',
+  'LAWYER',
+  'ARCHITECT',
+  'ENGINEER',
+  'EXTERNAL_CONSULTANT',
+] as const
+
+/**
+ * Maintain the inputs: parcels, sources, assumptions, areas, planning rights,
+ * scenarios, unit mix, revenue, costs, financing, cash flow, compensation,
+ * comparables and equity tranches.
+ *
+ * Unchanged. The technical and legal professionals who build the model are the
+ * ones who maintain it; `manage_assumptions` shares this tier rather than
+ * having its own, because an assumption IS an input and separating the two
+ * would be a distinction the workflow does not make.
+ */
 export const FEASIBILITY_EDIT_ROLES = [
   'SUPER_ADMIN',
   'COMPANY_ADMIN',
@@ -166,6 +232,129 @@ export const FEASIBILITY_EDIT_ROLES = [
   'ARCHITECT',
   'ENGINEER',
 ] as const
+
+/**
+ * Run a calculation: calculate, sensitivity, goal seek, Monte Carlo.
+ *
+ * Same list as EDIT, and named separately because the two answer different
+ * questions and will not necessarily move together. A calculation reveals the
+ * same economics as the inputs it reads, so there is no case for it being
+ * WIDER than edit; whether an observer should be able to re-run a study
+ * without being able to change it is a product question, and this constant is
+ * where that answer would go.
+ *
+ * ── RESOURCE COST IS NOT CONTROLLED HERE ───────────────────────────────────
+ *
+ * Monte Carlo runs the engine up to ten thousand times. That is bounded by two
+ * things, neither of which is a role: the endpoint's own measured budget guard,
+ * which refuses a request it projects will exceed fifteen seconds, and a
+ * per-route throttle on the controller. Narrowing the role list would not have
+ * stopped one authorised user from issuing a hundred requests, so it is not
+ * pretended to.
+ */
+export const FEASIBILITY_RUN_CALCULATIONS_ROLES = FEASIBILITY_EDIT_ROLES
+
+/**
+ * Submit a report version for review (DRAFT → REVIEW).
+ *
+ * Previously this required a manager, together with approval and locking,
+ * because all three shared one endpoint and one decorator. That meant an
+ * architect could build an entire feasibility model and then not hand it in —
+ * a manager had to perform the submission on their behalf, which makes the
+ * audit trail say something that did not happen.
+ *
+ * Submitting your own work for review is not an approval. It is the act of
+ * asking for one, and it belongs with the people doing the work.
+ */
+export const FEASIBILITY_SUBMIT_ROLES = FEASIBILITY_EDIT_ROLES
+
+/**
+ * Approve a report version (REVIEW → APPROVED).
+ *
+ * An approval is a professional sign-off on figures a third party may rely on,
+ * so it stays with the people accountable for the project rather than the
+ * people who built the model. A LAWYER, ARCHITECT or ENGINEER who may edit is
+ * deliberately not here: approving your own work is the thing the review state
+ * exists to prevent.
+ */
+export const FEASIBILITY_APPROVE_ROLES = MANAGER_ROLES
+
+/**
+ * Lock a report version (APPROVED → LOCKED).
+ *
+ * Locking is irreversible — the transition table has no path out of LOCKED —
+ * and a locked report is the one that can be exported and relied on. Same list
+ * as approval today, and named separately because they are different acts on
+ * different states: they are now enforced at separate points, so narrowing one
+ * later is a one-line change rather than a refactor.
+ */
+export const FEASIBILITY_LOCK_ROLES = MANAGER_ROLES
+
+/**
+ * Export a report version to PDF or Excel.
+ *
+ * ── WHY EXPORT IS NARROWER THAN VIEW ───────────────────────────────────────
+ *
+ * Reading a figure on a screen inside the CRM and holding a file containing it
+ * are different acts, in the same way that uploading a document and handing it
+ * to a named resident are. A screen leaves no copy; a PDF of the promoter's
+ * full economics is forwardable, attachable and permanent, and no access
+ * revocation reaches it afterwards.
+ *
+ * This route previously sat on the VIEW list, which — before the narrowing
+ * above — meant a DEVELOPER_REP could download the counterparty's complete
+ * financial model as a file. Even with that role now removed from VIEW, export
+ * should not simply inherit whatever view happens to be.
+ *
+ * EXTERNAL_CONSULTANT is the deliberate exclusion here. They may read the
+ * study, because performing it is often their job; they are still outside the
+ * company, and the artifact that leaves the company should be released BY the
+ * company. If an outside appraiser needs the file, a manager sends it, and the
+ * audit log then records who released it.
+ */
+export const FEASIBILITY_EXPORT_ROLES = FEASIBILITY_EDIT_ROLES
+
+/**
+ * The nine capabilities from the Phase 0 design, mapped to the lists above.
+ *
+ * This object is the answer to "who can do what", in a form that can be
+ * asserted rather than read. Two entries are deliberately `null`:
+ *
+ *   - `sign` and `distribute` have NO endpoint anywhere in the feasibility
+ *     module. Mapping them to a role list would describe an access control for
+ *     an action that cannot be performed, which reads as coverage and is the
+ *     opposite of it. Signature packages exist elsewhere in the product
+ *     (`SIGNATURE_ROLES`) and are not wired to report versions.
+ *
+ * `manage_assumptions` intentionally shares `edit`, and `run_calculations` has
+ * its own alias of the same list; both are documented above.
+ */
+export const FEASIBILITY_CAPABILITIES = {
+  view: FEASIBILITY_VIEW_ROLES,
+  edit: FEASIBILITY_EDIT_ROLES,
+  manage_assumptions: FEASIBILITY_EDIT_ROLES,
+  run_calculations: FEASIBILITY_RUN_CALCULATIONS_ROLES,
+  submit: FEASIBILITY_SUBMIT_ROLES,
+  approve: FEASIBILITY_APPROVE_ROLES,
+  lock: FEASIBILITY_LOCK_ROLES,
+  export: FEASIBILITY_EXPORT_ROLES,
+  /** No endpoint exists. See above — not an oversight, and not to be filled in with a plausible list. */
+  sign: null,
+  /** No endpoint exists. */
+  distribute: null,
+} as const satisfies Record<string, readonly string[] | null>
+
+/**
+ * Roles that reach the report-version status endpoint at all.
+ *
+ * The route needs ONE decorator but guards three different capabilities, so
+ * this is their union and the service re-checks the specific one against the
+ * target state. The decorator keeps strangers out; the service is what decides
+ * that an engineer may submit and may not approve.
+ */
+export const FEASIBILITY_REPORT_TRANSITION_ROLES = [
+  ...new Set<string>([...FEASIBILITY_SUBMIT_ROLES, ...FEASIBILITY_APPROVE_ROLES, ...FEASIBILITY_LOCK_ROLES]),
+] as readonly string[]
 
 /**
  * Roles allowed to AUTHOR, edit and delete communication templates.

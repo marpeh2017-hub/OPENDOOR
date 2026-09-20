@@ -121,9 +121,42 @@ what exists:
 
 ## Capability mapping — current state
 
-The nine capabilities above are still expressed through the global role model
-rather than as project-scoped grants, and only two lists exist today
-(`FEASIBILITY_VIEW_ROLES`, `FEASIBILITY_EDIT_ROLES` in
-`auth/roles.constants.ts`). Several distinct capabilities therefore share one
-enforcement point; that file documents which, and where the mapping is
-deliberately coarser than the list above implies.
+The nine capabilities are mapped in `FEASIBILITY_CAPABILITIES` in
+`auth/roles.constants.ts`, which is an object rather than a paragraph so the
+mapping can be asserted. They are still expressed through the global role model
+rather than as project-scoped grants.
+
+| Capability | Roles |
+| --- | --- |
+| `view` | Admins, PROJECT_MANAGER, RESIDENT_RELATIONS_MANAGER, FIELD_AGENT, LAWYER, ARCHITECT, ENGINEER, EXTERNAL_CONSULTANT |
+| `edit`, `manage_assumptions`, `run_calculations` | Admins, PROJECT_MANAGER, LAWYER, ARCHITECT, ENGINEER |
+| `submit` (DRAFT → REVIEW) | same as `edit` |
+| `approve` (REVIEW → APPROVED) | Admins, PROJECT_MANAGER |
+| `lock` (APPROVED → LOCKED) | Admins, PROJECT_MANAGER |
+| `export` | same as `edit` |
+| `sign`, `distribute` | **No endpoint exists.** Mapped to `null` rather than to a plausible list |
+
+Three things are deliberate and are argued in full at the definitions:
+
+- **DEVELOPER_REP and MUNICIPALITY_USER hold nothing.** The report is the
+  promoter's position in a negotiation the first is on the other side of, and
+  the second has standing over planning rather than over a private company's
+  profitability. Until this mapping they could read AND export everything,
+  because `view` was `STAFF_ROLES` and export sat on `view`.
+- **`export` is narrower than `view`.** A screen leaves no copy; a PDF does.
+  EXTERNAL_CONSULTANT may perform the study and may not be the one to take the
+  file out of the company.
+- **`submit` is separated from `approve`.** All three transitions share one
+  route, so its decorator holds their union and
+  `FeasibilityReportVersionService.assertMayTransition` re-checks the specific
+  capability against the target state. Previously the whole route required a
+  manager, so the engineer who built a model could not hand it in.
+
+`FIELD_AGENT` retaining `view` is the one open question rather than a settled
+answer, and is recorded as such in the constants file.
+
+Resource cost on `run_calculations` is not controlled by the role list: Monte
+Carlo is bounded by its own measured budget guard (it refuses a run it projects
+will exceed fifteen seconds) and by a per-route throttle. Narrowing roles would
+not stop one authorised user issuing a hundred requests, so it is not pretended
+to.
