@@ -5,7 +5,7 @@ import { computeEquityWaterfall, type EquityFlow, type EquityTrancheTerms } from
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
-import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto,
+import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto, SolveFinancingDto,
   CreateMonteCarloDto,
   MonteCarloVariableDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
 import { FeasibilityService } from './feasibility.service'
@@ -1168,6 +1168,212 @@ export class FeasibilityCalculationService {
     return { unit: '—', basis: 'FACTOR_ONLY', baseValue: null, solvedValue: null, perLine: [] }
   }
 
+  /**
+   * Solve the drawdown and repayment a financing term sheet implies.
+   *
+   * ── THE CIRCULARITY, STATED ONCE ──────────────────────────────────────
+   *
+   *   draw -> interest -> capitalised in grace -> peak debt -> LTC numerator
+   *                    \-> total costs ----------------------> LTC denominator
+   *   draw + capitalised interest -> closing balance -> repayment
+   *
+   * Neither leg has a closed form, and both were previously closed by hand:
+   * run, read the breach, adjust, run again. Two rounds per scenario.
+   *
+   * ── HOW IT IS SOLVED ──────────────────────────────────────────────────
+   *
+   * Two nested loops over the SAME `compute()` the rest of the engine uses,
+   * for the same reason goal seek bisects instead of inverting: a formula here
+   * would be a second model, and a second model eventually disagrees with the
+   * first one.
+   *
+   *   inner — given a draw, the repayment is a fixed point. Guess it, read the
+   *           leftover `debtBalance`, add it, repeat. Converges in two or
+   *           three passes because each pass only leaves the interest that
+   *           accrued on the previous correction.
+   *
+   *   outer — bisect the draw. LTC rises with the draw (the numerator moves
+   *           with it directly, the denominator only through interest), so a
+   *           sign change between a zero draw and a draw the size of the cost
+   *           base is a real bracket rather than a lucky one.
+   *
+   * ── WHAT IT DOES NOT DO ───────────────────────────────────────────────
+   *
+   * It does not write. The solved schedule is returned next to the schedule
+   * the scenario currently holds, and replacing one with the other is a
+   * decision, not a side effect of asking the question.
+   */
+  async solveFinancing(projectId: string, scenarioId: string, dto: SolveFinancingDto, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    const base = this.compute(profile, scenario)
+
+    const targetLtc = dto.targetLtc ? new Decimal(dto.targetLtc) : scenario.financing?.ltc ? read(scenario.financing.ltc) : null
+    if (!targetLtc) {
+      throw DomainError.validation(
+        'FEASIBILITY_FINANCING_SOLVE_TARGET_MISSING',
+        'אין מגבלת LTC בתרחיש ולא נמסרה מגבלה לפתרון; אין למה לחתור',
+        'targetLtc',
+      )
+    }
+    if (targetLtc.lte(0) || targetLtc.gt(1)) {
+      throw DomainError.validation('FEASIBILITY_FINANCING_SOLVE_TARGET_INVALID', 'מגבלת LTC חייבת להיות שבר גדול מ־0 ולא גדול מ־1', 'targetLtc')
+    }
+
+    const monthOf = (value: Date | string) => `${new Date(value).toISOString().slice(0, 7)}-01`
+    const debtAllocations = scenario.cashFlowAllocations.filter((allocation) => allocation.sourceKind === 'DEBT')
+    const existingDraws = debtAllocations.filter((allocation) => allocation.direction === 'INFLOW')
+    const existingRepayments = debtAllocations.filter((allocation) => allocation.direction === 'OUTFLOW')
+    const drawPeriod = dto.drawPeriod ? monthOf(dto.drawPeriod) : existingDraws.map((a) => monthOf(a.periodStart)).sort()[0] ?? null
+    const repaymentPeriod = dto.repaymentPeriod ? monthOf(dto.repaymentPeriod) : existingRepayments.map((a) => monthOf(a.periodStart)).sort().reverse()[0] ?? null
+    if (!drawPeriod || !repaymentPeriod) {
+      throw DomainError.validation(
+        'FEASIBILITY_FINANCING_SOLVE_PERIODS_MISSING',
+        'אין בתרחיש משיכת חוב ו/או פירעון חוב, ולא נמסרו מועדים; מתי נמשך הכסף ומתי הוא נפרע אינם נגזרים מהקובננט',
+        'drawPeriod',
+      )
+    }
+    if (repaymentPeriod <= drawPeriod) {
+      throw DomainError.validation('FEASIBILITY_FINANCING_SOLVE_PERIODS_INVALID', 'מועד הפירעון חייב להיות אחרי מועד המשיכה', 'repaymentPeriod')
+    }
+
+    /** The scenario with every DEBT allocation replaced by exactly this one draw and this one repayment. */
+    const withSchedule = (draw: Decimal, repayment: Decimal) => ({
+      ...scenario,
+      cashFlowAllocations: [
+        ...scenario.cashFlowAllocations.filter((allocation) => allocation.sourceKind !== 'DEBT'),
+        { ...(existingDraws[0] ?? debtAllocations[0] ?? scenario.cashFlowAllocations[0]), id: 'solve:draw', sourceKind: 'DEBT', direction: 'INFLOW', sourceLineId: null, periodStart: new Date(`${drawPeriod}T00:00:00.000Z`), amount: draw.toFixed(2) },
+        { ...(existingRepayments[0] ?? debtAllocations[0] ?? scenario.cashFlowAllocations[0]), id: 'solve:repayment', sourceKind: 'DEBT', direction: 'OUTFLOW', sourceLineId: null, periodStart: new Date(`${repaymentPeriod}T00:00:00.000Z`), amount: repayment.toFixed(2) },
+      ],
+    }) as LoadedFeasibilityScenario
+
+    let computeRuns = 1
+    /*
+     * Close the balance for a given draw. The repayment starts at the draw
+     * itself and absorbs whatever the engine reports as left over, which on
+     * the first pass is the grace interest and on the second is the interest
+     * that accrued on that interest.
+     */
+    const closeBalance = (draw: Decimal) => {
+      let repayment = draw
+      let result = this.compute(profile, withSchedule(draw, repayment))
+      computeRuns += 1
+      let passes = 1
+      for (; passes <= FINANCING_SOLVE_MAX_INNER_PASSES; passes += 1) {
+        const balance = read(result.financing.debtBalance)
+        if (balance.abs().lte(DEBT_ROUNDING_TOLERANCE)) break
+        repayment = repayment.plus(balance)
+        result = this.compute(profile, withSchedule(draw, repayment))
+        computeRuns += 1
+      }
+      return { draw, repayment, result, passes, closed: read(result.financing.debtBalance).abs().lte(DEBT_ROUNDING_TOLERANCE) }
+    }
+
+    const ltcOf = (result: ReturnType<FeasibilityCalculationService['compute']>) => {
+      const costs = read(result.costs.total)
+      return costs.gt(0) ? read(result.financing.peakDebt).div(costs) : new Decimal(0)
+    }
+
+    /*
+     * The upper bracket is the cost base itself. A draw that size produces an
+     * LTC of at least 1 — the numerator is that draw plus whatever interest
+     * capitalises on it, the denominator is the same cost base plus the same
+     * interest — and `targetLtc` is capped at 1. So with a valid target the
+     * bracket always exists, and the guard below is defensive rather than a
+     * case the caller can reach: it exists so that a future change to how the
+     * ratio is measured surfaces as an honest "not reachable" instead of a
+     * bisection over a bracket that was never there.
+     */
+    let high = read(base.costs.total)
+    let low = new Decimal(0)
+    let best = closeBalance(high)
+    let outer = 1
+    if (ltcOf(best.result).lt(targetLtc)) {
+      return this.financingSolveResult(base, best, targetLtc, ltcOf(best.result), drawPeriod, repaymentPeriod, high, 'UNREACHABLE_WITHIN_COST_BASE', outer, computeRuns)
+    }
+
+    for (; outer <= FINANCING_SOLVE_MAX_OUTER_PASSES; outer += 1) {
+      const mid = low.plus(high).div(2)
+      const attempt = closeBalance(mid)
+      best = attempt
+      const achieved = ltcOf(attempt.result)
+      if (achieved.gt(targetLtc)) high = mid
+      else low = mid
+      // A bracket narrower than an agora cannot move the schedule any more:
+      // both amounts are reported to the agora, and halving past that would
+      // only be spending engine runs to print the same two numbers.
+      if (high.minus(low).lte(DEBT_ROUNDING_TOLERANCE)) break
+    }
+
+    // Land on the low side: it is the one that satisfies the covenant rather
+    // than the one that sits a fraction above it. An LTC solver that returns a
+    // breach has answered the wrong question.
+    const solution = closeBalance(low)
+    const achievedLtc = ltcOf(solution.result)
+    return this.financingSolveResult(
+      base, solution, targetLtc, achievedLtc, drawPeriod, repaymentPeriod, read(base.costs.total),
+      solution.closed && achievedLtc.lte(targetLtc) ? 'CONVERGED' : 'NOT_CONVERGED', outer, computeRuns,
+    )
+  }
+
+  private financingSolveResult(
+    base: ReturnType<FeasibilityCalculationService['compute']>,
+    solved: { draw: Decimal; repayment: Decimal; result: ReturnType<FeasibilityCalculationService['compute']>; passes: number; closed: boolean },
+    targetLtc: Decimal,
+    achievedLtc: Decimal,
+    drawPeriod: string,
+    repaymentPeriod: string,
+    searchedUpTo: Decimal,
+    status: 'CONVERGED' | 'NOT_CONVERGED' | 'UNREACHABLE_WITHIN_COST_BASE',
+    outerPasses: number,
+    computeRuns: number,
+  ) {
+    const converged = status === 'CONVERGED'
+    const result = solved.result
+    const drawAllocation = result.cashFlow.periods.find((period) => period.periodStart === drawPeriod)
+    return {
+      status,
+      converged,
+      targetLtc: targetLtc.toFixed(8),
+      drawPeriod,
+      repaymentPeriod,
+      /*
+       * Null rather than a number when the search did not converge, for the
+       * same reason goal seek reports NOT_CONVERGED with nulls: a schedule
+       * that does not satisfy the covenant is not a schedule, and handing one
+       * back in the shape of an answer invites it to be used as one.
+       */
+      solution: converged ? {
+        drawdown: amount(solved.draw),
+        repayment: amount(solved.repayment),
+        peakDebt: result.financing.peakDebt,
+        debtBalance: result.financing.debtBalance,
+        accumulatedInterest: result.financing.accumulatedInterest,
+        actualLtc: result.financing.actualLtc,
+        totalCosts: result.costs.total,
+      } : null,
+      /** What the scenario holds today, so the two can be read side by side. */
+      before: {
+        peakDebt: base.financing.peakDebt,
+        debtBalance: base.financing.debtBalance,
+        accumulatedInterest: base.financing.accumulatedInterest,
+        actualLtc: base.financing.actualLtc,
+        totalCosts: base.costs.total,
+        ltcBreached: base.validation.some((issue) => issue.code === 'LTC_LIMIT_EXCEEDED'),
+        debtUnrepaid: base.validation.some((issue) => issue.code === 'DEBT_NOT_REPAID' || issue.code === 'DEBT_BALANCE_NEGATIVE'),
+      },
+      search: { outerPasses, innerPassesOnSolution: solved.passes, computeRuns, searchedUpTo: amount(searchedUpTo) },
+      /*
+       * A schedule that satisfies the covenant can still break something else
+       * — a cash flow that goes negative before the draw arrives, a financing
+       * term shorter than the debt actually lives. Those are findings about
+       * the solution, and dropping them would hand over a plan whose cost is
+       * recorded where the reader is not looking.
+       */
+      validation: converged ? result.validation : base.validation,
+      cashFlowAtDraw: drawAllocation ?? null,
+    }
+  }
+
   private goalSeekResult(
     profile: LoadedFeasibilityProfile,
     scenario: LoadedFeasibilityScenario,
@@ -1612,6 +1818,10 @@ function mulberry32(seed: number): () => number {
  * a model and should not produce different verdicts.
  */
 const DEBT_ROUNDING_TOLERANCE = new Decimal('0.01')
+/** Inner fixed point: the balance closes in two or three passes; more than this means it is not closing. */
+const FINANCING_SOLVE_MAX_INNER_PASSES = 12
+/** Outer bisection: 48 halvings take a 10^9 cost base below an agora. */
+const FINANCING_SOLVE_MAX_OUTER_PASSES = 48
 
 const MONTE_CARLO_BUDGET_MS = 15000
 
