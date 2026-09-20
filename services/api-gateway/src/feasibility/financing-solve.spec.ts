@@ -151,6 +151,40 @@ describe('P2 — פתרון לוח המימון', () => {
     expect(Math.abs(Number(result.solution!.debtBalance))).toBeLessThanOrEqual(0.01)
   })
 
+  it('היחס המדווח מסביר את הדגל: חריגה גבולית נראית במספר, ולא רק בהודעת השגיאה', () => {
+    /*
+     * בדיקת הקובננט בפנים משווה ערכים לא מעוגלים. כל עוד היחס דווח בשמונה
+     * ספרות, חריגה גבולית הופיעה כ-LTC_LIMIT_EXCEEDED ליד "60.00000000% מול
+     * מגבלה של 60.00000000%" — דגל שאין במוצג שום דבר שמסביר אותו, ולכן גם
+     * פותר שקרא את המספר המדווח הסיק שהלוח תקין.
+     *
+     * כאן נמצא הגבול בחציה, ונבדק שבנקודה הראשונה שהמנוע מכריז עליה חריגה,
+     * המספר המדווח אכן גדול מהמגבלה. בשמונה ספרות הבדיקה הזו נכשלת.
+     */
+    const engine = new FeasibilityCalculationService(null as never, null as never, null as never)
+    const at = (draw: number) => {
+      const { profile, scenario } = build()
+      const allocations = scenario.cashFlowAllocations as unknown as Array<{ id: string; amount: string }>
+      allocations.find((a) => a.id === 'alloc-draw')!.amount = draw.toFixed(2)
+      allocations.find((a) => a.id === 'alloc-repay')!.amount = (draw * 1.2).toFixed(2)
+      return engine.compute(profile, scenario)
+    }
+    let below = 1_000_000
+    let above = 15_000_000
+    for (let i = 0; i < 60; i += 1) {
+      const mid = (below + above) / 2
+      if (at(mid).validation.some((issue) => issue.code === 'LTC_LIMIT_EXCEEDED')) above = mid
+      else below = mid
+    }
+
+    const breaching = at(above)
+    expect(breaching.validation.some((issue) => issue.code === 'LTC_LIMIT_EXCEEDED')).toBe(true)
+    // הטענה עצמה: המספר גדול מהמגבלה, כפי שהוא מדווח.
+    expect(Number(breaching.financing.actualLtc)).toBeGreaterThan(Number(breaching.financing.ltcLimit))
+    // ולראיה שזו אכן נקודה גבולית ולא חריגה גסה — בשמונה ספרות השניים זהים.
+    expect(Number(breaching.financing.actualLtc).toFixed(8)).toBe(Number(breaching.financing.ltcLimit).toFixed(8))
+  }, 30000)
+
   it('אינו כותב: התרחיש שנטען יוצא מהפותר כפי שנכנס', async () => {
     const { run, scenario } = solve()
     const before = JSON.stringify(scenario.cashFlowAllocations)

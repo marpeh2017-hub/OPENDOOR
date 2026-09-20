@@ -773,8 +773,15 @@ export class FeasibilityCalculationService {
         accumulatedInterest: amount(accumulatedInterest), financingFees: amount(financingFees),
         peakDebt: amount(peakDebt), debtBalance: amount(outstandingDebt),
         measuredDebt: amount(measuredDebt), measuredDebtBasis,
-        actualLtc: actualLtc ? actualLtc.toFixed(8) : null, ltcLimit: ltcLimit ? ltcLimit.toFixed(8) : null,
-        actualLtv: actualLtv ? actualLtv.toFixed(8) : null, ltvLimit: ltvLimit ? ltvLimit.toFixed(8) : null,
+        /*
+         * Twelve decimals, not eight. These are the numbers a covenant is read
+         * off, and the check inside this method compares the unrounded values.
+         * At eight decimals a ratio of 0.600000000357 printed as exactly
+         * 0.60000000 next to a limit of 0.60000000 — and an LTC_LIMIT_EXCEEDED
+         * beside them that nothing in the output could account for.
+         */
+        actualLtc: actualLtc ? actualLtc.toFixed(12) : null, ltcLimit: ltcLimit ? ltcLimit.toFixed(12) : null,
+        actualLtv: actualLtv ? actualLtv.toFixed(12) : null, ltvLimit: ltvLimit ? ltvLimit.toFixed(12) : null,
         graceMonths, graceAppliedFrom: graceMonths > 0 ? firstDrawdownPeriod : null,
         financingMonths, financingTermUsedMonths,
         committedEquity: committedEquity ? amount(committedEquity) : null,
@@ -1268,10 +1275,17 @@ export class FeasibilityCalculationService {
       return { draw, repayment, result, passes, closed: read(result.financing.debtBalance).abs().lte(DEBT_ROUNDING_TOLERANCE) }
     }
 
-    const ltcOf = (result: ReturnType<FeasibilityCalculationService['compute']>) => {
-      const costs = read(result.costs.total)
-      return costs.gt(0) ? read(result.financing.peakDebt).div(costs) : new Decimal(0)
-    }
+    /*
+     * Read the engine's OWN ratio rather than recomputing it from the
+     * reported peak and cost. Those two are rounded to the agora on the way
+     * out; the covenant check inside the engine is not. Dividing the rounded
+     * pair gave a ratio a shade below the engine's, so a schedule the solver
+     * had measured as compliant came back from a plain `compute()` carrying
+     * `LTC_LIMIT_EXCEEDED` — a breach invisible at every printed digit.
+     * One ratio, computed once, in the place that owns it.
+     */
+    const ltcOf = (result: ReturnType<FeasibilityCalculationService['compute']>) =>
+      result.financing.actualLtc === null ? new Decimal(0) : new Decimal(result.financing.actualLtc)
 
     /*
      * The upper bracket is the cost base itself. A draw that size produces an
@@ -1291,27 +1305,37 @@ export class FeasibilityCalculationService {
       return this.financingSolveResult(base, best, targetLtc, ltcOf(best.result), drawPeriod, repaymentPeriod, high, 'UNREACHABLE_WITHIN_COST_BASE', outer, computeRuns)
     }
 
+    /*
+     * Keep the best schedule that actually SATISFIES the covenant, not the
+     * closest one to it. Re-solving the low end at the finish looked
+     * equivalent and is not: the inner fixed point can settle a fraction
+     * differently on a rerun, and a schedule that lands at 60.000000000001%
+     * is reported by the engine as `LTC_LIMIT_EXCEEDED`. Carrying the
+     * satisfying candidate forward means the answer is a schedule that was
+     * measured as compliant, not one that was expected to be.
+     */
+    let bestFeasible: ReturnType<typeof closeBalance> | null = null
     for (; outer <= FINANCING_SOLVE_MAX_OUTER_PASSES; outer += 1) {
       const mid = low.plus(high).div(2)
       const attempt = closeBalance(mid)
       best = attempt
       const achieved = ltcOf(attempt.result)
       if (achieved.gt(targetLtc)) high = mid
-      else low = mid
+      else {
+        low = mid
+        if (attempt.closed) bestFeasible = attempt
+      }
       // A bracket narrower than an agora cannot move the schedule any more:
       // both amounts are reported to the agora, and halving past that would
       // only be spending engine runs to print the same two numbers.
       if (high.minus(low).lte(DEBT_ROUNDING_TOLERANCE)) break
     }
 
-    // Land on the low side: it is the one that satisfies the covenant rather
-    // than the one that sits a fraction above it. An LTC solver that returns a
-    // breach has answered the wrong question.
-    const solution = closeBalance(low)
+    const solution = bestFeasible ?? best
     const achievedLtc = ltcOf(solution.result)
     return this.financingSolveResult(
       base, solution, targetLtc, achievedLtc, drawPeriod, repaymentPeriod, read(base.costs.total),
-      solution.closed && achievedLtc.lte(targetLtc) ? 'CONVERGED' : 'NOT_CONVERGED', outer, computeRuns,
+      bestFeasible && solution.closed && achievedLtc.lte(targetLtc) ? 'CONVERGED' : 'NOT_CONVERGED', outer, computeRuns,
     )
   }
 
