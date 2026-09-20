@@ -2600,6 +2600,11 @@ model FeasibilityCostLine {
 
 /// One financing input set per scenario. Monetary amounts are before VAT;
 /// rates are decimal fractions (for example 0.05, not a floating percentage).
+enum FeasibilityEquitySource {
+  DERIVED
+  EXPLICIT_ALLOCATIONS
+}
+
 model FeasibilityFinancingAssumption {
   id                 String              @id @default(cuid())
   scenarioId         String              @unique
@@ -2613,6 +2618,17 @@ model FeasibilityFinancingAssumption {
   guaranteeFeeRate   Decimal?            @db.Decimal(12, 8)
   graceMonths        Int?
   financingMonths    Int?
+  /// Where the equity contributions in the cash flow come from. DERIVED is the
+  /// default: equity tops the running balance up to `equityBalanceFloor`
+  /// whenever the project would otherwise go below it, so the equity schedule
+  /// answers to the debt schedule instead of being typed beside it.
+  /// EXPLICIT_ALLOCATIONS keeps hand-entered EQUITY cash-flow allocations, and
+  /// is an override a scenario has to ask for.
+  equitySource       FeasibilityEquitySource @default(DERIVED)
+  /// The cumulative balance derived equity holds the project at. Zero by
+  /// default. It is a parameter and not a hard zero because a plan that lands
+  /// exactly on nothing leaves no room for a late collection.
+  equityBalanceFloor Decimal?            @db.Decimal(18, 2)
   classification     FeasibilityDataClassification @default(ASSUMPTION)
   confidence         FeasibilityConfidence @default(UNKNOWN)
   isVerified         Boolean             @default(false)

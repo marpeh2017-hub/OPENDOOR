@@ -378,6 +378,27 @@ export class UpsertFeasibilityFinancingDto extends ProvenanceDto {
   graceMonths?: number
   @IsOptional() @IsInt() @Min(1)
   financingMonths?: number
+
+  /**
+   * Where the equity in the cash flow comes from.
+   *
+   * `DERIVED` (the default) computes it: equity tops the running balance up
+   * to `equityBalanceFloor` in the month it falls below, so the equity
+   * schedule answers to the debt schedule. `EXPLICIT_ALLOCATIONS` keeps
+   * hand-entered EQUITY cash-flow allocations instead, and is an override
+   * rather than a default — a residual typed beside the debt is what produced
+   * an equity IRR that responded to nothing.
+   */
+  @IsOptional() @IsIn(['DERIVED', 'EXPLICIT_ALLOCATIONS'])
+  equitySource?: 'DERIVED' | 'EXPLICIT_ALLOCATIONS'
+
+  /**
+   * The cumulative balance derived equity holds the project at. Zero when not
+   * given. A plan that lands exactly on nothing leaves no room for a late
+   * collection, so this is a parameter rather than a hard zero.
+   */
+  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
+  equityBalanceFloor?: string
 }
 
 export class CreateFeasibilityTimelinePhaseDto extends ProvenanceDto {
