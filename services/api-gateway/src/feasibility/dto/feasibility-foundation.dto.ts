@@ -526,6 +526,50 @@ export class CreateGoalSeekDto {
   maxChangePercent?: string
 }
 
+/**
+ * Solve the drawdown and the repayment that a financing term sheet implies.
+ *
+ * ── WHY THIS CANNOT BE TYPED IN BY HAND ───────────────────────────────────
+ *
+ * LTC is measured against PEAK debt, and peak debt includes the interest
+ * capitalised during grace. The denominator — total costs — includes that same
+ * interest. So the draw sets the interest, the interest sets both the peak and
+ * the cost base, and those two set the LTC that was supposed to govern the
+ * draw. The repayment has the same shape: it has to clear the balance, and the
+ * balance is the drawn principal PLUS capitalised interest, which is not known
+ * until the draw is fixed.
+ *
+ * In practice this was resolved by running the model, reading the breach,
+ * adjusting, and running again — two rounds per scenario, every time. This
+ * endpoint does that search against the same engine, so the answer is the one
+ * the engine actually produces rather than a second model of it.
+ *
+ * It returns a schedule. It does NOT write one: what the solver found and what
+ * the scenario stores stay separate until somebody decides to store it.
+ */
+export class SolveFinancingDto {
+  /**
+   * The LTC the schedule must satisfy, as a decimal fraction (0.65, never 65).
+   * Defaults to the scenario's own `ltc` limit — solving to a covenant the
+   * scenario does not state would mean inventing the term sheet.
+   */
+  @IsOptional() @Matches(/^0?\.\d+$|^1(\.0+)?$/)
+  targetLtc?: string
+
+  /**
+   * Month of the single drawdown, and month of the single repayment.
+   * Both default to the scenario's existing DEBT allocations: the first
+   * drawdown month and the last repayment month. They are inputs to the
+   * schedule, not things to be solved — when the money is needed and when the
+   * project can repay are facts about the build, not about the covenant.
+   */
+  @IsOptional() @IsDateString()
+  drawPeriod?: string
+
+  @IsOptional() @IsDateString()
+  repaymentPeriod?: string
+}
+
 export class CreateFeasibilitySnapshotDto {
   @IsOptional() @ValidateNested() @Type(() => CreateSensitivityDto)
   sensitivity?: CreateSensitivityDto
