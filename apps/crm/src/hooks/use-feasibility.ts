@@ -323,7 +323,9 @@ export type FeasibilityRuleDeviation = {
   assumptionValue: string | null
   sourceReference: string
   ruleId: string
-  status: 'MATCHES' | 'OVERRIDES' | 'UNSET'
+  status: 'MATCHES' | 'OVERRIDES' | 'UNSET' | 'NOT_APPLICABLE' | 'UNMAPPED'
+  /** Which assumption key answered the rule — the study's own, or the engine's name for it. */
+  matchedAssumptionKey?: string | null
 }
 
 export type FeasibilityDeviations = {

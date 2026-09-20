@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, CircleHelp, Gavel, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CircleHelp, Gavel, MinusCircle, ShieldCheck } from 'lucide-react'
 import { QueryError, RowsSkeleton } from '@/components/ui/query-states'
 import { useFeasibilityDeviations, type FeasibilityRuleDeviation } from '@/hooks/use-feasibility'
 
@@ -47,6 +47,18 @@ const STATUS_META: Record<
     hint: 'ההנחה בפרויקט זהה לכלל שבתוקף במועד הקובע',
     className: 'bg-emerald-50 text-emerald-900 border-emerald-200',
     icon: <ShieldCheck size={14} />,
+  },
+  NOT_APPLICABLE: {
+    label: 'לא רלוונטי',
+    hint: 'הכלל חל על סוג פרויקט אחר — מוצג כדי שיהיה ברור שנבדק ונמצא לא רלוונטי, ולא שנשכח',
+    className: 'bg-slate-50 text-slate-500 border-slate-200',
+    icon: <MinusCircle size={14} />,
+  },
+  UNMAPPED: {
+    label: 'לא ממופה',
+    hint: 'לכלל אין הכרעה מה הוא אומר במונחי המנוע — תקלת תצורה, לא ממצא על המחקר',
+    className: 'bg-rose-50 text-rose-900 border-rose-200',
+    icon: <AlertTriangle size={14} />,
   },
 }
 
@@ -116,7 +128,7 @@ export function FeasibilityRulesPanel({ profileId }: { profileId: string }) {
       {data && data.deviations.length > 0 && (
         <>
           <div className="mt-3 flex flex-wrap gap-2">
-            {(['OVERRIDES', 'UNSET', 'MATCHES'] as const).map((status) =>
+            {(['OVERRIDES', 'UNMAPPED', 'UNSET', 'MATCHES', 'NOT_APPLICABLE'] as const).map((status) =>
               counts[status] ? (
                 <span
                   key={status}
