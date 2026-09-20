@@ -56,3 +56,12 @@ prisma/migrations/dev/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Redis persistence snapshots. NEVER commit: they contain live runtime state —
+# `jwt:revoked:*` session identifiers and `otp:resend:*` counters.
+#
+# Globbed rather than named, because `dump.rdb` is only the default:
+# `dbfilename` renames it, a per-port instance is conventionally
+# `redis-<port>.rdb`, and `redis-cli --rdb <file>` writes whatever it is told.
+# Every one of those holds the same session state as the default name.
+*.rdb
