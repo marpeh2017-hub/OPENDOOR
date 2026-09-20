@@ -62,7 +62,10 @@ export function LoginForm() {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <Label className="form-label mb-0">סיסמה</Label>
-          <a href="/he/forgot-password" className="text-xs text-primary hover:underline">
+          {/* `text-teal-600` rather than `text-primary`: the same value the
+              primary token now carries, written literally because this is a
+              link and not a primary control. 5.12:1 on white. */}
+          <a href="/he/forgot-password" className="text-xs text-teal-600 hover:underline">
             שכחת סיסמה?
           </a>
         </div>

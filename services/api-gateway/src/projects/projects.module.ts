@@ -1,6 +1,14 @@
 import { Module } from '@nestjs/common'
-import { ProjectsController } from './projects.controller'
+import { AutomationsModule } from '../automations/automations.module'
+import { ProjectsController, ProjectsBulkController } from './projects.controller'
 import { ProjectsService }    from './projects.service'
 
-@Module({ controllers: [ProjectsController], providers: [ProjectsService] })
+@Module({
+  // Imported for `AutomationRunnerService`, which this module's service calls
+  // after a domain event commits.
+  imports: [AutomationsModule],
+  controllers: [ProjectsController, ProjectsBulkController],
+  providers: [ProjectsService],
+  exports: [ProjectsService],
+})
 export class ProjectsModule {}

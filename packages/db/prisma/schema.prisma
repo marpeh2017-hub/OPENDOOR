@@ -1,7 +1,3 @@
-// ============================================================
-// Urban Renewal OS – Prisma Schema (SQLite dev / Postgres prod)
-// ============================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,9 +7,925 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
-// ENUMS
-// ============================================================
+model Tenant {
+  id           String                  @id @default(cuid())
+  name         String
+  slug         String                  @unique
+  domain       String?                 @unique
+  logoUrl      String?
+  primaryColor String                  @default("#2F9DA0")
+  website      String?
+  email        String?
+  phone        String?
+  settings     String                  @default("{}")
+  features     String                  @default("{}")
+  isActive     Boolean                 @default(true)
+  trialEndsAt  DateTime?
+  plan         String                  @default("starter")
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  auditLogs    AuditLog[]
+  automations  Automation[]
+  campaigns    Campaign[]
+  templates    CommunicationTemplate[]
+  documents    Document[]
+  leads        Lead[]
+  projects     Project[]
+  reports      SavedReport[]
+  users        User[]
+  workflows    Workflow[]
+
+  @@index([slug])
+  @@map("tenants")
+}
+
+model User {
+  id                 String            @id @default(cuid())
+  tenantId           String
+  email              String?
+  phone              String?
+  nationalId         String?
+  firstName          String
+  lastName           String
+  avatarUrl          String?
+  role               UserRole
+  language           Language          @default(he)
+  isActive           Boolean           @default(true)
+  isVerified         Boolean           @default(false)
+  lastLoginAt        DateTime?
+  passwordHash       String?
+  mfaEnabled         Boolean           @default(false)
+  mfaSecret          String?
+  notificationPrefs  String            @default("{\"email\":true,\"sms\":true,\"whatsapp\":true,\"push\":true,\"inApp\":true}")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  auditLogs          AuditLog[]
+  createdDocuments   Document[]        @relation("DocumentCreator")
+  meetings           MeetingAttendee[]
+  notifications      Notification[]
+  projectMemberships ProjectMember[]
+  sessions           Session[]
+  createdTasks       Task[]            @relation("TaskCreator")
+  assignedTasks      Task[]            @relation("TaskAssignee")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String   @unique
+  deviceInfo   String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model Lead {
+  id                    String         @id @default(cuid())
+  tenantId              String
+  firstName             String
+  lastName              String
+  phone                 String?
+  email                 String?
+  address               String?
+  city                  String?
+  formType              String?
+  submissionId          String?
+  estimatedUnits        Int?
+  leadType               String?
+  projectType            String?
+  organizingStatus      String?
+  consentContact        Boolean        @default(false)
+  consentPrivacy        Boolean        @default(false)
+  consentRecordedAt     DateTime?
+  privacyPolicyVersion  String?
+  utmSource              String?
+  utmMedium              String?
+  utmCampaign            String?
+  matchedBuildingId      String?
+  matchedBuilding        Building?      @relation("LeadMatchedBuilding", fields: [matchedBuildingId], references: [id], onDelete: SetNull)
+  possibleDuplicateOfId  String?
+  possibleDuplicateOf    Lead?          @relation("LeadPossibleDuplicates", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  possibleDuplicates     Lead[]         @relation("LeadPossibleDuplicates")
+  source                LeadSource     @default(OTHER)
+  campaignId            String?
+  status                LeadStatus     @default(NEW)
+  score                 Int            @default(0)
+  notes                 String?
+  tags                  String         @default("[]")
+  assignedToId          String?
+  convertedToResidentId String?        @unique
+  convertedAt           DateTime?
+  language              Language       @default(he)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  activities            LeadActivity[]
+  campaign              Campaign?      @relation(fields: [campaignId], references: [id])
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tasks                 Task[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, assignedToId])
+  @@unique([tenantId, submissionId])
+  @@index([tenantId, matchedBuildingId])
+  @@index([tenantId, possibleDuplicateOfId])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id          String   @id @default(cuid())
+  leadId      String
+  type        String
+  note        String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+  createdById String?
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_activities")
+}
+
+model Project {
+  id               String                @id @default(cuid())
+  tenantId         String
+  code             String
+  name             String
+  description      String?
+  city             String
+  neighborhood     String?
+  address          String?
+  coordinates      String?
+  status           ProjectStatus @default(ACTIVE)
+  stage            ProjectStage          @default(DISCOVERY)
+  startDate        DateTime?
+  targetEndDate    DateTime?
+  actualEndDate    DateTime?
+  totalUnits       Int                   @default(0)
+  signedUnits      Int                   @default(0)
+  signatureGoal    Int                   @default(67)
+  projectManagerId String?
+  lawyerId         String?
+  architectId      String?
+  developerRep     String?
+  estimatedBudget  Float?
+  currency         String                @default("ILS")
+  settings         String                @default("{}")
+  tags             String                @default("[]")
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  automations      Automation[]
+  campaigns        Campaign[]
+  complexes        Complex[]
+  documents        Document[]
+  meetings         Meeting[]
+  members          ProjectMember[]
+  stages           ProjectStageHistory[]
+  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reports          SavedReport[]
+  tasks            Task[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, stage])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      UserRole
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model ProjectStageHistory {
+  id          String       @id @default(cuid())
+  projectId   String
+  stage       ProjectStage
+  enteredAt   DateTime     @default(now())
+  exitedAt    DateTime?
+  notes       String?
+  changedById String?
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_stage_history")
+}
+
+model Complex {
+  id        String     @id @default(cuid())
+  projectId String
+  name      String
+  address   String?
+  status    String     @default("active")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  buildings Building[]
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("complexes")
+}
+
+model Building {
+  id               String      @id @default(cuid())
+  complexId        String
+  address          String
+  streetNumber     String?
+  city             String?
+  zipCode          String?
+  floors           Int?
+  totalApartments  Int?
+  constructionYear Int?
+  buildingClass    String?
+  status           String      @default("active")
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  apartments       Apartment[]
+  matchedLeads     Lead[]          @relation("LeadMatchedBuilding")
+  complex          Complex     @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  @@index([complexId])
+  @@map("buildings")
+}
+
+model Apartment {
+  id              String           @id @default(cuid())
+  buildingId      String
+  apartmentNumber String
+  floor           Int?
+  sizeSqm         Float?
+  rooms           Float?
+  hasParking      Boolean          @default(false)
+  hasStorage      Boolean          @default(false)
+  hasBalcony      Boolean          @default(false)
+  notes           String?
+  status          String           @default("active")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  building        Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  owners          OwnerApartment[]
+  residents       Resident[]
+
+  @@unique([buildingId, apartmentNumber])
+  @@index([buildingId])
+  @@map("apartments")
+}
+
+model Owner {
+  id              String            @id @default(cuid())
+  tenantId        String
+  fullName        String
+  nationalId      String?
+  phone           String?
+  email           String?
+  addressAbroad   String?
+  isEstate        Boolean           @default(false)
+  guardianContact String?
+  notes           String?
+  residentId      String?           @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  holdings        OwnerApartment[]
+  signatures      SignatureRecord[]
+
+  @@index([tenantId])
+  @@map("owners")
+}
+
+model OwnerApartment {
+  id               String    @id @default(cuid())
+  ownerId          String
+  apartmentId      String
+  shareNumerator   Int       @default(1)
+  shareDenominator Int       @default(1)
+  viaInheritance   Boolean   @default(false)
+  poaHolderId      String?
+  acquiredAt       DateTime?
+  createdAt        DateTime  @default(now())
+  apartment        Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  owner            Owner     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, apartmentId])
+  @@index([apartmentId])
+  @@map("owner_apartments")
+}
+
+model SignaturePackage {
+  id                 String             @id @default(cuid())
+  tenantId           String
+  projectId          String
+  version            Int                @default(1)
+  status             String             @default("draft")
+  title              String
+  documentIds        String             @default("[]")
+  documentHash       String?
+  signingOrder       String             @default("PARALLEL")
+  verificationMethod String             @default("SMS_OTP")
+  expiresAt          DateTime?
+  approvedById       String?
+  approvedAt         DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  supersededById     String?
+  createdById        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  evidencePackageKey String?
+  providerName       String             @default("NATIVE")
+  providerEnvelopeId String?
+  events             SignatureEvent[]
+  evidence           SignatureEvidence?
+  records            SignatureRecord[]
+
+  @@index([projectId])
+  @@index([tenantId, status])
+  @@map("signature_packages")
+}
+
+model SignatureEvent {
+  id        String           @id @default(cuid())
+  packageId String
+  recordId  String?
+  type      String
+  actorType String           @default("SYSTEM")
+  actorId   String?
+  ip        String?
+  userAgent String?
+  metadata  String?
+  createdAt DateTime         @default(now())
+  package   SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId, createdAt])
+  @@map("signature_events")
+}
+
+model SigningSession {
+  id           String    @id @default(cuid())
+  recordId     String    @unique
+  token        String    @unique
+  otpHash      String?
+  otpExpiresAt DateTime?
+  otpAttempts  Int       @default(0)
+  verifiedAt   DateTime?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@map("signing_sessions")
+}
+
+model SignatureRecord {
+  id            String           @id @default(cuid())
+  tenantId      String
+  packageId     String
+  ownerId       String
+  apartmentId   String
+  method        String           @default("DIGITAL")
+  status String @default("PENDING")
+  signerRole    String           @default("OWNER")
+  required      Boolean          @default(true)
+  signingOrder  Int              @default(0)
+  declineReason String?
+  openedAt      DateTime?
+  signedAt      DateTime?
+  refusedAt     DateTime?
+  revokedAt     DateTime?
+  evidenceDocId String?
+  witnessName   String?
+  geoLat        Float?
+  geoLng        Float?
+  validatedById String?
+  notes         String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  owner         Owner            @relation(fields: [ownerId], references: [id])
+  package       SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, ownerId, apartmentId])
+  @@index([apartmentId])
+  @@index([tenantId, status])
+  @@map("signature_records")
+}
+
+model SignatureEvidence {
+  id           String           @id @default(cuid())
+  packageId    String           @unique
+  tenantId     String
+  documentHash String
+  signedAt     DateTime
+  signers      String
+  auditLog     String
+  ipAddresses  String
+  s3Key        String?
+  evidenceHash String?
+  pdfBase64    String?
+  pdfS3Key     String?
+  createdAt    DateTime         @default(now())
+  package      SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("signature_evidence")
+}
+
+model ThresholdRule {
+  id          String   @id @default(cuid())
+  tenantId    String
+  projectId   String
+  scope       String   @default("PROJECT")
+  buildingId  String?
+  requiredPct Float    @default(67)
+  basis       String   @default("SHARES")
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, scope, buildingId])
+  @@map("threshold_rules")
+}
+
+model Resident {
+  id                  String                  @id @default(cuid())
+  tenantId            String
+  apartmentId         String
+  firstName           String
+  lastName            String
+  nationalId          String?
+  phone               String?
+  phone2              String?
+  email               String?
+  ownershipPercentage Float                   @default(100)
+  isPrimaryContact    Boolean                 @default(true)
+  signatureStatus     ResidentSignatureStatus @default(NOT_CONTACTED)
+  isObjecting         Boolean                 @default(false)
+  objectionReason     String?
+  riskScore           Int                     @default(0)
+  language            Language                @default(he)
+  preferredChannel    MessageChannel          @default(WHATSAPP)
+  whatsappOptIn       Boolean                 @default(false)
+  smsOptIn            Boolean                 @default(true)
+  emailOptIn          Boolean                 @default(true)
+  doNotContact        Boolean                 @default(false)
+  doNotContactReason  String?
+  // `portalUserId` is whether the resident can log in at all; this field is
+  // narrower — only whether their in-portal message inbox is reachable as a
+  // delivery channel. Renamed from `portalEnabled`, which read as the login
+  // gate and was not.
+  portalUserId        String?                 @unique
+  portalInboxEnabled  Boolean                 @default(false)
+  notes               String?
+  tags                String                  @default("[]")
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  meetings            MeetingAttendee[]
+  messages            Message[]
+  activityLog         ResidentActivity[]
+  documents           ResidentDocument[]
+  apartment           Apartment               @relation(fields: [apartmentId], references: [id])
+  signatures          SignatureRequest[]
+  tickets             SupportTicket[]
+  tasks               Task[]
+  voteResponses       VoteResponse[]
+
+  @@index([apartmentId])
+  @@index([signatureStatus])
+  @@map("residents")
+}
+
+model ResidentActivity {
+  id          String   @id @default(cuid())
+  residentId  String
+  type        String
+  title       String
+  note        String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+  createdById String?
+  resident    Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  @@index([residentId])
+  @@map("resident_activities")
+}
+
+model SignatureRequest {
+  id                String            @id @default(cuid())
+  tenantId          String
+  residentId        String
+  documentId        String?
+  provider          SignatureProvider @default(MANUAL)
+  externalId        String?
+  status            SignatureStatus @default(DRAFT)
+  sentAt            DateTime?
+  viewedAt          DateTime?
+  signedAt          DateTime?
+  rejectedAt        DateTime?
+  expiresAt         DateTime?
+  rejectionReason   String?
+  signatureImageUrl String?
+  metadata          String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  document          Document?         @relation(fields: [documentId], references: [id])
+  resident          Resident          @relation(fields: [residentId], references: [id])
+
+  @@index([residentId])
+  @@index([tenantId, status])
+  @@map("signature_requests")
+}
+
+model Document {
+  id                String             @id @default(cuid())
+  tenantId          String
+  projectId         String?
+  category          DocumentCategory
+  status            DocumentStatus @default(DRAFT)
+  title             String
+  description       String?
+  fileName          String
+  fileSize          Int                @default(0)
+  mimeType          String             @default("application/octet-stream")
+  s3Key             String             @default("")
+  s3Bucket          String             @default("")
+  version           Int                @default(1)
+  parentId          String?
+  ocrText           String?
+  ocrstatus String @default("PENDING")
+  language          Language           @default(he)
+  isPublic          Boolean            @default(false)
+  tags              String             @default("[]")
+  expiresAt         DateTime?
+  createdById       String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  createdBy         User               @relation("DocumentCreator", fields: [createdById], references: [id])
+  parent            Document?          @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions          Document[]         @relation("DocumentVersions")
+  project           Project?           @relation(fields: [projectId], references: [id])
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  residentDocuments ResidentDocument[]
+  signatureRequests SignatureRequest[]
+
+  @@index([tenantId, category])
+  @@index([tenantId, projectId])
+  @@map("documents")
+}
+
+model ResidentDocument {
+  id         String   @id @default(cuid())
+  residentId String
+  documentId String
+  addedAt    DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id])
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  @@unique([residentId, documentId])
+  @@map("resident_documents")
+}
+
+model Meeting {
+  id          String            @id @default(cuid())
+  tenantId    String
+  projectId   String?
+  title       String
+  description String?
+  location    String?
+  isVirtual   Boolean           @default(false)
+  meetingUrl  String?
+  startTime   DateTime
+  endTime     DateTime?
+  aiSummary   String?
+  notes       String?
+  status      String            @default("scheduled")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  attendees   MeetingAttendee[]
+  project     Project?          @relation(fields: [projectId], references: [id])
+  tasks       Task[]
+
+  @@index([tenantId, projectId])
+  @@map("meetings")
+}
+
+model MeetingAttendee {
+  id         String    @id @default(cuid())
+  meetingId  String
+  userId     String?
+  residentId String?
+  attended   Boolean?
+  role       String?
+  resident   Resident? @relation(fields: [residentId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
+  meeting    Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@unique([meetingId, residentId])
+  @@map("meeting_attendees")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  tenantId    String
+  type        TaskType     @default(GENERAL)
+  title       String
+  description String?
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  assigneeId  String?
+  createdById String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  projectId   String?
+  leadId      String?
+  residentId  String?
+  meetingId   String?
+  blockedById String?
+  tags        String       @default("[]")
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  blockedBy   Task?        @relation("TaskDependencies", fields: [blockedById], references: [id])
+  blocking    Task[]       @relation("TaskDependencies")
+  meeting     Meeting?     @relation(fields: [meetingId], references: [id])
+  resident    Resident?    @relation(fields: [residentId], references: [id])
+  lead        Lead?        @relation(fields: [leadId], references: [id])
+  project     Project?     @relation(fields: [projectId], references: [id])
+  createdBy   User?        @relation("TaskCreator", fields: [createdById], references: [id])
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([tenantId, assigneeId, status])
+  @@index([tenantId, projectId])
+  @@map("tasks")
+}
+
+model Message {
+  id            String                 @id @default(cuid())
+  tenantId      String
+  channel       MessageChannel
+  direction     CommunicationDirection
+  status        MessageStatus          @default(QUEUED)
+  residentId    String?
+  toPhone       String?
+  toEmail       String?
+  subject       String?
+  body          String
+  templateId    String?
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  failureReason String?
+  externalId    String?
+  metadata      String?
+  campaignId    String?
+  createdAt     DateTime               @default(now())
+  campaign      Campaign?              @relation(fields: [campaignId], references: [id])
+  template      CommunicationTemplate? @relation(fields: [templateId], references: [id])
+  resident      Resident?              @relation(fields: [residentId], references: [id])
+
+  @@index([tenantId, residentId])
+  @@map("messages")
+}
+
+model CommunicationTemplate {
+  id             String         @id @default(cuid())
+  tenantId       String
+  name           String
+  channel        MessageChannel
+  language       Language       @default(he)
+  subject        String?
+  body           String
+  variables      String         @default("[]")
+  isActive       Boolean        @default(true)
+  isApproved     Boolean        @default(false)
+  waTemplateName String?
+  waCategory     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages       Message[]
+
+  @@unique([tenantId, name, channel, language])
+  @@map("communication_templates")
+}
+
+model Campaign {
+  id              String         @id @default(cuid())
+  tenantId        String
+  projectId       String?
+  name            String
+  description     String?
+  channel         MessageChannel
+  status          String         @default("draft")
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  totalRecipients Int            @default(0)
+  sent            Int            @default(0)
+  delivered       Int            @default(0)
+  read            Int            @default(0)
+  failed          Int            @default(0)
+  templateId      String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  project         Project?       @relation(fields: [projectId], references: [id])
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads           Lead[]
+  messages        Message[]
+
+  @@index([tenantId, status])
+  @@map("campaigns")
+}
+
+model SupportTicket {
+  id          String         @id @default(cuid())
+  tenantId    String
+  residentId  String?
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  category    String?
+  assigneeId  String?
+  resolvedAt  DateTime?
+  closedAt    DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  resident    Resident?      @relation(fields: [residentId], references: [id])
+  replies     TicketReply[]
+
+  @@index([tenantId, status])
+  @@map("support_tickets")
+}
+
+model TicketReply {
+  id               String        @id @default(cuid())
+  ticketId         String
+  authorId         String?
+  authorResidentId String?
+  body             String
+  isInternal       Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  ticket           SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_replies")
+}
+
+model Vote {
+  id                    String         @id @default(cuid())
+  tenantId              String
+  projectId             String?
+  title                 String
+  description           String?
+  status                VoteStatus @default(DRAFT)
+  type String @default("single_choice")
+  options               String
+  requiredParticipation Float          @default(0.51)
+  requiredMajority      Float          @default(0.51)
+  opensAt               DateTime?
+  closesAt              DateTime?
+  result                String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  responses             VoteResponse[]
+
+  @@index([tenantId, status])
+  @@map("votes")
+}
+
+model VoteResponse {
+  id              String   @id @default(cuid())
+  voteId          String
+  residentId      String
+  selectedOptions String
+  votedAt         DateTime @default(now())
+  ipAddress       String?
+  resident        Resident @relation(fields: [residentId], references: [id])
+  vote            Vote     @relation(fields: [voteId], references: [id], onDelete: Cascade)
+
+  @@unique([voteId, residentId])
+  @@map("vote_responses")
+}
+
+model Automation {
+  id            String             @id @default(cuid())
+  tenantId      String
+  projectId     String?
+  name          String
+  description   String?
+  isActive      Boolean            @default(true)
+  trigger       AutomationTrigger
+  triggerConfig String             @default("{}")
+  runCount      Int                @default(0)
+  lastRunAt     DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  actions       AutomationAction[]
+  project       Project?           @relation(fields: [projectId], references: [id])
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, trigger, isActive])
+  @@map("automations")
+}
+
+model AutomationAction {
+  id           String               @id @default(cuid())
+  automationId String
+  order        Int
+  type         AutomationActionType
+  config       String
+  delayMinutes Int                  @default(0)
+  automation   Automation           @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId])
+  @@map("automation_actions")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  link      String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  metadata  String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model SavedReport {
+  id              String    @id @default(cuid())
+  tenantId        String
+  projectId       String?
+  name            String
+  type            String
+  config          String
+  schedule        String?
+  lastGeneratedAt DateTime?
+  lastOutputUrl   String?
+  createdById     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  project         Project?  @relation(fields: [projectId], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("saved_reports")
+}
+
+model Workflow {
+  id        String        @id @default(cuid())
+  tenantId  String
+  name      String
+  stage     ProjectStage?
+  isActive  Boolean       @default(true)
+  nodes     String
+  edges     String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("workflows")
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  tenantId  String
+  userId    String?
+  action    AuditAction
+  entity    String
+  entityId  String?
+  changes   String?
+  metadata  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+  user      User?       @relation(fields: [userId], references: [id])
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
 
 enum Language {
   he
@@ -246,984 +1158,135 @@ enum AuditAction {
 }
 
 // ============================================================
-// CORE: MULTI-TENANCY
+// DATA QUALITY CENTER (SQLite mirror of schema.postgres.prisma)
+// Divergence from Postgres:
+//   - Json  -> String (JSON-encoded)
+//   - String[] -> String (JSON-encoded array)
+// Postgres remains the canonical schema.
 // ============================================================
 
-model Tenant {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  domain       String?  @unique
-  logoUrl      String?
-  primaryColor String   @default("#2F9DA0")
-  website      String?
-  email        String?
-  phone        String?
-  settings     String   @default("{}")
-  features     String   @default("{}")
-  isActive     Boolean  @default(true)
-  trialEndsAt  DateTime?
-  plan         String   @default("starter")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  users         User[]
-  projects      Project[]
-  leads         Lead[]
-  documents     Document[]
-  workflows     Workflow[]
-  templates     CommunicationTemplate[]
-  auditLogs     AuditLog[]
-  campaigns     Campaign[]
-  reports       SavedReport[]
-  automations   Automation[]
-
-  @@index([slug])
-  @@map("tenants")
+enum DataQualitySeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
 }
 
-// ============================================================
-// USERS & AUTH
-// ============================================================
+enum DataQualityStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  IGNORED
+}
 
-model User {
+enum DataQualityCategory {
+  COMPLETENESS
+  ACCURACY
+  CONSISTENCY
+  INTEGRITY
+  DUPLICATION
+  TIMELINESS
+  COMPLIANCE
+}
+
+enum DataQualityEntityType {
+  PROJECT
+  COMPLEX
+  BUILDING
+  APARTMENT
+  OWNER
+  OWNER_APARTMENT
+  RESIDENT
+  SIGNATURE_PACKAGE
+  SIGNATURE_RECORD
+  DOCUMENT
+  TASK
+  MESSAGE
+  MEETING
+  LEAD
+  USER
+}
+
+enum DataQualityScanScope {
+  PROJECT
+  TENANT
+  GLOBAL
+}
+
+enum DataQualityScanStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model DataQualityIssue {
   id          String   @id @default(cuid())
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  email       String?
-  phone       String?
-  nationalId  String?
-  firstName   String
-  lastName    String
-  avatarUrl   String?
-  role        UserRole
-  language    Language @default(he)
-  isActive    Boolean  @default(true)
-  isVerified  Boolean  @default(false)
-  lastLoginAt DateTime?
-  passwordHash     String?
-  mfaEnabled       Boolean  @default(false)
-  mfaSecret        String?
-  notificationPrefs String @default("{\"email\":true,\"sms\":true,\"whatsapp\":true,\"push\":true,\"inApp\":true}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  sessions            Session[]
-  assignedTasks       Task[]          @relation("TaskAssignee")
-  createdTasks        Task[]          @relation("TaskCreator")
-  meetings            MeetingAttendee[]
-  auditLogs           AuditLog[]
-  projectMemberships  ProjectMember[]
-  notifications       Notification[]
-  createdDocuments    Document[]      @relation("DocumentCreator")
-
-  @@unique([tenantId, email])
-  @@index([tenantId, role])
-  @@map("users")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String   @unique
-  refreshToken String   @unique
-  deviceInfo   String?
-  ipAddress    String?
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
-
-  @@index([userId])
-  @@index([token])
-  @@map("sessions")
-}
-
-// ============================================================
-// LEADS
-// ============================================================
-
-model Lead {
-  id          String     @id @default(cuid())
-  tenantId    String
-  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  firstName   String
-  lastName    String
-  phone       String?
-  email       String?
-  address     String?
-  city        String?
-  source      LeadSource @default(OTHER)
-  campaignId  String?
-  campaign    Campaign?  @relation(fields: [campaignId], references: [id])
-  status      LeadStatus @default(NEW)
-  score       Int        @default(0)
-  notes       String?
-  tags        String     @default("[]")
-  assignedToId String?
-  convertedToResidentId String? @unique
-  convertedAt DateTime?
-  language    Language   @default(he)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  activities  LeadActivity[]
-  tasks       Task[]
-
-  @@index([tenantId, status])
-  @@index([tenantId, assignedToId])
-  @@map("leads")
-}
-
-model LeadActivity {
-  id          String   @id @default(cuid())
-  leadId      String
-  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  type        String
-  note        String?
-  metadata    String?
-  createdAt   DateTime @default(now())
-  createdById String?
-
-  @@index([leadId])
-  @@map("lead_activities")
-}
-
-// ============================================================
-// PROJECTS & HIERARCHY
-// ============================================================
-
-model Project {
-  id          String        @id @default(cuid())
-  tenantId    String
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  code        String
-  name        String
-  description String?
-  city        String
-  neighborhood String?
-  address     String?
-  coordinates String?
-
-  status      ProjectStatus @default(ACTIVE)
-  stage       ProjectStage  @default(DISCOVERY)
-
-  startDate     DateTime?
-  targetEndDate DateTime?
-  actualEndDate DateTime?
-
-  // Signature tracking
-  totalUnits      Int   @default(0)
-  signedUnits     Int   @default(0)
-  signatureGoal   Int   @default(67)
-
-  // Team
-  projectManagerId String?
-  lawyerId         String?
-  architectId      String?
-  developerRep     String?
-
-  estimatedBudget Float?
-  currency        String @default("ILS")
-  settings        String @default("{}")
-  tags            String @default("[]")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  complexes   Complex[]
-  members     ProjectMember[]
-  stages      ProjectStageHistory[]
-  tasks       Task[]
-  meetings    Meeting[]
-  documents   Document[]
-  campaigns   Campaign[]
-  reports     SavedReport[]
-  automations Automation[]
-
-  @@unique([tenantId, code])
-  @@index([tenantId, status])
-  @@index([tenantId, stage])
-  @@map("projects")
-}
-
-model ProjectMember {
-  id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  role      UserRole
-  addedAt   DateTime @default(now())
-
-  @@unique([projectId, userId])
-  @@map("project_members")
-}
-
-model ProjectStageHistory {
-  id          String       @id @default(cuid())
-  projectId   String
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stage       ProjectStage
-  enteredAt   DateTime     @default(now())
-  exitedAt    DateTime?
-  notes       String?
-  changedById String?
-
-  @@index([projectId])
-  @@map("project_stage_history")
-}
-
-model Complex {
-  id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name      String
-  address   String?
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  buildings Building[]
-
-  @@index([projectId])
-  @@map("complexes")
-}
-
-model Building {
-  id               String   @id @default(cuid())
-  complexId        String
-  complex          Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
-  address          String
-  streetNumber     String?
-  city             String?
-  zipCode          String?
-  floors           Int?
-  totalApartments  Int?
-  constructionYear Int?
-  buildingClass    String?
-  status           String   @default("active")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  apartments Apartment[]
-
-  @@index([complexId])
-  @@map("buildings")
-}
-
-model Apartment {
-  id              String   @id @default(cuid())
-  buildingId      String
-  building        Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  apartmentNumber String
-  floor           Int?
-  sizeSqm         Float?
-  rooms           Float?
-  hasParking      Boolean  @default(false)
-  hasStorage      Boolean  @default(false)
-  hasBalcony      Boolean  @default(false)
-  notes           String?
-  status          String   @default("active")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  residents Resident[]
-  owners    OwnerApartment[]
-
-  @@unique([buildingId, apartmentNumber])
-  @@index([buildingId])
-  @@map("apartments")
-}
-
-// ============================================================
-// OWNERSHIP REGISTRY
-// Signature validity is computed over ownership SHARES, not
-// resident head-count. An apartment can have multiple owners
-// (spouses, heirs); an owner can hold multiple apartments.
-// ============================================================
-
-model Owner {
-  id          String   @id @default(cuid())
-  tenantId    String
-
-  fullName    String
-  nationalId  String?  // encrypted at app layer before persist
-  phone       String?
-  email       String?
-  addressAbroad String?
-  isEstate    Boolean  @default(false) // עיזבון — inheritance not yet settled
-  guardianContact String?              // legal guardian / POA holder contact
-  notes       String?
-
-  // Optional link to a Resident CRM profile (contact/timeline lives there)
-  residentId  String?  @unique
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  holdings    OwnerApartment[]
-  signatures  SignatureRecord[]
-
-  @@index([tenantId])
-  @@map("owners")
-}
-
-model OwnerApartment {
-  id             String    @id @default(cuid())
-  ownerId        String
-  owner          Owner     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  apartmentId    String
-  apartment      Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
-
-  // Ownership share as an exact fraction (e.g. 1/2, 1/6).
-  // Shares of all owners of one apartment should sum to 1.
-  shareNumerator   Int @default(1)
-  shareDenominator Int @default(1)
-
-  viaInheritance Boolean @default(false)
-  poaHolderId    String? // Owner who holds power of attorney for this share
-  acquiredAt     DateTime?
-
-  createdAt      DateTime @default(now())
-
-  @@unique([ownerId, apartmentId])
-  @@index([apartmentId])
-  @@map("owner_apartments")
-}
-
-model SignaturePackage {
-  id           String   @id @default(cuid())
-  tenantId     String
-  projectId    String
-  version      Int      @default(1)
-  status       String   @default("DRAFT") // DRAFT | APPROVED | LOCKED
-  title        String
-  documentIds  String   @default("[]")    // JSON array of Document ids
-  approvedById String?
-  approvedAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  records SignatureRecord[]
-
-  @@index([projectId])
-  @@map("signature_packages")
-}
-
-model SignatureRecord {
-  id          String   @id @default(cuid())
-  tenantId    String
-  packageId   String
-  package     SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  ownerId     String
-  owner       Owner    @relation(fields: [ownerId], references: [id])
-  apartmentId String
-
-  method      String   @default("DIGITAL") // DIGITAL | WET
-  status      String   @default("PENDING") // PENDING | SIGNED | REFUSED | REVOKED
-
-  signedAt      DateTime?
-  refusedAt     DateTime?
-  revokedAt     DateTime?
-  evidenceDocId String?   // signed PDF / photo of wet signature
-  witnessName   String?
-  geoLat        Float?
-  geoLng        Float?
-  validatedById String?   // lawyer who validated a wet signature
-  notes         String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([packageId, ownerId, apartmentId])
-  @@index([apartmentId])
-  @@index([tenantId, status])
-  @@map("signature_records")
-}
-
-model ThresholdRule {
-  id          String  @id @default(cuid())
-  tenantId    String
-  projectId   String
-  scope       String  @default("PROJECT")  // PROJECT | BUILDING
-  buildingId  String?                       // required when scope=BUILDING
-  requiredPct Float   @default(67)
-  basis       String  @default("SHARES")    // SHARES | UNITS
-  createdAt   DateTime @default(now())
-
-  @@unique([projectId, scope, buildingId])
-  @@map("threshold_rules")
-}
-
-// ============================================================
-// RESIDENTS
-// ============================================================
-
-model Resident {
-  id          String   @id @default(cuid())
-  tenantId    String
-
-  apartmentId String
-  apartment   Apartment @relation(fields: [apartmentId], references: [id])
-
-  firstName   String
-  lastName    String
-  nationalId  String?
-  phone       String?
-  phone2      String?
-  email       String?
-
-  ownershipPercentage Float @default(100)
-  isPrimaryContact    Boolean @default(true)
-
-  signatureStatus   ResidentSignatureStatus @default(NOT_CONTACTED)
-  isObjecting       Boolean @default(false)
-  objectionReason   String?
-  riskScore         Int     @default(0)
-
-  language              Language  @default(he)
-  preferredChannel      MessageChannel @default(WHATSAPP)
-  whatsappOptIn         Boolean   @default(false)
-  smsOptIn              Boolean   @default(true)
-  emailOptIn            Boolean   @default(true)
-  doNotContact          Boolean   @default(false)
-  doNotContactReason    String?
-
-  portalUserId  String?  @unique
-  portalEnabled Boolean  @default(false)
-
-  notes     String?
-  tags      String   @default("[]")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  documents     ResidentDocument[]
-  signatures    SignatureRequest[]
-  meetings      MeetingAttendee[]
-  tasks         Task[]
-  messages      Message[]
-  activityLog   ResidentActivity[]
-  tickets       SupportTicket[]
-  voteResponses VoteResponse[]
-
-  @@index([apartmentId])
-  @@index([signatureStatus])
-  @@map("residents")
-}
-
-model ResidentActivity {
-  id          String   @id @default(cuid())
-  residentId  String
-  resident    Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  type        String
-  title       String
-  note        String?
-  metadata    String?
-  createdAt   DateTime @default(now())
-  createdById String?
-
-  @@index([residentId])
-  @@map("resident_activities")
-}
-
-// ============================================================
-// SIGNATURES
-// ============================================================
-
-model SignatureRequest {
-  id          String           @id @default(cuid())
-  tenantId    String
-
-  residentId  String
-  resident    Resident         @relation(fields: [residentId], references: [id])
-
-  documentId  String?
-  document    Document?        @relation(fields: [documentId], references: [id])
-
-  provider    SignatureProvider @default(MANUAL)
-  externalId  String?
-  status      SignatureStatus  @default(DRAFT)
-
-  sentAt      DateTime?
-  viewedAt    DateTime?
-  signedAt    DateTime?
-  rejectedAt  DateTime?
-  expiresAt   DateTime?
-
-  rejectionReason   String?
-  signatureImageUrl String?
-  metadata          String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([residentId])
-  @@index([tenantId, status])
-  @@map("signature_requests")
-}
-
-// ============================================================
-// DOCUMENTS
-// ============================================================
-
-model Document {
-  id          String           @id @default(cuid())
-  tenantId    String
-  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   projectId   String?
-  project     Project?         @relation(fields: [projectId], references: [id])
 
-  category    DocumentCategory
-  status      DocumentStatus   @default(DRAFT)
+  entityType  DataQualityEntityType
+  entityId    String
+  entityLabel String
 
-  title       String
-  description String?
-  fileName    String
-  fileSize    Int              @default(0)
-  mimeType    String           @default("application/octet-stream")
-  s3Key       String           @default("")
-  s3Bucket    String           @default("")
+  issueType   String
+  category    DataQualityCategory
+  severity    DataQualitySeverity
+  status      DataQualityStatus     @default(OPEN)
 
-  version     Int              @default(1)
-  parentId    String?
-  parent      Document?        @relation("DocumentVersions", fields: [parentId], references: [id])
-  versions    Document[]       @relation("DocumentVersions")
+  title          String
+  description    String
+  impact         String?
+  recommendation String?
+  deepLink       String?
+  metadata       String?
 
-  ocrText     String?
-  ocrStatus   String           @default("pending")
-  language    Language         @default(he)
-  isPublic    Boolean          @default(false)
-  tags        String           @default("[]")
-  expiresAt   DateTime?
+  detectedAt  DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  scanId      String?
 
-  createdById String
-  createdBy   User             @relation("DocumentCreator", fields: [createdById], references: [id])
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  resolvedAt     DateTime?
+  resolvedById   String?
+  resolutionNote String?
+  resolutionType String?
 
-  residentDocuments ResidentDocument[]
-  signatureRequests SignatureRequest[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
+  @@unique([tenantId, issueType, entityType, entityId])
+  @@index([tenantId, status])
+  @@index([tenantId, severity])
   @@index([tenantId, category])
+  @@index([tenantId, issueType])
+  @@index([tenantId, projectId, status])
+  @@index([entityType, entityId])
+  @@index([tenantId, detectedAt])
+  @@map("data_quality_issues")
+}
+
+model DataQualityScan {
+  id            String                @id @default(cuid())
+  tenantId      String
+  scope         DataQualityScanScope
+  projectId     String?
+  status        DataQualityScanStatus @default(RUNNING)
+
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  durationMs    Int?
+
+  rulesExecuted String    @default("[]")
+  ruleCount     Int       @default(0)
+  entitiesScanned Int     @default(0)
+  issuesFound     Int     @default(0)
+  issuesNew       Int     @default(0)
+  issuesResolved  Int     @default(0)
+  errors          String?
+
+  triggeredById String?
+  createdAt     DateTime  @default(now())
+
+  @@index([tenantId, startedAt])
   @@index([tenantId, projectId])
-  @@map("documents")
-}
-
-model ResidentDocument {
-  id         String   @id @default(cuid())
-  residentId String
-  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  documentId String
-  document   Document @relation(fields: [documentId], references: [id])
-  addedAt    DateTime @default(now())
-
-  @@unique([residentId, documentId])
-  @@map("resident_documents")
-}
-
-// ============================================================
-// MEETINGS
-// ============================================================
-
-model Meeting {
-  id          String   @id @default(cuid())
-  tenantId    String
-
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
-
-  title       String
-  description String?
-  location    String?
-  isVirtual   Boolean  @default(false)
-  meetingUrl  String?
-  startTime   DateTime
-  endTime     DateTime?
-  aiSummary   String?
-  notes       String?
-  status      String   @default("scheduled")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  attendees   MeetingAttendee[]
-  tasks       Task[]
-
-  @@index([tenantId, projectId])
-  @@map("meetings")
-}
-
-model MeetingAttendee {
-  id         String    @id @default(cuid())
-  meetingId  String
-  meeting    Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  userId     String?
-  user       User?     @relation(fields: [userId], references: [id])
-  residentId String?
-  resident   Resident? @relation(fields: [residentId], references: [id])
-  attended   Boolean?
-  role       String?
-
-  @@unique([meetingId, userId])
-  @@unique([meetingId, residentId])
-  @@map("meeting_attendees")
-}
-
-// ============================================================
-// TASKS
-// ============================================================
-
-model Task {
-  id          String       @id @default(cuid())
-  tenantId    String
-
-  type        TaskType     @default(GENERAL)
-  title       String
-  description String?
-  status      TaskStatus   @default(PENDING)
-  priority    TaskPriority @default(MEDIUM)
-
-  assigneeId  String?
-  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdById String?
-  createdBy   User?        @relation("TaskCreator", fields: [createdById], references: [id])
-
-  dueDate     DateTime?
-  completedAt DateTime?
-
-  projectId   String?
-  project     Project?  @relation(fields: [projectId], references: [id])
-  leadId      String?
-  lead        Lead?     @relation(fields: [leadId], references: [id])
-  residentId  String?
-  resident    Resident? @relation(fields: [residentId], references: [id])
-  meetingId   String?
-  meeting     Meeting?  @relation(fields: [meetingId], references: [id])
-
-  blockedById String?
-  blockedBy   Task?    @relation("TaskDependencies", fields: [blockedById], references: [id])
-  blocking    Task[]   @relation("TaskDependencies")
-
-  tags        String   @default("[]")
-  notes       String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([tenantId, assigneeId, status])
-  @@index([tenantId, projectId])
-  @@map("tasks")
-}
-
-// ============================================================
-// COMMUNICATIONS
-// ============================================================
-
-model Message {
-  id          String                 @id @default(cuid())
-  tenantId    String
-
-  channel     MessageChannel
-  direction   CommunicationDirection
-  status      MessageStatus          @default(QUEUED)
-
-  residentId  String?
-  resident    Resident?              @relation(fields: [residentId], references: [id])
-  toPhone     String?
-  toEmail     String?
-
-  subject     String?
-  body        String
-  templateId  String?
-  template    CommunicationTemplate? @relation(fields: [templateId], references: [id])
-
-  sentAt      DateTime?
-  deliveredAt DateTime?
-  readAt      DateTime?
-  failureReason String?
-  externalId  String?
-  metadata    String?
-
-  campaignId  String?
-  campaign    Campaign? @relation(fields: [campaignId], references: [id])
-
-  createdAt   DateTime @default(now())
-
-  @@index([tenantId, residentId])
-  @@map("messages")
-}
-
-model CommunicationTemplate {
-  id         String         @id @default(cuid())
-  tenantId   String
-  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  name       String
-  channel    MessageChannel
-  language   Language       @default(he)
-  subject    String?
-  body       String
-  variables  String         @default("[]")
-  isActive   Boolean        @default(true)
-  isApproved Boolean        @default(false)
-  waTemplateName String?
-  waCategory     String?
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  messages   Message[]
-
-  @@unique([tenantId, name, channel, language])
-  @@map("communication_templates")
-}
-
-model Campaign {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
-
-  name        String
-  description String?
-  channel     MessageChannel
-  status      String   @default("draft")
-
-  scheduledAt DateTime?
-  startedAt   DateTime?
-  completedAt DateTime?
-
-  totalRecipients Int @default(0)
-  sent            Int @default(0)
-  delivered       Int @default(0)
-  read            Int @default(0)
-  failed          Int @default(0)
-
-  templateId  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  messages    Message[]
-  leads       Lead[]
-
-  @@index([tenantId, status])
-  @@map("campaigns")
-}
-
-// ============================================================
-// SUPPORT TICKETS
-// ============================================================
-
-model SupportTicket {
-  id          String         @id @default(cuid())
-  tenantId    String
-
-  residentId  String?
-  resident    Resident?      @relation(fields: [residentId], references: [id])
-
-  subject     String
-  description String
-  status      TicketStatus   @default(OPEN)
-  priority    TicketPriority @default(MEDIUM)
-  category    String?
-  assigneeId  String?
-  resolvedAt  DateTime?
-  closedAt    DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  replies     TicketReply[]
-
-  @@index([tenantId, status])
-  @@map("support_tickets")
-}
-
-model TicketReply {
-  id               String        @id @default(cuid())
-  ticketId         String
-  ticket           SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId         String?
-  authorResidentId String?
-  body             String
-  isInternal       Boolean @default(false)
-  createdAt        DateTime @default(now())
-
-  @@map("ticket_replies")
-}
-
-// ============================================================
-// VOTING
-// ============================================================
-
-model Vote {
-  id          String     @id @default(cuid())
-  tenantId    String
-  projectId   String?
-  title       String
-  description String?
-  status      VoteStatus @default(DRAFT)
-  type        String     @default("single_choice")
-  options     String     // JSON array
-  requiredParticipation Float @default(0.51)
-  requiredMajority      Float @default(0.51)
-  opensAt    DateTime?
-  closesAt   DateTime?
-  result     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  responses  VoteResponse[]
-
-  @@index([tenantId, status])
-  @@map("votes")
-}
-
-model VoteResponse {
-  id              String   @id @default(cuid())
-  voteId          String
-  vote            Vote     @relation(fields: [voteId], references: [id], onDelete: Cascade)
-  residentId      String
-  resident        Resident @relation(fields: [residentId], references: [id])
-  selectedOptions String   // JSON array of option IDs
-  votedAt         DateTime @default(now())
-  ipAddress       String?
-
-  @@unique([voteId, residentId])
-  @@map("vote_responses")
-}
-
-// ============================================================
-// AUTOMATION ENGINE
-// ============================================================
-
-model Automation {
-  id          String            @id @default(cuid())
-  tenantId    String
-  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  projectId   String?
-  project     Project?          @relation(fields: [projectId], references: [id])
-  name        String
-  description String?
-  isActive    Boolean           @default(true)
-  trigger     AutomationTrigger
-  triggerConfig String          @default("{}")
-  runCount    Int @default(0)
-  lastRunAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  actions     AutomationAction[]
-
-  @@index([tenantId, trigger, isActive])
-  @@map("automations")
-}
-
-model AutomationAction {
-  id           String              @id @default(cuid())
-  automationId String
-  automation   Automation          @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  order        Int
-  type         AutomationActionType
-  config       String
-  delayMinutes Int                 @default(0)
-
-  @@index([automationId])
-  @@map("automation_actions")
-}
-
-// ============================================================
-// NOTIFICATIONS
-// ============================================================
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String
-  type      String
-  link      String?
-  isRead    Boolean  @default(false)
-  readAt    DateTime?
-  metadata  String?
-  createdAt DateTime @default(now())
-
-  @@index([userId, isRead])
-  @@map("notifications")
-}
-
-// ============================================================
-// REPORTING
-// ============================================================
-
-model SavedReport {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id])
-  name      String
-  type      String
-  config    String
-  schedule  String?
-  lastGeneratedAt DateTime?
-  lastOutputUrl   String?
-  createdById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([tenantId])
-  @@map("saved_reports")
-}
-
-// ============================================================
-// WORKFLOWS
-// ============================================================
-
-model Workflow {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name      String
-  stage     ProjectStage?
-  isActive  Boolean  @default(true)
-  nodes     String
-  edges     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([tenantId])
-  @@map("workflows")
-}
-
-// ============================================================
-// AUDIT LOGS
-// ============================================================
-
-model AuditLog {
-  id        String      @id @default(cuid())
-  tenantId  String
-  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId    String?
-  user      User?       @relation(fields: [userId], references: [id])
-  action    AuditAction
-  entity    String
-  entityId  String?
-  changes   String?
-  metadata  String?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime    @default(now())
-
-  @@index([tenantId, userId])
-  @@index([tenantId, entity, entityId])
-  @@index([tenantId, createdAt])
-  @@map("audit_logs")
+  @@map("data_quality_scans")
 }

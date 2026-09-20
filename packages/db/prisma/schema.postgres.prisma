@@ -166,12 +166,27 @@ enum MessageChannel {
   PORTAL
 }
 
+/// Outbound message lifecycle, consumed by the dispatcher in
+/// services/api-gateway/src/messaging/.
+///
+///   QUEUED     — recorded, waiting to be claimed by a worker.
+///   PROCESSING — atomically claimed by exactly one worker; a provider call is
+///                in flight. Rows stuck here past a timeout are re-queued.
+///   SENT       — a provider accepted the message. NEVER set without a
+///                successful provider call.
+///   DELIVERED  — the provider confirmed delivery (webhook / status poll).
+///   READ       — the recipient read it (WhatsApp/portal only).
+///   FAILED     — permanently failed: attempts exhausted, or a non-retryable
+///                provider rejection.
+///   CANCELLED  — withdrawn by a human or by the system before it was sent.
 enum MessageStatus {
   QUEUED
+  PROCESSING
   SENT
   DELIVERED
   READ
   FAILED
+  CANCELLED
 }
 
 enum CommunicationDirection {
@@ -250,6 +265,340 @@ enum AuditAction {
 }
 
 // ============================================================
+// DIGITAL ZERO REPORT / FEASIBILITY FOUNDATION
+// ============================================================
+
+/// Classifies whether a value is an observed fact, an input assumption or an
+/// output. Calculated values belong in calculation snapshots in later phases;
+/// they must never overwrite a source record.
+enum FeasibilityDataClassification {
+  FACT
+  SOURCE_DATA
+  ASSUMPTION
+  CALCULATED
+  USER_OVERRIDE
+  ESTIMATE
+  NOT_AVAILABLE
+}
+
+enum FeasibilityConfidence {
+  HIGH
+  MEDIUM
+  LOW
+  UNKNOWN
+}
+
+enum FeasibilityProjectType {
+  TAMA_38_1
+  TAMA_38_2
+  PINUY_BINUY
+  NEW_CONSTRUCTION
+  COMBINATION
+  LAND
+  OTHER
+}
+
+enum FeasibilityReportType {
+  PRELIMINARY
+  ZERO_REPORT
+  VALUATION_MEMO
+  INTERNAL_FEASIBILITY
+}
+
+enum FeasibilityProfileStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  LOCKED
+}
+
+enum PlanningRightStatus {
+  EXISTING
+  APPROVED
+  PROPOSED
+  PENDING
+  ASSUMED
+  UNCERTAIN
+}
+
+enum FeasibilityAreaType {
+  REGISTERED
+  MEASURED
+  PLANNING
+  MAIN
+  SERVICE
+  GROSS
+  SALEABLE
+  MARKETING
+  BALCONY
+  GARDEN
+  ROOF
+  PARKING
+  STORAGE
+  COMMERCIAL
+  COMMON
+}
+
+enum FeasibilitySourceType {
+  TABU
+  PLANNING
+  APPRAISAL
+  TRANSACTION
+  CONTRACTOR_QUOTE
+  GOVERNMENT
+  USER
+  MARKET_RESEARCH
+  OTHER
+}
+
+/// How a unit-mix line is disposed of. Only DEVELOPER_SALE units may produce
+/// sale revenue; owner-replacement and retained units are built but not sold.
+/// UNCLASSIFIED is the safe default: it earns nothing until somebody says what
+/// the line is, so an unreviewed import cannot silently inflate revenue.
+enum FeasibilityUnitDisposition {
+  UNCLASSIFIED
+  DEVELOPER_SALE
+  OWNER_REPLACEMENT
+  RETAINED
+}
+
+/// Where a regulatory threshold comes from. An appraiser has to be able to say
+/// which authority a number carries, because a statutory rate and a company
+/// convention do not defend a report equally.
+enum FeasibilityRuleAuthority {
+  STATUTE
+  REGULATION
+  MUNICIPAL_PLAN
+  BANK_GUIDANCE
+  COMPANY_STANDARD
+  MARKET_CONVENTION
+}
+
+enum FeasibilityScenarioKind {
+  BASE
+  CONSERVATIVE
+  OPTIMISTIC
+  CUSTOM
+}
+
+enum FeasibilityRevenueCategory {
+  RESIDENTIAL
+  COMMERCIAL
+  EMPLOYMENT
+  PARKING
+  STORAGE
+  OTHER
+}
+
+enum FeasibilityCostCategory {
+  LAND
+  EXISTING_OWNER_CONSIDERATION
+  DEMOLITION
+  CONSTRUCTION
+  DEVELOPMENT
+  PLANNING
+  ARCHITECT
+  ENGINEERING
+  SUPERVISION
+  LEGAL
+  MARKETING
+  SALES
+  INSURANCE
+  TAXES
+  LEVIES
+  BETTERMENT_LEVY
+  FEES
+  FINANCING
+  GUARANTEES
+  CONTINGENCY
+  MANAGEMENT
+  OTHER
+}
+
+enum FeasibilityVatTreatment {
+  VAT_EXCLUDED
+  VAT_INCLUDED
+  VAT_NOT_APPLICABLE
+}
+
+enum FeasibilityTimelinePhaseKind {
+  INITIAL_FEASIBILITY
+  RESIDENT_ORGANIZATION
+  PLANNING
+  STATUTORY_APPROVALS
+  PERMIT
+  DEVELOPER_SELECTION
+  FINANCING
+  EVACUATION
+  DEMOLITION
+  CONSTRUCTION
+  MARKETING
+  SALES
+  COMPLETION
+  OCCUPANCY
+  OTHER
+}
+
+enum FeasibilityCashFlowDirection {
+  INFLOW
+  OUTFLOW
+}
+
+enum FeasibilityCashFlowSourceKind {
+  REVENUE
+  COST
+  COMPENSATION
+  EQUITY
+  DEBT
+  OTHER
+}
+
+enum FeasibilityCompensationStatus {
+  DRAFT
+  PROPOSED
+  AGREED
+  DISPUTED
+  NOT_APPLICABLE
+}
+
+// ── Data Quality Center ─────────────────────────────────────
+
+enum DataQualitySeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum DataQualityStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  IGNORED
+}
+
+enum DataQualityCategory {
+  COMPLETENESS   // a required value is missing
+  ACCURACY       // a value exists but is malformed / out of range
+  CONSISTENCY    // two values that should agree do not
+  INTEGRITY      // a relationship is broken / orphaned
+  DUPLICATION    // the same real-world entity appears twice
+  TIMELINESS     // something is stale / overdue / expired
+  COMPLIANCE     // regulatory or process prerequisite missing
+}
+
+enum DataQualityEntityType {
+  PROJECT
+  COMPLEX
+  BUILDING
+  APARTMENT
+  OWNER
+  OWNER_APARTMENT
+  RESIDENT
+  SIGNATURE_PACKAGE
+  SIGNATURE_RECORD
+  DOCUMENT
+  TASK
+  MESSAGE
+  MEETING
+  LEAD
+  USER
+}
+
+enum DataQualityScanScope {
+  PROJECT
+  TENANT
+  GLOBAL
+}
+
+enum DataQualityScanStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+/// One logical data-quality problem about one entity.
+/// The natural key (tenantId, issueType, entityType, entityId) is unique so
+/// re-scans UPSERT rather than duplicate.
+model DataQualityIssue {
+  id          String   @id @default(cuid())
+  tenantId    String
+  projectId   String?
+
+  entityType  DataQualityEntityType
+  entityId    String
+  entityLabel String
+
+  issueType   String
+  category    DataQualityCategory
+  severity    DataQualitySeverity
+  status      DataQualityStatus     @default(OPEN)
+
+  title          String
+  description    String
+  /// Why it matters — business impact, shown in the CRM detail view.
+  impact         String?
+  /// Recommended remediation action (human-readable, never auto-applied).
+  recommendation String?
+  /// CRM deep link to the affected record.
+  deepLink       String?
+  /// Non-sensitive structured context (never contains PII such as national IDs).
+  metadata       Json?
+
+  detectedAt  DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  scanId      String?
+
+  resolvedAt     DateTime?
+  resolvedById   String?
+  resolutionNote String?
+  /// AUTO when the scanner closed it, MANUAL when a human did.
+  resolutionType String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, issueType, entityType, entityId])
+  @@index([tenantId, status])
+  @@index([tenantId, severity])
+  @@index([tenantId, category])
+  @@index([tenantId, issueType])
+  @@index([tenantId, projectId, status])
+  @@index([entityType, entityId])
+  @@index([tenantId, detectedAt])
+  @@map("data_quality_issues")
+}
+
+/// Metadata for one execution of the rule engine.
+model DataQualityScan {
+  id            String                @id @default(cuid())
+  tenantId      String
+  scope         DataQualityScanScope
+  projectId     String?
+  status        DataQualityScanStatus @default(RUNNING)
+
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  durationMs    Int?
+
+  rulesExecuted String[]  @default([])
+  ruleCount     Int       @default(0)
+  entitiesScanned Int     @default(0)
+  issuesFound     Int     @default(0)
+  issuesNew       Int     @default(0)
+  issuesResolved  Int     @default(0)
+  errors          Json?
+
+  triggeredById String?
+  createdAt     DateTime  @default(now())
+
+  @@index([tenantId, startedAt])
+  @@index([tenantId, projectId])
+  @@map("data_quality_scans")
+}
+
+// ============================================================
 // CORE: MULTI-TENANCY
 // ============================================================
 
@@ -272,6 +621,15 @@ model Tenant {
   trialEndsAt DateTime?
   plan        String   @default("starter") // starter | growth | enterprise
 
+  /// Per-tenant notification retention, in days. NULL means "use the platform
+  /// default" (NOTIFICATION_RETENTION_DAYS). An explicit column rather than a
+  /// key in `settings` because the retention sweeper DELETES rows on the
+  /// strength of it — a value that governs deletion should not live in an
+  /// unvalidated JSON blob. Only READ notifications are ever removed, and
+  /// audit rows and signature evidence are never touched. See
+  /// services/api-gateway/src/notifications/notification-retention.service.ts.
+  notificationRetentionDays Int?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -283,9 +641,30 @@ model Tenant {
   workflows     Workflow[]
   templates     CommunicationTemplate[]
   auditLogs     AuditLog[]
+  importJobs    ImportJob[]
   campaigns     Campaign[]
   reports       SavedReport[]
+  feasibilityProfiles FeasibilityProfile[]
+  feasibilityScenarios FeasibilityScenario[]
+  feasibilityCalculationSnapshots FeasibilityCalculationSnapshot[]
+  feasibilityReportVersions FeasibilityReportVersion[]
+  residentInvitations ResidentInvitation[]
+  comparableTransactions ComparableTransaction[]
   automations   Automation[]
+  notifications Notification[]
+  meetings      Meeting[]
+
+  // CMS (Site Manager). Cascade on every one of these: a deleted tenant must
+  // not leave published website content, revision history or verification
+  // records behind.
+  cmsContent           CmsContent[]
+  cmsRevisions         CmsRevision[]
+  cmsPublications      CmsPublication[]
+  cmsVerifications     CmsVerification[]
+  cmsVerificationAudit CmsVerificationAudit[]
+  cmsMediaReferences   CmsMediaReference[]
+  feasibilityRules     FeasibilityRule[]
+  feasibilityEquityTranches FeasibilityEquityTranche[]
 
   @@index([slug])
   @@map("tenants")
@@ -330,10 +709,25 @@ model User {
   assignedTasks       Task[]          @relation("TaskAssignee")
   createdTasks        Task[]          @relation("TaskCreator")
   meetings            MeetingAttendee[]
+  organisedMeetings   Meeting[]         @relation("MeetingCreator")
   auditLogs           AuditLog[]
   projectMemberships  ProjectMember[]
   notifications       Notification[]
   createdDocuments    Document[]      @relation("DocumentCreator")
+  importJobs          ImportJob[]
+  importRowDecisions  ImportRowDecision[] @relation("ImportRowDecider")
+
+  // CMS (Site Manager). Named relations throughout, because a user can stand in
+  // several different roles against the same row and "who edited it" must stay
+  // distinguishable from "who verified it" and "who published it".
+  cmsContentCreated     CmsContent[]           @relation("CmsContentCreator")
+  cmsContentEdited      CmsContent[]           @relation("CmsContentEditor")
+  cmsRevisionsAuthored  CmsRevision[]          @relation("CmsRevisionAuthor")
+  cmsPublished          CmsPublication[]       @relation("CmsPublicationPublisher")
+  cmsFactsEdited        CmsVerification[]      @relation("CmsVerificationEditor")
+  cmsFactsVerified      CmsVerification[]      @relation("CmsVerificationVerifier")
+  cmsVerificationAudit  CmsVerificationAudit[] @relation("CmsVerificationAuditActor")
+  cmsMediaUploaded      CmsMediaReference[]    @relation("CmsMediaUploader")
 
   @@unique([tenantId, email])
   @@unique([tenantId, phone])
@@ -373,6 +767,27 @@ model Lead {
   address     String?
   city        String?
 
+  // Public website intake. These stay on the lead until a staff member
+  // verifies the enquiry and explicitly converts it into project data.
+  formType             String?
+  submissionId         String?
+  estimatedUnits       Int?
+  leadType              String?
+  projectType           String?
+  organizingStatus     String?
+  consentContact       Boolean   @default(false)
+  consentPrivacy       Boolean   @default(false)
+  consentRecordedAt    DateTime?
+  privacyPolicyVersion String?
+  utmSource             String?
+  utmMedium             String?
+  utmCampaign           String?
+  matchedBuildingId     String?
+  matchedBuilding       Building? @relation("LeadMatchedBuilding", fields: [matchedBuildingId], references: [id], onDelete: SetNull)
+  possibleDuplicateOfId String?
+  possibleDuplicateOf   Lead?     @relation("LeadPossibleDuplicates", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  possibleDuplicates    Lead[]    @relation("LeadPossibleDuplicates")
+
   source      LeadSource @default(OTHER)
   campaignId  String?
   campaign    Campaign?  @relation(fields: [campaignId], references: [id])
@@ -400,6 +815,9 @@ model Lead {
 
   @@index([tenantId, status])
   @@index([tenantId, assignedToId])
+  @@unique([tenantId, submissionId])
+  @@index([tenantId, matchedBuildingId])
+  @@index([tenantId, possibleDuplicateOfId])
   @@map("leads")
 }
 
@@ -473,12 +891,15 @@ model Project {
   documents   Document[]
   campaigns   Campaign[]
   reports     SavedReport[]
+  feasibilityProfile FeasibilityProfile?
   automations Automation[]
+  importJobs  ImportJob[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
   @@index([tenantId, stage])
   @@map("projects")
+  residentInvitations ResidentInvitation[]
 }
 
 model ProjectMember {
@@ -550,9 +971,11 @@ model Building {
   updatedAt       DateTime @updatedAt
 
   apartments      Apartment[]
+  matchedLeads    Lead[]      @relation("LeadMatchedBuilding")
 
   @@index([complexId])
   @@map("buildings")
+  residentInvitations ResidentInvitation[]
 }
 
 model Apartment {
@@ -583,6 +1006,7 @@ model Apartment {
   @@unique([buildingId, apartmentNumber])
   @@index([buildingId])
   @@map("apartments")
+  residentInvitations ResidentInvitation[]
 }
 
 // ============================================================
@@ -604,6 +1028,11 @@ model Owner {
   isEstate    Boolean  @default(false) // עיזבון — inheritance not yet settled
   guardianContact String?              // legal guardian / POA holder contact
   notes       String?
+
+  // Soft-archive. Owners are never hard-deleted: OwnerApartment and
+  // SignatureRecord cascade from Owner, so a delete would destroy the ownership
+  // shares and signed evidence behind a reported threshold.
+  isActive    Boolean  @default(true)
 
   residentId  String?  @unique
 
@@ -633,6 +1062,9 @@ model OwnerApartment {
 
   createdAt      DateTime @default(now())
 
+  feasibilityCompensations FeasibilityCompensationLine[]
+  feasibilityReplacementAllocations FeasibilityReplacementAllocation[]
+
   @@unique([ownerId, apartmentId])
   @@index([apartmentId])
   @@map("owner_apartments")
@@ -643,18 +1075,68 @@ model SignaturePackage {
   tenantId     String
   projectId    String
   version      Int      @default(1)
-  status       String   @default("DRAFT") // DRAFT | APPROVED | LOCKED
+  // DRAFT → INTERNAL_REVIEW → APPROVED → SENT → PARTIALLY_SIGNED
+  // → COMPLETED | DECLINED | EXPIRED | CANCELLED | SUPERSEDED
+  status       String   @default("DRAFT")
   title        String
   documentIds  String   @default("[]")
+  documentHash String?
+  signingOrder String   @default("PARALLEL")
+  verificationMethod String @default("SMS_OTP")
+  expiresAt    DateTime?
   approvedById String?
   approvedAt   DateTime?
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+  supersededById String?
+  createdById  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  records SignatureRecord[]
+  evidencePackageKey String?
+  providerName       String   @default("NATIVE")
+  providerEnvelopeId String?
+
+  records  SignatureRecord[]
+  events   SignatureEvent[]
+  evidence SignatureEvidence?
 
   @@index([projectId])
+  @@index([tenantId, status])
   @@map("signature_packages")
+}
+
+model SignatureEvent {
+  id        String   @id @default(cuid())
+  packageId String
+  package   SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  recordId  String?
+  type      String
+  actorType String   @default("SYSTEM")
+  actorId   String?
+  ip        String?
+  userAgent String?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@index([packageId, createdAt])
+  @@map("signature_events")
+}
+
+model SigningSession {
+  id           String   @id @default(cuid())
+  recordId     String   @unique
+  token        String   @unique
+  otpHash      String?
+  otpExpiresAt DateTime?
+  otpAttempts  Int      @default(0)
+  verifiedAt   DateTime?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@map("signing_sessions")
 }
 
 model SignatureRecord {
@@ -669,6 +1151,12 @@ model SignatureRecord {
   method      String   @default("DIGITAL") // DIGITAL | WET
   status      String   @default("PENDING") // PENDING | SIGNED | REFUSED | REVOKED
 
+  signerRole    String   @default("OWNER")
+  required      Boolean  @default(true)
+  signingOrder  Int      @default(0)
+  declineReason String?
+
+  openedAt      DateTime?
   signedAt      DateTime?
   refusedAt     DateTime?
   revokedAt     DateTime?
@@ -686,6 +1174,25 @@ model SignatureRecord {
   @@index([apartmentId])
   @@index([tenantId, status])
   @@map("signature_records")
+}
+
+model SignatureEvidence {
+  id           String   @id @default(cuid())
+  packageId    String   @unique
+  package      SignaturePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  tenantId     String
+  documentHash String
+  signedAt     DateTime
+  signers      String
+  auditLog     String
+  ipAddresses  String
+  s3Key        String?
+  evidenceHash String?
+  pdfBase64    String?
+  pdfS3Key     String?
+  createdAt    DateTime @default(now())
+
+  @@map("signature_evidence")
 }
 
 model ThresholdRule {
@@ -741,11 +1248,18 @@ model Resident {
   doNotContactReason    String?
 
   // Portal access
-  portalUserId  String?  @unique  // links to User with role=RESIDENT
-  portalEnabled Boolean  @default(false)
+  portalUserId  String?  @unique  // links to User with role=RESIDENT — can they log in at all
+  // Narrower than the above: only whether the in-portal message inbox is
+  // reachable as a delivery channel. Renamed from `portalEnabled`, which read
+  // as the login gate and was not.
+  portalInboxEnabled Boolean @default(false)
 
   notes     String?
   tags      String[] @default([])
+
+  // Soft-archive, mirroring Owner. Residents carry messages, documents,
+  // signature requests and an activity log that must survive a move-out.
+  isActive  Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -763,6 +1277,74 @@ model Resident {
   @@index([apartmentId])
   @@index([signatureStatus])
   @@map("residents")
+  invitations ResidentInvitation[]
+}
+
+/// A personal invitation into the resident portal.
+///
+/// ── WHY THIS EXISTS ─────────────────────────────────────────────────────────
+///
+/// A phone number is not an identity. It is not unique across tenants, people
+/// share numbers, and numbers are recycled — so "the OTP succeeded" answers
+/// only "this person controls this handset", never "this person is entitled to
+/// that resident's file". An audit found the previous login resolving a
+/// resident with `findFirst({ where: { phone } })`, which handed out a session
+/// for whichever row the planner reached first.
+///
+/// The invitation is the missing half: a credential the organisation issues to
+/// a specific resident, naming the tenant, project, building and apartment up
+/// front. OTP then proves the handset; the invitation says whose file it opens.
+///
+/// ── WHY THE IDS ARE DENORMALISED ────────────────────────────────────────────
+///
+/// `tenantId` … `apartmentId` could all be derived by walking
+/// resident → apartment → building → complex → project. They are stored anyway
+/// because this row is a CREDENTIAL: what it grants must be legible without
+/// four joins, and must not silently change if the resident is later moved to a
+/// different apartment. An invitation grants what it says, or it is rejected.
+///
+/// ── THE TOKEN ───────────────────────────────────────────────────────────────
+///
+/// Stored hashed, never in the clear. The plaintext exists only in the link
+/// that was sent; a database read must not yield a working credential — the
+/// same rule the signing OTP now follows.
+model ResidentInvitation {
+  id           String   @id @default(cuid())
+
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// The scope this invitation grants, fixed at issue time.
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  buildingId   String
+  building     Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  apartmentId  String
+  apartment    Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  residentId   String
+  resident     Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  /// HMAC of the token that was sent. The plaintext is never stored.
+  tokenHash    String   @unique
+
+  /// The phone the invitation was addressed to, so a leaked link cannot be
+  /// redeemed from a different handset.
+  phone        String
+
+  expiresAt    DateTime
+  /// Set on first successful redemption. An invitation opens a session once;
+  /// afterwards the resident signs in with their phone.
+  usedAt       DateTime?
+  revokedAt    DateTime?
+  revokedReason String?
+
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId, residentId])
+  @@index([expiresAt])
+  @@map("resident_invitations")
 }
 
 model ResidentActivity {
@@ -841,11 +1423,31 @@ model Document {
   s3Key       String           // AWS S3 object key
   s3Bucket    String
 
-  // Version control
+  // ── Version control ──────────────────────────────────────────────────────
+  //
+  // CHAIN SHAPE: the FIRST upload is the root and keeps `parentId = null`.
+  // Every later version points at that root, NOT at the version before it, so
+  // the whole history is one query (`where: { parentId: rootId }`) instead of a
+  // recursive walk, and no version can be orphaned by deleting a middle one.
+  //
+  // Each version has its OWN `s3Key`. A replacement never overwrites the
+  // previous object — that is what makes the history real rather than a
+  // counter, and it is why `remove()` deletes exactly one object.
+  //
+  // `createdById` + `createdAt` on each row are the per-version "who and when";
+  // `AuditService` records the same facts independently.
   version     Int              @default(1)
-  parentId    String?          // previous version
+  parentId    String?          // the ROOT of this version chain (null on the root itself)
   parent      Document?        @relation("DocumentVersions", fields: [parentId], references: [id])
   versions    Document[]       @relation("DocumentVersions")
+
+  /**
+   * Exactly one row per chain is true. Denormalised deliberately: the library
+   * list and every project tab filter on it, and deriving "max(version) in my
+   * chain" per row would turn a list query into a correlated subquery. It is
+   * maintained only inside the transaction that adds or removes a version.
+   */
+  isLatest    Boolean          @default(true)
 
   // OCR & Search
   ocrText     String?          // extracted text for search
@@ -870,6 +1472,10 @@ model Document {
 
   @@index([tenantId, category])
   @@index([tenantId, projectId])
+  // The library and every project tab list only current documents.
+  @@index([tenantId, isLatest])
+  // Fetching one chain's history, newest first.
+  @@index([parentId, version])
   @@map("documents")
 }
 
@@ -889,12 +1495,26 @@ model ResidentDocument {
 // MEETINGS
 // ============================================================
 
+/// A scheduled meeting, its invitees, and their RSVPs.
+///
+/// Tenant boundary: `tenantId` is on the row, so meetings are scoped directly
+/// rather than through the Complex/Building traversal that Building and
+/// Apartment need. When `projectId` is set, the service additionally verifies
+/// that the project belongs to the SAME tenant before writing — a meeting must
+/// never be able to reference another tenant's project.
 model Meeting {
   id          String   @id @default(cuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   projectId   String?
   project     Project? @relation(fields: [projectId], references: [id])
+
+  /// Who scheduled it. Nullable so an existing row (or a future automated
+  /// scheduler with no human actor) is representable, but the API always sets
+  /// it from the JWT.
+  createdById String?
+  createdBy   User?    @relation("MeetingCreator", fields: [createdById], references: [id])
 
   title       String
   description String?
@@ -910,16 +1530,90 @@ model Meeting {
   aiSummaryGeneratedAt DateTime?
 
   notes       String?
+  /// One of MEETING_STATUSES in
+  /// services/api-gateway/src/meetings/meeting-constants.ts.
   status      String   @default("scheduled") // scheduled | completed | cancelled
+
+  /// Cancellation is a state change, not a delete: attendees were already
+  /// notified, and the record of "this was called off" is what makes the
+  /// cancellation notification meaningful afterwards.
+  cancelledAt     DateTime?
+  cancelReason    String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   attendees   MeetingAttendee[]
   tasks       Task[]
+  reminders   MeetingReminderDispatch[]
 
   @@index([tenantId, projectId])
+  @@index([tenantId, startTime])
+  /// The reminder scanner's query: WHERE status = 'scheduled' AND startTime BETWEEN …
+  @@index([status, startTime])
   @@map("meetings")
+}
+
+/// Tokenised, resident-facing access to ONE meeting invitation.
+///
+/// Deliberately modelled on `SigningSession`, which is the established
+/// precedent here for letting a non-User act on a record: a 48-byte url-safe
+/// random token, an expiry, and explicit revocation. It is NOT a login and it
+/// grants NOTHING beyond viewing and answering the single invitation it is
+/// bound to — residents never become `User` rows.
+///
+/// Bound to a MeetingAttendee rather than to a Resident, so the token's
+/// authority is exactly "this person, this meeting". The tenant is derived by
+/// traversing attendee → meeting → tenantId; the token itself carries no
+/// tenant claim that could be forged.
+model MeetingAccessToken {
+  id         String   @id @default(cuid())
+
+  attendeeId String   @unique
+  attendee   MeetingAttendee @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+
+  token      String   @unique
+
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  /// Replay ceiling. A resident legitimately opens the link more than once
+  /// (view, accept, later change their mind, confirm attendance), so the token
+  /// is not single-use like a signing session's OTP. Instead every accepted
+  /// action increments this and the token dies at MEETING_TOKEN_MAX_USES, which
+  /// bounds what a leaked or replayed link can do.
+  useCount   Int      @default(0)
+  firstUsedAt DateTime?
+  lastUsedAt  DateTime?
+
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("meeting_access_tokens")
+}
+
+/// One row per (meeting, reminder offset) actually dispatched.
+///
+/// This table IS the de-duplication mechanism for Phase 5: the scanner writes
+/// the row inside the same transaction that claims the reminder, and the unique
+/// constraint means a second scheduler tick — or a second process — cannot send
+/// the same reminder twice. Cheaper and far more honest than trying to infer
+/// "did we already remind?" from the notification/message log.
+model MeetingReminderDispatch {
+  id            String   @id @default(cuid())
+  meetingId     String
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  /// Minutes before `Meeting.startTime` this reminder represents.
+  offsetMinutes Int
+
+  dispatchedAt  DateTime @default(now())
+  /// How many recipients it actually reached, for observability.
+  staffNotified    Int   @default(0)
+  residentsQueued  Int   @default(0)
+
+  @@unique([meetingId, offsetMinutes])
+  @@map("meeting_reminder_dispatches")
 }
 
 model MeetingAttendee {
@@ -933,11 +1627,38 @@ model MeetingAttendee {
   residentId String?
   resident   Resident? @relation(fields: [residentId], references: [id])
 
+  /// ATTENDANCE, recorded after the fact. Distinct from `rsvpStatus`, which is
+  /// what the person SAID beforehand. Someone can accept and not turn up, and
+  /// for a pinuy-binuy resident meeting the difference is the whole point of
+  /// tracking it — quorum is about who was in the room.
+  /// `null` means not yet recorded.
   attended   Boolean?
+
   role       String?   // organizer | attendee | guest
 
+  /// One of RSVP_STATUSES in
+  /// services/api-gateway/src/meetings/meeting-constants.ts.
+  rsvpStatus  String   @default("pending") // pending | accepted | declined | tentative
+  respondedAt DateTime?
+  invitedAt   DateTime @default(now())
+
+  /// How the RSVP arrived: `staff` (a User answering in the CRM) or `token`
+  /// (a Resident answering through their invitation link). Recorded because
+  /// the two carry different evidential weight.
+  respondedVia String?
+
+  /// Resident-facing invitation link, when this attendee is a Resident.
+  accessToken MeetingAccessToken?
+
+  /// NOTE on the two unique constraints: both columns are nullable, and
+  /// PostgreSQL treats NULLs as distinct in a unique index. So these prevent
+  /// inviting the same USER twice and the same RESIDENT twice, and do NOT
+  /// collapse the many rows that have a null in the other column. That is the
+  /// intended behaviour; the service also rejects an attendee row that names
+  /// neither a user nor a resident, which the database cannot express here.
   @@unique([meetingId, userId])
   @@unique([meetingId, residentId])
+  @@index([meetingId, rsvpStatus])
   @@map("meeting_attendees")
 }
 
@@ -1012,11 +1733,53 @@ model Message {
   templateId  String?
   template    CommunicationTemplate? @relation(fields: [templateId], references: [id])
 
+  /**
+   * The automation that produced this message, if any. Null for a message a
+   * person sent by hand.
+   *
+   * This is what makes a per-automation send cap DURABLE: the count comes from
+   * rows already written, so a restart, a redeploy, or a Redis flush cannot
+   * reset the window and let an automation exceed its cap.
+   */
+  automationId String?
+  automation   Automation? @relation(fields: [automationId], references: [id])
+
   // Tracking
   sentAt      DateTime?
   deliveredAt DateTime?
   readAt      DateTime?
+  failedAt      DateTime?
+  cancelledAt   DateTime?
+  /// Sanitised. Provider payloads are scrubbed before they land here — see
+  /// `sanitiseProviderDetail` in services/api-gateway/src/messaging/sanitise.ts.
   failureReason String?
+
+  // ── Dispatch bookkeeping (Phases 1–2) ────────────────────────────────
+  /// How many provider calls have been made. Incremented on CLAIM, not on
+  /// success, so a worker that dies mid-call still consumes an attempt and a
+  /// permanently broken recipient cannot be retried forever.
+  attemptCount  Int       @default(0)
+  /// Per-message cap. Defaulted from MESSAGE_MAX_ATTEMPTS at enqueue time so
+  /// changing the env var does not retroactively resurrect dead messages.
+  maxAttempts   Int       @default(5)
+  lastAttemptAt DateTime?
+  /// Earliest time a worker may claim this row. Set to now() at enqueue and to
+  /// an exponential-backoff point after each retryable failure.
+  nextAttemptAt DateTime?
+  /// Which provider implementation handled it, e.g. `twilio`, `dev-noop`.
+  providerName      String?
+  /// The provider's own id for the message, used to correlate delivery
+  /// webhooks. Distinct from `externalId`, which predates the dispatcher and
+  /// is the legacy inbound-correlation column.
+  providerMessageId String?
+  /// TRUE when no external message left the building — the dev/no-op provider
+  /// recorded what WOULD have been sent. Surfaced in the CRM so a simulated
+  /// send can never be mistaken for a real one.
+  isSimulated   Boolean   @default(false)
+  /// Caller-supplied de-duplication key, unique per tenant. Reminders and
+  /// invitations use it so a retry or a double scheduler tick cannot produce a
+  /// second message to the same person about the same thing.
+  idempotencyKey String?
 
   // External IDs
   externalId  String?  // WhatsApp message ID, SES message ID etc.
@@ -1027,9 +1790,15 @@ model Message {
   campaign    Campaign? @relation(fields: [campaignId], references: [id])
 
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
 
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId, residentId])
   @@index([tenantId, channel, status])
+  // Per-automation send caps count rows inside a rolling time window.
+  @@index([automationId, createdAt])
+  /// The worker's claim query: WHERE status IN (QUEUED) AND nextAttemptAt <= now().
+  @@index([status, nextAttemptAt])
   @@map("messages")
 }
 
@@ -1213,6 +1982,31 @@ model Automation {
   triggerConfig Json            @default("{}")  // filter conditions
 
   actions     AutomationAction[]
+  messages    Message[]
+
+  /**
+   * DRY RUN — the safety default for automations that contact residents.
+   *
+   * True means the runner evaluates the automation completely and RECORDS what
+   * it would have sent (recipient, channel, rendered body) without dispatching
+   * anything. Any automation containing a SEND_* action is forced back to dry
+   * run whenever it is activated; taking it live is a separate, explicit,
+   * admin-only act. A message cannot be recalled, so the reversible state is
+   * the default state.
+   */
+  dryRun      Boolean @default(true)
+
+  /**
+   * Per-automation send caps. Null means "no cap of this kind".
+   *
+   * Counted against `Message` rows this automation actually produced, so a
+   * restart cannot reset the window. The runner REFUSES to send past the cap
+   * rather than queueing beyond it: an automation that silently accumulates a
+   * backlog of unsent resident messages is worse than one that stops and says
+   * so.
+   */
+  sendCapPerHour Int?
+  sendCapPerDay  Int?
 
   // Stats
   runCount    Int @default(0)
@@ -1243,15 +2037,40 @@ model AutomationAction {
 // NOTIFICATIONS
 // ============================================================
 
+/// In-app notification addressed to exactly ONE user.
+///
+/// `tenantId` is stored explicitly even though it is derivable from
+/// `user.tenantId`. Two reasons, both practical rather than theoretical: every
+/// list query filters by tenant AND user, and a stored column lets that be one
+/// index instead of a join; and it makes the tenant boundary an invariant of
+/// the row rather than of the code that happens to have written it, so a future
+/// writer that forgets the join cannot silently create a cross-tenant row.
+/// `NotificationsService` asserts the two agree before it ever writes.
 model Notification {
   id       String   @id @default(cuid())
+
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   userId   String
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title    String
   body     String
-  type     String   // task | signature | message | project | system
+  /// One of NOTIFICATION_KINDS in
+  /// services/api-gateway/src/notifications/notification-kinds.ts — kept as a
+  /// String rather than a Prisma enum so a new emitting module does not need a
+  /// migration, but validated on write against that list, so it is not free-form.
+  type     String
   link     String?  // deep link in app
+
+  /// What this notification is ABOUT, when it is about a record.
+  /// `link` is where the user goes; these two are what the row concerns, which
+  /// is what lets an emitter find or supersede its own earlier notifications
+  /// (e.g. cancelling a meeting after it was already announced).
+  entityType String?
+  entityId   String?
+
   isRead   Boolean  @default(false)
   readAt   DateTime?
 
@@ -1260,6 +2079,8 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+  @@index([tenantId, userId, createdAt])
+  @@index([entityType, entityId])
   @@map("notifications")
 }
 
@@ -1289,6 +2110,717 @@ model SavedReport {
 
   @@index([tenantId])
   @@map("saved_reports")
+}
+
+// ============================================================
+// DIGITAL ZERO REPORT / FEASIBILITY FOUNDATION
+// ============================================================
+
+/// One professional feasibility profile per CRM project. Existing CRM project
+/// fields remain operational facts; feasibility-specific dates, purpose and
+/// professional metadata are intentionally kept here.
+model FeasibilityProfile {
+  id            String                   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId     String                   @unique
+  project       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  projectType   FeasibilityProjectType
+  reportType    FeasibilityReportType    @default(ZERO_REPORT)
+  status        FeasibilityProfileStatus @default(DRAFT)
+  purpose       String
+  valuationDate DateTime
+  reportDate    DateTime
+  clientName    String?
+  developerName String?
+  appraiserName String?
+  neighborhood  String?
+
+  createdById   String
+  updatedById   String
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  parcels       GushChelkaRecord[]
+  sources       FeasibilitySource[]
+  assumptions   FeasibilityAssumption[]
+  areas         FeasibilityAreaLine[]
+  planningRights PlanningRight[]
+  comparableTransactions ComparableTransaction[]
+  scenarios     FeasibilityScenario[]
+  calculationSnapshots FeasibilityCalculationSnapshot[]
+  reportVersions FeasibilityReportVersion[]
+
+  @@index([tenantId, status])
+  @@map("feasibility_profiles")
+}
+
+/// A project may combine several block/parcel/sub-parcel records into one
+/// renewal complex. They are deliberately not fields on Project.
+model GushChelkaRecord {
+  id                 String             @id @default(cuid())
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  gush               String
+  chelka             String
+  subChelka          String?
+  landAreaSqm        Decimal?           @db.Decimal(18, 4)
+  address            String?
+  notes              String?
+  classification     FeasibilityDataClassification @default(FACT)
+  confidence         FeasibilityConfidence @default(UNKNOWN)
+  isVerified         Boolean            @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([feasibilityProfileId, gush, chelka, subChelka])
+  @@index([feasibilityProfileId])
+  @@map("gush_chelka_records")
+}
+
+model FeasibilitySource {
+  id                 String             @id @default(cuid())
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  type               FeasibilitySourceType
+  title              String
+  issuer             String?
+  sourceDate         DateTime?
+  documentId         String?
+  sourceUrl          String?
+  pageReference      String?
+  extractedValue     String?
+  notes              String?
+  reliability        FeasibilityConfidence @default(UNKNOWN)
+  createdById        String
+  updatedById        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([feasibilityProfileId, type])
+  @@index([feasibilityProfileId, documentId])
+  @@map("feasibility_sources")
+}
+
+/// A market transaction used as explicit evidence for a comparison-method
+/// valuation. Adjustment factors are stored separately, so an appraiser can
+/// trace every movement from the observed transaction to the adjusted rate.
+model ComparableTransaction {
+  id                 String             @id @default(cuid())
+  tenantId           String
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  address            String
+  transactionDate    DateTime
+  transactionPrice   Decimal            @db.Decimal(18, 2)
+  saleableAreaSqm    Decimal            @db.Decimal(18, 4)
+  rooms              Decimal?           @db.Decimal(5, 2)
+  floor              Int?
+  buildingAgeYears   Int?
+  condition          String?
+  hasParking         Boolean            @default(false)
+  balconyAreaSqm     Decimal?           @db.Decimal(18, 4)
+  storageAreaSqm     Decimal?           @db.Decimal(18, 4)
+  sourceId           String?
+  sourceUrl          String?
+  reliability        FeasibilityConfidence @default(UNKNOWN)
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  adjustments        ComparableAdjustment[]
+
+  @@index([tenantId, feasibilityProfileId, transactionDate])
+  @@index([feasibilityProfileId, sourceId])
+  @@map("comparable_transactions")
+}
+
+/// Multiplicative adjustment: e.g. 1.03 means +3%, 0.97 means −3%.
+/// A factor must be positive; the service rejects zero and negative values.
+model ComparableAdjustment {
+  id                    String                @id @default(cuid())
+  comparableTransactionId String
+  comparableTransaction  ComparableTransaction @relation(fields: [comparableTransactionId], references: [id], onDelete: Cascade)
+  category              String
+  factor                Decimal               @db.Decimal(12, 8)
+  description           String?
+  classification        FeasibilityDataClassification @default(ASSUMPTION)
+  confidence            FeasibilityConfidence @default(UNKNOWN)
+  sourceId              String?
+  sourceDate            DateTime?
+  createdById           String
+  updatedById           String
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@unique([comparableTransactionId, category])
+  @@index([comparableTransactionId])
+  @@map("comparable_adjustments")
+}
+
+model FeasibilityAssumption {
+  id                 String             @id @default(cuid())
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  key                String
+  label              String
+  value              Decimal?           @db.Decimal(24, 8)
+  textValue          String?
+  unit               String?
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence @default(UNKNOWN)
+  isVerified         Boolean            @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  validFrom          DateTime?
+  validUntil         DateTime?
+  impact             String?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([feasibilityProfileId, key])
+  @@index([feasibilityProfileId, classification])
+  @@map("feasibility_assumptions")
+}
+
+/// A distinct area line makes the area used by every later calculation
+/// explicit. Values are Decimal sqm, never generic Float `area` fields.
+/// A regulatory or standard threshold, versioned by the date it takes effect.
+///
+/// WHY THIS EXISTS. Thresholds used to live only as per-profile assumptions,
+/// which meant every project re-typed the VAT rate, the betterment levy or the
+/// required developer margin, and nothing recorded which version of a rule a
+/// given report relied on. When a rate changes, old reports must keep being
+/// read against the rule that applied on their determining date — not against
+/// today's. A registry keyed on `effectiveFrom` is what makes that possible.
+///
+/// RESOLUTION IS BY THE PROFILE'S `valuationDate` (the מועד קובע), which the
+/// engine already treats as the determining date elsewhere.
+///
+/// `sourceReference` is required, not optional: a threshold nobody can cite is
+/// not a regulatory rule, it is a guess with a number attached.
+model FeasibilityRule {
+  id              String                   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Stable identifier the engine looks a rule up by, e.g. `vat-rate`.
+  /// Deliberately the same vocabulary as `FeasibilityAssumption.key`, so a
+  /// project-level assumption can be recognised as an override of a rule.
+  code            String
+  name            String
+  authority       FeasibilityRuleAuthority
+  /// Null means the rule applies everywhere; otherwise the municipality or
+  /// district it is limited to. A local parking standard must not silently
+  /// apply to a project in another city.
+  jurisdiction    String?
+
+  numericValue    Decimal?                 @db.Decimal(18, 6)
+  textValue       String?
+  unit            String?
+
+  /// The window the rule governs. `effectiveUntil` null means "still in force".
+  effectiveFrom   DateTime
+  effectiveUntil  DateTime?
+
+  sourceReference String
+  sourceUrl       String?
+  notes           String?
+  isActive        Boolean                  @default(true)
+
+  createdById     String
+  updatedById     String
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([tenantId, code, effectiveFrom])
+  @@map("feasibility_rules")
+}
+
+model FeasibilityAreaLine {
+  id                 String             @id @default(cuid())
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  areaType           FeasibilityAreaType
+  label              String?
+  valueSqm           Decimal             @db.Decimal(18, 4)
+  classification     FeasibilityDataClassification @default(FACT)
+  confidence         FeasibilityConfidence @default(UNKNOWN)
+  isVerified         Boolean            @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([feasibilityProfileId, areaType])
+  @@map("feasibility_area_lines")
+}
+
+/// Existing, approved, proposed and uncertain planning rights must be line
+/// items so the calculation engine can reject an inappropriate Base scenario.
+model PlanningRight {
+  id                 String             @id @default(cuid())
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  category           String
+  status             PlanningRightStatus
+  areaSqm            Decimal?           @db.Decimal(18, 4)
+  unitCount          Int?
+  floorLimit         Int?
+  heightMeters       Decimal?           @db.Decimal(10, 2)
+  planNumber         String?
+  landUse            String?
+  classification     FeasibilityDataClassification @default(SOURCE_DATA)
+  confidence         FeasibilityConfidence @default(UNKNOWN)
+  isVerified         Boolean            @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([feasibilityProfileId, status])
+  @@map("planning_rights")
+}
+
+/// An independently editable planning/economic scenario. Inputs and outputs
+/// for one scenario must never mutate another scenario or the base source data.
+model FeasibilityScenario {
+  id                 String                 @id @default(cuid())
+  tenantId           String
+  tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile     @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  name               String
+  kind               FeasibilityScenarioKind @default(CUSTOM)
+  description        String?
+  probability        Decimal?               @db.Decimal(7, 6)
+  isBaseline         Boolean                @default(false)
+  version            Int                    @default(1)
+  createdById        String
+  updatedById        String
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  unitMix            FeasibilityUnitMixLine[]
+  revenueLines       FeasibilityRevenueLine[]
+  costLines          FeasibilityCostLine[]
+  financing          FeasibilityFinancingAssumption?
+  timelinePhases     FeasibilityTimelinePhase[]
+  cashFlowAllocations FeasibilityCashFlowAllocation[]
+  equityTranches      FeasibilityEquityTranche[]
+  compensations      FeasibilityCompensationLine[]
+  calculationSnapshots FeasibilityCalculationSnapshot[]
+
+  @@unique([feasibilityProfileId, name])
+  @@index([tenantId, feasibilityProfileId])
+  @@index([feasibilityProfileId, kind])
+  @@map("feasibility_scenarios")
+}
+
+/// Proposed product mix for a scenario. Each area field is explicit so later
+/// revenue and construction-cost engines cannot accidentally use one generic
+/// sqm value for incompatible calculations.
+model FeasibilityUnitMixLine {
+  id                 String              @id @default(cuid())
+  scenarioId         String
+  scenario           FeasibilityScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  label              String
+  rooms              Decimal?            @db.Decimal(5, 2)
+  unitCount          Int
+  disposition        FeasibilityUnitDisposition @default(UNCLASSIFIED)
+  netAreaSqm         Decimal?            @db.Decimal(18, 4)
+  grossAreaSqm       Decimal?            @db.Decimal(18, 4)
+  saleableAreaSqm    Decimal?            @db.Decimal(18, 4)
+  balconyAreaSqm     Decimal?            @db.Decimal(18, 4)
+  storageAreaSqm     Decimal?            @db.Decimal(18, 4)
+  parkingSpaces      Int                 @default(0)
+  floorFrom          Int?
+  floorTo            Int?
+  orientation        String?
+  pricePerSqm        Decimal?            @db.Decimal(18, 4)
+  fixedUnitPrice     Decimal?            @db.Decimal(18, 2)
+  balconyPricePerSqm Decimal?            @db.Decimal(18, 4)
+  parkingPrice       Decimal?            @db.Decimal(18, 2)
+  storagePricePerSqm Decimal?            @db.Decimal(18, 4)
+  adjustmentFactor   Decimal?            @db.Decimal(12, 8)
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence @default(UNKNOWN)
+  isVerified         Boolean             @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  replacementAllocations FeasibilityReplacementAllocation[]
+
+  @@index([scenarioId])
+  @@map("feasibility_unit_mix_lines")
+}
+
+/// Which replacement flat goes to which owner holding, and in what exact share.
+///
+/// The engine already reconciles these (REPLACEMENT_ALLOCATION_INCOMPLETE,
+/// REPLACEMENT_REFERENCE_DUPLICATE, REPLACEMENT_ALLOCATION_ON_SALE_UNITS) and
+/// has done since 0cbdefb — against a relation that did not exist in this
+/// schema, through a helper that yielded an empty list. Every one of those
+/// checks was therefore inert. This is the model they were written for.
+///
+/// The share is an INTEGER FRACTION, not a decimal, for the same reason
+/// OwnerApartment's is: thirds. 1/3 + 1/3 + 1/3 must be exactly one unit, and
+/// 0.333 × 3 is not. `replacementAllocationSummary` sums them in BigInt.
+model FeasibilityReplacementAllocation {
+  id               String                 @id @default(cuid())
+  unitMixLineId    String
+  unitMixLine      FeasibilityUnitMixLine @relation(fields: [unitMixLineId], references: [id], onDelete: Cascade)
+
+  /// The replacement flat being allocated, as the scenario names it ("A-3").
+  /// A plan-level label rather than an Apartment id: the flats being allocated
+  /// do not exist yet and have no row to point at.
+  unitReference    String
+
+  /// The existing holding that receives it. Restrict, not Cascade: an owner
+  /// holding that a signed scenario allocates a flat to must not disappear
+  /// silently underneath it.
+  ownerApartmentId String
+  ownerApartment   OwnerApartment         @relation(fields: [ownerApartmentId], references: [id], onDelete: Restrict)
+
+  shareNumerator   Int                    @default(1)
+  shareDenominator Int                    @default(1)
+
+  notes            String?
+  createdById      String
+  updatedById      String
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  /// One holding cannot be allocated the same replacement flat twice. The
+  /// engine flags it as `invalid` too; this stops it reaching the engine.
+  @@unique([unitMixLineId, unitReference, ownerApartmentId])
+  @@index([unitMixLineId])
+  @@index([ownerApartmentId])
+  @@map("feasibility_replacement_allocations")
+}
+
+/// Revenue is expressed as explicit scenario inputs, never as a saved output.
+/// Residential units can be priced through UnitMix; this line model handles
+/// commercial, employment, parking, storage and other revenue components.
+model FeasibilityRevenueLine {
+  id                 String                   @id @default(cuid())
+  scenarioId         String
+  scenario           FeasibilityScenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  category           FeasibilityRevenueCategory
+  label              String
+  quantity           Decimal?                 @db.Decimal(18, 4)
+  unit               String?
+  saleableAreaSqm    Decimal?                 @db.Decimal(18, 4)
+  pricePerSqm        Decimal?                 @db.Decimal(18, 4)
+  fixedUnitPrice     Decimal?                 @db.Decimal(18, 2)
+  annualNoi          Decimal?                 @db.Decimal(18, 2)
+  capitalizationRate Decimal?                 @db.Decimal(12, 8)
+  vatTreatment       FeasibilityVatTreatment  @default(VAT_EXCLUDED)
+  vatRate            Decimal?                 @db.Decimal(7, 6)
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence    @default(UNKNOWN)
+  isVerified         Boolean                  @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([scenarioId, category])
+  @@map("feasibility_revenue_lines")
+}
+
+/// A single cost component. Exactly one calculation basis is interpreted by
+/// the calculation layer: quantity×unitCost, fixedAmount, or percentage of a
+/// named calculated base. The database preserves all inputs for auditability.
+model FeasibilityCostLine {
+  id                 String                   @id @default(cuid())
+  scenarioId         String
+  scenario           FeasibilityScenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  category           FeasibilityCostCategory
+  label              String
+  quantity           Decimal?                 @db.Decimal(18, 4)
+  unit               String?
+  unitCost           Decimal?                 @db.Decimal(18, 4)
+  fixedAmount        Decimal?                 @db.Decimal(18, 2)
+  percentage         Decimal?                 @db.Decimal(12, 8)
+  percentageBase     String?
+  vatTreatment       FeasibilityVatTreatment  @default(VAT_EXCLUDED)
+  vatRate            Decimal?                 @db.Decimal(7, 6)
+  escalationRate     Decimal?                 @db.Decimal(12, 8)
+  contingencyRate    Decimal?                 @db.Decimal(12, 8)
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence    @default(UNKNOWN)
+  isVerified         Boolean                  @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([scenarioId, category])
+  @@map("feasibility_cost_lines")
+}
+
+/// One financing input set per scenario. Monetary amounts are before VAT;
+/// rates are decimal fractions (for example 0.05, not a floating percentage).
+model FeasibilityFinancingAssumption {
+  id                 String              @id @default(cuid())
+  scenarioId         String              @unique
+  scenario           FeasibilityScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  debtAmount         Decimal?            @db.Decimal(18, 2)
+  equityAmount       Decimal?            @db.Decimal(18, 2)
+  ltc                Decimal?            @db.Decimal(12, 8)
+  ltv                Decimal?            @db.Decimal(12, 8)
+  annualInterestRate Decimal?            @db.Decimal(12, 8)
+  arrangementFeeRate Decimal?            @db.Decimal(12, 8)
+  guaranteeFeeRate   Decimal?            @db.Decimal(12, 8)
+  graceMonths        Int?
+  financingMonths    Int?
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence @default(UNKNOWN)
+  isVerified         Boolean             @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@map("feasibility_financing_assumptions")
+}
+
+/// Timeline phases are explicit inputs. Cash flow allocation is calculated
+/// later from these dates/durations rather than embedded inside the UI.
+model FeasibilityTimelinePhase {
+  id                 String                       @id @default(cuid())
+  scenarioId         String
+  scenario           FeasibilityScenario          @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  kind               FeasibilityTimelinePhaseKind
+  label              String
+  startDate          DateTime?
+  endDate            DateTime?
+  durationMonths     Int?
+  dependencyPhaseId  String?
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence        @default(UNKNOWN)
+  isVerified         Boolean                      @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@index([scenarioId, kind])
+  @@map("feasibility_timeline_phases")
+}
+
+/// Monthly cash-flow input. Revenue/cost timing is never guessed: allocations
+/// are explicit, traceable and reconciled to their source lines by the engine.
+/// Priority ordering for the equity waterfall. Lower `priority` is paid first.
+enum FeasibilityEquityTrancheKind {
+  SENIOR
+  JUNIOR
+  SPONSOR
+}
+
+/// How a tranche's preferred return accrues on capital it has not yet had back.
+enum FeasibilityPreferredReturnAccrual {
+  /// Accrues on unreturned capital only; unpaid preference does not itself accrue.
+  SIMPLE
+  /// Unpaid preference joins the accrual base, so deferred preference costs more.
+  COMPOUNDED
+}
+
+/// A layer of equity with its own priority, hurdle and residual share.
+///
+/// Contributions are NOT stored here: they are the scenario's existing EQUITY
+/// INFLOW cash-flow allocations, attributed to a tranche through
+/// `FeasibilityCashFlowAllocation.sourceLineId`. This row carries only the
+/// TERMS — who is paid in what order, on what hurdle, for what share of the
+/// residual. The money itself stays in the one cash-flow model the rest of the
+/// engine already reads.
+model FeasibilityEquityTranche {
+  id                    String                       @id @default(cuid())
+  tenantId              String
+  tenant                Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scenarioId            String
+  scenario              FeasibilityScenario          @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  name                  String
+  kind                  FeasibilityEquityTrancheKind @default(SENIOR)
+  /// Lower is paid first. Ties are resolved by creation order, and flagged.
+  priority              Int
+  /// What the investor undertook to put in, for checking against what the cash flow actually draws.
+  commitment            Decimal?                     @db.Decimal(18, 2)
+  /// Annual hurdle, as a decimal fraction. Null means this tranche has no preferred return.
+  preferredReturnRate   Decimal?                     @db.Decimal(12, 8)
+  preferredReturnAccrual FeasibilityPreferredReturnAccrual @default(COMPOUNDED)
+  /// Share of the residual profit after capital and preference, as a decimal fraction.
+  profitSharePercent    Decimal                      @db.Decimal(12, 8)
+  classification        FeasibilityDataClassification @default(ASSUMPTION)
+  confidence            FeasibilityConfidence        @default(UNKNOWN)
+  isVerified            Boolean                      @default(false)
+  sourceId              String?
+  notes                 String?
+  createdById           String
+  updatedById           String
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+
+  @@unique([scenarioId, name])
+  @@index([scenarioId, priority])
+  @@index([tenantId])
+  @@map("feasibility_equity_tranches")
+}
+
+model FeasibilityCashFlowAllocation {
+  id                 String                       @id @default(cuid())
+  scenarioId         String
+  scenario           FeasibilityScenario          @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  periodStart        DateTime
+  direction          FeasibilityCashFlowDirection
+  sourceKind         FeasibilityCashFlowSourceKind
+  sourceLineId       String?
+  label              String
+  amount             Decimal                      @db.Decimal(18, 2)
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence        @default(UNKNOWN)
+  isVerified         Boolean                      @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@index([scenarioId, periodStart])
+  @@index([scenarioId, sourceKind, sourceLineId])
+  @@map("feasibility_cash_flow_allocations")
+}
+
+/// Per-owner holding compensation. It uses the existing ownership registry;
+/// the same OwnerApartment share can have one independently auditable set of
+/// terms per scenario, with no duplicate owner or apartment data.
+model FeasibilityCompensationLine {
+  id                 String                       @id @default(cuid())
+  scenarioId         String
+  scenario           FeasibilityScenario          @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  ownerApartmentId   String
+  ownerApartment     OwnerApartment               @relation(fields: [ownerApartmentId], references: [id], onDelete: Restrict)
+  status             FeasibilityCompensationStatus @default(DRAFT)
+  replacementAreaSqm Decimal?                     @db.Decimal(18, 4)
+  additionalAreaSqm  Decimal?                     @db.Decimal(18, 4)
+  balconyAreaSqm     Decimal?                     @db.Decimal(18, 4)
+  parkingSpaces      Int                          @default(0)
+  storageAreaSqm     Decimal?                     @db.Decimal(18, 4)
+  newFloor           Int?
+  replacementValue   Decimal?                     @db.Decimal(18, 2)
+  parkingValue       Decimal?                     @db.Decimal(18, 2)
+  storageValue       Decimal?                     @db.Decimal(18, 2)
+  balconyValue       Decimal?                     @db.Decimal(18, 2)
+  cashCompensation   Decimal?                     @db.Decimal(18, 2)
+  monthlyRelocationRent Decimal?                  @db.Decimal(18, 2)
+  relocationMonths   Int?
+  movingCost         Decimal?                     @db.Decimal(18, 2)
+  temporaryHousingCost Decimal?                   @db.Decimal(18, 2)
+  legalCost          Decimal?                     @db.Decimal(18, 2)
+  inspectionCost     Decimal?                     @db.Decimal(18, 2)
+  otherCost          Decimal?                     @db.Decimal(18, 2)
+  classification     FeasibilityDataClassification @default(ASSUMPTION)
+  confidence         FeasibilityConfidence        @default(UNKNOWN)
+  isVerified         Boolean                      @default(false)
+  sourceId           String?
+  sourceDate         DateTime?
+  notes              String?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@unique([scenarioId, ownerApartmentId])
+  @@index([ownerApartmentId])
+  @@map("feasibility_compensation_lines")
+}
+
+/// Immutable reproducibility record. Structured inputs stay in their own
+/// tables; JSON here freezes the exact input/output state behind a result.
+model FeasibilityCalculationSnapshot {
+  id                 String              @id @default(cuid())
+  tenantId           String
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile  @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  scenarioId         String
+  scenario           FeasibilityScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  engineVersion      String
+  inputSnapshot      Json
+  outputSnapshot     Json
+  validationSnapshot Json
+  /// Optional user-selected sensitivity matrix frozen with this calculation.
+  /// It is report evidence only, never an editable scenario input.
+  sensitivitySnapshot Json?
+  createdById        String
+  createdAt          DateTime            @default(now())
+  reportVersion      FeasibilityReportVersion?
+
+  @@index([tenantId, feasibilityProfileId, scenarioId, createdAt])
+  @@map("feasibility_calculation_snapshots")
+}
+
+model FeasibilityReportVersion {
+  id                 String                   @id @default(cuid())
+  tenantId           String
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile       @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+  snapshotId         String                   @unique
+  snapshot           FeasibilityCalculationSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Restrict)
+  version            Int
+  status             FeasibilityProfileStatus @default(DRAFT)
+  title              String
+  /// Immutable comparison of the latest frozen result per scenario at the
+  /// moment this report version was opened. It is intentionally JSON: these
+  /// are report evidence, not editable source inputs.
+  comparisonSnapshot Json?
+  approvedById       String?
+  approvedAt         DateTime?
+  lockedById         String?
+  lockedAt           DateTime?
+  createdById        String
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@unique([feasibilityProfileId, version])
+  @@index([tenantId, feasibilityProfileId, status])
+  @@map("feasibility_report_versions")
 }
 
 // ============================================================
@@ -1340,4 +2872,588 @@ model AuditLog {
   @@index([tenantId, entity, entityId])
   @@index([tenantId, createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================
+// EXCEL IMPORT (Run 3)
+// Bulk ingest of owners/residents from a spreadsheet. The import
+// does NOT own any business rules — it maps a sheet onto the same
+// services manual CRUD uses (OwnershipService, NationalIdService,
+// TenantScopeService). These tables record only WHAT was attempted
+// and WHAT the outcome was, for the report and the history view.
+// ============================================================
+
+enum ImportEntityType {
+  OWNER
+  RESIDENT
+}
+
+enum ImportMode {
+  ADD_ONLY        // create new records; anything matching an existing one is skipped
+  UPDATE_ONLY     // update matched records; unmatched rows are skipped
+  ADD_AND_UPDATE  // upsert
+}
+
+enum ImportJobStatus {
+  UPLOADED     // file stored + parsed, awaiting column mapping
+  MAPPED       // mapping confirmed, awaiting validation/preview
+  PREVIEWED    // validated, awaiting user confirmation
+  IMPORTING    // transaction in flight
+  COMPLETED    // committed (may still carry per-row failures that were skipped)
+  FAILED       // rolled back — nothing was written
+  CANCELLED    // user abandoned before committing
+}
+
+/**
+ * `ImportRowIssue.severity`. WARNING rows still import; ERROR rows never do.
+ */
+enum ImportIssueSeverity {
+  ERROR
+  WARNING
+}
+
+/** What the preview decided would happen to a row. */
+enum ImportRowOutcome {
+  CREATE
+  UPDATE
+  SKIP_DUPLICATE
+  SKIP_MODE       // valid, but the chosen ImportMode excludes it
+  INVALID
+  NEEDS_REVIEW    // ambiguous duplicate match — never auto-merged
+}
+
+model ImportJob {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Tenancy of the imported rows is inherited through this project, exactly as
+  // Complex/Building/Apartment inherit theirs. Every apartment referenced by a
+  // row must resolve INSIDE this project.
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  entityType  ImportEntityType @default(OWNER)
+  mode        ImportMode       @default(ADD_AND_UPDATE)
+  status      ImportJobStatus  @default(UPLOADED)
+
+  fileName    String
+  fileSize    Int
+  /** MinIO object key for the uploaded workbook. Never returned to a client. */
+  storageKey  String?
+  sheetName   String?
+
+  /**
+   * The confirmed column mapping: `{ "<field>": { "column": "שם בעלים",
+   * "index": 0, "confidence": 1, "source": "USER" } }`. Persisted so a later
+   * reader can tell exactly how the sheet was interpreted, and so a repeat
+   * import of the same template can reuse it.
+   */
+  columnMapping Json?
+  /** Header row exactly as read from the sheet, for the report. */
+  sheetHeaders  String[] @default([])
+
+  totalRows   Int @default(0)
+  createdRows Int @default(0)
+  updatedRows Int @default(0)
+  skippedRows Int @default(0)
+  failedRows  Int @default(0)
+
+  /** Aggregated `{ code, count, message }[]` — never any row values. */
+  errorSummary Json?
+  /** Populated only for FAILED: why the whole transaction rolled back. */
+  failureReason String?
+
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  durationMs  Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  issues      ImportRowIssue[]
+  decisions   ImportRowDecision[]
+
+  @@index([tenantId, projectId, createdAt])
+  @@index([tenantId, status])
+  @@map("import_jobs")
+}
+
+/** What the user chose for one ambiguous row. There is no MERGE option. */
+enum ImportDecisionAction {
+  UPDATE_EXISTING // apply the sheet row to the chosen existing record
+  CREATE_NEW      // the sheet row is a different person; create a new record
+  SKIP            // leave both alone
+}
+
+/**
+ * A human's per-row ruling on an ambiguous duplicate.
+ *
+ * WHY A SEPARATE TABLE FROM ImportRowIssue
+ * ----------------------------------------
+ * `ImportsService.persistIssues` DELETES and recreates every `ImportRowIssue`
+ * for the job on each preview, because issues are derived from a fresh
+ * re-validation against live data. Decisions are the opposite kind of fact:
+ * they are user input, entered once, and must survive every subsequent
+ * re-validation — storing them alongside issues would wipe them the moment the
+ * user previewed again.
+ *
+ * A decision is ADVICE, not authority. It is re-checked at commit against the
+ * candidate set as it stands at that moment: if the record the user chose is no
+ * longer one of the row's candidates (someone deleted or edited it in the
+ * meantime) the row fails rather than writing to a stale target. Nothing here
+ * can cause an automatic merge — UPDATE_EXISTING applies the sheet row to ONE
+ * explicitly named record, and the two records are never combined.
+ *
+ * Tenancy is inherited through `job`, which is itself tenant-scoped; every
+ * service method resolves the job inside the caller's tenant first, so a
+ * decision can only ever be written against a job the caller can already see.
+ */
+model ImportRowDecision {
+  id          String   @id @default(cuid())
+  jobId       String
+  job         ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  /** 1-based row number AS SEEN IN EXCEL, header included. */
+  rowNumber   Int
+  action      ImportDecisionAction
+
+  /**
+   * The existing Owner/Resident the user picked. Required for UPDATE_EXISTING,
+   * null otherwise. Validated against the row's LIVE candidate list on use, so
+   * an id from another tenant or another row is refused.
+   */
+  targetEntityId String?
+
+  /** Free-text justification, optional. Never contains sheet values. */
+  note        String?
+
+  decidedById String
+  decidedBy   User     @relation("ImportRowDecider", fields: [decidedById], references: [id])
+  decidedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // One ruling per row. Re-deciding a row overwrites the previous ruling
+  // (upsert) rather than accumulating conflicting instructions.
+  @@unique([jobId, rowNumber])
+  @@index([jobId])
+  @@map("import_row_decisions")
+}
+
+/**
+ * Per-row detail behind the downloadable error report.
+ *
+ * `currentValue` is the offending cell as it appeared in the sheet — EXCEPT for
+ * a national ID column, where the import writes a mask (`***1234`) instead.
+ * A full תעודת זהות must never reach this table: the report is downloadable and
+ * the history view renders these rows verbatim.
+ */
+model ImportRowIssue {
+  id          String   @id @default(cuid())
+  jobId       String
+  job         ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  /** 1-based row number AS SEEN IN EXCEL, header included. */
+  rowNumber   Int
+  outcome     ImportRowOutcome
+  severity    ImportIssueSeverity @default(ERROR)
+
+  /** Mapped field name, e.g. `phone`. Null for whole-row issues. */
+  field       String?
+  /** Sheet column header the field came from. */
+  column      String?
+  code        String
+  message     String
+  /** Masked where the column holds PII. */
+  currentValue String?
+  /** Hebrew, actionable: "כתבו 1/3 במקום 33.33%". */
+  suggestion  String?
+
+  /** Existing record this row matched, when the issue is a duplicate. */
+  matchedEntityId String?
+  /** Why it matched: NATIONAL_ID | OWNER_ID | PHONE | NAME_AND_APARTMENT. */
+  matchReason     String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([jobId, rowNumber])
+  @@index([jobId, severity])
+  @@map("import_row_issues")
+}
+
+// ============================================================
+// CMS — the OpenDoor Site Manager
+// ============================================================
+//
+// What the PUBLIC website says, and the record of who said it.
+//
+// ── WHY THESE TABLES AND NOT A JSON BLOB PER PAGE ──────────────────────────
+//
+// Identity, tenant, publication state, revision, authorship and verification
+// are all things the product has to QUERY and ENFORCE, not merely store:
+// "which items are awaiting review", "who published this and when", "is this
+// figure still verified after the edit". A JSON document per page can hold
+// those facts but cannot be asked about them, and cannot be constrained.
+//
+// So every one of them is an explicit, indexed column here, and the free-form
+// part — the block tree an editor actually authors — is the ONLY thing left as
+// JSON.
+//
+// ── THE FOUR-TABLE SPLIT ───────────────────────────────────────────────────
+//
+//   CmsContent      the item, its identity and its CURRENT working draft
+//   CmsRevision     an append-only full SNAPSHOT per save
+//   CmsPublication  an immutable snapshot of what the public was actually given
+//   CmsVerification per-field provenance, with its own append-only audit
+//
+// Draft, revision and publication are deliberately three different things.
+// Editing a page must not change what the website is serving; publishing must
+// freeze exactly what was approved rather than re-read a draft that may have
+// moved on; and restoring history must not rewrite it. One table could not
+// hold all three without one of those guarantees quietly failing.
+//
+// ── TENANCY ────────────────────────────────────────────────────────────────
+//
+// Every table carries `tenantId` and every index leads with it. Uniqueness is
+// tenant-scoped — two tenants may both own the page `transparency` — and no
+// query in the CMS is written without it. `tenantId` is never accepted from
+// the browser; it comes from the authenticated server context.
+
+enum CmsContentKind {
+  PAGE
+  PROJECT
+  ARTICLE
+  FAQ_ITEM
+  NAVIGATION
+  SETTINGS
+}
+
+enum CmsPublicationState {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CmsRevisionReason {
+  SAVE
+  PUBLISH
+  UNPUBLISH
+  RESTORE
+}
+
+/// Mirrors `VerificationStatus` in @urban-renewal/api-contracts. The contract
+/// DERIVES this value from the record; this column stores what was derived, so
+/// "everything awaiting a second review" is one indexed query.
+enum CmsVerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  SELF_VERIFIED
+  SECOND_REVIEW_REQUIRED
+}
+
+enum CmsVerificationEvent {
+  EDITED
+  VERIFIED
+  INVALIDATED
+  REVIEW_REQUESTED
+}
+
+/// How far a piece of content may travel. FEASIBILITY is distinct from
+/// INTERNAL on purpose: an internal figure may one day be verified and
+/// published, a feasibility scenario output may not, ever.
+enum CmsExposureLevel {
+  PUBLIC
+  INTERNAL
+  FEASIBILITY
+}
+
+/// What an image is claimed to BE. Publishing an editorial photograph as
+/// though it depicted an OpenDoor project is the specific failure this exists
+/// to make impossible, so it is a column and not a caption convention.
+enum CmsImageClaim {
+  VERIFIED_PROJECT_PHOTO
+  EDITORIAL_CONTEXT
+  ARCHITECTURAL_PATTERN
+}
+
+model CmsContent {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  kind CmsContentKind
+  /// Stable, human-meaningful address within its kind. Tenant-scoped, so two
+  /// tenants may each own `transparency` without colliding.
+  slug String
+
+  state    CmsPublicationState @default(DRAFT)
+  exposure CmsExposureLevel    @default(PUBLIC)
+
+  /**
+   * The working draft: the block tree as the editor currently has it.
+   *
+   * JSON because this is the one genuinely open-ended part of the model — the
+   * shape differs per block type and the set of block types grows. It is
+   * validated against the api-contracts schema at the gateway before it is
+   * written, so "unvalidated JSON" it is not; it is simply not a shape SQL can
+   * usefully constrain.
+   *
+   * This is NOT what the website serves. The public reads CmsPublication.
+   */
+  draft Json
+
+  /// Per-locale SEO. Absent locales fall back to the page's own heading and
+  /// opening sentence, which is why this is nullable rather than defaulted.
+  seo Json?
+
+  /// The newest revision, denormalised so the editor can show "last saved"
+  /// without an aggregate over the whole revision history on every load.
+  currentRevisionId String?      @unique
+  currentRevision   CmsRevision? @relation("CmsContentCurrentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
+
+  /// The publication the website is serving right now, or null if this item has
+  /// never been published or has been withdrawn. The resolver reads THIS, so an
+  /// unpublished edit cannot reach the public by any path.
+  livePublicationId String?         @unique
+  livePublication   CmsPublication? @relation("CmsContentLivePublication", fields: [livePublicationId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime  @default(now())
+  createdById      String
+  createdBy        User      @relation("CmsContentCreator", fields: [createdById], references: [id])
+  updatedAt        DateTime  @updatedAt
+  updatedById      String
+  updatedBy        User      @relation("CmsContentEditor", fields: [updatedById], references: [id])
+  firstPublishedAt DateTime?
+
+  revisions     CmsRevision[]          @relation("CmsContentRevisions")
+  publications  CmsPublication[]       @relation("CmsContentPublications")
+  verifications CmsVerification[]
+  mediaRefs     CmsMediaReference[]
+  auditEntries  CmsVerificationAudit[]
+
+  @@unique([tenantId, kind, slug])
+  @@index([tenantId, kind, state])
+  @@index([tenantId, state, updatedAt])
+  @@map("cms_content")
+}
+
+/**
+ * One append-only FULL snapshot per save.
+ *
+ * Full, not a diff: restoring must not depend on replaying every intermediate
+ * step correctly, and a snapshot that can be read on its own is one that can be
+ * audited on its own. Storage is cheap next to the cost of a history that
+ * cannot be trusted.
+ *
+ * Restoring an old revision writes a NEW revision whose snapshot happens to
+ * equal the old one, with `restoredFromRevisionId` recording where it came
+ * from. History is therefore only ever appended to, never rewound: what the
+ * page said last Tuesday remains true even after somebody undoes it.
+ */
+model CmsRevision {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation("CmsContentRevisions", fields: [contentId], references: [id], onDelete: Cascade)
+
+  /// Monotonic per item, starting at 1. Gives the history a stable order that
+  /// does not depend on timestamp resolution or clock skew.
+  sequence Int
+  reason   CmsRevisionReason
+
+  snapshot Json
+  seo      Json?
+  /// The publication state at the moment of the save, so the history explains
+  /// itself without joining forward to what happened later.
+  stateAtRevision CmsPublicationState
+
+  authorId  String
+  author    User     @relation("CmsRevisionAuthor", fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  restoredFromRevisionId String?
+  restoredFrom           CmsRevision?  @relation("CmsRevisionRestoredFrom", fields: [restoredFromRevisionId], references: [id], onDelete: SetNull)
+  restoredInto           CmsRevision[] @relation("CmsRevisionRestoredFrom")
+
+  /// Optional one-line note from the editor. Never required: a mandatory
+  /// message field produces "update" on every row and buys nothing.
+  summary String?
+
+  currentFor   CmsContent?      @relation("CmsContentCurrentRevision")
+  publications CmsPublication[] @relation("CmsPublicationRevision")
+
+  @@unique([contentId, sequence])
+  @@index([tenantId, contentId, createdAt])
+  @@map("cms_revisions")
+}
+
+/**
+ * What the public was actually given, frozen.
+ *
+ * Rows here are written once and never updated. Withdrawing a publication sets
+ * `unpublishedAt` and clears the item's `livePublicationId`; it does not delete
+ * or edit the row, because "what did the website say on the day the resident
+ * signed" has to remain answerable.
+ *
+ * The snapshot is stored again rather than reached through the revision, even
+ * though `revisionId` records which revision it came from. Publication is a
+ * PROJECTION of a revision, not a copy of it: internal fields are dropped,
+ * verifier identity and source vocabulary are stripped, and unverified claims
+ * are omitted. Storing the projection is what makes it possible to prove later
+ * what was and was not exposed.
+ */
+model CmsPublication {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation("CmsContentPublications", fields: [contentId], references: [id], onDelete: Cascade)
+
+  revisionId String
+  revision   CmsRevision @relation("CmsPublicationRevision", fields: [revisionId], references: [id])
+
+  /// The public-safe projection, exactly as served. Never the raw draft.
+  snapshot Json
+  seo      Json?
+
+  publishedAt   DateTime  @default(now())
+  publishedById String
+  publishedBy   User      @relation("CmsPublicationPublisher", fields: [publishedById], references: [id])
+  unpublishedAt DateTime?
+
+  liveFor CmsContent? @relation("CmsContentLivePublication")
+
+  @@index([tenantId, contentId, publishedAt])
+  @@map("cms_publications")
+}
+
+/**
+ * Provenance for one field of one item.
+ *
+ * `verifiedValue` is stored ALONGSIDE the live value so that invalidation is a
+ * mechanism rather than an intention: when the two differ the fact is no longer
+ * verified, and nobody has to remember to clear a flag. That is the whole
+ * design. A boolean `isVerified` would survive an edit and quietly lie.
+ */
+model CmsVerification {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  /// Dotted path into the item, e.g. `unitCount` or `milestone.2.title`.
+  field String
+
+  value         Json
+  verifiedValue Json?
+  status        CmsVerificationStatus @default(UNVERIFIED)
+
+  editedById String
+  editedBy   User     @relation("CmsVerificationEditor", fields: [editedById], references: [id])
+  editedAt   DateTime @default(now())
+
+  verifiedById String?
+  verifiedBy   User?     @relation("CmsVerificationVerifier", fields: [verifiedById], references: [id])
+  verifiedAt   DateTime?
+
+  /// Where the claim comes from, and the reference within it. Both are INTERNAL
+  /// and are stripped from every public projection, along with verifier
+  /// identity: the public learns that a figure was verified, never by whom.
+  source          String?
+  sourceReference String?
+
+  auditEntries CmsVerificationAudit[]
+
+  @@unique([contentId, field])
+  @@index([tenantId, status])
+  @@map("cms_verifications")
+}
+
+/// Append-only. Rows are never updated or deleted, which is what separates an
+/// audit trail from a status column that happens to have a timestamp.
+model CmsVerificationAudit {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  verificationId String?
+  verification   CmsVerification? @relation(fields: [verificationId], references: [id], onDelete: SetNull)
+
+  field  String
+  event  CmsVerificationEvent
+  status CmsVerificationStatus
+
+  actorId    String
+  actor      User     @relation("CmsVerificationAuditActor", fields: [actorId], references: [id])
+  occurredAt DateTime @default(now())
+
+  /// Human-readable LABELS, not the values themselves. The audit trail has to be
+  /// readable by someone who lacks permission to see every figure it mentions.
+  previousValueLabel String?
+  newValueLabel      String?
+
+  source          String?
+  sourceReference String?
+  note            String?
+
+  @@index([tenantId, contentId, occurredAt])
+  @@index([tenantId, field, event])
+  @@map("cms_verification_audit")
+}
+
+/**
+ * A content item's reference to a stored image.
+ *
+ * This is deliberately NOT a media library: it records which objects a piece of
+ * content points at, so that publishing, revision history and deletion can all
+ * reason about images without inventing an upload pipeline. The bytes stay
+ * where they already are, behind the existing StorageService abstraction, and
+ * `storageKey` is the same tenant-scoped key that service already issues.
+ *
+ * `classification` and `alt` are NOT NULL because an image lacking either is
+ * one that cannot be published, and the cheapest place to guarantee that is
+ * here rather than in every screen that touches an image.
+ */
+model CmsMediaReference {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentId String
+  content   CmsContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  /// Where inside the item this image is used, e.g. `hero` or `gallery.1`.
+  field String
+
+  storageKey String
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  width      Int?
+  height     Int?
+
+  classification CmsImageClaim
+
+  /// LocalizedContent: `{ he, en? }`. Hebrew is required, English never blocks.
+  alt     Json
+  caption Json?
+  credit  String?
+  takenOn DateTime?
+  /// `{ x, y }` in 0..1, for art-directed cropping.
+  focalPoint Json?
+
+  uploadedById String
+  uploadedBy   User     @relation("CmsMediaUploader", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+
+  @@unique([contentId, field, storageKey])
+  @@index([tenantId, classification])
+  @@map("cms_media_references")
 }

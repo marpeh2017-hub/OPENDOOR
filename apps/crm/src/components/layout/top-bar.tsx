@@ -1,7 +1,8 @@
 'use client'
 
-import { Bell, Search, Moon, Sun } from 'lucide-react'
+import { Search, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 export function TopBar() {
   const { theme, setTheme } = useTheme()
@@ -33,11 +34,13 @@ export function TopBar() {
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* Notifications */}
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
-          <Bell size={18} />
-          <span className="absolute top-1.5 left-1.5 h-2 w-2 rounded-full bg-teal-500" />
-        </button>
+        {/*
+          Notifications. This was previously a decorative bell with a hard-coded
+          teal dot that was ALWAYS lit — it announced unread notifications
+          whether or not any existed, and clicking it did nothing. It is now
+          backed by GET /notifications/unread-count.
+        */}
+        <NotificationBell />
       </div>
     </header>
   )

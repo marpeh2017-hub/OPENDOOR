@@ -1,49 +1,55 @@
+'use client'
+
+import { use } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Phone, MessageSquare, FileSignature, MoreHorizontal } from 'lucide-react'
+import { ChevronRight, Phone, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { CardSkeleton } from '@/components/ui/skeletons'
+import { QueryError } from '@/components/ui/query-states'
+import { useResident } from '@/hooks/use-residents'
 import { ResidentOverviewTab }  from '@/components/residents/tabs/overview-tab'
 import { ResidentDocumentsTab } from '@/components/residents/tabs/documents-tab'
 import { ResidentMeetingsTab }  from '@/components/residents/tabs/meetings-tab'
 import { ResidentMessagesTab }  from '@/components/residents/tabs/messages-tab'
 import { ResidentActivityTab }  from '@/components/residents/tabs/activity-tab'
 
-type ResidentStatus = 'SIGNED' | 'INTERESTED' | 'UNDECIDED' | 'OBJECTING' | 'DECEASED'
-
-const STATUS_CFG: Record<ResidentStatus, { label: string; cls: string }> = {
-  SIGNED:     { label: 'חתם',      cls: 'bg-green-100 text-green-700 border-green-200' },
-  INTERESTED: { label: 'מעוניין',  cls: 'bg-blue-100 text-blue-700 border-blue-200' },
-  UNDECIDED:  { label: 'לא החליט', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
-  OBJECTING:  { label: 'מתנגד',    cls: 'bg-red-100 text-red-700 border-red-200' },
-  DECEASED:   { label: 'נפטר',     cls: 'bg-gray-100 text-gray-500 border-gray-200' },
+const STATUS_CFG: Record<string, { label: string; cls: string }> = {
+  SIGNED:        { label: 'חתם',          cls: 'bg-green-100 text-green-700 border-green-200' },
+  INTERESTED:    { label: 'מעוניין',       cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+  CONTACTED:     { label: 'נוצר קשר',     cls: 'bg-teal-100 text-teal-700 border-teal-200' },
+  UNDECIDED:     { label: 'לא החליט',     cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+  OBJECTING:     { label: 'מתנגד',        cls: 'bg-red-100 text-red-700 border-red-200' },
+  NOT_CONTACTED: { label: 'לא נוצר קשר', cls: 'bg-gray-100 text-gray-500 border-gray-200' },
+  UNREACHABLE:   { label: 'לא זמין',      cls: 'bg-orange-100 text-orange-700 border-orange-200' },
 }
 
-export default async function ResidentProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default function ResidentProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const { data: resident, isLoading, isError, error, refetch } = useResident(id)
 
-  // Mock – replace with API call
-  const resident = {
-    id,
-    name: 'דוד כהן',
-    phone: '050-1234567',
-    project: 'הרצל 45, תל אביב',
-    apt: 'דירה 4, קומה 3',
-    status: 'SIGNED' as ResidentStatus,
-    risk: 'LOW',
-    docsCount: 3,
-    meetingsCount: 3,
-    messagesCount: 5,
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <CardSkeleton className="h-32" />
+        <CardSkeleton className="h-64" />
+      </div>
+    )
   }
 
-  const statusCfg = STATUS_CFG[resident.status]
+  if (isError || !resident) {
+    return <QueryError message="שגיאה בטעינת פרופיל הדייר" error={error} onRetry={() => refetch()} />
+  }
+
+  const fullName  = `${resident.firstName} ${resident.lastName}`
+  const statusCfg = STATUS_CFG[resident.signatureStatus]
+    ?? { label: resident.signatureStatus, cls: 'bg-gray-100 text-gray-500 border-gray-200' }
+  const apt         = resident.apartment
+  const projectName = apt?.building?.complex?.project?.name
+  const waLink = resident.phone
+    ? `https://wa.me/${resident.phone.replace(/\D/g, '').replace(/^0/, '972')}`
+    : null
 
   return (
     <div className="space-y-6">
@@ -51,7 +57,7 @@ export default async function ResidentProfilePage({ params }: { params: Promise<
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/residents" className="hover:text-foreground transition-colors">דיירים</Link>
         <ChevronRight size={14} className="rotate-180" />
-        <span className="text-foreground font-medium">{resident.name}</span>
+        <span className="text-foreground font-medium">{fullName}</span>
       </div>
 
       {/* Profile header */}
@@ -59,50 +65,42 @@ export default async function ResidentProfilePage({ params }: { params: Promise<
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           <Avatar className="h-16 w-16">
             <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
-              {resident.name.slice(0, 2)}
+              {resident.firstName.slice(0, 1)}{resident.lastName.slice(0, 1)}
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-foreground">{resident.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{fullName}</h1>
               <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.cls}`}>
                 {statusCfg.label}
               </span>
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <span>{resident.phone}</span>
-              <span>·</span>
-              <span>{resident.project}</span>
-              <span>·</span>
-              <span>{resident.apt}</span>
+            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+              <span dir="ltr" className="font-mono">{resident.phone ?? '—'}</span>
+              {projectName && <><span>·</span><span>{projectName}</span></>}
+              {apt && <><span>·</span><span>דירה {apt.apartmentNumber}{apt.floor != null ? `, קומה ${apt.floor}` : ''}</span></>}
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" className="gap-2 h-9">
-              <Phone size={14} /> התקשר
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2 h-9">
-              <MessageSquare size={14} /> הודעה
-            </Button>
-            <Button size="sm" className="gap-2 h-9">
-              <FileSignature size={14} /> שלח לחתימה
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreHorizontal size={15} />
+            {resident.phone && !resident.doNotContact && (
+              <>
+                <Button variant="outline" size="sm" className="gap-2 h-9" asChild>
+                  <a href={`tel:${resident.phone}`}><Phone size={14} /> התקשר</a>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>עדכון סטטוס</DropdownMenuItem>
-                <DropdownMenuItem>הוספת הערה</DropdownMenuItem>
-                <DropdownMenuItem>קביעת פגישה</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">סמן כמתנגד</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <Button variant="outline" size="sm" className="gap-2 h-9" asChild>
+                  <a href={waLink!} target="_blank" rel="noopener noreferrer">
+                    <MessageSquare size={14} /> הודעה
+                  </a>
+                </Button>
+              </>
+            )}
+            {resident.doNotContact && (
+              <span className="text-xs text-red-600 border border-red-200 bg-red-50 rounded-full px-3 py-1">
+                סומן כ"נא לא ליצור קשר"
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -111,11 +109,11 @@ export default async function ResidentProfilePage({ params }: { params: Promise<
       <Tabs defaultValue="overview" dir="rtl">
         <TabsList className="w-full justify-start border-b border-border bg-transparent rounded-none p-0 h-auto gap-0">
           {[
-            { value: 'overview',   label: 'סקירה כללית',  count: null },
-            { value: 'documents',  label: 'מסמכים',        count: resident.docsCount },
-            { value: 'meetings',   label: 'פגישות',        count: resident.meetingsCount },
-            { value: 'messages',   label: 'תקשורת',        count: resident.messagesCount },
-            { value: 'activity',   label: 'פעילות',        count: null },
+            { value: 'overview',  label: 'סקירה כללית', count: null },
+            { value: 'documents', label: 'מסמכים',       count: null },
+            { value: 'meetings',  label: 'פגישות',       count: null },
+            { value: 'messages',  label: 'תקשורת',       count: null },
+            { value: 'activity',  label: 'פעילות',       count: resident.activityLog?.length ?? null },
           ].map(tab => (
             <TabsTrigger
               key={tab.value}

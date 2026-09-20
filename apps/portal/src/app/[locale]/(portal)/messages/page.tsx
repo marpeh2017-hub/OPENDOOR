@@ -1,111 +1,130 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { MessageSquare, Bot, MessageCircle, Mail, Smartphone } from 'lucide-react'
+import { apiGet, NotAuthenticated } from '@/lib/api'
+import { formatDateTime } from '@/lib/dashboard'
+import { CHANNEL_LABELS, type PortalMessages } from '@/lib/messages'
 
-import { useState } from 'react'
-import { Send, Bell, Megaphone, MessageSquare } from 'lucide-react'
-import { cn } from '@/lib/utils'
+/**
+ * Everything the project has actually said to this resident.
+ *
+ * ── THREE THINGS THE MOCK PROMISED THAT DO NOT EXIST ────────────────────────
+ *
+ *   1. A REPLY BOX. Nothing in the system writes an inbound message; a resident
+ *      has no way to send one and nobody would receive it. A box that silently
+ *      discards what somebody types is worse than no box.
+ *   2. READ / UNREAD. `Message.readAt` is never written, and
+ *      `MessageStatus.READ` is a carrier's read receipt, not "opened it in the
+ *      portal". Inventing it here would create a record that the resident had
+ *      seen something — and "the resident was informed" is a claim that gets
+ *      made in front of a lawyer in a pinuy-binuy dispute. Not a flag to
+ *      fabricate for a nicer-looking list.
+ *   3. ANNOUNCEMENT / PERSONAL / SYSTEM types. `Message` has no such
+ *      classification, and grouping by an invented taxonomy would put messages
+ *      in categories the people who sent them never chose.
+ *
+ * What the page does say is what the system genuinely knows: what was sent,
+ * when it left, how it was delivered, and whether a person or a rule sent it.
+ */
+export const dynamic = 'force-dynamic'
 
-type MsgType = 'ANNOUNCEMENT' | 'PERSONAL' | 'SYSTEM'
-
-const TYPE_CFG: Record<MsgType, { icon: React.ElementType; bg: string; cls: string }> = {
-  ANNOUNCEMENT: { icon: Megaphone,    bg: 'bg-teal-50',   cls: 'text-teal-600' },
-  PERSONAL:     { icon: MessageSquare,bg: 'bg-blue-50',   cls: 'text-blue-600' },
-  SYSTEM:       { icon: Bell,          bg: 'bg-gray-50',  cls: 'text-gray-500' },
+const CHANNEL_ICONS: Record<string, typeof MessageSquare> = {
+  SMS: Smartphone,
+  WHATSAPP: MessageCircle,
+  EMAIL: Mail,
+  PORTAL: MessageSquare,
 }
 
-const messages = [
-  { id: '1', type: 'ANNOUNCEMENT' as MsgType, from: 'OpenDoor', subject: 'עדכון: אישור עקרוני מהעירייה התקבל', body: 'שלום לכל דיירי פרויקט הרצל 45. אנו שמחים לבשר כי קיבלנו אישור עקרוני מהעירייה לתוכנית הבנייה. הפרויקט ממשיך לפי לוח הזמנים.', date: '08.04.2024', read: false },
-  { id: '2', type: 'PERSONAL'     as MsgType, from: 'אבי שמואלי', subject: 'תזכורת: פגישה עדכון ב-20.07', body: 'שלום, רצינו לתזכר אותך לפגישת עדכון דיירים שתתקיים ב-20 ליולי ב-18:00. ניתן להצטרף גם בזום.', date: '15.07.2024', read: false },
-  { id: '3', type: 'SYSTEM'       as MsgType, from: 'מערכת', subject: 'ההסכם שלך נחתם בהצלחה', body: 'ההסכם לפרויקט הרצל 45 נחתם ב-15.03.2024. עותק מלא נשלח לכתובת האימייל שלך.', date: '15.03.2024', read: true },
-  { id: '4', type: 'ANNOUNCEMENT' as MsgType, from: 'OpenDoor', subject: 'הזמנה: הצגת תוכניות אדריכלות', body: 'אנו מזמינים אתכם לערב הצגת תוכניות האדריכלות לפרויקט. ב-05.05.2024 בשעה 18:30 במרכז הקהילתי.', date: '28.04.2024', read: true },
-]
+export default async function MessagesPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
 
-export default function MessagesPage() {
-  const [selected, setSelected] = useState<typeof messages[0] | null>(null)
-  const [newMsg, setNewMsg] = useState('')
-  const unread = messages.filter(m => !m.read).length
-
-  if (selected) {
-    const cfg = TYPE_CFG[selected.type]
-    const Icon = cfg.icon
-    return (
-      <div className="pb-10">
-        <button onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-sm text-teal-600 mb-4">
-          ← חזור
-        </button>
-        <div className="card-surface p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className={cn('h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0', cfg.bg)}>
-              <Icon size={18} className={cfg.cls} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800">{selected.subject}</p>
-              <p className="text-xs text-gray-400 mt-0.5">מ: {selected.from} · {selected.date}</p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-700 leading-relaxed border-t border-border pt-4">
-            {selected.body}
-          </p>
-        </div>
-
-        {selected.type === 'PERSONAL' && (
-          <div className="mt-4 card-surface p-3 flex gap-2">
-            <input
-              value={newMsg}
-              onChange={e => setNewMsg(e.target.value)}
-              placeholder="כתוב תגובה..."
-              className="flex-1 text-sm bg-transparent outline-none placeholder:text-gray-400"
-              dir="rtl"
-            />
-            <button
-              disabled={!newMsg.trim()}
-              className="h-8 w-8 rounded-lg bg-teal-500 text-white flex items-center justify-center disabled:opacity-40"
-            >
-              <Send size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-    )
+  let data: PortalMessages
+  try {
+    data = await apiGet<PortalMessages>('portal/messages')
+  } catch (err) {
+    if (err instanceof NotAuthenticated) {
+      redirect(`/${locale}/login${err.code ? `?reason=${err.code}` : ''}`)
+    }
+    throw err
   }
 
   return (
-    <div className="space-y-4 pb-10">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">הודעות</h1>
-          {unread > 0 && <p className="text-sm text-teal-600">{unread} הודעות שלא נקראו</p>}
-        </div>
+    <div className="space-y-5 pb-10">
+      <div>
+        <h1 className="text-xl font-bold text-gray-800">הודעות</h1>
+        <p className="text-sm text-gray-500">
+          {data.total > 0
+            ? `${data.total} הודעות מ${data.from}`
+            : 'הודעות שנשלחו אליך מצוות הפרויקט'}
+        </p>
       </div>
 
-      <div className="card-surface divide-y divide-border overflow-hidden">
-        {messages.map(msg => {
-          const cfg = TYPE_CFG[msg.type]
-          const Icon = cfg.icon
-          return (
-            <button
-              key={msg.id}
-              onClick={() => setSelected(msg)}
-              className="w-full flex items-start gap-3 px-4 py-4 hover:bg-gray-50 transition-colors text-right"
-            >
-              <div className={cn('h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5', cfg.bg)}>
-                <Icon size={16} className={cfg.cls} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-0.5">
-                  <p className={cn('text-sm font-medium truncate', msg.read ? 'text-gray-600' : 'text-gray-900')}>
-                    {msg.subject}
-                  </p>
-                  <span className="text-xs text-gray-400 flex-shrink-0">{msg.date}</span>
+      {data.messages.length === 0 ? (
+        <div className="card-surface p-8 text-center">
+          <MessageSquare size={28} className="mx-auto text-gray-300" />
+          <p className="mt-3 text-sm font-medium text-gray-700">אין עדיין הודעות</p>
+          <p className="mt-1 text-xs text-gray-500">
+            כשצוות הפרויקט ישלח לך הודעה, היא תופיע כאן.
+          </p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {data.messages.map((m) => {
+            const Icon = CHANNEL_ICONS[m.channel] ?? MessageSquare
+            return (
+              <li key={m.id} className="card-surface p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-teal-50">
+                    <Icon size={16} className="text-teal-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {m.subject && (
+                      <p className="text-sm font-semibold text-gray-800">{m.subject}</p>
+                    )}
+                    {/* The full body, not a preview. This page IS the resident's
+                        record of what they were told — truncating it would make
+                        them go looking for the original somewhere else.
+
+                        `break-words` is load-bearing: real messages carry
+                        meeting invitation links, and a 64-character token has no
+                        break opportunity in it. Without this the URL pushes the
+                        whole page sideways on a phone. */}
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700">
+                      {m.body}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                      <span>{formatDateTime(m.sentAt)}</span>
+                      <span aria-hidden>·</span>
+                      <span>{CHANNEL_LABELS[m.channel] ?? m.channel}</span>
+                      {m.automated && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span className="flex items-center gap-1" title="נשלח אוטומטית">
+                            <Bot size={11} />
+                            אוטומטי
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 truncate">{msg.body}</p>
-              </div>
-              {!msg.read && (
-                <div className="h-2 w-2 rounded-full bg-teal-500 flex-shrink-0 mt-2" />
-              )}
-            </button>
-          )
-        })}
-      </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      {data.nextCursor && (
+        // Deliberately plain: the endpoint pages, and wiring a "load more"
+        // button needs a client component. Saying the list is truncated is
+        // honest; silently showing 30 of 200 is not.
+        <p className="text-center text-xs text-gray-400">
+          מוצגות {data.messages.length} ההודעות האחרונות מתוך {data.total}
+        </p>
+      )}
     </div>
   )
 }

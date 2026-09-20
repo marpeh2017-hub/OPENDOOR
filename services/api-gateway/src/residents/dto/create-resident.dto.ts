@@ -1,5 +1,5 @@
 import {
-  IsString, IsOptional, IsEmail, IsNumber, IsBoolean, IsEnum, Min, Max,
+  IsString, IsOptional, IsEmail, IsNumber, IsBoolean, IsEnum, Min, Max, MaxLength,
 } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
@@ -52,4 +52,42 @@ export class CreateResidentDto {
   @IsOptional()
   @IsBoolean()
   whatsappOptIn?: boolean
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone2?: string
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isPrimaryContact?: boolean
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  smsOptIn?: boolean
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  emailOptIn?: boolean
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  doNotContact?: boolean
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  doNotContactReason?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notes?: string
 }
