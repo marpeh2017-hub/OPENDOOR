@@ -170,6 +170,53 @@ cd services/api-gateway && pnpm start:dev
 
 ---
 
+## 7א — הרצת הטסטים
+
+```bash
+cd services/api-gateway
+pnpm test:unit            # 195 טסטים, ללא תלויות חיצוניות
+pnpm test:e2e             # 50 חבילות, 1,407 טסטים — דורש תשתית, ראו למטה
+```
+
+### שתי תלויות שה-e2e דורש, ושבלעדיהן הוא נכשל בלי לומר למה
+
+שתיהן התגלו בדיעבד אחרי שחבילות שלמות נראו "שבורות" בעוד הקוד תקין. הן
+רשומות כאן כדי שזה לא יקרה שוב:
+
+**1. אחסון אובייקטים (S3 או תואם).** שש חבילות מעלות ומורידות קבצים —
+`documents-upload`, `portal-documents`, `excel-import`, `signature-workflow`,
+`cms-persistence`, `cms-project-security`. בלי הגדרה הן מייצרות **95 כשלים**,
+וההודעה היחידה שמסבירה אותם מופיעה בלוג של השרת ולא בפלט של Jest:
+
+```
+Storage not configured (S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY required)
+```
+
+```bash
+S3_ENDPOINT=http://127.0.0.1:9000 \
+S3_ACCESS_KEY=... S3_SECRET_KEY=... \
+S3_BUCKET=<bucket> S3_REGION=us-east-1 S3_FORCE_PATH_STYLE=true \
+pnpm test:e2e
+```
+
+MinIO מתאים (ראו 3ב). בסביבה ללא MinIO אפשר להסתפק ב-S3 מדומה:
+`pip install "moto[s3]" flask_cors && python3 -m moto.server -p 9000`,
+ואז ליצור את ה-bucket פעם אחת דרך boto3.
+
+**2. דפדפן ל-ייצוא PDF.** `feasibility-foundation` מייצר PDF אמיתי דרך
+Chrome/Edge. המועמדים בקוד הם `PDF_BROWSER_PATH` ושני נתיבי Windows קבועים —
+כלומר **בכל סביבת Linux חייבים להגדיר אותו במפורש**, אחרת הטסט מחזיר 500:
+
+```bash
+PDF_BROWSER_PATH=/path/to/chrome pnpm test:e2e
+```
+
+> Chromium מסרב לרוץ כ-root בלי `--no-sandbox`. הדגל הזה **לא** נוסף לקוד
+> המוצר בכוונה, כי הוא מחליש את ה-sandbox גם בפרודקשן. הריצו את הסוויטה
+> כמשתמש רגיל.
+
+כששתי התלויות מוגדרות הסוויטה עוברת במלואה: **50/50 חבילות, 1,407 טסטים.**
+
 ## 8 — Build לפרודקשן
 
 ```bash
@@ -238,6 +285,6 @@ DATABASE_URL="postgresql://.../restore_drill"   bash scripts/backup/pg-restore.s
 |---|---|
 | Dockerfile ל-CRM ול-Portal | חסר — רק ל-api-gateway יש |
 | Reverse proxy / TLS | לא הוגדר |
-| CI | אין `.github/workflows` |
+| CI | אין `.github/workflows` — וכשיוקם, הוא חייב S3 ו-`PDF_BROWSER_PATH` (ראו 7א), אחרת 95 טסטים ייכשלו על תצורה ולא על קוד |
 | לוגים מובנים | קונסולה בלבד |
 | ניטור ו-alerting | אין |

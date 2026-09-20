@@ -260,6 +260,71 @@ describe('Signature Workflow (e2e)', () => {
       expect(stored.documentHash).toBe(createHash('sha256').update(bytes).digest('hex'))
       expect(JSON.stringify(res.body)).not.toContain(s3Key)
     })
+
+    /**
+     * The binding has to survive a change to the FILE, not just exist.
+     *
+     * The original test proves a hash is stored. This proves the stored hash
+     * is of the right bytes: two packages over two different documents must
+     * carry two different hashes, and each must match its own content. A
+     * service that wrote a constant, or hashed the wrong document, passes the
+     * first test and fails this one.
+     */
+    it('records a hash that actually distinguishes one document from another', async () => {
+      if (!adminToken || !projectId) return
+      const make = async (content: string) => {
+        const bytes = Buffer.from(content)
+        const s3Key = await storage.upload(tenantId, 'documents', `e2e-${Date.now()}-${Math.random()}.pdf`, bytes, 'application/pdf')
+        const document = await prisma.document.create({
+          data: {
+            tenantId, projectId, category: 'LEGAL', title: `E2E Hash Doc ${Date.now()}-${Math.random()}`,
+            fileName: 'e2e-hash.pdf', fileSize: bytes.length, mimeType: 'application/pdf',
+            s3Key, s3Bucket: process.env.S3_BUCKET ?? 'urban-renewal', createdById: adminUserId,
+          },
+        })
+        const res = await request(app.getHttpServer())
+          .post('/api/v1/signatures/packages')
+          .set(authHeader(adminToken))
+          .send({ projectId, title: `E2E Hash Package ${Math.random()}`, documentId: document.id, signers: [{ ownerId, apartmentId }] })
+          .expect(201)
+        const stored = await prisma.signaturePackage.findUniqueOrThrow({ where: { id: res.body.id } })
+        return { bytes, document, stored }
+      }
+
+      const a = await make('%PDF-1.4\nversion A\n%%EOF')
+      const b = await make('%PDF-1.4\nversion B — one byte of difference matters\n%%EOF')
+
+      expect(a.stored.documentHash).toBe(createHash('sha256').update(a.bytes).digest('hex'))
+      expect(b.stored.documentHash).toBe(createHash('sha256').update(b.bytes).digest('hex'))
+      expect(a.stored.documentHash).not.toBe(b.stored.documentHash)
+      expect(JSON.parse(a.stored.documentIds)).toEqual([a.document.id])
+      expect(JSON.parse(b.stored.documentIds)).toEqual([b.document.id])
+    })
+
+    /**
+     * A binding the caller asked for and did not get is the bug this whole
+     * block exists to stop. Refusing is the only safe answer: a package
+     * created with a silently dropped `documentId` claims to be a signature of
+     * nothing in particular.
+     *
+     * An id this tenant cannot see is the same case as another tenant's id,
+     * and does not need a fabricated cross-tenant row to exercise it — the
+     * lookup is scoped by tenant, so an unresolvable id IS the cross-tenant
+     * outcome.
+     */
+    it('refuses to create a package bound to a document it cannot resolve, rather than dropping the binding', async () => {
+      if (!adminToken || !projectId) return
+      const title = `E2E Unresolvable Binding ${Date.now()}`
+      await request(app.getHttpServer())
+        .post('/api/v1/signatures/packages')
+        .set(authHeader(adminToken))
+        .send({ projectId, title, documentId: 'doc-that-does-not-exist', signers: [{ ownerId, apartmentId }] })
+        .expect(404)
+
+      // ...and nothing was written: a refused binding must not leave a package behind.
+      const orphan = await prisma.signaturePackage.findFirst({ where: { tenantId, title } })
+      expect(orphan).toBeNull()
+    })
   })
 
   describe('Package lifecycle', () => {

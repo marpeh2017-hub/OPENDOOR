@@ -3,7 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common'
+import { createHash } from 'node:crypto'
 import { PrismaService } from '../prisma.service'
+import { StorageService } from '../storage/storage.service'
 import { AutomationRunnerService } from '../automations/automation-runner.service'
 import { SignatureStateMachineService } from './signature-state-machine.service'
 import { SigningSessionService } from './signing-session.service'
@@ -28,13 +30,57 @@ export class SignaturePackageService {
     private readonly sessions: SigningSessionService,
     private readonly evidence: EvidencePackageService,
     private readonly automations: AutomationRunnerService,
+    private readonly storage: StorageService,
   ) {}
 
+  /**
+   * Bind a package to the document it is a signature OF, and record that
+   * document's SHA-256.
+   *
+   * ── WHY THIS IS NOT OPTIONAL WORK ─────────────────────────────────────
+   *
+   * `CreatePackageDto` has always accepted `documentId`, and `create()` never
+   * read it — the `as any` on the data object is what kept the compiler quiet.
+   * So a package that a caller explicitly bound to a document stored neither
+   * the document nor its hash: `documentIds` stayed at its `"[]"` default and
+   * `documentHash` stayed null.
+   *
+   * That is not a cosmetic omission. A signature package exists to prove that
+   * a named person signed a PARTICULAR document; without the id there is
+   * nothing to say which, and without the hash nothing to say the file has not
+   * changed since. Both are the evidentiary point of the record.
+   *
+   * ── WHY IT THROWS RATHER THAN DEGRADES ────────────────────────────────
+   *
+   * If the document cannot be found in this tenant, or its bytes cannot be
+   * read to hash them, the package is NOT created with a partial binding.
+   * Storing the id without the hash would assert a link whose integrity
+   * nobody can check later — a quieter version of the same bug.
+   */
+  private async resolveDocumentBinding(documentId: string, projectId: string, tenantId: string) {
+    const document = await this.prisma.document.findFirst({
+      where:  { id: documentId, tenantId, OR: [{ projectId }, { projectId: null }] },
+      select: { id: true, s3Key: true },
+    })
+    if (!document) throw new NotFoundException('Document not found in this tenant or project')
+    if (!document.s3Key) throw new BadRequestException('Document has no stored file to hash')
+
+    const bytes = await this.storage.download(tenantId, document.s3Key)
+    return {
+      documentIds:  JSON.stringify([document.id]),
+      documentHash: createHash('sha256').update(bytes).digest('hex'),
+    }
+  }
+
   async create(dto: CreatePackageDto, userId: string, tenantId: string) {
+    const binding = dto.documentId
+      ? await this.resolveDocumentBinding(dto.documentId, dto.projectId, tenantId)
+      : {}
     const pkg = await this.prisma.signaturePackage.create({
       data: {
         tenantId,
         projectId:          dto.projectId,
+        ...binding,
         title:              dto.title,
         signingOrder:       dto.signingOrder ?? 'PARALLEL',
         verificationMethod: dto.verificationMethod ?? 'SMS_OTP',

@@ -536,16 +536,54 @@ describe('CMS persistence (e2e)', () => {
   // ══════════════════════════════════════════════════════════════════════
 
   describe('public media URL', () => {
-    it('mints a signed URL for a real key belonging to this tenant', async () => {
-      const key = `${tenantAId}/cms/some-content/deadbeef-photo.jpg`
+    /**
+     * `publicMediaUrl` signs a key ONLY if some published snapshot of this
+     * tenant references it. That is deliberate: without the check the route
+     * would be an open signing oracle for any object in the bucket whose key
+     * a stranger could guess.
+     *
+     * These two tests used to ask for a key that nothing referenced
+     * (`deadbeef-photo.jpg`) and expect 200 and 403 — so they were asserting
+     * against the security control rather than through it, and both got the
+     * 404 the control is supposed to give. The fixture now publishes the key
+     * first, which is what a real featured image does.
+     */
+    const publishKeyInSnapshot = async (key: string) => {
+      const publication = await prisma.cmsPublication.findFirst({
+        where: { contentId: contentAId }, orderBy: { publishedAt: 'desc' },
+      })
+      if (!publication) throw new Error('fixture: content A has never been published')
+      await prisma.cmsPublication.update({
+        where: { id: publication.id },
+        data: { unpublishedAt: null, snapshot: { ...(publication.snapshot as object), heroImage: { storageKey: key } } },
+      })
+      await prisma.cmsContent.update({
+        where: { id: contentAId },
+        data: { state: 'PUBLISHED', livePublicationId: publication.id },
+      })
+    }
+
+    it('mints a signed URL for a key a published snapshot actually references', async () => {
+      const key = `${tenantAId}/cms/some-content/hero-photo.jpg`
+      await publishKeyInSnapshot(key)
       const res = await api().get(`/api/v1/public/cms/${A_SLUG}/media`).query({ key }).expect(200)
       expect(typeof res.body.url).toBe('string')
       expect(res.body.url.length).toBeGreaterThan(0)
     })
 
-    it('refuses a key belonging to a DIFFERENT tenant', async () => {
-      const key = `${tenantBId}/cms/some-content/deadbeef-photo.jpg`
+    it('refuses a key of a DIFFERENT tenant even when a published snapshot references it', async () => {
+      // Defence in depth: the reference check is satisfied on purpose here, so
+      // what refuses is the storage layer's own tenant-prefix guard. Without
+      // this setup the request 404s at the reference check and the guard is
+      // never reached — which is what the previous version of this test did.
+      const key = `${tenantBId}/cms/some-content/hero-photo.jpg`
+      await publishKeyInSnapshot(key)
       await api().get(`/api/v1/public/cms/${A_SLUG}/media`).query({ key }).expect(403)
+    })
+
+    it('refuses a key that no published snapshot references, so the route is not a signing oracle', async () => {
+      const key = `${tenantAId}/cms/some-content/never-referenced.jpg`
+      await api().get(`/api/v1/public/cms/${A_SLUG}/media`).query({ key }).expect(404)
     })
 
     it('answers 404 with no key at all, never a server error', async () => {
