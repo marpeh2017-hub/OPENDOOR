@@ -97,6 +97,23 @@ export function npv(cashFlows: Decimal.Value[], periodicRate: Decimal.Value): De
 }
 
 /**
+ * When the bracket is this narrow the answer has stopped moving.
+ *
+ * The NPV tolerance alone is not a stopping rule: it is an absolute amount in
+ * shekels, so on a ₪60m project the net present value never approaches 1e-8
+ * and the loop ran its full 240 halvings every single time. Past roughly the
+ * 55th halving the bracket is narrower than 1e-15 and every further iteration
+ * refines digits that no longer exist in the result — but each one costs a
+ * full fractional-exponent discount of every cash flow.
+ *
+ * This is not accuracy traded for speed. 1e-15 on an annual rate is a
+ * ten-millionth of a basis point, and the value returned is unchanged to well
+ * past the precision anything downstream reads. It is the iterations AFTER
+ * convergence that are being dropped, not the convergence.
+ */
+const RATE_TOLERANCE = new Decimal('1e-15')
+
+/**
  * Bisection IRR avoids Number/Math.pow drift. Returns null where no rate can
  * exist (all cash flows are one sign) or where the root is not bracketed.
  */
@@ -117,6 +134,7 @@ export function irr(cashFlows: Decimal.Value[]): Decimal | null {
     const value = npv(values, mid)
     if (value.abs().lte('0.00000001')) return mid
     if (lowValue.mul(value).lte(0)) { high = mid; highValue = value } else { low = mid; lowValue = value }
+    if (high.minus(low).lte(RATE_TOLERANCE)) break
   }
   return low.plus(high).div(2)
 }
@@ -207,21 +225,42 @@ export function xirr(cashFlows: readonly DatedCashFlow[]): Decimal | null {
   const values = cashFlows.map((flow) => new Decimal(flow.amount))
   if (!values.some((value) => value.lt(0)) || !values.some((value) => value.gt(0))) return null
 
+  /*
+   * The day offsets are a property of the cash flow, not of the rate being
+   * tried, so they are computed once here rather than re-parsed out of the
+   * date strings on every one of the bisection's calls. Same arithmetic,
+   * same result — `xnpv` above remains the public, date-keyed form.
+   */
+  const ordered = [...cashFlows].sort((a, b) => a.date.localeCompare(b.date))
+  const base = ordered[0]!.date
+  const amounts = ordered.map((flow) => new Decimal(flow.amount))
+  const yearFractions = ordered.map((flow) => new Decimal(daysBetween(base, flow.date)).div(365))
+  const presentValue = (rate: Decimal) => {
+    const onePlusRate = new Decimal(1).plus(rate)
+    let total = new Decimal(0)
+    for (let index = 0; index < amounts.length; index += 1) {
+      const years = yearFractions[index]!
+      total = total.plus(amounts[index]!.div(years.isZero() ? new Decimal(1) : onePlusRate.pow(years)))
+    }
+    return total
+  }
+
   let low = new Decimal('-0.99999999')
   let high = new Decimal('10')
-  let lowValue = xnpv(cashFlows, low)
-  let highValue = xnpv(cashFlows, high)
+  let lowValue = presentValue(low)
+  let highValue = presentValue(high)
   for (let expansion = 0; lowValue.mul(highValue).gt(0) && expansion < 40; expansion += 1) {
     high = high.mul(2).plus(1)
-    highValue = xnpv(cashFlows, high)
+    highValue = presentValue(high)
   }
   if (lowValue.mul(highValue).gt(0)) return null
 
   for (let iteration = 0; iteration < 240; iteration += 1) {
     const mid = low.plus(high).div(2)
-    const value = xnpv(cashFlows, mid)
+    const value = presentValue(mid)
     if (value.abs().lte('0.00000001')) return mid
     if (lowValue.mul(value).lte(0)) { high = mid; highValue = value } else { low = mid; lowValue = value }
+    if (high.minus(low).lte(RATE_TOLERANCE)) break
   }
   return low.plus(high).div(2)
 }

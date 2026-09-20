@@ -14,7 +14,7 @@ import {
   CreateFeasibilityCompensationLineDto, UpdateFeasibilityCompensationLineDto,
   CreateComparableAdjustmentDto, CreateComparableTransactionDto, UpdateComparableAdjustmentDto, UpdateComparableTransactionDto,
   CreateFeasibilitySnapshotDto,
-  CreateSensitivityDto, CreateGoalSeekDto,
+  CreateSensitivityDto, CreateGoalSeekDto, CreateMonteCarloDto,
   CreateFeasibilityReportVersionDto,
   TransitionFeasibilityReportVersionDto,
   UpsertFeasibilityFinancingDto,
@@ -307,6 +307,13 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Solve for the input that reaches a target metric; reports failure rather than inventing a reachable answer' })
   goalSeek(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateGoalSeekDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.goalSeek(projectId, scenarioId, dto, tenantFrom(req)))
+  }
+
+  @Post('scenarios/:scenarioId/monte-carlo')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Run the engine over sampled inputs and return the distribution — P10/P50/P90, probability of loss and a histogram — rather than a single point estimate' })
+  monteCarlo(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateMonteCarloDto, @Request() req: any) {
+    return mapDomainErrors(() => this.calculations.monteCarlo(projectId, scenarioId, dto, tenantFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/snapshots')

@@ -396,3 +396,70 @@ export function useRunFeasibilityGoalSeek(projectId: string) {
       api.post<FeasibilityGoalSeek>(`/projects/${projectId}/feasibility/scenarios/${scenarioId}/goal-seek`, dto),
   })
 }
+
+// ── Monte Carlo ────────────────────────────────────────────────────────────
+
+export type MonteCarloField =
+  'pricePerSqm' | 'salePrice' | 'constructionCost' | 'landCost' | 'interestRate' | 'discountRate' | 'financingMonths'
+
+export type MonteCarloVariableInput = {
+  field: MonteCarloField
+  distribution: 'normal' | 'triangular' | 'uniform'
+  /** `normal` — standard deviation as a fraction of base. */
+  stdDevPct?: string
+  /** `triangular`/`uniform` — multipliers of base, or months for `financingMonths`. */
+  min?: string
+  mostLikely?: string
+  max?: string
+}
+
+export type MonteCarloInput = {
+  runs?: number
+  seed?: number
+  buckets?: number
+  variables: MonteCarloVariableInput[]
+}
+
+/** The same shape whether or not the metric could be expressed, so nothing branches on it. */
+export type MonteCarloStats = {
+  available: boolean
+  samples: number
+  undefinedRuns: number
+  p10: number | null
+  p50: number | null
+  p90: number | null
+  mean: number | null
+  stdDev: number | null
+  min: number | null
+  max: number | null
+  probabilityOfLoss: number | null
+  histogram: Array<{ from: number | null; to: number | null; count: number }>
+}
+
+export type MonteCarloMetricKey = 'profitOnCost' | 'profit' | 'projectNpv' | 'projectIrrAnnual' | 'equityIrrAnnual'
+
+export type MonteCarloResult = {
+  runs: number
+  seed: number
+  elapsedMs: number
+  msPerRun: number
+  engineVersion: string
+  baseCase: Record<MonteCarloMetricKey, string | null>
+  variables: Array<{
+    field: MonteCarloField
+    distribution: string
+    unit: 'MONTHS' | 'FACTOR_OF_BASE'
+    drawnMin: number | null
+    drawnMean: number | null
+    drawnMax: number | null
+  }>
+  clampedDraws: number
+  metrics: Record<MonteCarloMetricKey, MonteCarloStats>
+}
+
+export function useRunFeasibilityMonteCarlo(projectId: string) {
+  return useMutation({
+    mutationFn: ({ scenarioId, dto }: { scenarioId: string; dto: MonteCarloInput }) =>
+      api.post<MonteCarloResult>(`/projects/${projectId}/feasibility/scenarios/${scenarioId}/monte-carlo`, dto),
+  })
+}

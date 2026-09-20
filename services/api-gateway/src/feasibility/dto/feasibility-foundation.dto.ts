@@ -1,6 +1,6 @@
 import {
   IsBoolean, IsDateString, IsEnum, IsInt, IsNotEmpty,
-  ArrayMinSize, IsArray, IsIn, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested,
+  ArrayMinSize, IsArray, IsIn, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested,
 } from 'class-validator'
 import { OmitType, PartialType } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -514,6 +514,81 @@ export class CreateGoalSeekDto {
 export class CreateFeasibilitySnapshotDto {
   @IsOptional() @ValidateNested() @Type(() => CreateSensitivityDto)
   sensitivity?: CreateSensitivityDto
+}
+
+/**
+ * Monte Carlo — the distribution behind the single number.
+ *
+ * A zero report states one profit-on-cost. That number is the result of every
+ * assumption landing exactly where it was typed, which is the one outcome that
+ * will not happen. This samples the assumptions instead and runs the SAME
+ * engine over each draw, so the answer is a spread with a probability of loss
+ * attached rather than a point estimate that looks certain.
+ *
+ * ── UNITS ─────────────────────────────────────────────────────────────────
+ *
+ * Every field except `financingMonths` is sampled as a MULTIPLIER of whatever
+ * the scenario already holds: `stdDevPct: '0.10'` means a normal draw with a
+ * standard deviation of 10% of the base value, and a triangular `min/mostLikely/
+ * max` of `0.9/1/1.3` means 90%–130% of base. `financingMonths` is sampled in
+ * MONTHS, absolutely, because a loan term has no meaningful base-relative
+ * reading — `min: '18', mostLikely: '24', max: '36'` is the whole statement.
+ *
+ * The response repeats each variable's unit so a reader never has to infer it.
+ */
+export class MonteCarloVariableDto {
+  /**
+   * `pricePerSqm` moves ONLY the ₪/sqm on sale units — not parking, storage,
+   * balconies or standalone revenue lines. `salePrice` moves all of them
+   * together. They are separate because an appraiser's uncertainty about the
+   * residential rate is not the same as uncertainty about the whole revenue
+   * side, and conflating them overstates the spread.
+   */
+  @IsIn(['pricePerSqm', 'salePrice', 'constructionCost', 'landCost', 'interestRate', 'discountRate', 'financingMonths'])
+  field!: 'pricePerSqm' | 'salePrice' | 'constructionCost' | 'landCost' | 'interestRate' | 'discountRate' | 'financingMonths'
+
+  @IsIn(['normal', 'triangular', 'uniform'])
+  distribution!: 'normal' | 'triangular' | 'uniform'
+
+  /** `normal` only: standard deviation as a fraction of the base value. */
+  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
+  stdDevPct?: string
+
+  /** `triangular` and `uniform`. Multipliers of base, or months for `financingMonths`. */
+  @IsOptional() @Matches(/^-?\d+(\.\d+)?$/)
+  min?: string
+
+  /** `triangular` only — the mode, not the mean. */
+  @IsOptional() @Matches(/^-?\d+(\.\d+)?$/)
+  mostLikely?: string
+
+  @IsOptional() @Matches(/^-?\d+(\.\d+)?$/)
+  max?: string
+}
+
+export class CreateMonteCarloDto {
+  /**
+   * Capped at 10,000. The cap is not arithmetic shyness — it is the point past
+   * which a synchronous HTTP request stops being the right shape for the work.
+   * The response reports its own wall time so the caller can see the cost.
+   */
+  @IsOptional() @IsInt() @Min(100) @Max(10000)
+  runs?: number
+
+  /**
+   * Fixing the seed makes a run reproducible, which is what turns a simulation
+   * into something that can be cited in a report and re-derived by whoever
+   * reads it. Omitted, a seed is drawn and RETURNED, so any run can be repeated.
+   */
+  @IsOptional() @IsInt() @Min(1)
+  seed?: number
+
+  @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => MonteCarloVariableDto)
+  variables!: MonteCarloVariableDto[]
+
+  /** Histogram resolution for the chart. */
+  @IsOptional() @IsInt() @Min(5) @Max(100)
+  buckets?: number
 }
 
 export class CreateComparableTransactionDto {

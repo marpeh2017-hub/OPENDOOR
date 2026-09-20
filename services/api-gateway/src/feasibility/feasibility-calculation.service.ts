@@ -4,7 +4,9 @@ import { DomainError } from '../common/errors/domain-error'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
-import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
+import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto,
+  CreateMonteCarloDto,
+  MonteCarloVariableDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
 import { FeasibilityService } from './feasibility.service'
 import { type ReplacementAllocation, replacementAllocationSummary } from './replacement-allocation'
 
@@ -1084,6 +1086,174 @@ export class FeasibilityCalculationService {
     }
   }
 
+  /**
+   * ── MONTE CARLO ───────────────────────────────────────────────────────────
+   *
+   * The sensitivity grid asks "what if the price is 10% lower". Goal seek asks
+   * "what price reaches 25%". Neither asks the question a lender asks: how
+   * likely is this to lose money. That needs a distribution, and a distribution
+   * needs the engine run many times over sampled inputs — not a formula that
+   * approximates the engine, which would quietly stop agreeing with it.
+   *
+   * So this is a loop over the SAME `compute` used by every other endpoint. A
+   * run that trips an LTC covenant trips it here too; escalation compounds here
+   * exactly as it does there. There is no second model to keep in sync, and no
+   * accuracy traded for speed.
+   *
+   * ── WHY THE SEED IS RETURNED ──────────────────────────────────────────────
+   *
+   * A simulation quoted in a report has to be re-derivable, or it is an appeal
+   * to a random number nobody else can reproduce. The PRNG is seeded, the seed
+   * is echoed, and the same seed with the same inputs gives the same answer.
+   */
+  async monteCarlo(projectId: string, scenarioId: string, dto: CreateMonteCarloDto, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    const runs = dto.runs ?? 1000
+    const buckets = dto.buckets ?? 20
+    const seed = dto.seed ?? Math.floor(Math.random() * 2 ** 31) + 1
+
+    const fields = new Set<string>()
+    for (const variable of dto.variables) {
+      if (fields.has(variable.field)) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_DUPLICATE_VARIABLE', `המשתנה „${variable.field}” הוגדר יותר מפעם אחת`, 'variables')
+      fields.add(variable.field)
+      assertSamplerInputs(variable)
+    }
+    // Sampling a lever the scenario does not have is not a smaller spread —
+    // it is a simulation that silently ignores what was asked for.
+    if (fields.has('financingMonths') && !scenario.financing) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_VARIABLE_NOT_APPLICABLE', 'לא ניתן לדגום משך מימון בתרחיש ללא מימון', 'variables')
+    if (fields.has('interestRate') && !scenario.financing?.annualInterestRate) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_VARIABLE_NOT_APPLICABLE', 'לא ניתן לדגום ריבית בתרחיש ללא שיעור ריבית', 'variables')
+    if (fields.has('pricePerSqm') && !scenario.unitMix.some((line) => line.disposition === 'DEVELOPER_SALE' && line.pricePerSqm)) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_VARIABLE_NOT_APPLICABLE', 'לא ניתן לדגום מחיר למ״ר בתרחיש ללא דירות למכירה המתומחרות למ״ר', 'variables')
+
+    /*
+     * ── THE BUDGET GUARD, AND WHY IT MEASURES RATHER THAN GUESSES ─────────
+     *
+     * `compute` is not uniformly priced. A scenario with no dated cash-flow
+     * allocations costs about 0.2ms; one with them costs roughly 35ms, because
+     * each run solves XIRR — a bracketed root search whose every step
+     * discounts every flow by a fractional exponent at 40-digit precision.
+     * A hundred and eighty-fold spread is not something a fixed run cap can
+     * express: 10,000 runs is two seconds on the first and an hour on the
+     * second.
+     *
+     * So the base run is TIMED, and the total projected from it. Over budget,
+     * the caller is told the measured cost per run and how many runs do fit,
+     * before the request is left hanging. Nothing is silently truncated and no
+     * precision is dropped to fit — the alternative to an honest refusal here
+     * would be a slower engine, not a faster answer.
+     */
+    const baseStartedAt = Date.now()
+    const base = this.compute(profile, scenario)
+    const baseMs = Math.max(Date.now() - baseStartedAt, 0.05)
+    const projectedMs = baseMs * runs
+    if (projectedMs > MONTE_CARLO_BUDGET_MS) {
+      const affordable = Math.max(100, Math.floor(MONTE_CARLO_BUDGET_MS / baseMs / 100) * 100)
+      throw DomainError.validation(
+        'FEASIBILITY_MONTE_CARLO_BUDGET_EXCEEDED',
+        `הרצה אחת של המנוע בתרחיש הזה אורכת ${baseMs.toFixed(1)} מ״ש, ולכן ${runs} הרצות היו נמשכות כ-${Math.round(projectedMs / 1000)} שניות. אפשר להריץ עד ${affordable} הרצות, או לפשט את לוח התזרים — חישוב ה-IRR לפי תאריכים הוא מה שמייקר את ההרצה.`,
+        'runs',
+      )
+    }
+
+    const random = mulberry32(seed)
+    const samplers = dto.variables.map((variable) => ({ field: variable.field, draw: samplerFor(variable, random) }))
+
+    const collected: Record<MonteCarloMetric, number[]> = { profitOnCost: [], profit: [], projectNpv: [], projectIrrAnnual: [], equityIrrAnnual: [] }
+    const undefinedRuns: Record<string, number> = { profitOnCost: 0, profit: 0, projectNpv: 0, projectIrrAnnual: 0, equityIrrAnnual: 0 }
+    /** A draw pushed below this would invert a price or a cost; counted, never silently kept. */
+    const FACTOR_FLOOR = 0.01
+    let clampedDraws = 0
+    const drawnByField: Record<string, number[]> = Object.fromEntries(samplers.map((sampler) => [sampler.field, [] as number[]]))
+    const startedAt = Date.now()
+
+    for (let run = 0; run < runs; run += 1) {
+      const sample = new Map<string, number>()
+      for (const sampler of samplers) {
+        let value = sampler.draw()
+        if (sampler.field === 'financingMonths') value = Math.max(0, Math.round(value))
+        else if (value < FACTOR_FLOOR) { value = FACTOR_FLOOR; clampedDraws += 1 }
+        sample.set(sampler.field, value)
+        drawnByField[sampler.field]!.push(value)
+      }
+      const adjusted = this.applyMonteCarloSample(profile, scenario, sample)
+      const result = this.compute(adjusted.profile, adjusted.scenario)
+      for (const metric of MONTE_CARLO_METRICS) {
+        const raw = monteCarloMetricOf(result, metric)
+        if (raw === null) { undefinedRuns[metric] += 1; continue }
+        collected[metric].push(Number(raw))
+      }
+    }
+    const elapsedMs = Date.now() - startedAt
+
+    return {
+      runs,
+      seed,
+      elapsedMs,
+      msPerRun: Number((elapsedMs / runs).toFixed(4)),
+      engineVersion: base.engineVersion,
+      /** What the scenario says today, for reading the spread against. */
+      baseCase: {
+        profitOnCost: base.profitability.profitOnCost,
+        profit: base.profitability.profit,
+        projectNpv: base.returns.projectNpv,
+        projectIrrAnnual: base.returns.projectIrrAnnual,
+        equityIrrAnnual: base.returns.equityIrrAnnual,
+      },
+      variables: dto.variables.map((variable) => ({
+        field: variable.field,
+        distribution: variable.distribution,
+        unit: variable.field === 'financingMonths' ? 'MONTHS' : 'FACTOR_OF_BASE',
+        ...summariseDraws(drawnByField[variable.field]!),
+      })),
+      /** Draws floored to keep a price or a cost from turning negative. Zero on any sane input. */
+      clampedDraws,
+      metrics: Object.fromEntries(MONTE_CARLO_METRICS.map((metric) => [
+        metric,
+        summariseMetric(collected[metric], undefinedRuns[metric]!, buckets),
+      ])),
+    }
+  }
+
+  /**
+   * One sampled draw applied to the loaded input.
+   *
+   * The shared levers ride on `applySensitivityFactors`, so a Monte Carlo draw
+   * and a sensitivity cell of the same size produce the same scenario — they
+   * have to, or the two views of the model would disagree.
+   *
+   * `pricePerSqm` and `financingMonths` are not sensitivity levers and are
+   * applied here: the first narrows `SALE_PRICE` to the residential rate on
+   * sale units, the second is an absolute month count rather than a multiplier.
+   */
+  private applyMonteCarloSample(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario, sample: Map<string, number>) {
+    const factors = new Map<string, Decimal>()
+    for (const [field, lever] of Object.entries(MONTE_CARLO_LEVER)) {
+      const drawn = sample.get(field)
+      if (drawn !== undefined) factors.set(lever, new Decimal(drawn))
+    }
+    let { profile: adjustedProfile, scenario: adjustedScenario } = this.applySensitivityFactors(profile, scenario, factors)
+
+    const price = sample.get('pricePerSqm')
+    if (price !== undefined) {
+      const factor = new Decimal(price)
+      adjustedScenario = {
+        ...adjustedScenario,
+        unitMix: adjustedScenario.unitMix.map((line) => line.disposition === 'DEVELOPER_SALE' && line.pricePerSqm
+          ? { ...line, pricePerSqm: read(line.pricePerSqm).mul(factor).toString() }
+          : line),
+      } as LoadedFeasibilityScenario
+    }
+
+    const months = sample.get('financingMonths')
+    if (months !== undefined && adjustedScenario.financing) {
+      adjustedScenario = {
+        ...adjustedScenario,
+        financing: { ...adjustedScenario.financing, financingMonths: months },
+      } as LoadedFeasibilityScenario
+    }
+
+    return { profile: adjustedProfile, scenario: adjustedScenario }
+  }
+
   async sensitivity(projectId: string, scenarioId: string, dto: CreateSensitivityDto, tenantId: string) {
     const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
     return this.computeSensitivity(profile, scenario, dto)
@@ -1227,4 +1397,179 @@ const GOAL_SEEK_LEVER: Record<CreateGoalSeekDto['solveFor'], string> = {
   landCost: 'LAND_COST',
   interestRate: 'INTEREST_RATE',
   discountRate: 'DISCOUNT_RATE',
+}
+
+/**
+ * ── SAMPLING ──────────────────────────────────────────────────────────────
+ *
+ * Deliberately a seeded PRNG rather than `Math.random`. A simulation quoted in
+ * a zero report has to be reproducible by whoever reads the report; an
+ * unreproducible number in a professional document is an assertion, not a
+ * finding.
+ *
+ * mulberry32 is not cryptographic and is not meant to be — it is fast, has a
+ * long enough period for 10,000 draws by a wide margin, and passes the
+ * statistical properties that matter here.
+ */
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * The wall-clock ceiling for one synchronous Monte Carlo request. Past this a
+ * simulation belongs in a job, not in an HTTP round trip that a proxy will
+ * cut off anyway.
+ */
+const MONTE_CARLO_BUDGET_MS = 15000
+
+const MONTE_CARLO_METRICS = ['profitOnCost', 'profit', 'projectNpv', 'projectIrrAnnual', 'equityIrrAnnual'] as const
+type MonteCarloMetric = (typeof MONTE_CARLO_METRICS)[number]
+
+/** The fields that are ordinary sensitivity levers; the other two are applied directly. */
+const MONTE_CARLO_LEVER: Record<string, string> = {
+  salePrice: 'SALE_PRICE',
+  constructionCost: 'CONSTRUCTION_COST',
+  landCost: 'LAND_COST',
+  interestRate: 'INTEREST_RATE',
+  discountRate: 'DISCOUNT_RATE',
+}
+
+function monteCarloMetricOf(result: ReturnType<FeasibilityCalculationService['compute']>, metric: MonteCarloMetric): string | null {
+  switch (metric) {
+    case 'profitOnCost': return result.profitability.profitOnCost
+    case 'profit': return result.profitability.profit
+    case 'projectNpv': return result.returns.projectNpv
+    case 'projectIrrAnnual': return result.returns.projectIrrAnnual
+    case 'equityIrrAnnual': return result.returns.equityIrrAnnual
+  }
+}
+
+/**
+ * A distribution is only as meaningful as its parameters. A triangular whose
+ * mode sits outside its bounds, or a normal with no spread, produces output
+ * that looks like a simulation and is not one, so these are refused up front
+ * rather than run.
+ */
+function assertSamplerInputs(variable: MonteCarloVariableDto): void {
+  const where = `variables.${variable.field}`
+  if (variable.distribution === 'normal') {
+    if (variable.stdDevPct === undefined) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_PARAMS_INVALID', `להתפלגות נורמלית של „${variable.field}” דרושה סטיית תקן`, where)
+    if (new Decimal(variable.stdDevPct).lte(0)) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_PARAMS_INVALID', `סטיית תקן של „${variable.field}” חייבת להיות חיובית — אחרת אין כאן סימולציה`, where)
+    return
+  }
+  if (variable.min === undefined || variable.max === undefined) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_PARAMS_INVALID', `ל„${variable.field}” דרושים ערכי מינימום ומקסימום`, where)
+  const min = new Decimal(variable.min)
+  const max = new Decimal(variable.max)
+  if (min.gte(max)) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_PARAMS_INVALID', `המינימום של „${variable.field}” חייב להיות קטן מהמקסימום`, where)
+  if (variable.distribution === 'triangular') {
+    if (variable.mostLikely === undefined) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_PARAMS_INVALID', `להתפלגות משולשת של „${variable.field}” דרוש ערך שכיח`, where)
+    const mode = new Decimal(variable.mostLikely)
+    if (mode.lt(min) || mode.gt(max)) throw DomainError.validation('FEASIBILITY_MONTE_CARLO_PARAMS_INVALID', `הערך השכיח של „${variable.field}” חייב להיות בין המינימום למקסימום`, where)
+  }
+}
+
+function samplerFor(variable: MonteCarloVariableDto, random: () => number): () => number {
+  if (variable.distribution === 'normal') {
+    const sd = Number(variable.stdDevPct)
+    // Box–Muller. `1 - random()` keeps the log away from zero.
+    return () => 1 + sd * Math.sqrt(-2 * Math.log(1 - random())) * Math.cos(2 * Math.PI * random())
+  }
+  const min = Number(variable.min)
+  const max = Number(variable.max)
+  if (variable.distribution === 'uniform') return () => min + (max - min) * random()
+  const mode = Number(variable.mostLikely)
+  const split = (mode - min) / (max - min)
+  // Inverse CDF of the triangular distribution.
+  return () => {
+    const u = random()
+    return u < split
+      ? min + Math.sqrt(u * (max - min) * (mode - min))
+      : max - Math.sqrt((1 - u) * (max - min) * (max - mode))
+  }
+}
+
+/**
+ * Linear-interpolated percentile (the "type 7" definition, the same one
+ * Excel's PERCENTILE and numpy's default use) over an already sorted sample.
+ */
+function percentileOf(sorted: number[], fraction: number): number {
+  if (sorted.length === 0) return NaN
+  if (sorted.length === 1) return sorted[0]!
+  const position = fraction * (sorted.length - 1)
+  const lower = Math.floor(position)
+  const upper = Math.ceil(position)
+  if (lower === upper) return sorted[lower]!
+  return sorted[lower]! + (position - lower) * (sorted[upper]! - sorted[lower]!)
+}
+
+const round6 = (value: number) => Number.isFinite(value) ? Number(value.toFixed(6)) : null
+
+/** What was actually drawn, so an input distribution can be checked rather than trusted. */
+function summariseDraws(draws: number[]) {
+  const sorted = [...draws].sort((a, b) => a - b)
+  const mean = draws.reduce((sum, value) => sum + value, 0) / (draws.length || 1)
+  return {
+    drawnMin: round6(sorted[0] ?? NaN),
+    drawnMean: round6(mean),
+    drawnMax: round6(sorted[sorted.length - 1] ?? NaN),
+  }
+}
+
+function summariseMetric(values: number[], undefinedRuns: number, buckets: number) {
+  if (values.length === 0) {
+    // The metric is undefined in every run — an IRR on a scenario with no cash
+    // flow, say. Reported as absent rather than as a distribution of nothing.
+    // The shape stays identical either way, so a reader (or a chart) never has
+    // to branch on which variant it received.
+    return {
+      available: false, samples: 0, undefinedRuns,
+      p10: null, p50: null, p90: null, mean: null, stdDev: null, min: null, max: null,
+      probabilityOfLoss: null, histogram: [] as Array<{ from: number | null; to: number | null; count: number }>,
+    }
+  }
+  const sorted = [...values].sort((a, b) => a - b)
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length
+  // Sample standard deviation (n-1): these are draws from a distribution, not
+  // the distribution itself.
+  const variance = values.length > 1
+    ? values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1)
+    : 0
+  const min = sorted[0]!
+  const max = sorted[sorted.length - 1]!
+
+  const width = (max - min) / buckets
+  const histogram = Array.from({ length: buckets }, (unused, index) => ({
+    from: round6(min + width * index),
+    to: round6(min + width * (index + 1)),
+    count: 0,
+  }))
+  for (const value of sorted) {
+    // The top edge belongs to the last bucket rather than to a bucket past the end.
+    const index = width === 0 ? 0 : Math.min(buckets - 1, Math.floor((value - min) / width))
+    histogram[index]!.count += 1
+  }
+
+  return {
+    available: true,
+    samples: values.length,
+    /** Runs where the engine could not express this metric at all; excluded from the statistics above. */
+    undefinedRuns,
+    p10: round6(percentileOf(sorted, 0.10)),
+    p50: round6(percentileOf(sorted, 0.50)),
+    p90: round6(percentileOf(sorted, 0.90)),
+    mean: round6(mean),
+    stdDev: round6(Math.sqrt(variance)),
+    min: round6(min),
+    max: round6(max),
+    /** Share of runs in which this metric came out negative. */
+    probabilityOfLoss: round6(values.filter((value) => value < 0).length / values.length),
+    histogram,
+  }
 }
