@@ -477,25 +477,34 @@ export class CreateSensitivityDto {
  * where they land. The inverse of the sensitivity grid, over the same levers.
  */
 export class CreateGoalSeekDto {
-  @IsIn(['SALE_PRICE', 'CONSTRUCTION_COST', 'LAND_COST', 'INTEREST_RATE', 'DISCOUNT_RATE'])
-  variable!: 'SALE_PRICE' | 'CONSTRUCTION_COST' | 'LAND_COST' | 'INTEREST_RATE' | 'DISCOUNT_RATE'
+  /**
+   * What to solve for.
+   *
+   * `pricePerSqm` is the headline case and the one an appraiser actually
+   * works in: the answer comes back as an absolute ₪/sqm that can be typed
+   * straight back into the unit mix. The rest are the sensitivity levers, and
+   * their answer is a percentage change, because "the construction cost" is
+   * not a single number that could be reported as one.
+   */
+  @IsIn(['pricePerSqm', 'salePrice', 'constructionCost', 'landCost', 'interestRate', 'discountRate'])
+  solveFor!: 'pricePerSqm' | 'salePrice' | 'constructionCost' | 'landCost' | 'interestRate' | 'discountRate'
 
   /**
-   * What is being aimed at. Ratios (PROFIT_ON_COST, PROFIT_MARGIN,
-   * PROJECT_IRR_ANNUAL) are decimal fractions, not percentages: 0.2, never 20.
+   * What is being aimed at. Ratios (profitOnCost, profitMargin,
+   * projectIrrAnnual) are decimal fractions, not percentages: 0.2, never 20.
    * The engine stores them that way, and accepting both would make 20 mean
    * either a fifth or twenty times depending on the metric.
    */
-  @IsIn(['PROFIT', 'PROFIT_ON_COST', 'PROFIT_MARGIN', 'PROJECT_NPV', 'PROJECT_IRR_ANNUAL', 'RESIDUAL_LAND_VALUE'])
-  metric!: 'PROFIT' | 'PROFIT_ON_COST' | 'PROFIT_MARGIN' | 'PROJECT_NPV' | 'PROJECT_IRR_ANNUAL' | 'RESIDUAL_LAND_VALUE'
+  @IsIn(['profit', 'profitOnCost', 'profitMargin', 'projectNpv', 'projectIrrAnnual', 'residualLandValue'])
+  targetMetric!: 'profit' | 'profitOnCost' | 'profitMargin' | 'projectNpv' | 'projectIrrAnnual' | 'residualLandValue'
 
   @Matches(/^-?\d+(\.\d+)?$/)
-  target!: string
+  targetValue!: string
 
   /**
    * How far the solver may move the input, as a percentage either way.
    * Bounded because an unbounded search will always find SOMETHING, and a
-   * "solution" at +4000% on the sale price is not an answer, it is a way of
+   * "solution" at +4000% on the sale price is not an answer — it is a way of
    * saying the target is unreachable while looking like it is not.
    */
   @IsOptional() @Matches(/^\d+(\.\d+)?$/)

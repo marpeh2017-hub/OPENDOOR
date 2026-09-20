@@ -348,25 +348,36 @@ export function useFeasibilityDeviations(profileId: string | null) {
 // ── Goal Seek ──────────────────────────────────────────────────────────────
 
 export type FeasibilityGoalSeekMetric =
-  'PROFIT' | 'PROFIT_ON_COST' | 'PROFIT_MARGIN' | 'PROJECT_NPV' | 'PROJECT_IRR_ANNUAL' | 'RESIDUAL_LAND_VALUE'
+  'profit' | 'profitOnCost' | 'profitMargin' | 'projectNpv' | 'projectIrrAnnual' | 'residualLandValue'
+
+export type FeasibilityGoalSeekVariable =
+  'pricePerSqm' | 'salePrice' | 'constructionCost' | 'landCost' | 'interestRate' | 'discountRate'
 
 export type FeasibilityGoalSeekInput = {
-  variable: FeasibilitySensitivityVariable
-  metric: FeasibilityGoalSeekMetric
-  target: string
+  solveFor: FeasibilityGoalSeekVariable
+  targetMetric: FeasibilityGoalSeekMetric
+  targetValue: string
   maxChangePercent?: string
 }
 
 export type FeasibilityGoalSeek = {
-  variable: FeasibilitySensitivityVariable
-  metric: FeasibilityGoalSeekMetric
-  target: string
+  solveFor: FeasibilityGoalSeekVariable
+  targetMetric: FeasibilityGoalSeekMetric
+  targetValue: string
   converged: boolean
   status: 'CONVERGED' | 'ALREADY_AT_TARGET' | 'UNREACHABLE_WITHIN_RANGE'
   searchedRangePercent: string
   evaluations: number
   requiredChangePercent: string
   requiredFactor: string
+  /** The absolute input behind the factor — null when there is no single base to scale. */
+  solvedInput: {
+    unit: string
+    basis: string
+    baseValue: string | null
+    solvedValue: string | null
+    perLine: Array<{ lineId: string; label: string; baseValue: string; solvedValue: string }>
+  }
   baseValue: string
   achievedValue: string
   remainingGap: string

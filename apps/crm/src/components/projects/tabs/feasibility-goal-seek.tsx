@@ -8,7 +8,7 @@ import {
   useRunFeasibilityGoalSeek,
   type FeasibilityGoalSeek,
   type FeasibilityGoalSeekMetric,
-  type FeasibilitySensitivityVariable,
+  type FeasibilityGoalSeekVariable,
 } from '@/hooks/use-feasibility'
 
 /**
@@ -18,9 +18,11 @@ import {
  * of one. The grid answers it by being read backwards and interpolated by
  * eye; this asks the engine directly.
  *
- * Three things are shown that a bare number would hide, because each one
+ * Four things are shown that a bare percentage would hide, because each one
  * changes whether the answer is usable:
  *
+ *  - The ABSOLUTE solved input (₪/sqm), not only the percentage move. A price
+ *    list takes a number, not a factor.
  *  - `UNREACHABLE_WITHIN_RANGE` is rendered as a failure, not as its closest
  *    value dressed up as an answer. The solver bounds its search precisely so
  *    it can say "not within these bounds" instead of returning +4000%.
@@ -30,23 +32,37 @@ import {
  *    price can breach an LTC covenant; a solver that reported only the price
  *    would be handing over a plan whose cost is recorded elsewhere.
  */
-const VARIABLES: Array<[FeasibilitySensitivityVariable, string]> = [
-  ['SALE_PRICE', 'מחיר מכירה'],
-  ['CONSTRUCTION_COST', 'עלות בנייה'],
-  ['LAND_COST', 'עלות קרקע'],
-  ['INTEREST_RATE', 'שיעור ריבית'],
-  ['DISCOUNT_RATE', 'שיעור היוון'],
+const VARIABLES: Array<[FeasibilityGoalSeekVariable, string]> = [
+  ['pricePerSqm', 'מחיר למ״ר (דירות למכירה)'],
+  ['salePrice', 'כלל מחירי המכירה'],
+  ['constructionCost', 'עלות בנייה'],
+  ['landCost', 'עלות קרקע'],
+  ['interestRate', 'שיעור ריבית'],
+  ['discountRate', 'שיעור היוון'],
 ]
 
 /** `ratio` metrics are decimal fractions in the engine; the UI says so plainly. */
 const METRICS: Array<[FeasibilityGoalSeekMetric, string, 'ratio' | 'currency']> = [
-  ['PROFIT_ON_COST', 'רווח על עלות', 'ratio'],
-  ['PROFIT_MARGIN', 'שיעור רווח', 'ratio'],
-  ['PROFIT', 'רווח', 'currency'],
-  ['PROJECT_NPV', 'NPV פרויקטלי', 'currency'],
-  ['PROJECT_IRR_ANNUAL', 'IRR פרויקטלי שנתי', 'ratio'],
-  ['RESIDUAL_LAND_VALUE', 'שווי קרקע שיורי', 'currency'],
+  ['profitOnCost', 'רווח על עלות', 'ratio'],
+  ['profitMargin', 'שיעור רווח', 'ratio'],
+  ['profit', 'רווח', 'currency'],
+  ['projectNpv', 'NPV פרויקטלי', 'currency'],
+  ['projectIrrAnnual', 'IRR פרויקטלי שנתי', 'ratio'],
+  ['residualLandValue', 'שווי קרקע שיורי', 'currency'],
 ]
+
+/**
+ * Why a solved absolute value may be missing. The engine refuses to invent one
+ * rather than returning a number that stands for several different prices.
+ */
+const BASIS_NOTE: Record<string, string> = {
+  MULTIPLE_BASE_PRICES: 'לשורות הדירות למכירה יש יותר ממחיר בסיס אחד למ״ר, ולכן אין מחיר יחיד לדווח — הפירוט לפי שורה מופיע למטה.',
+  NO_PRICE_PER_SQM_LINES: 'אין שורות דירות למכירה המתומחרות לפי מחיר למ״ר.',
+  SINGLE_BASE_PRICE_WITH_FIXED_PRICED_LINES: 'קיימות גם שורות המתומחרות במחיר קבוע לדירה; הן זזות באותו מקדם אך אינן מחיר למ״ר.',
+  NO_SCALABLE_COST_LINES_IN_CATEGORY: 'אין שורות עלות בקטגוריה זו שהמקדם מזיז.',
+  RATE_NOT_SET: 'השיעור אינו מוגדר בתרחיש.',
+  FACTOR_ONLY: 'המנוף מזיז כמה קלטים יחד, ולכן אין ערך מוחלט יחיד.',
+}
 
 const metricMeta = (metric: FeasibilityGoalSeekMetric) => METRICS.find(([key]) => key === metric)!
 
@@ -59,15 +75,21 @@ function formatMetric(value: string | null, kind: 'ratio' | 'currency'): string 
     : `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`
 }
 
+const shekels = (value: string) => `₪${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 0 })}`
+
+/** The solved input carries its own unit (e.g. ₪/מ״ר), so it is not re-prefixed with ₪. */
+const withUnit = (value: string, unit: string) =>
+  `${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 2 })} ${unit}`
+
 function message(error: unknown) {
   return error instanceof Error ? error.message : 'החיפוש נכשל. בדקו את הנתונים ונסו שוב.'
 }
 
 export function FeasibilityGoalSeekPanel({ projectId, scenarioId }: { projectId: string; scenarioId: string }) {
   const [open, setOpen] = useState(false)
-  const [variable, setVariable] = useState<FeasibilitySensitivityVariable>('SALE_PRICE')
-  const [metric, setMetric] = useState<FeasibilityGoalSeekMetric>('PROFIT_ON_COST')
-  const [target, setTarget] = useState('0.25')
+  const [solveFor, setSolveFor] = useState<FeasibilityGoalSeekVariable>('pricePerSqm')
+  const [targetMetric, setTargetMetric] = useState<FeasibilityGoalSeekMetric>('profitOnCost')
+  const [targetValue, setTargetValue] = useState('0.25')
   const [maxChangePercent, setMaxChangePercent] = useState('300')
   const [result, setResult] = useState<FeasibilityGoalSeek | null>(null)
   const goalSeek = useRunFeasibilityGoalSeek(projectId)
@@ -75,13 +97,14 @@ export function FeasibilityGoalSeekPanel({ projectId, scenarioId }: { projectId:
   const submit = (event: FormEvent) => {
     event.preventDefault()
     goalSeek.mutate(
-      { scenarioId, dto: { variable, metric, target, maxChangePercent } },
+      { scenarioId, dto: { solveFor, targetMetric, targetValue, maxChangePercent } },
       { onSuccess: setResult },
     )
   }
 
-  const [, metricLabel, metricKind] = metricMeta(metric)
-  const variableLabel = VARIABLES.find(([key]) => key === variable)?.[1] ?? variable
+  const [, metricLabel, metricKind] = metricMeta(targetMetric)
+  const variableLabel = VARIABLES.find(([key]) => key === solveFor)?.[1] ?? solveFor
+  const solvedInput = result?.solvedInput
 
   return (
     <div className="mt-4 border-t pt-4">
@@ -99,19 +122,19 @@ export function FeasibilityGoalSeekPanel({ projectId, scenarioId }: { projectId:
         <form onSubmit={submit} className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="grid gap-1.5 text-sm font-medium">
             <span>מה משנים</span>
-            <select value={variable} onChange={(e) => setVariable(e.target.value as FeasibilitySensitivityVariable)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <select value={solveFor} onChange={(e) => setSolveFor(e.target.value as FeasibilityGoalSeekVariable)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
               {VARIABLES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <label className="grid gap-1.5 text-sm font-medium">
             <span>יעד</span>
-            <select value={metric} onChange={(e) => setMetric(e.target.value as FeasibilityGoalSeekMetric)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <select value={targetMetric} onChange={(e) => setTargetMetric(e.target.value as FeasibilityGoalSeekMetric)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
               {METRICS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <label className="grid gap-1.5 text-sm font-medium">
             <span>ערך היעד {metricKind === 'ratio' ? '(שבר עשרוני — 0.25 עבור 25%)' : '(₪)'}</span>
-            <Input required value={target} onChange={(e) => setTarget(e.target.value)} inputMode="decimal" />
+            <Input required value={targetValue} onChange={(e) => setTargetValue(e.target.value)} inputMode="decimal" />
           </label>
           <label className="grid gap-1.5 text-sm font-medium">
             <span>טווח חיפוש מרבי (±%)</span>
@@ -134,28 +157,61 @@ export function FeasibilityGoalSeekPanel({ projectId, scenarioId }: { projectId:
               <p className="font-medium">היעד אינו בר־השגה בטווח שנבדק ({result.searchedRangePercent}%)</p>
               <p className="mt-1 text-xs">
                 הערך הקרוב ביותר שהושג: {formatMetric(result.achievedValue, metricKind)} מול יעד{' '}
-                {formatMetric(result.target, metricKind)}. הרחבת הטווח עשויה למצוא פתרון — אך פתרון בקצה
+                {formatMetric(result.targetValue, metricKind)}. הרחבת הטווח עשויה למצוא פתרון — אך פתרון בקצה
                 הטווח הוא לרוב סימן שהיעד אינו ריאלי, ולא שהחיפוש היה צר.
               </p>
             </div>
           ) : (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-              <p className="font-medium">
-                {result.status === 'ALREADY_AT_TARGET'
-                  ? 'התרחיש כבר עומד ביעד — אין צורך בשינוי'
-                  : `נדרש שינוי של ${Number(result.requiredChangePercent).toFixed(2)}% ב${variableLabel}`}
-              </p>
+              {result.status === 'ALREADY_AT_TARGET' ? (
+                <p className="font-medium">התרחיש כבר עומד ביעד — אין צורך בשינוי</p>
+              ) : solvedInput?.solvedValue ? (
+                <p className="font-medium">
+                  הערך הנדרש: {withUnit(solvedInput.solvedValue, solvedInput.unit)}
+                  <span className="font-normal">
+                    {' '}(מ־{withUnit(solvedInput.baseValue!, solvedInput.unit)}, שינוי של {Number(result.requiredChangePercent).toFixed(2)}%)
+                  </span>
+                </p>
+              ) : (
+                <p className="font-medium">נדרש שינוי של {Number(result.requiredChangePercent).toFixed(2)}% ב{variableLabel}</p>
+              )}
               <p className="mt-1 text-xs">
                 {metricLabel}: {formatMetric(result.baseValue, metricKind)} ← {formatMetric(result.achievedValue, metricKind)}
                 {' '}(מקדם ×{Number(result.requiredFactor).toFixed(4)})
               </p>
+              {solvedInput && !solvedInput.solvedValue && BASIS_NOTE[solvedInput.basis] && (
+                <p className="mt-1 text-xs opacity-80">{BASIS_NOTE[solvedInput.basis]}</p>
+              )}
+            </div>
+          )}
+
+          {solvedInput && solvedInput.perLine.length > 1 && (
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/60 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="p-2 text-start font-medium">שורה</th>
+                    <th className="p-2 text-start font-medium">בסיס</th>
+                    <th className="p-2 text-start font-medium">נדרש</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solvedInput.perLine.map((line) => (
+                    <tr key={line.lineId} className="border-t">
+                      <td className="p-2">{line.label}</td>
+                      <td className="p-2 tabular-nums">{withUnit(line.baseValue, solvedInput.unit)}</td>
+                      <td className="p-2 font-semibold tabular-nums">{withUnit(line.solvedValue, solvedInput.unit)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <Cell label="הכנסות" value={`₪${Number(result.resulting.revenue).toLocaleString('he-IL', { maximumFractionDigits: 0 })}`} />
-            <Cell label="עלויות" value={`₪${Number(result.resulting.costs).toLocaleString('he-IL', { maximumFractionDigits: 0 })}`} />
-            <Cell label="רווח" value={`₪${Number(result.resulting.profit).toLocaleString('he-IL', { maximumFractionDigits: 0 })}`} />
+            <Cell label="הכנסות" value={shekels(result.resulting.revenue)} />
+            <Cell label="עלויות" value={shekels(result.resulting.costs)} />
+            <Cell label="רווח" value={shekels(result.resulting.profit)} />
             <Cell label="רווח על עלות" value={formatMetric(result.resulting.profitOnCost, 'ratio')} />
           </div>
 

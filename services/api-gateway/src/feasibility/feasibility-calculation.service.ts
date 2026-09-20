@@ -838,13 +838,13 @@ export class FeasibilityCalculationService {
     const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
     const base = this.compute(profile, scenario)
 
-    const target = new Decimal(dto.target)
+    const target = new Decimal(dto.targetValue)
     const maxChange = new Decimal(dto.maxChangePercent ?? '300')
     if (maxChange.lte(0)) {
       throw DomainError.validation('FEASIBILITY_GOAL_SEEK_RANGE_INVALID', 'טווח החיפוש חייב להיות חיובי', 'maxChangePercent')
     }
 
-    const baseValue = readMetric(base, dto.metric)
+    const baseValue = readMetric(base, dto.targetMetric)
     if (baseValue === null) {
       // e.g. profit-on-cost with no costs, or IRR on a cash flow that never
       // turns positive. Solving towards a target the base cannot even express
@@ -859,9 +859,9 @@ export class FeasibilityCalculationService {
     /** The metric after moving the chosen input by `changePercent`. */
     const evaluateAt = (changePercent: Decimal) => {
       const factor = new Decimal(1).plus(changePercent.div(100))
-      const adjusted = this.applySensitivityFactors(profile, scenario, new Map([[dto.variable, factor]]))
+      const adjusted = this.applySensitivityFactors(profile, scenario, new Map([[GOAL_SEEK_LEVER[dto.solveFor], factor]]))
       const result = this.compute(adjusted.profile, adjusted.scenario)
-      return { result, value: readMetric(result, dto.metric) }
+      return { result, value: readMetric(result, dto.targetMetric) }
     }
 
     /*
@@ -892,7 +892,7 @@ export class FeasibilityCalculationService {
     }
 
     if (baseValue.minus(target).isZero()) {
-      return this.goalSeekResult(dto, base, base, new Decimal(0), baseValue, baseValue, target, true, 'ALREADY_AT_TARGET', maxChange, 1)
+      return this.goalSeekResult(profile, scenario, dto, base, base, new Decimal(0), baseValue, baseValue, target, true, 'ALREADY_AT_TARGET', maxChange, 1)
     }
 
     lo = { change: new Decimal(0), value: baseValue }
@@ -904,7 +904,7 @@ export class FeasibilityCalculationService {
     if (!hi) {
       const { result } = evaluateAt(closest.change)
       return this.goalSeekResult(
-        dto, base, result, closest.change, baseValue, closest.value, target, false,
+        profile, scenario, dto, base, result, closest.change, baseValue, closest.value, target, false,
         'UNREACHABLE_WITHIN_RANGE', maxChange, evaluations,
       )
     }
@@ -930,12 +930,100 @@ export class FeasibilityCalculationService {
 
     const solved = evaluateAt(best.change)
     return this.goalSeekResult(
-      dto, base, solved.result, best.change, baseValue, solved.value ?? best.value, target, true,
+      profile, scenario, dto, base, solved.result, best.change, baseValue, solved.value ?? best.value, target, true,
       'CONVERGED', maxChange, evaluations,
     )
   }
 
+  /**
+   * The solver works in percentage change, because that is the only language
+   * every lever shares. But "raise the price 4.17%" is not what a price list
+   * says — an appraiser needs ₪/sqm. This turns the converged factor back into
+   * the absolute input it stands for, and refuses to invent one when the
+   * scenario has no single base to scale.
+   *
+   * A scenario whose sale units carry two different ₪/sqm has no one price to
+   * report; the per-line breakdown is always returned, and `solvedValue` is
+   * null with `basis` saying why. Lines priced by `fixedUnitPrice` are counted
+   * separately for the same reason — they move with the lever but are not a
+   * price per square metre.
+   */
+  private resolveSolvedInput(
+    profile: LoadedFeasibilityProfile,
+    scenario: LoadedFeasibilityScenario,
+    solveFor: CreateGoalSeekDto['solveFor'],
+    factor: Decimal,
+  ): { unit: string; basis: string; baseValue: string | null; solvedValue: string | null; perLine: Array<{ lineId: string; label: string; baseValue: string; solvedValue: string }> } {
+    const scaled = (value: { toString(): string } | null | undefined) =>
+      value === null || value === undefined ? null : read(value).mul(factor)
+
+    if (solveFor === 'pricePerSqm') {
+      const saleLines = scenario.unitMix.filter((line) => line.disposition === 'DEVELOPER_SALE')
+      const priced = saleLines.filter((line) => line.pricePerSqm !== null && line.pricePerSqm !== undefined)
+      const perLine = priced.map((line) => ({
+        lineId: line.id,
+        label: line.label,
+        // 2dp, not more: bisection stops once the METRIC stops moving at the
+        // engine's own 8dp, which leaves the price known to ~1e-4. Printing
+        // 31249.9999 would claim a precision the search never had — and read
+        // as a different number from the 31250 it actually means.
+        baseValue: read(line.pricePerSqm!).toFixed(2),
+        solvedValue: scaled(line.pricePerSqm)!.toFixed(2),
+      }))
+      const distinct = new Set(perLine.map((line) => line.baseValue))
+      const fixedPriced = saleLines.filter((line) => (line.pricePerSqm === null || line.pricePerSqm === undefined) && line.fixedUnitPrice !== null && line.fixedUnitPrice !== undefined).length
+      const basis = perLine.length === 0
+        ? 'NO_PRICE_PER_SQM_LINES'
+        : distinct.size > 1
+          ? 'MULTIPLE_BASE_PRICES'
+          : fixedPriced > 0
+            ? 'SINGLE_BASE_PRICE_WITH_FIXED_PRICED_LINES'
+            : 'SINGLE_BASE_PRICE'
+      return {
+        unit: '₪/מ״ר',
+        basis,
+        baseValue: distinct.size === 1 ? perLine[0].baseValue : null,
+        solvedValue: distinct.size === 1 ? perLine[0].solvedValue : null,
+        perLine,
+      }
+    }
+
+    if (solveFor === 'interestRate' || solveFor === 'discountRate') {
+      const base = solveFor === 'interestRate'
+        ? scenario.financing?.annualInterestRate ?? null
+        : profile.assumptions.find((assumption) => assumption.key === 'annual-discount-rate')?.value ?? null
+      return {
+        unit: 'שבר עשרוני שנתי',
+        basis: base === null ? 'RATE_NOT_SET' : 'ANNUAL_RATE',
+        baseValue: base === null ? null : read(base).toString(),
+        solvedValue: base === null ? null : scaled(base)!.toString(),
+        perLine: [],
+      }
+    }
+
+    if (solveFor === 'constructionCost' || solveFor === 'landCost') {
+      const category = solveFor === 'constructionCost' ? 'CONSTRUCTION' : 'LAND'
+      // Percentage-driven lines are not scaled by the lever, so they are not
+      // part of the number the lever moves.
+      const lines = scenario.costLines.filter((line) => line.category === category && (line.fixedAmount || line.unitCost))
+      if (lines.length === 0) {
+        return { unit: '₪', basis: 'NO_SCALABLE_COST_LINES_IN_CATEGORY', baseValue: null, solvedValue: null, perLine: [] }
+      }
+      const perLine = lines.map((line) => {
+        const amount = line.fixedAmount ? read(line.fixedAmount) : read(line.quantity).mul(read(line.unitCost))
+        return { lineId: line.id, label: line.label, baseValue: amount.toFixed(2), solvedValue: amount.mul(factor).toFixed(2) }
+      })
+      const total = perLine.reduce((sum, line) => sum.plus(line.baseValue), new Decimal(0))
+      return { unit: '₪', basis: 'CATEGORY_TOTAL', baseValue: total.toFixed(2), solvedValue: total.mul(factor).toFixed(2), perLine }
+    }
+
+    // salePrice moves every revenue input at once; there is no single number.
+    return { unit: '—', basis: 'FACTOR_ONLY', baseValue: null, solvedValue: null, perLine: [] }
+  }
+
   private goalSeekResult(
+    profile: LoadedFeasibilityProfile,
+    scenario: LoadedFeasibilityScenario,
     dto: CreateGoalSeekDto,
     base: ReturnType<FeasibilityCalculationService['compute']>,
     solved: ReturnType<FeasibilityCalculationService['compute']>,
@@ -948,18 +1036,34 @@ export class FeasibilityCalculationService {
     maxChange: Decimal,
     evaluations: number,
   ) {
+    const factor = new Decimal(1).plus(change.div(100))
+    /*
+     * A search that did not converge has no solved input. `change` still holds
+     * the closest point probed, and dressing that up as a price would turn an
+     * honest "not within these bounds" back into a number someone acts on.
+     * The metric side still reports what was reached, under `achievedValue`.
+     */
+    const solvedInput = converged
+      ? this.resolveSolvedInput(profile, scenario, dto.solveFor, factor)
+      : { unit: '—', basis: 'NOT_CONVERGED', baseValue: null, solvedValue: null, perLine: [] }
     const newIssues = solved.validation.filter((issue) => !base.validation.some((baseIssue) => baseIssue.code === issue.code && baseIssue.entityId === issue.entityId))
     return {
-      variable: dto.variable,
-      metric: dto.metric,
-      target: target.toString(),
+      solveFor: dto.solveFor,
+      targetMetric: dto.targetMetric,
+      targetValue: target.toString(),
       converged,
       status,
       searchedRangePercent: `±${maxChange.toString()}`,
       evaluations,
       requiredChangePercent: change.toFixed(6),
       /** The multiplier to apply to the input, for a caller that would rather scale than add a percentage. */
-      requiredFactor: new Decimal(1).plus(change.div(100)).toFixed(8),
+      requiredFactor: factor.toFixed(8),
+      /**
+       * The absolute input the factor stands for — what actually goes on a
+       * price list. Null when the scenario has no single base to scale; the
+       * `basis` says which case it is and `perLine` is always filled.
+       */
+      solvedInput,
       baseValue: baseValue.toString(),
       achievedValue: achieved.toString(),
       /** Signed gap that remains. Zero on a converged run, the shortfall otherwise. */
@@ -1099,12 +1203,28 @@ export class FeasibilityCalculationService {
  * there are no costs is not a profit-on-cost of zero, and a solver that
  * treated it as one would converge on nonsense.
  */
-function readMetric(result: { profitability: { profit: string; profitOnCost: string | null; profitMargin: string | null }; returns: { projectNpv: string | null; projectIrrAnnual: string | null }; valuation: { residualLandValue: string | null } }, metric: CreateGoalSeekDto['metric']): Decimal | null {
-  const raw = metric === 'PROFIT' ? result.profitability.profit
-    : metric === 'PROFIT_ON_COST' ? result.profitability.profitOnCost
-    : metric === 'PROFIT_MARGIN' ? result.profitability.profitMargin
-    : metric === 'PROJECT_NPV' ? result.returns.projectNpv
-    : metric === 'PROJECT_IRR_ANNUAL' ? result.returns.projectIrrAnnual
+function readMetric(result: { profitability: { profit: string; profitOnCost: string | null; profitMargin: string | null }; returns: { projectNpv: string | null; projectIrrAnnual: string | null }; valuation: { residualLandValue: string | null } }, metric: CreateGoalSeekDto['targetMetric']): Decimal | null {
+  const raw = metric === 'profit' ? result.profitability.profit
+    : metric === 'profitOnCost' ? result.profitability.profitOnCost
+    : metric === 'profitMargin' ? result.profitability.profitMargin
+    : metric === 'projectNpv' ? result.returns.projectNpv
+    : metric === 'projectIrrAnnual' ? result.returns.projectIrrAnnual
     : result.valuation.residualLandValue
   return raw === null || raw === undefined ? null : new Decimal(raw)
+}
+
+/**
+ * The sensitivity lever each `solveFor` rides on.
+ *
+ * `pricePerSqm` uses the SALE_PRICE lever — scaling every sale price in the
+ * mix by one factor — and is then reported back as an absolute ₪/sqm. The
+ * lever is shared; only the way the answer is expressed differs.
+ */
+const GOAL_SEEK_LEVER: Record<CreateGoalSeekDto['solveFor'], string> = {
+  pricePerSqm: 'SALE_PRICE',
+  salePrice: 'SALE_PRICE',
+  constructionCost: 'CONSTRUCTION_COST',
+  landCost: 'LAND_COST',
+  interestRate: 'INTEREST_RATE',
+  discountRate: 'DISCOUNT_RATE',
 }
