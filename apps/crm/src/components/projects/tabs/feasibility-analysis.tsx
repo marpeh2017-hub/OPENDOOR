@@ -39,6 +39,15 @@ export function FeasibilityAnalysis({ calculation }: { calculation: FeasibilityC
   const profit = toNumber(calculation.profitability.profit)
   const margin = calculation.profitability.profitMargin ? toNumber(calculation.profitability.profitMargin) : null
   const profitOnCost = calculation.profitability.profitOnCost ? toNumber(calculation.profitability.profitOnCost) : null
+  /*
+   * In a combination deal the cost base includes flats handed to the seller,
+   * so `profitOnCost` already divides by more than the cash costs shown above
+   * it. Without saying so the two figures look inconsistent on screen — the
+   * ratio does not match revenue-minus-costs — and the reader has no way to
+   * tell why. Shown only when there IS consideration in kind; a cash purchase
+   * gains nothing from the extra line.
+   */
+  const inKind = toNumber(calculation.costs.considerationInKind ?? '0')
   const comparison = calculation.valuation.comparison
   const cashflow = calculation.cashFlow.periods.map((period) => ({
     period: new Date(period.periodStart).toLocaleDateString('he-IL', { month: 'short', year: '2-digit' }),
@@ -106,7 +115,13 @@ export function FeasibilityAnalysis({ calculation }: { calculation: FeasibilityC
       <Metric label="חוב שיא" value={currency.format(toNumber(calculation.financing.peakDebt))} />
       <Metric label="ריבית שנצברה" value={currency.format(toNumber(calculation.financing.accumulatedInterest))} />
       <Metric label="עמלות מימון" value={currency.format(toNumber(calculation.financing.financingFees))} hint="סידור וערבויות" />
-      <Metric label="רווח על עלות" value={profitOnCost === null ? 'לא זמין' : percent.format(profitOnCost)} />
+      <Metric
+        label="רווח על עלות"
+        value={profitOnCost === null ? 'לא זמין' : percent.format(profitOnCost)}
+        hint={inKind > 0
+          ? `כולל תמורה בשווה־כסף של ₪${inKind.toLocaleString('he-IL', { maximumFractionDigits: 0 })} בבסיס העלות`
+          : undefined}
+      />
       <Metric label="מכפיל הון" value={calculation.returns.equityMultiple === null ? 'לא זמין' : `${toNumber(calculation.returns.equityMultiple).toFixed(2)}x`} />
       <Metric label="הון שהושקע" value={currency.format(toNumber(calculation.returns.equityInvested))} />
       <Metric label="התאמת תזרים" value={calculation.cashFlow.reconciliationComplete ? 'תואם' : 'נדרשת השלמה'} tone={calculation.cashFlow.reconciliationComplete ? 'good' : 'risk'} />

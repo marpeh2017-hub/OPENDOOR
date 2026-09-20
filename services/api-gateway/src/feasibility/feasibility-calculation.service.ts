@@ -503,7 +503,43 @@ export class FeasibilityCalculationService {
       : axisIsUniform ? npv(equityPeriodFlows, periodicDiscountRate!) : xnpv(datedEquityFlows, read(annualDiscountRate))
     const minimumProfitMargin = profile.assumptions.find((assumption) => assumption.key === 'minimum-profit-margin')?.value
     const minimumProjectIrrAnnual = profile.assumptions.find((assumption) => assumption.key === 'minimum-project-irr-annual')?.value
-    const actualProfitMargin = totalRevenue.gt(0) ? projectProfit.div(totalRevenue) : null
+    /*
+     * ── CONSIDERATION IN KIND, AND WHY IT CHANGES ONLY DENOMINATORS ───────
+     *
+     * A combination deal pays for land partly in finished flats. No cash
+     * moves for them, so they are correctly absent from the cash flow, from
+     * the cost lines that reconcile against it, and from the revenue the
+     * developer actually collects. PROFIT is therefore already right: the
+     * value handed over leaves through revenue never earned, which is exactly
+     * as much as it would have cost had it been bought for cash.
+     *
+     *   net   basis: (revenue − inKind) − cashCosts
+     *   gross basis: revenue − (cashCosts + inKind)
+     *
+     * The two are identically equal, which is why nothing about profit, IRR,
+     * NPV or the financing schedule moves here.
+     *
+     * What was wrong was every RATIO built on those figures. Profit-on-cost
+     * divided by a cost base that omitted the flats; profit margin divided by
+     * a revenue base that omitted them too; and the residual land value —
+     * the one number a negotiator acts on — was computed against revenue the
+     * project never books. On a live scenario the engine reported 32.63%
+     * where the honest figure was 20.00%.
+     *
+     * So two bases are formed once here and used consistently below. With no
+     * consideration in kind both collapse to the cash figures exactly, which
+     * is what keeps every existing scenario bit-for-bit unchanged.
+     */
+    const considerationInKind = scenario.considerationInKind ? read(scenario.considerationInKind) : new Decimal(0)
+    if (considerationInKind.lt(0)) {
+      issues.push({ code: 'CONSIDERATION_IN_KIND_NEGATIVE', severity: 'CRITICAL', message: 'תמורה שאינה במזומן אינה יכולה להיות שלילית.' })
+    }
+    /** Everything the project is worth, including what is handed over rather than sold. */
+    const totalRevenueBasis = totalRevenue.plus(considerationInKind)
+    /** Everything the land and the build cost, cash and in kind alike. This is the ROC denominator. */
+    const totalCostBasis = totalCosts.plus(considerationInKind)
+
+    const actualProfitMargin = totalRevenueBasis.gt(0) ? projectProfit.div(totalRevenueBasis) : null
     for (const [key, value] of [['minimum-profit-margin', minimumProfitMargin], ['minimum-project-irr-annual', minimumProjectIrrAnnual]] as const) {
       if (value && (read(value).lt(0) || read(value).gte(1))) issues.push({ code: 'PROFITABILITY_TARGET_INVALID', severity: 'CRITICAL', message: `הנחת ${key} חייבת להיות שבר בין 0 ל־1.` })
     }
@@ -687,10 +723,16 @@ export class FeasibilityCalculationService {
     } else if (read(requiredProfitMargin).lt(0) || read(requiredProfitMargin).gt(1)) {
       issues.push({ code: 'REQUIRED_DEVELOPER_PROFIT_MARGIN_INVALID', severity: 'CRITICAL', message: 'הנחת יעד רווח יזמי חייבת להיות שבר בין 0 ל־1.' })
     } else {
-      requiredDeveloperProfit = totalRevenue.mul(read(requiredProfitMargin))
+      requiredDeveloperProfit = totalRevenueBasis.mul(read(requiredProfitMargin))
       // Residual value treats land as the balancing value. Any existing LAND
       // cost is removed first so it is never subtracted twice.
-      residualLandValue = totalRevenue.minus(totalCosts.minus(landCosts)).minus(requiredDeveloperProfit)
+      //
+      // Measured on the gross basis, so the answer is the TOTAL consideration
+      // the land can carry — cash and flats together — which is the number a
+      // negotiator compares against an asking price. On the net basis it
+      // silently answered a different question: how much CASH is affordable
+      // once the flats have already been given away for nothing.
+      residualLandValue = totalRevenueBasis.minus(totalCosts.minus(landCosts)).minus(requiredDeveloperProfit)
     }
     const hasCritical = issues.some((issue) => issue.severity === 'CRITICAL')
     const feasibilityStatus = hasCritical ? 'DATA_INCOMPLETE' : residualLandValue === null || requiredDeveloperProfit === null ? 'CONDITIONAL' : residualLandValue.gte(0) && projectProfit.gte(requiredDeveloperProfit) ? 'FEASIBLE' : 'NOT_FEASIBLE'
@@ -710,8 +752,22 @@ export class FeasibilityCalculationService {
         allocatedReplacementUnits: allocationReferences.size,
       },
       scenario: { id: scenario.id, name: scenario.name, kind: scenario.kind, isBaseline: scenario.isBaseline },
-      revenue: { lines: revenue, total: amount(totalRevenue) },
-      costs: { lines: costs, total: amount(totalCosts) },
+      revenue: {
+        lines: revenue,
+        /** What the developer sells. Excludes anything handed over as consideration. */
+        total: amount(totalRevenue),
+        /** Everything built, at market — including units given to the seller. */
+        totalWithConsiderationInKind: amount(totalRevenueBasis),
+      },
+      costs: {
+        lines: costs,
+        /** Cash and accrual costs — the figure the cash flow reconciles against. */
+        total: amount(totalCosts),
+        /** Market value of consideration given in kind. Zero unless the deal pays partly in flats. */
+        considerationInKind: amount(considerationInKind),
+        /** `total` plus consideration in kind: what the project really cost, and the ROC denominator. */
+        totalWithConsiderationInKind: amount(totalCostBasis),
+      },
       compensation: { lines: compensation, directCashCost: amount(compensation.reduce((sum, line) => sum.plus(line.amount), new Decimal(0))) },
       financing: {
         accumulatedInterest: amount(accumulatedInterest), financingFees: amount(financingFees),
@@ -728,7 +784,9 @@ export class FeasibilityCalculationService {
       profitability: {
         profit: amount(projectProfit),
         profitBeforeFinancing: amount(profitBeforeFinancing),
-        profitOnCost: totalCosts.gt(0) ? projectProfit.div(totalCosts).toFixed(8) : null,
+        profitOnCost: totalCostBasis.gt(0) ? projectProfit.div(totalCostBasis).toFixed(8) : null,
+        /** The old cash-only ratio, kept beside it so the gap is visible rather than silent. */
+        profitOnCashCost: totalCosts.gt(0) ? projectProfit.div(totalCosts).toFixed(8) : null,
         profitMargin: actualProfitMargin ? actualProfitMargin.toFixed(8) : null,
         isFinal: false,
       },
@@ -817,10 +875,19 @@ export class FeasibilityCalculationService {
     const sale = factors.get('SALE_PRICE') ?? null
     const construction = factors.get('CONSTRUCTION_COST') ?? null
     const land = factors.get('LAND_COST') ?? null
+    /*
+     * `TOTAL_CONSIDERATION` moves what the seller receives, whatever form it
+     * takes: the LAND cost lines AND the consideration in kind, by the same
+     * factor and together. Moving one without the other would answer a
+     * question nobody asked — "how much cash can I afford if the flats stay
+     * fixed" — and in a combination deal the two are negotiated as one number.
+     */
+    const consideration = factors.get('TOTAL_CONSIDERATION') ?? null
     const interest = factors.get('INTEREST_RATE') ?? null
     const discount = factors.get('DISCOUNT_RATE') ?? null
     const scale = (value: { toString(): string } | null | undefined, factor: Decimal | null) => value === null || value === undefined || !factor ? value : read(value).mul(factor).toString()
-    const costFactorFor = (category: string) => category === 'CONSTRUCTION' ? construction : category === 'LAND' ? land : null
+    const combine = (a: Decimal | null, b: Decimal | null) => a && b ? a.mul(b) : a ?? b
+    const costFactorFor = (category: string) => category === 'CONSTRUCTION' ? construction : category === 'LAND' ? combine(land, consideration) : null
     const costFactorByLineId = new Map(scenario.costLines.map((line) => [line.id, costFactorFor(line.category)]))
 
     const adjustedProfile = discount
@@ -854,6 +921,7 @@ export class FeasibilityCalculationService {
       financing: scenario.financing && interest
         ? { ...scenario.financing, annualInterestRate: scale(scenario.financing.annualInterestRate, interest) }
         : scenario.financing,
+      considerationInKind: consideration ? scale(scenario.considerationInKind, consideration) : scenario.considerationInKind,
     }
 
     return { profile: adjustedProfile as LoadedFeasibilityProfile, scenario: adjustedScenario as LoadedFeasibilityScenario }
@@ -1054,6 +1122,29 @@ export class FeasibilityCalculationService {
         baseValue: base === null ? null : read(base).toString(),
         solvedValue: base === null ? null : scaled(base)!.toString(),
         perLine: [],
+      }
+    }
+
+    if (solveFor === 'totalConsideration') {
+      // Cash and in kind together, because that is the single number the
+      // seller is offered and the only one the two sides negotiate.
+      const cash = scenario.costLines
+        .filter((line) => line.category === 'LAND')
+        .reduce((sum, line) => sum.plus(line.fixedAmount ? read(line.fixedAmount) : read(line.quantity).mul(read(line.unitCost))), new Decimal(0))
+      const inKind = scenario.considerationInKind ? read(scenario.considerationInKind) : new Decimal(0)
+      const base = cash.plus(inKind)
+      if (base.lte(0)) {
+        return { unit: '₪', basis: 'NO_CONSIDERATION_RECORDED', baseValue: null, solvedValue: null, perLine: [] }
+      }
+      return {
+        unit: '₪',
+        basis: inKind.gt(0) ? 'CASH_PLUS_IN_KIND' : 'CASH_ONLY',
+        baseValue: base.toFixed(2),
+        solvedValue: base.mul(factor).toFixed(2),
+        perLine: [
+          { lineId: 'cash', label: 'מזומן', baseValue: cash.toFixed(2), solvedValue: cash.mul(factor).toFixed(2) },
+          { lineId: 'in-kind', label: 'תמורה בשווה־כסף', baseValue: inKind.toFixed(2), solvedValue: inKind.mul(factor).toFixed(2) },
+        ],
       }
     }
 
@@ -1476,6 +1567,7 @@ function readMetric(result: { profitability: { profit: string; profitOnCost: str
  * lever is shared; only the way the answer is expressed differs.
  */
 const GOAL_SEEK_LEVER: Record<CreateGoalSeekDto['solveFor'], string> = {
+  totalConsideration: 'TOTAL_CONSIDERATION',
   pricePerSqm: 'SALE_PRICE',
   salePrice: 'SALE_PRICE',
   constructionCost: 'CONSTRUCTION_COST',

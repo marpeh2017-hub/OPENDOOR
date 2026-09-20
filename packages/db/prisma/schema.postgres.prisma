@@ -2410,6 +2410,18 @@ model FeasibilityScenario {
   description        String?
   probability        Decimal?               @db.Decimal(7, 6)
   isBaseline         Boolean                @default(false)
+  /// Market value of NON-CASH consideration given for the land — typically
+  /// finished apartments handed to the seller in a combination deal.
+  ///
+  /// It is not a cash-flow line and must never become one: no money moves, so
+  /// nothing is drawn, financed or repaid against it. What it does is enter
+  /// the RATIO denominators, because a developer who gives away twenty
+  /// million shekels of flats has paid twenty million for the land whether or
+  /// not a shekel crossed an account.
+  ///
+  /// Null and zero mean the same thing here and both reduce every derived
+  /// figure to its cash-only form exactly.
+  considerationInKind Decimal?              @db.Decimal(18, 2)
   version            Int                    @default(1)
   createdById        String
   updatedById        String

@@ -644,6 +644,63 @@ describe('Feasibility foundation (e2e)', () => {
    * Asserted against the ENDPOINT rather than the role list, because a list
    * can be right while a route quietly uses a different one.
    */
+  /**
+   * פער 1 — the write path for non-cash consideration.
+   *
+   * The engine arithmetic is covered by its own unit suite. What this asserts
+   * is that the value survives the API at all: that it can be set, changed,
+   * and — the trap `disposition` fell into — carried by `duplicate`, which
+   * copies a scenario field by field and silently produced a different deal
+   * for every field it forgot.
+   */
+  it('accepts non-cash consideration, corrects the ratio, and carries it through duplication', async () => {
+    const scenarioId = await baselineScenarioId()
+
+    const before = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/calculate`).set(auth()).send()
+    expect(before.status).toBe(201)
+    const cashOnlyRoc = before.body.profitability.profitOnCost
+
+    const patched = await http().patch(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}`)
+      .set(auth()).send({ considerationInKind: '4000000' })
+    expect(patched.status).toBe(200)
+
+    const after = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/calculate`).set(auth()).send()
+    expect(after.status).toBe(201)
+    // Profit is untouched — only the denominator moved.
+    expect(after.body.profitability.profit).toBe(before.body.profitability.profit)
+    expect(after.body.costs.total).toBe(before.body.costs.total)
+    expect(after.body.costs.considerationInKind).toBe('4000000.00')
+    expect(Number(after.body.costs.totalWithConsiderationInKind))
+      .toBeCloseTo(Number(before.body.costs.total) + 4000000, 2)
+    // The corrected ratio is lower than the cash-only one, and the old value
+    // is still reported beside it rather than disappearing.
+    expect(Number(after.body.profitability.profitOnCost)).toBeLessThan(Number(cashOnlyRoc))
+    expect(after.body.profitability.profitOnCashCost).toBe(cashOnlyRoc)
+
+    // Duplication must carry it. This is the `disposition` lesson: a copy
+    // that omits a field silently describes a different deal.
+    //
+    // Only the VALUE is asserted, not the resulting ratio — `duplicate`
+    // deliberately clones the unit mix alone and not the cost lines, so the
+    // copy's costs differ and its ratio legitimately differs with them.
+    const copy = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/duplicate`).set(auth()).send()
+    expect(copy.status).toBe(201)
+    const copyCalc = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${copy.body.id}/calculate`).set(auth()).send()
+    expect(copyCalc.body.costs.considerationInKind).toBe('4000000.00')
+
+    // Clearing it returns the scenario to exactly its cash-only figures.
+    const cleared = await http().patch(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}`)
+      .set(auth()).send({ considerationInKind: '0' })
+    expect(cleared.status).toBe(200)
+    const restored = await http().post(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}/calculate`).set(auth()).send()
+    expect(restored.body.profitability.profitOnCost).toBe(cashOnlyRoc)
+
+    // A negative value is refused by validation, not stored and computed on.
+    const negative = await http().patch(`/api/v1/projects/${projectId}/feasibility/scenarios/${scenarioId}`)
+      .set(auth()).send({ considerationInKind: '-1' })
+    expect(negative.status).toBe(400)
+  })
+
   it('refuses the counterparty and the municipal observer at every feasibility route', async () => {
     for (const role of ['DEVELOPER_REP', 'MUNICIPALITY_USER']) {
       const outsider = auth(tokenFor(role))
