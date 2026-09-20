@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority } from '@prisma/client'
+import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority, type FeasibilityProjectType } from '@prisma/client'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { DomainError } from '../common/errors/domain-error'
 import { PrismaService } from '../prisma.service'
@@ -76,7 +76,62 @@ export interface RuleDeviation {
    * UNSET — the registry has a rule the project never recorded an assumption
    *   for, so the calculation used the engine's own fallback.
    */
-  status: 'MATCHES' | 'OVERRIDES' | 'UNSET'
+  status: 'MATCHES' | 'OVERRIDES' | 'UNSET' | 'NOT_APPLICABLE' | 'UNMAPPED'
+  /** Which assumption key actually answered this rule, when one did. */
+  matchedAssumptionKey?: string | null
+}
+
+/**
+ * ── WHAT A RULE IS ABOUT, IN THE ENGINE'S OWN VOCABULARY ──────────────────
+ *
+ * The registry keys a rule by its regulatory name — `minimum-developer-profit-
+ * tama38`. The engine reads its assumptions by a different name for the same
+ * quantity — `required-developer-profit-margin`. Nothing joined the two, so
+ * the comparison looked for an assumption under the REGULATION's name, never
+ * found one, and every rule came back UNSET on a study that had stated the
+ * value all along. The only way to make a rule match was to enter the same
+ * number twice under two keys.
+ *
+ * This table is the join, and it is not a rename in either direction, because
+ * the two vocabularies are not in bijection:
+ *
+ *  - Two rules — the TAMA 38 and the pinuy-binuy profit floors — are about the
+ *    SAME engine assumption, and which of them applies depends on what kind of
+ *    project this is. Renaming either onto the engine's key would collide;
+ *    comparing both against one assumption would mark one of them OVERRIDES
+ *    for no reason other than that the other kind of project exists.
+ *  - Two rules — VAT and the pinuy-binuy betterment exemption — have no engine
+ *    assumption at all. They are reference values a reviewer checks the study
+ *    against, and the study's own register is the only place they live. An
+ *    empty alias list says that deliberately rather than by omission.
+ *
+ * Adding a rule without adding it here is a test failure, not a silent UNSET:
+ * see `feasibility-rules-mapping.spec.ts`. An unmapped code reaching runtime
+ * is reported as UNMAPPED so it is visible rather than indistinguishable from
+ * a value nobody filled in.
+ */
+export interface RuleBinding {
+  /** Assumption keys that answer this rule, in priority order. Empty = the rule's own code only. */
+  assumptionKeys: readonly string[]
+  /** Project types the rule governs. Omitted means it governs all of them. */
+  appliesTo?: readonly FeasibilityProjectType[]
+}
+
+export const RULE_BINDINGS: Readonly<Record<string, RuleBinding>> = {
+  'minimum-developer-profit-tama38': {
+    assumptionKeys: ['required-developer-profit-margin', 'minimum-profit-margin'],
+    appliesTo: ['TAMA_38_1', 'TAMA_38_2'],
+  },
+  'minimum-developer-profit-pinuy-binuy': {
+    assumptionKeys: ['required-developer-profit-margin', 'minimum-profit-margin'],
+    appliesTo: ['PINUY_BINUY'],
+  },
+  // No engine assumption: the model's basis is VAT-excluded throughout, so
+  // there is no rate for the engine to read. The register is where a study
+  // records the rate it worked to, and that is what this compares against.
+  'vat-rate': { assumptionKeys: [] },
+  // Betterment is a cost line, not an assumption. Same reasoning.
+  'betterment-levy-rate-pinuy-binuy': { assumptionKeys: [], appliesTo: ['PINUY_BINUY'] },
 }
 
 export interface RuleWrite {
@@ -210,20 +265,38 @@ export class FeasibilityRulesService {
       const rule = await this.resolve(tenantId, code, profile.valuationDate, jurisdiction)
       if (!rule) continue
 
-      const assumption = profile.assumptions.find((row) => row.key === code)
+      const binding = RULE_BINDINGS[code]
+      /*
+       * The rule's own code is always tried first: a study may record a value
+       * under the regulation's name directly, and that should keep working.
+       * The engine's own keys are then tried in order, so a study that simply
+       * stated its profit margin the way the engine reads it is compared
+       * against the regulation without anybody entering the number twice.
+       */
+      const candidateKeys = [code, ...(binding?.assumptionKeys ?? [])]
+      const matched = candidateKeys
+        .map((key) => profile.assumptions.find((row) => row.key === key && row.value !== null))
+        .find((row) => row !== undefined)
+
+      const applies = !binding?.appliesTo || binding.appliesTo.includes(profile.projectType)
       const status: RuleDeviation['status'] =
-        !assumption || assumption.value === null
-          ? 'UNSET'
-          : rule.numericValue !== null && assumption.value.equals(rule.numericValue)
-            ? 'MATCHES'
-            : 'OVERRIDES'
+        !binding
+          ? 'UNMAPPED'
+          : !applies
+            ? 'NOT_APPLICABLE'
+            : !matched || matched.value === null
+              ? 'UNSET'
+              : rule.numericValue !== null && matched.value.equals(rule.numericValue)
+                ? 'MATCHES'
+                : 'OVERRIDES'
 
       deviations.push({
         code,
         ruleName: rule.name,
         ruleValue: rule.numericValue,
         ruleUnit: rule.unit,
-        assumptionValue: assumption?.value ?? null,
+        assumptionValue: status === 'NOT_APPLICABLE' ? null : matched?.value ?? null,
+        matchedAssumptionKey: status === 'MATCHES' || status === 'OVERRIDES' ? matched?.key ?? null : null,
         sourceReference: rule.sourceReference,
         ruleId: rule.ruleId,
         status,
@@ -231,7 +304,9 @@ export class FeasibilityRulesService {
     }
 
     // The ones a reviewer must look at, first.
-    const order = { OVERRIDES: 0, UNSET: 1, MATCHES: 2 } as const
+    // UNMAPPED sits second because it is a configuration fault, not a finding
+    // about the study, and whoever reads this should notice it immediately.
+    const order = { OVERRIDES: 0, UNMAPPED: 1, UNSET: 2, MATCHES: 3, NOT_APPLICABLE: 4 } as const
     deviations.sort((a, b) => order[a.status] - order[b.status] || a.code.localeCompare(b.code))
     return { valuationDate: profile.valuationDate, jurisdiction, deviations }
   }
