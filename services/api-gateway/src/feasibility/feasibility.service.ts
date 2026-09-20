@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js'
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { AuditService } from '../common/audit/audit.service'
@@ -9,7 +10,7 @@ import {
   CreateFeasibilityAreaDto, CreateFeasibilityAssumptionDto,
   CreateFeasibilityProfileDto, CreateFeasibilitySourceDto, CreateGushChelkaDto, UpdateGushChelkaDto, UpdateFeasibilitySourceDto,
   CreatePlanningRightDto, UpdatePlanningRightDto, CreateFeasibilityScenarioDto, CreateUnitMixLineDto, UpdateUnitMixLineDto,
-  CreateReplacementAllocationDto, UpdateReplacementAllocationDto,
+  CreateReplacementAllocationDto, CreateEquityTrancheDto, UpdateEquityTrancheDto, UpdateReplacementAllocationDto,
   CreateFeasibilityRevenueLineDto, CreateFeasibilityCostLineDto,
   UpdateFeasibilityRevenueLineDto, UpdateFeasibilityCostLineDto,
   CreateFeasibilityCashFlowAllocationDto, CreateFeasibilityTimelinePhaseDto, UpdateFeasibilityCashFlowAllocationDto, UpdateFeasibilityProfileDto, UpdateFeasibilityAssumptionDto, UpdateFeasibilityAreaDto,
@@ -41,6 +42,11 @@ const PROFILE_INCLUDE = {
       financing: true,
       timelinePhases: { orderBy: { createdAt: 'asc' } },
       cashFlowAllocations: { orderBy: { periodStart: 'asc' } },
+      // The capital structure's terms. Loaded with the scenario because the
+      // waterfall is not an optional extra view: without it the engine can
+      // only report one blended equity return, which describes no investor in
+      // a layered deal.
+      equityTranches: { orderBy: [{ priority: 'asc' }, { name: 'asc' }] },
       // `ownerApartment` is loaded because the engine checks that every
       // compensation line is actually tied to a real apartment before it will
       // let a report be approved. Without the relation the check cannot tell a
@@ -523,6 +529,106 @@ export class FeasibilityService {
     })
   }
 
+  // ── Equity tranches ──────────────────────────────────────────────────────
+  //
+  // Terms only. A tranche's money stays in the cash-flow allocations, which is
+  // why there is no amount to write here and no way for the two to drift.
+
+  async addEquityTranche(projectId: string, scenarioId: string, dto: CreateEquityTrancheDto, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    await this.requireScenario(profile.id, scenarioId, actor.tenantId)
+    assertShare(dto.profitSharePercent)
+
+    return this.mutateChild(profile.id, actor, 'FeasibilityEquityTranche', (tx) => tx.feasibilityEquityTranche.create({
+      data: {
+        tenantId: actor.tenantId,
+        scenarioId,
+        name: dto.name.trim(),
+        kind: dto.kind ?? 'SENIOR',
+        priority: dto.priority,
+        commitment: dto.commitment,
+        preferredReturnRate: dto.preferredReturnRate,
+        preferredReturnAccrual: dto.preferredReturnAccrual ?? 'COMPOUNDED',
+        profitSharePercent: dto.profitSharePercent,
+        classification: dto.classification,
+        confidence: dto.confidence,
+        isVerified: dto.isVerified,
+        sourceId: dto.sourceId,
+        notes: dto.notes,
+        createdById: actor.userId,
+        updatedById: actor.userId,
+      },
+    }))
+  }
+
+  async updateEquityTranche(projectId: string, scenarioId: string, trancheId: string, dto: UpdateEquityTrancheDto, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    await this.requireScenario(profile.id, scenarioId, actor.tenantId)
+    const before = await this.prisma.feasibilityEquityTranche.findFirst({ where: { id: trancheId, scenarioId, tenantId: actor.tenantId } })
+    if (!before) throw DomainError.notFound('FEASIBILITY_EQUITY_TRANCHE_NOT_FOUND', 'שכבת ההון אינה שייכת לתרחיש')
+    if (dto.profitSharePercent !== undefined) assertShare(dto.profitSharePercent)
+
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.feasibilityEquityTranche.update({
+        where: { id: before.id },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+          ...(dto.kind !== undefined ? { kind: dto.kind } : {}),
+          ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+          ...(dto.commitment !== undefined ? { commitment: dto.commitment } : {}),
+          // `null` is meaningful here and is not the same as leaving the field
+          // out: it removes the preference entirely rather than setting it to
+          // zero, and the two describe different deals.
+          ...(dto.preferredReturnRate !== undefined ? { preferredReturnRate: dto.preferredReturnRate } : {}),
+          ...(dto.preferredReturnAccrual !== undefined ? { preferredReturnAccrual: dto.preferredReturnAccrual } : {}),
+          ...(dto.profitSharePercent !== undefined ? { profitSharePercent: dto.profitSharePercent } : {}),
+          ...(dto.classification !== undefined ? { classification: dto.classification } : {}),
+          ...(dto.confidence !== undefined ? { confidence: dto.confidence } : {}),
+          ...(dto.isVerified !== undefined ? { isVerified: dto.isVerified } : {}),
+          ...(dto.sourceId !== undefined ? { sourceId: dto.sourceId } : {}),
+          ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
+          updatedById: actor.userId,
+        },
+      })
+      await this.audit.record(actor, { action: 'UPDATE', entity: 'FeasibilityEquityTranche', entityId: row.id, changes: { before: { name: before.name, priority: before.priority, preferredReturnRate: before.preferredReturnRate, profitSharePercent: before.profitSharePercent }, after: { name: row.name, priority: row.priority, preferredReturnRate: row.preferredReturnRate, profitSharePercent: row.profitSharePercent } }, metadata: { feasibilityProfileId: profile.id, scenarioId } }, tx)
+      return row
+    })
+  }
+
+  async deleteEquityTranche(projectId: string, scenarioId: string, trancheId: string, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    await this.requireScenario(profile.id, scenarioId, actor.tenantId)
+    const tranche = await this.prisma.feasibilityEquityTranche.findFirst({ where: { id: trancheId, scenarioId, tenantId: actor.tenantId }, select: { id: true, name: true } })
+    if (!tranche) throw DomainError.notFound('FEASIBILITY_EQUITY_TRANCHE_NOT_FOUND', 'שכבת ההון אינה שייכת לתרחיש')
+
+    // Contributions attributed to this tranche would be orphaned, and an
+    // orphaned contribution is capital that can never be returned to anybody.
+    // Detaching them silently would make the waterfall balance by losing
+    // somebody's money, so the caller has to deal with them first.
+    const attributed = await this.prisma.feasibilityCashFlowAllocation.count({ where: { scenarioId, sourceKind: 'EQUITY', sourceLineId: tranche.id } })
+    if (attributed > 0) {
+      throw DomainError.conflict(
+        'FEASIBILITY_EQUITY_TRANCHE_IN_USE',
+        `לשכבה „${tranche.name}” משויכות ${attributed} הקצאות תזרים. יש לשייך אותן מחדש או למחוק אותן לפני מחיקת השכבה.`,
+      )
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.feasibilityEquityTranche.delete({ where: { id: tranche.id } })
+      await this.audit.record(actor, { action: 'DELETE', entity: 'FeasibilityEquityTranche', entityId: tranche.id, metadata: { feasibilityProfileId: profile.id, scenarioId, name: tranche.name } }, tx)
+      return { id: tranche.id, deleted: true }
+    })
+  }
+
+  private async requireScenario(profileId: string, scenarioId: string, tenantId: string) {
+    const scenario = await this.prisma.feasibilityScenario.findFirst({
+      where: { id: scenarioId, feasibilityProfileId: profileId, tenantId },
+      select: { id: true },
+    })
+    if (!scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
+    return scenario
+  }
+
   /** The line must exist in this scenario AND be the kind that can hold allocations. */
   private async requireReplacementLine(profileId: string, scenarioId: string, lineId: string, tenantId: string) {
     const line = await this.prisma.feasibilityUnitMixLine.findFirst({
@@ -714,7 +820,28 @@ export class FeasibilityService {
       const compensation = await this.prisma.feasibilityCompensationLine.findFirst({ where: { id: dto.sourceLineId, scenarioId }, select: { id: true } })
       if (!compensation) throw DomainError.notFound('FEASIBILITY_CASH_FLOW_COMPENSATION_NOT_FOUND', 'שורת התמורה אינה שייכת לתרחיש')
     }
-    if (dto.sourceKind === 'EQUITY' && dto.sourceLineId) throw DomainError.validation('FEASIBILITY_CASH_FLOW_EQUITY_INVALID', 'השקעת הון או חלוקת הון אינן מקושרות לשורת הכנסה או עלות')
+    if (dto.sourceKind === 'EQUITY' && dto.sourceLineId) {
+      /*
+       * Equity used to be forbidden a `sourceLineId` outright, because the only
+       * thing the column could have meant was a revenue or cost line and equity
+       * is neither. With tranches it has a second, legitimate meaning: WHICH
+       * layer of capital this contribution belongs to.
+       *
+       * So the rule narrows rather than disappears. The link must name an
+       * equity tranche of THIS scenario, and a contribution is the only
+       * direction it makes sense on — a distribution's recipient is decided by
+       * the waterfall, not asserted by the row.
+       */
+      if (dto.direction !== 'INFLOW') {
+        throw DomainError.validation(
+          'FEASIBILITY_CASH_FLOW_EQUITY_DISTRIBUTION_ATTRIBUTED',
+          'חלוקת הון אינה משויכת לשכבה מראש: מפל ההון הוא שקובע מי מקבל, לפי סדר העדיפות',
+          'sourceLineId',
+        )
+      }
+      const tranche = await this.prisma.feasibilityEquityTranche.findFirst({ where: { id: dto.sourceLineId, scenarioId }, select: { id: true } })
+      if (!tranche) throw DomainError.notFound('FEASIBILITY_CASH_FLOW_EQUITY_TRANCHE_NOT_FOUND', 'שכבת ההון אינה שייכת לתרחיש')
+    }
     if (dto.sourceKind === 'DEBT' && dto.sourceLineId) throw DomainError.validation('FEASIBILITY_CASH_FLOW_DEBT_INVALID', 'משיכת חוב או החזר חוב אינם מקושרים לשורת הכנסה או עלות')
     return this.mutateChild(profile.id, actor, 'FeasibilityCashFlowAllocation', (tx) => tx.feasibilityCashFlowAllocation.create({
       data: { scenarioId, periodStart, direction: dto.direction, sourceKind: dto.sourceKind, sourceLineId: dto.sourceLineId, label: dto.label, amount: decimal(dto.amount)!, classification: dto.classification, confidence: dto.confidence, isVerified: dto.isVerified, sourceId: dto.sourceId, sourceDate: date(dto.sourceDate), notes: dto.notes, createdById: actor.userId, updatedById: actor.userId },
@@ -913,5 +1040,21 @@ export class FeasibilityService {
       await this.audit.record(actor, { action: 'CREATE', entity, entityId: row.id, metadata: { feasibilityProfileId: profileId } }, tx)
       return row
     })
+  }
+}
+
+/**
+ * A share is a fraction of one, not a percentage out of a hundred. `'0.30'` is
+ * thirty per cent; `'30'` would silently hand a tranche thirty times the
+ * residual, so it is refused rather than interpreted.
+ */
+function assertShare(value: string): void {
+  const share = new Decimal(value)
+  if (share.lt(0) || share.gt(1)) {
+    throw DomainError.validation(
+      'FEASIBILITY_EQUITY_SHARE_INVALID',
+      `חלק ברווח השיורי הוא שבר של 1 ולא אחוז: ${value} אינו בין 0 ל-1`,
+      'profitSharePercent',
+    )
   }
 }

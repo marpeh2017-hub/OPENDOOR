@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import Decimal from 'decimal.js'
 import { DomainError } from '../common/errors/domain-error'
+import { computeEquityWaterfall, type EquityFlow, type EquityTrancheTerms } from './equity-waterfall'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
@@ -472,6 +473,16 @@ export class FeasibilityCalculationService {
     const equityIrrAnnual = equityIrrMonthly ? annualizeMonthlyRate(equityIrrMonthly) : equityXirrAnnual
     if (!projectIrrAnnual) issues.push({ code: 'PROJECT_IRR_UNAVAILABLE', severity: 'WARNING', message: 'לא ניתן לחשב IRR לפרויקט: דרושים תזרימים חיוביים ושליליים מלאים.' })
     if (!equityIrrAnnual) issues.push({ code: 'EQUITY_IRR_UNAVAILABLE', severity: 'WARNING', message: 'לא ניתן לחשב IRR להון העצמי: דרושים תזרימים חיוביים ושליליים מלאים.' })
+    // A blended equity return is the right answer for one investor and the
+    // wrong one for a structure. Saying so is cheap — counting the tranches —
+    // whereas running the waterfall here would put an XIRR per tranche inside
+    // every Monte Carlo iteration, so the reader is pointed at it instead.
+    if ((scenario.equityTranches?.length ?? 0) > 1) {
+      issues.push({
+        code: 'EQUITY_IRR_BLENDED_ACROSS_TRANCHES', severity: 'INFO',
+        message: `התרחיש כולל ${scenario.equityTranches!.length} שכבות הון בעלות עדיפויות שונות. התשואה המוצגת כאן משוקללת על פני כולן ואינה התשואה של אף שכבה בפועל; הפירוט לפי שכבה נמצא במפל ההון.`,
+      })
+    }
     if (!annualDiscountRate) issues.push({ code: 'DISCOUNT_RATE_MISSING', severity: 'WARNING', message: 'לא ניתן לחשב NPV ללא הנחת annual-discount-rate במרשם ההנחות.' })
     const periodicDiscountRate = annualDiscountRate ? monthlyRateFromAnnual(read(annualDiscountRate)) : null
     const projectNpv = !annualDiscountRate ? null
@@ -1254,6 +1265,37 @@ export class FeasibilityCalculationService {
     return { profile: adjustedProfile, scenario: adjustedScenario }
   }
 
+  /**
+   * The equity waterfall for a scenario: who is paid, in what order, and what
+   * each layer actually earned.
+   *
+   * Read-only and derived on demand rather than stored. The terms live in
+   * `FeasibilityEquityTranche`; the money lives in the scenario's EQUITY
+   * cash-flow allocations. Both are already persisted, so a snapshot of the
+   * waterfall would be a third copy that can disagree with the two.
+   */
+  async waterfall(projectId: string, scenarioId: string, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    const result = computeEquityWaterfall(equityTrancheTerms(scenario), equityFlowsOf(scenario))
+    const base = this.compute(profile, scenario)
+    return {
+      scenarioId: scenario.id,
+      engineVersion: base.engineVersion,
+      ...result,
+      /**
+       * The single blended figure the engine has always reported, kept beside
+       * the per-tranche ones precisely so the gap is visible. In a layered
+       * deal it matches none of them, and that is the point.
+       */
+      blended: {
+        equityInvested: base.returns.equityInvested,
+        equityDistributed: base.returns.equityDistributed,
+        equityMultiple: base.returns.equityMultiple,
+        equityIrrAnnual: base.returns.equityIrrAnnual,
+      },
+    }
+  }
+
   async sensitivity(projectId: string, scenarioId: string, dto: CreateSensitivityDto, tenantId: string) {
     const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
     return this.computeSensitivity(profile, scenario, dto)
@@ -1572,4 +1614,43 @@ function summariseMetric(values: number[], undefinedRuns: number, buckets: numbe
     probabilityOfLoss: round6(values.filter((value) => value < 0).length / values.length),
     histogram,
   }
+}
+
+/**
+ * The tranche rows, as terms the waterfall can read.
+ *
+ * Prisma hands back `Decimal` objects and nullable columns; the waterfall
+ * works in strings and explicit nulls so it can be unit-tested without a
+ * database anywhere near it.
+ */
+function equityTrancheTerms(scenario: LoadedFeasibilityScenario): EquityTrancheTerms[] {
+  return (scenario.equityTranches ?? []).map((tranche) => ({
+    id: tranche.id,
+    name: tranche.name,
+    kind: tranche.kind,
+    priority: tranche.priority,
+    commitment: tranche.commitment === null || tranche.commitment === undefined ? null : tranche.commitment.toString(),
+    preferredReturnRate: tranche.preferredReturnRate === null || tranche.preferredReturnRate === undefined ? null : tranche.preferredReturnRate.toString(),
+    preferredReturnAccrual: tranche.preferredReturnAccrual,
+    profitSharePercent: tranche.profitSharePercent.toString(),
+  }))
+}
+
+/**
+ * The equity side of the existing cash flow, in the waterfall's sign
+ * convention: a contribution is positive (money reaching the project), a
+ * distribution negative (money leaving it for investors).
+ *
+ * This is the SAME `sourceKind: 'EQUITY'` the engine has always summed into
+ * `equityInvested` and `equityDistributed`. Nothing new is stored and nothing
+ * is re-entered; the waterfall reads the rows that were already there.
+ */
+function equityFlowsOf(scenario: LoadedFeasibilityScenario): EquityFlow[] {
+  return scenario.cashFlowAllocations
+    .filter((allocation) => allocation.sourceKind === 'EQUITY')
+    .map((allocation) => ({
+      date: allocation.periodStart.toISOString().slice(0, 10),
+      amount: allocation.direction === 'INFLOW' ? read(allocation.amount) : read(allocation.amount).negated(),
+      trancheId: allocation.sourceLineId ?? null,
+    }))
 }

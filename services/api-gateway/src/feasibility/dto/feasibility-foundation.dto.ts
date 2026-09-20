@@ -10,6 +10,7 @@ import {
   FeasibilityScenarioKind, FeasibilityRevenueCategory, FeasibilityCostCategory,
   FeasibilityCashFlowDirection, FeasibilityCashFlowSourceKind,
   FeasibilityCompensationStatus, FeasibilityUnitDisposition,
+  FeasibilityEquityTrancheKind, FeasibilityPreferredReturnAccrual,
   FeasibilityTimelinePhaseKind, FeasibilityVatTreatment, PlanningRightStatus,
 } from '@prisma/client'
 
@@ -590,6 +591,48 @@ export class CreateMonteCarloDto {
   @IsOptional() @IsInt() @Min(5) @Max(100)
   buckets?: number
 }
+
+/**
+ * A layer of equity, expressed as TERMS only.
+ *
+ * The money is not here and must not be: a tranche's contributions are the
+ * scenario's existing EQUITY INFLOW cash-flow allocations, pointed at this row
+ * through their `sourceLineId`. Storing amounts here as well would create a
+ * second cash-flow model that can disagree with the first.
+ */
+export class CreateEquityTrancheDto extends ProvenanceDto {
+  @IsString() @IsNotEmpty() @MaxLength(200)
+  name!: string
+
+  @IsOptional() @IsEnum(FeasibilityEquityTrancheKind)
+  kind?: FeasibilityEquityTrancheKind
+
+  /** Lower is paid first. Ties are allowed — pari passu is a real structure — and reported. */
+  @IsInt() @Min(0)
+  priority!: number
+
+  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
+  commitment?: string
+
+  /**
+   * Annual hurdle as a decimal fraction: `'0.08'` for 8%.
+   *
+   * Omitted entirely means this tranche has NO preferred return, which is the
+   * ordinary shape of sponsor equity. That is a different statement from
+   * `'0'`, a 0% hurdle, so the two are kept distinguishable.
+   */
+  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
+  preferredReturnRate?: string
+
+  @IsOptional() @IsEnum(FeasibilityPreferredReturnAccrual)
+  preferredReturnAccrual?: FeasibilityPreferredReturnAccrual
+
+  /** Share of the residual after capital and preference, as a decimal fraction. */
+  @Matches(/^\d+(\.\d+)?$/)
+  profitSharePercent!: string
+}
+
+export class UpdateEquityTrancheDto extends PartialType(CreateEquityTrancheDto) {}
 
 export class CreateComparableTransactionDto {
   @IsString() @IsNotEmpty() @MaxLength(300)

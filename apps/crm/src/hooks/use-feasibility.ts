@@ -463,3 +463,60 @@ export function useRunFeasibilityMonteCarlo(projectId: string) {
       api.post<MonteCarloResult>(`/projects/${projectId}/feasibility/scenarios/${scenarioId}/monte-carlo`, dto),
   })
 }
+
+// ── Equity waterfall ───────────────────────────────────────────────────────
+
+export type EquityTrancheResult = {
+  id: string
+  name: string
+  kind: 'SENIOR' | 'JUNIOR' | 'SPONSOR'
+  priority: number
+  preferredReturnRate: string | null
+  preferredReturnAccrual: 'SIMPLE' | 'COMPOUNDED'
+  profitSharePercent: string
+  commitment: string | null
+  equityInvested: string
+  returnOfCapital: string
+  preferredReturnPaid: string
+  preferredReturnUnpaid: string
+  residualProfit: string
+  capitalNotReturned: string
+  equityDistributed: string
+  equityMultiple: string | null
+  profit: string
+  /** XIRR over this tranche's own flows — not a share of a blended rate. */
+  equityIrrAnnual: string | null
+  cashFlows: Array<{ date: string; amount: string }>
+}
+
+export type FeasibilityWaterfall = {
+  scenarioId: string
+  engineVersion: string
+  applicable: boolean
+  reason: 'NO_TRANCHES_DEFINED' | null
+  structure?: 'RETURN_OF_CAPITAL_THEN_PREFERRED_THEN_SPLIT'
+  tranches: EquityTrancheResult[]
+  events: Array<{
+    date: string
+    kind: 'CONTRIBUTION' | 'DISTRIBUTION'
+    available: string
+    unallocated: string
+    tiers: Array<{ tier: 'RETURN_OF_CAPITAL' | 'PREFERRED_RETURN' | 'RESIDUAL_SPLIT'; trancheId: string; trancheName: string; amount: string }>
+  }>
+  totals: { contributed: string; distributed: string; undistributed: string }
+  issues: Array<{ code: string; severity: 'CRITICAL' | 'WARNING' | 'INFO'; message: string; entityId?: string }>
+  blended: {
+    equityInvested: string
+    equityDistributed: string
+    equityMultiple: string | null
+    equityIrrAnnual: string | null
+  }
+}
+
+export function useFeasibilityWaterfall(projectId: string, scenarioId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['feasibility', projectId, 'waterfall', scenarioId],
+    queryFn: () => api.get<FeasibilityWaterfall>(`/projects/${projectId}/feasibility/scenarios/${scenarioId}/waterfall`),
+    enabled,
+  })
+}

@@ -664,6 +664,7 @@ model Tenant {
   cmsVerificationAudit CmsVerificationAudit[]
   cmsMediaReferences   CmsMediaReference[]
   feasibilityRules     FeasibilityRule[]
+  feasibilityEquityTranches FeasibilityEquityTranche[]
 
   @@index([slug])
   @@map("tenants")
@@ -2421,6 +2422,7 @@ model FeasibilityScenario {
   financing          FeasibilityFinancingAssumption?
   timelinePhases     FeasibilityTimelinePhase[]
   cashFlowAllocations FeasibilityCashFlowAllocation[]
+  equityTranches      FeasibilityEquityTranche[]
   compensations      FeasibilityCompensationLine[]
   calculationSnapshots FeasibilityCalculationSnapshot[]
 
@@ -2642,6 +2644,62 @@ model FeasibilityTimelinePhase {
 
 /// Monthly cash-flow input. Revenue/cost timing is never guessed: allocations
 /// are explicit, traceable and reconciled to their source lines by the engine.
+/// Priority ordering for the equity waterfall. Lower `priority` is paid first.
+enum FeasibilityEquityTrancheKind {
+  SENIOR
+  JUNIOR
+  SPONSOR
+}
+
+/// How a tranche's preferred return accrues on capital it has not yet had back.
+enum FeasibilityPreferredReturnAccrual {
+  /// Accrues on unreturned capital only; unpaid preference does not itself accrue.
+  SIMPLE
+  /// Unpaid preference joins the accrual base, so deferred preference costs more.
+  COMPOUNDED
+}
+
+/// A layer of equity with its own priority, hurdle and residual share.
+///
+/// Contributions are NOT stored here: they are the scenario's existing EQUITY
+/// INFLOW cash-flow allocations, attributed to a tranche through
+/// `FeasibilityCashFlowAllocation.sourceLineId`. This row carries only the
+/// TERMS — who is paid in what order, on what hurdle, for what share of the
+/// residual. The money itself stays in the one cash-flow model the rest of the
+/// engine already reads.
+model FeasibilityEquityTranche {
+  id                    String                       @id @default(cuid())
+  tenantId              String
+  tenant                Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scenarioId            String
+  scenario              FeasibilityScenario          @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  name                  String
+  kind                  FeasibilityEquityTrancheKind @default(SENIOR)
+  /// Lower is paid first. Ties are resolved by creation order, and flagged.
+  priority              Int
+  /// What the investor undertook to put in, for checking against what the cash flow actually draws.
+  commitment            Decimal?                     @db.Decimal(18, 2)
+  /// Annual hurdle, as a decimal fraction. Null means this tranche has no preferred return.
+  preferredReturnRate   Decimal?                     @db.Decimal(12, 8)
+  preferredReturnAccrual FeasibilityPreferredReturnAccrual @default(COMPOUNDED)
+  /// Share of the residual profit after capital and preference, as a decimal fraction.
+  profitSharePercent    Decimal                      @db.Decimal(12, 8)
+  classification        FeasibilityDataClassification @default(ASSUMPTION)
+  confidence            FeasibilityConfidence        @default(UNKNOWN)
+  isVerified            Boolean                      @default(false)
+  sourceId              String?
+  notes                 String?
+  createdById           String
+  updatedById           String
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+
+  @@unique([scenarioId, name])
+  @@index([scenarioId, priority])
+  @@index([tenantId])
+  @@map("feasibility_equity_tranches")
+}
+
 model FeasibilityCashFlowAllocation {
   id                 String                       @id @default(cuid())
   scenarioId         String

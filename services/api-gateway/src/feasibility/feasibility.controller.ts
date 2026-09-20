@@ -14,7 +14,7 @@ import {
   CreateFeasibilityCompensationLineDto, UpdateFeasibilityCompensationLineDto,
   CreateComparableAdjustmentDto, CreateComparableTransactionDto, UpdateComparableAdjustmentDto, UpdateComparableTransactionDto,
   CreateFeasibilitySnapshotDto,
-  CreateSensitivityDto, CreateGoalSeekDto, CreateMonteCarloDto,
+  CreateSensitivityDto, CreateGoalSeekDto, CreateMonteCarloDto, CreateEquityTrancheDto, UpdateEquityTrancheDto,
   CreateFeasibilityReportVersionDto,
   TransitionFeasibilityReportVersionDto,
   UpsertFeasibilityFinancingDto,
@@ -307,6 +307,32 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Solve for the input that reaches a target metric; reports failure rather than inventing a reachable answer' })
   goalSeek(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateGoalSeekDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.goalSeek(projectId, scenarioId, dto, tenantFrom(req)))
+  }
+
+  @Get('scenarios/:scenarioId/waterfall')
+  @Roles(...FEASIBILITY_VIEW_ROLES)
+  @ApiOperation({ summary: 'The equity waterfall: return of capital, preferred return and residual split per tranche, each with its own XIRR' })
+  waterfall(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Request() req: any) {
+    return mapDomainErrors(() => this.calculations.waterfall(projectId, scenarioId, tenantFrom(req)))
+  }
+
+  @Post('scenarios/:scenarioId/equity-tranches')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Add a layer of equity — terms only; its money stays in the cash-flow allocations' })
+  addEquityTranche(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateEquityTrancheDto, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.addEquityTranche(projectId, scenarioId, dto, actorFrom(req)))
+  }
+
+  @Patch('scenarios/:scenarioId/equity-tranches/:trancheId')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  updateEquityTranche(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Param('trancheId') trancheId: string, @Body() dto: UpdateEquityTrancheDto, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.updateEquityTranche(projectId, scenarioId, trancheId, dto, actorFrom(req)))
+  }
+
+  @Delete('scenarios/:scenarioId/equity-tranches/:trancheId')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  deleteEquityTranche(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Param('trancheId') trancheId: string, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.deleteEquityTranche(projectId, scenarioId, trancheId, actorFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/monte-carlo')
