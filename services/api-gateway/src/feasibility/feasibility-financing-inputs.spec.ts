@@ -126,6 +126,65 @@ describe('P0-1 — שדות המימון משפיעים בפועל', () => {
    * האסימטריה הזאת לא הייתה שמרנות אלא שרירות: אותו שבריר אגורה בדיוק, בכיוון
    * אחד מקובל ובשני קריטי.
    */
+  /**
+   * נמצא במבחן קבלה על עסקת רכישה אמיתית.
+   *
+   * מרשם השטחים הוא ברמת הפרופיל ומתאר את הנכס כפי שהוא עומד. כל תרחיש
+   * שמוסיף שטח מוכר יותר מזה מעצם הגדרתו, ולכן הבדיקה נורתה ברמת CRITICAL
+   * על מודלים נכונים — ולא הייתה שום הזנת נתונים שמנקה אותה: המרשם מסכם את
+   * שורות ה-GROSS, כך שהוספת שורה "מתוכנן" לצד "קיים" מייצרת משווה שהוא
+   * סכום השניים, שאינו מספר על שום דבר.
+   */
+  it('מודד שטח מכירה מול הברוטו של התרחיש עצמו כשהתמהיל מצהיר עליו', () => {
+    const { profile, scenario } = build()
+    // הפרופיל מתאר מבנה קיים קטן; התרחיש בונה ומוכר יותר ממנו.
+    profile.areas = [{ id: 'area-1', areaType: 'GROSS', valueSqm: '400', label: 'ברוטו קיים', sourceId: 'source-1', isVerified: true }] as never
+    scenario.unitMix[0]!.saleableAreaSqm = '90' as never
+    scenario.unitMix[0]!.fixedUnitPrice = null as never
+    scenario.unitMix[0]!.pricePerSqm = '30000' as never
+
+    // ללא הצהרת ברוטו בתמהיל — נופל חזרה למרשם הפרופיל, ונורה.
+    expect(engine.compute(profile, scenario).validation.map((i) => i.code)).toContain('SALEABLE_AREA_EXCEEDS_GROSS')
+
+    // עם ברוטו מוצהר בתמהיל — נמדד מולו, ועובר.
+    scenario.unitMix[0]!.grossAreaSqm = '110' as never
+    expect(engine.compute(profile, scenario).validation.map((i) => i.code)).not.toContain('SALEABLE_AREA_EXCEEDS_GROSS')
+
+    // והבדיקה עדיין אמיתית: אי אפשר למכור יותר מהברוטו שהוצהר.
+    scenario.unitMix[0]!.saleableAreaSqm = '130' as never
+    expect(engine.compute(profile, scenario).validation.map((i) => i.code)).toContain('SALEABLE_AREA_EXCEEDS_GROSS')
+  })
+
+  /**
+   * התאמת השטחים היא על מרשם הפרופיל מול עצמו, ולא מול התרחיש.
+   *
+   * זו רגרסיה שהתיקון שמעליה כמעט יצר: אם הבדיקה הזאת קוראת את הברוטו
+   * המועדף-לתרחיש, היא משווה עיקרי ושירות של המבנה הקיים מול ברוטו מתוכנן
+   * של מבנה אחר — ומדווחת את ההפרש ביניהם כשגיאת נתונים.
+   */
+  it('מתאים שטחים מול מרשם הפרופיל בלבד, גם כשהתרחיש מצהיר ברוטו אחר', () => {
+    const { profile, scenario } = build()
+    profile.areas = [
+      { id: 'a-main', areaType: 'MAIN', valueSqm: '358.67', label: 'עיקרי', sourceId: 'source-1', isVerified: true },
+      { id: 'a-serv', areaType: 'SERVICE', valueSqm: '120.46', label: 'שירות', sourceId: 'source-1', isVerified: true },
+      { id: 'a-gross', areaType: 'GROSS', valueSqm: '479.13', label: 'ברוטו קיים', sourceId: 'source-1', isVerified: true },
+    ] as never
+    profile.assumptions.push({ key: 'area-reconciliation-tolerance-sqm', value: '0.5' } as never)
+    // התרחיש בונה ומוכר הרבה מעבר למבנה הקיים — וזה לא סתירה במרשם.
+    scenario.unitMix[0]!.grossAreaSqm = '939.96' as never
+    scenario.unitMix[0]!.saleableAreaSqm = '83.925' as never
+    scenario.unitMix[0]!.fixedUnitPrice = null as never
+    scenario.unitMix[0]!.pricePerSqm = '30000' as never
+
+    const codes = engine.compute(profile, scenario).validation.map((i) => i.code)
+    expect(codes).not.toContain('AREA_RECONCILIATION_MISMATCH')
+    expect(codes).not.toContain('SALEABLE_AREA_EXCEEDS_GROSS')
+
+    // וסתירה אמיתית במרשם עדיין נתפסת.
+    profile.areas[2]!.valueSqm = '600' as never
+    expect(engine.compute(profile, scenario).validation.map((i) => i.code)).toContain('AREA_RECONCILIATION_MISMATCH')
+  })
+
   it('סובלנית לשבריר אגורה בשני הכיוונים של פירעון החוב — ולא רק באחד', () => {
     const overRepay = build({ withDebt: true })
     const repay = overRepay.scenario.cashFlowAllocations.find((row: { id: string }) => row.id === 'alloc-repay')!

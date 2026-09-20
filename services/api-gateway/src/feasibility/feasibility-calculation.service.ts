@@ -520,20 +520,51 @@ export class FeasibilityCalculationService {
     const constructionCosts = constructionLines.reduce((sum, line) => sum.plus(line.fixedAmount ? read(line.fixedAmount) : read(line.quantity).mul(read(line.unitCost))), new Decimal(0))
     const nonConstructionCosts = totalCosts.minus(constructionCosts)
     if (constructionCosts.lte(0)) issues.push({ code: 'CONSTRUCTION_COST_MISSING', severity: 'CRITICAL', message: 'לא הוזנה עלות בנייה חיובית לתרחיש.' })
-    const grossArea = profile.areas.filter((area) => area.areaType === 'GROSS').reduce((sum, area) => sum.plus(read(area.valueSqm)), new Decimal(0))
+    /*
+     * ── WHICH GROSS AREA THE SALEABLE AREA IS MEASURED AGAINST ────────────
+     *
+     * The profile's area register describes the property as it STANDS. A
+     * scenario that adds area — every redevelopment route there is — sells
+     * more than that by construction, so measuring against the profile's gross
+     * made this CRITICAL fire on correct models and left no data entry that
+     * could clear it: the register sums its GROSS rows, so adding a "planned"
+     * row on top of the existing one produces a comparator that is the two
+     * added together, which is not a number about anything.
+     *
+     * So the scenario's OWN gross is used when its unit mix states one. That
+     * keeps the check meaningful — you still cannot sell more than the gross
+     * you declared — while measuring it against the building the scenario
+     * actually describes. The profile register remains the fallback for a mix
+     * that does not state gross, which is where this check started.
+     */
+    const scenarioGrossArea = scenario.unitMix.reduce((sum, line) => sum.plus(read(line.grossAreaSqm).mul(line.unitCount)), new Decimal(0))
+    const profileGrossArea = profile.areas.filter((area) => area.areaType === 'GROSS').reduce((sum, area) => sum.plus(read(area.valueSqm)), new Decimal(0))
+    const grossArea = scenarioGrossArea.gt(0) ? scenarioGrossArea : profileGrossArea
+    const grossAreaBasis = scenarioGrossArea.gt(0) ? 'SCENARIO_UNIT_MIX' : 'PROFILE_AREA_REGISTER'
     if (grossArea.gt(0) && totalSaleableArea.gt(grossArea)) {
-      issues.push({ code: 'SALEABLE_AREA_EXCEEDS_GROSS', severity: 'CRITICAL', message: 'שטח המכירה הכולל גדול מהשטח הברוטו; נדרשת בדיקת תמהיל ושטחים.' })
+      issues.push({
+        code: 'SALEABLE_AREA_EXCEEDS_GROSS', severity: 'CRITICAL',
+        message: `שטח המכירה הכולל (${totalSaleableArea.toFixed(2)} מ״ר) גדול מהשטח הברוטו (${grossArea.toFixed(2)} מ״ר, ${grossAreaBasis === 'SCENARIO_UNIT_MIX' ? 'לפי תמהיל התרחיש' : 'לפי מרשם השטחים של הפרופיל'}); נדרשת בדיקת תמהיל ושטחים.`,
+      })
     }
     const mainAndServiceArea = profile.areas
       .filter((area) => area.areaType === 'MAIN' || area.areaType === 'SERVICE')
       .reduce((sum, area) => sum.plus(read(area.valueSqm)), new Decimal(0))
     const areaTolerance = profile.assumptions.find((assumption) => assumption.key === 'area-reconciliation-tolerance-sqm')?.value
-    if (grossArea.gt(0) && mainAndServiceArea.gt(0)) {
+    /*
+     * This reconciliation is about the PROFILE's register being internally
+     * consistent — does its own main plus service add up to its own gross —
+     * so it reads the profile's gross and not the scenario-preferring
+     * `grossArea` above. Comparing the existing building's main and service
+     * against a scenario's PLANNED gross compares two different buildings,
+     * and reports the difference between them as a data error.
+     */
+    if (profileGrossArea.gt(0) && mainAndServiceArea.gt(0)) {
       if (!areaTolerance) {
         issues.push({ code: 'AREA_RECONCILIATION_TOLERANCE_MISSING', severity: 'WARNING', message: 'קיימים שטח עיקרי ושירות לצד שטח ברוטו, אך לא הוגדרה הנחת area-reconciliation-tolerance-sqm לבדיקת ההתאמה.' })
       } else if (read(areaTolerance).lt(0)) {
         issues.push({ code: 'AREA_RECONCILIATION_TOLERANCE_INVALID', severity: 'CRITICAL', message: 'הנחת area-reconciliation-tolerance-sqm אינה יכולה להיות שלילית.' })
-      } else if (mainAndServiceArea.minus(grossArea).abs().gt(read(areaTolerance))) {
+      } else if (mainAndServiceArea.minus(profileGrossArea).abs().gt(read(areaTolerance))) {
         issues.push({ code: 'AREA_RECONCILIATION_MISMATCH', severity: 'WARNING', message: 'סכום השטח העיקרי והשירות חורג מהשטח הברוטו מעבר לסף שהוגדר; בדקו הגדרות שטח ומקור.' })
       }
     }
