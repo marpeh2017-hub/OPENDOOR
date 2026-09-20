@@ -117,6 +117,36 @@ const codes = (result: ReturnType<typeof run>) => result.validation.map((issue) 
 const lineById = (result: ReturnType<typeof run>, id: string) => result.costs.lines.find((line) => line.id === id)
 
 describe('P0-1 — שדות המימון משפיעים בפועל', () => {
+  /**
+   * נמצא במבחן קבלה על נכס אמיתי, לא בבדיקה מתוכננת.
+   *
+   * לוח פירעון שנבנה עד האגורה האחרונה יכול לחרוג בשבריר אגורה, ואז
+   * `DEBT_BALANCE_NEGATIVE` נורה ברמת CRITICAL וחוסם אישור דוח — על יתרה
+   * שמודפסת כ-0.00-. הבדיקה הנגדית, `DEBT_NOT_REPAID`, סבלה אגורה מאז ומעולם.
+   * האסימטריה הזאת לא הייתה שמרנות אלא שרירות: אותו שבריר אגורה בדיוק, בכיוון
+   * אחד מקובל ובשני קריטי.
+   */
+  it('סובלנית לשבריר אגורה בשני הכיוונים של פירעון החוב — ולא רק באחד', () => {
+    const overRepay = build({ withDebt: true })
+    const repay = overRepay.scenario.cashFlowAllocations.find((row: { id: string }) => row.id === 'alloc-repay')!
+    repay.amount = new Decimal('5000000.005') as never
+    const codes = engine.compute(overRepay.profile, overRepay.scenario).validation.map((issue) => issue.code)
+    expect(codes).not.toContain('DEBT_BALANCE_NEGATIVE')
+
+    // ומעבר לסבילות היא עדיין נורית: הסבילות היא לעיגול, לא לשגיאה.
+    repay.amount = new Decimal('5000100') as never
+    const real = engine.compute(overRepay.profile, overRepay.scenario).validation.map((issue) => issue.code)
+    expect(real).toContain('DEBT_BALANCE_NEGATIVE')
+  })
+
+  it('סובלנית לשבריר אגורה שנותר בחוב — הצד שתמיד היה סובלני', () => {
+    const underRepay = build({ withDebt: true })
+    const repay = underRepay.scenario.cashFlowAllocations.find((row: { id: string }) => row.id === 'alloc-repay')!
+    repay.amount = new Decimal('4999999.995') as never
+    const codes = engine.compute(underRepay.profile, underRepay.scenario).validation.map((issue) => issue.code)
+    expect(codes).not.toContain('DEBT_NOT_REPAID')
+  })
+
   it('distinguishes source coverage from professional verification', () => {
     const { profile, scenario } = build()
     for (const row of [...profile.parcels, ...profile.areas, ...profile.planningRights, ...scenario.costLines]) row.isVerified = false

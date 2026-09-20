@@ -323,7 +323,19 @@ export class FeasibilityCalculationService {
       // החוב "חי" בחודש גם אם נפרע בתוכו. מדידה לפי יתרת סוף חודש בלבד
       // היתה מקצרת את תקופת המימון בדיוק בחודש הפירעון.
       if (openingDebt.gt(0) || debtMovement.gt(0)) lastPeriodWithDebt = periodStart
-      if (endingDebt.isNegative()) issues.push({ code: 'DEBT_BALANCE_NEGATIVE', severity: 'CRITICAL', message: 'החזר חוב גדול מיתרת החוב בתזרים.', entityId: periodStart })
+      /*
+       * The same one-agora tolerance the closing check uses, and for the same
+       * reason. `DEBT_NOT_REPAID` below has always allowed a cent of leftover
+       * debt; this side allowed nothing, so a repayment schedule built to the
+       * cent could overshoot by a fraction of an agora and raise a CRITICAL
+       * that blocks report approval — on a balance that prints as -0.00.
+       *
+       * The asymmetry was arbitrary rather than conservative: a rounding
+       * residue is not "repaid more than was owed" in any sense a reader would
+       * recognise, and treating it as one made the stricter side the one that
+       * fired on correct models.
+       */
+      if (endingDebt.lt(DEBT_ROUNDING_TOLERANCE.negated())) issues.push({ code: 'DEBT_BALANCE_NEGATIVE', severity: 'CRITICAL', message: `החזר חוב גדול מיתרת החוב בתזרים ב-${amount(endingDebt.abs())}.`, entityId: periodStart })
       let interest = new Decimal(0)
       let capitalisedInterest = new Decimal(0)
       if (scenario.financing?.annualInterestRate && debtMovementByPeriod.size > 0) {
@@ -441,7 +453,7 @@ export class FeasibilityCalculationService {
         }
       }
     }
-    if (outstandingDebt.gt('0.01')) issues.push({ code: 'DEBT_NOT_REPAID', severity: 'CRITICAL', message: `בתום התזרים נותרה יתרת חוב של ${amount(outstandingDebt)}; הרווח המוצג אינו סופי כל עוד החוב אינו נפרע.` })
+    if (outstandingDebt.gt(DEBT_ROUNDING_TOLERANCE)) issues.push({ code: 'DEBT_NOT_REPAID', severity: 'CRITICAL', message: `בתום התזרים נותרה יתרת חוב של ${amount(outstandingDebt)}; הרווח המוצג אינו סופי כל עוד החוב אינו נפרע.` })
 
     if (totalRevenue.lte(0)) issues.push({ code: 'REVENUE_ZERO', severity: 'CRITICAL', message: 'לא ניתן להציג כדאיות: סך ההכנסות הוא אפס.' })
     if (totalCosts.lte(0)) issues.push({ code: 'COST_ZERO', severity: 'CRITICAL', message: 'לא ניתן להציג כדאיות: סך העלויות הוא אפס.' })
@@ -1469,6 +1481,15 @@ function mulberry32(seed: number): () => number {
  * simulation belongs in a job, not in an HTTP round trip that a proxy will
  * cut off anyway.
  */
+/**
+ * One agora. Below this a debt balance is rounding, not an amount.
+ *
+ * Used on BOTH sides of the repayment check, because an under-repayment of
+ * half an agora and an over-repayment of half an agora are the same fact about
+ * a model and should not produce different verdicts.
+ */
+const DEBT_ROUNDING_TOLERANCE = new Decimal('0.01')
+
 const MONTE_CARLO_BUDGET_MS = 15000
 
 const MONTE_CARLO_METRICS = ['profitOnCost', 'profit', 'projectNpv', 'projectIrrAnnual', 'equityIrrAnnual'] as const
