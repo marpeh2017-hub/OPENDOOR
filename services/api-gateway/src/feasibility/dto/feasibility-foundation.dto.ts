@@ -1,6 +1,7 @@
 import {
   IsBoolean, IsDateString, IsEnum, IsInt, IsNotEmpty,
   ArrayMinSize, IsArray, IsIn, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested,
+  ValidateIf,
 } from 'class-validator'
 import { OmitType, PartialType } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -362,8 +363,13 @@ export class UpdateFeasibilityCostLineDto extends PartialType(CreateFeasibilityC
 export class UpsertFeasibilityFinancingDto extends ProvenanceDto {
   @IsOptional() @Matches(/^\d+(\.\d+)?$/)
   debtAmount?: string
-  @IsOptional() @Matches(/^\d+(\.\d+)?$/)
-  equityAmount?: string
+  /**
+   * ההון שהיזם התחייב להעמיד. `null` מנקה את ההתחייבות — ולא מצהיר על אפס.
+   * שתי האמירות שונות, והמנוע בודק אותן אחרת, ולכן חייבת להיות דרך למסור
+   * את הראשונה.
+   */
+  @IsOptional() @ValidateIf((object: UpsertFeasibilityFinancingDto) => object.equityAmount !== null) @Matches(/^\d+(\.\d+)?$/)
+  equityAmount?: string | null
   @IsOptional() @Matches(/^(0(\.\d+)?|1(\.0+)?)$/)
   ltc?: string
   @IsOptional() @Matches(/^(0(\.\d+)?|1(\.0+)?)$/)

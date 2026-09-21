@@ -210,3 +210,44 @@ describe('גזירת ההון העצמי מפער המימון', () => {
     expect(derived.returns.projectIrrAnnual).toBe(explicit.returns.projectIrrAnnual)
   })
 })
+
+/**
+ * התחייבות שלא נמסרה אינה התחייבות של אפס.
+ *
+ * אותה הבחנה שפער 4 עשה בין `UNSET` ל-`NOT_APPLICABLE`: שדה ריק אומר שאיש
+ * לא הצהיר, ושדה שכתוב בו אפס אומר שמישהו הצהיר אפס. שתי אמירות שונות,
+ * ושתי תוצאות שונות — ולא אותה בדיקה שרצה על ברירת מחדל שקטה.
+ */
+describe('מגבלת ההון כשלא נמסרה', () => {
+  const withCommitment = (equityAmount: string | null) => {
+    const { profile, scenario } = build()
+    ;(scenario.financing as unknown as { equityAmount: string | null }).equityAmount = equityAmount
+    return new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+  }
+  const codes = (result: ReturnType<FeasibilityCalculationService['compute']>) => result.validation.map((issue) => issue.code)
+
+  it('לא נמסרה — שלוש הבדיקות שותקות, והסטטוס אינו נפגע', () => {
+    const result = withCommitment(null)
+    expect(codes(result)).not.toContain('FUNDING_GAP')
+    expect(codes(result)).not.toContain('EQUITY_COMMITMENT_EXCEEDED')
+    expect(codes(result)).not.toContain('EQUITY_NOT_DRAWN')
+    // ומה שנשאר CRITICAL אינו קשור למגבלת ההון.
+    const criticals = result.validation.filter((issue) => issue.severity === 'CRITICAL').map((issue) => issue.code)
+    expect(criticals).not.toContain('FUNDING_GAP')
+    expect(criticals).not.toContain('EQUITY_COMMITMENT_EXCEEDED')
+    // (מה שכן CRITICAL כאן הוא DEBT_NOT_REPAID של ה-fixture, ואינו קשור למגבלה.)
+  })
+
+  it('אפס מפורש הוא התחייבות של אפס, ונבדק ככזו', () => {
+    // ההבחנה עצמה: 0 אינו מתנהג כמו ריק.
+    expect(codes(withCommitment('0'))).toContain('EQUITY_COMMITMENT_EXCEEDED')
+    expect(codes(withCommitment(null))).not.toContain('EQUITY_COMMITMENT_EXCEEDED')
+  })
+
+  it('התחייבות שאינה מספיקה נתפסת, והמספר בהודעה הוא זה שהתזרים דורש', () => {
+    const result = withCommitment('1000000')
+    const issue = result.validation.find((entry) => entry.code === 'EQUITY_COMMITMENT_EXCEEDED')
+    expect(issue).toBeDefined()
+    expect(issue!.message).toContain(result.returns.equityInvested)
+  })
+})

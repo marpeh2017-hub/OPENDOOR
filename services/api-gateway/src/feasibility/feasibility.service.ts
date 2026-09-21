@@ -57,8 +57,17 @@ const PROFILE_INCLUDE = {
   },
 } satisfies Prisma.FeasibilityProfileInclude
 
-function decimal(value: string | undefined): Prisma.Decimal | undefined {
+/*
+ * `undefined` משאיר את השדה כפי שהוא; `null` מנקה אותו.
+ *
+ * ההבחנה הזו לא היתה קיימת, ולכן שדה כלכלי שהוזן פעם אחת לא היה ניתן
+ * להחזרה למצב "לא נמסר" דרך ה-API בשום צורה. זה נראה כמו פרט, והוא לא:
+ * המנוע מבדיל בין התחייבות שלא נמסרה (הבדיקות שותקות) לבין התחייבות של
+ * אפס (נבדקת ככזו), אבל אחד משני המצבים האלה היה בלתי ניתן להגעה.
+ */
+function decimal(value: string | null | undefined): Prisma.Decimal | null | undefined {
   if (value === undefined) return undefined
+  if (value === null) return null
   const parsed = new Prisma.Decimal(value)
   if (parsed.isNegative()) throw DomainError.validation('FEASIBILITY_NEGATIVE_VALUE', 'ערך כלכלי או שטח לא יכול להיות שלילי')
   return parsed
