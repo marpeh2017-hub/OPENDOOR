@@ -288,6 +288,79 @@ enum FeasibilityConfidence {
   UNKNOWN
 }
 
+/// Answers to the routing wizard. UNKNOWN is a recorded answer, not a blank:
+/// "I was asked and could not say" and "nobody asked" are different facts, and
+/// only the first of them means the question was put.
+enum FeasibilityRouteLandHolder {
+  SELLER_EXITS
+  LANDOWNER_PARTNER
+  EXISTING_OWNERS
+  UNKNOWN
+}
+enum FeasibilityRouteBuildIntent {
+  BUILD
+  RESELL
+  UNKNOWN
+}
+enum FeasibilityRouteDemolition {
+  YES
+  NO
+  UNKNOWN
+}
+enum FeasibilityRouteBuildingCount {
+  SINGLE
+  MULTIPLE
+  UNKNOWN
+}
+enum FeasibilityRouteDeclaration {
+  DECLARED_OR_IN_PROGRESS
+  NOT_DECLARED
+  UNKNOWN
+}
+enum FeasibilityRouteStatus {
+  RESOLVED
+  UNDECIDED
+}
+
+/// How a project type was arrived at.
+///
+/// The type on the profile is the conclusion; this is the argument. Someone
+/// opening the file in two months has to be able to see which answers led
+/// there — and, if one of those facts has since changed, to know the question
+/// is worth asking again. A conclusion with no argument cannot be revisited,
+/// only overwritten.
+///
+/// Rows are kept rather than replaced: changing your mind about a route is the
+/// normal use, and the sequence of decisions is itself the record.
+model FeasibilityRouteDecision {
+  id                 String                @id @default(cuid())
+  feasibilityProfileId String
+  feasibilityProfile FeasibilityProfile    @relation(fields: [feasibilityProfileId], references: [id], onDelete: Cascade)
+
+  landHolder         FeasibilityRouteLandHolder?
+  buildIntent        FeasibilityRouteBuildIntent?
+  demolition         FeasibilityRouteDemolition?
+  buildingCount      FeasibilityRouteBuildingCount?
+  declaration        FeasibilityRouteDeclaration?
+
+  status             FeasibilityRouteStatus
+  /// Null when UNDECIDED. A route nobody could reach is not recorded as one.
+  resolvedProjectType FeasibilityProjectType?
+  /// Whether this decision was applied to the profile, or only explored.
+  appliedToProfile   Boolean               @default(false)
+  /// The wizard's own words for what led here and what it warned about, frozen
+  /// as at the time of the decision — so a later change to the wording does not
+  /// rewrite the reasoning somebody acted on.
+  reasoning          String[]
+  warnings           String[]
+
+  decidedById        String
+  createdAt          DateTime              @default(now())
+
+  @@index([feasibilityProfileId, createdAt])
+  @@map("feasibility_route_decisions")
+}
+
 enum FeasibilityProjectType {
   TAMA_38_1
   TAMA_38_2
@@ -2167,6 +2240,7 @@ model FeasibilityProfile {
   planningRights PlanningRight[]
   comparableTransactions ComparableTransaction[]
   scenarios     FeasibilityScenario[]
+  routeDecisions FeasibilityRouteDecision[]
   calculationSnapshots FeasibilityCalculationSnapshot[]
   reportVersions FeasibilityReportVersion[]
 
