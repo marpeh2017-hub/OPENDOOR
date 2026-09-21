@@ -1,3 +1,4 @@
+import { PROJECT_TYPE_LABELS } from './project-type-inputs'
 import { Injectable } from '@nestjs/common'
 import { existsSync } from 'fs'
 import { mkdtemp, readFile, rm, writeFile } from 'fs/promises'
@@ -51,10 +52,9 @@ export class FeasibilityPdfExportService {
    * the model while ensuring a locked report remains historically accurate. */
   private withCoverDetails(html: string, input: any) {
     const project = input?.project ?? {}
-    const projectType: Record<string, string> = {
-      TAMA_38_1: 'תמ״א 38/1', TAMA_38_2: 'תמ״א 38/2', PINUY_BINUY: 'פינוי־בינוי',
-      NEW_CONSTRUCTION: 'בנייה חדשה', COMBINATION: 'עסקת קומבינציה', LAND: 'קרקע', OTHER: 'אחר',
-    }
+    // התוויות מגיעות מטבלת המסלולים, לא מעותק שלישי שלהן. עותק לכל צרכן
+    // הוא מה שמבטיח שתוספת מסלול תיגע בשלושה מקומות ותישכח באחד.
+    const projectType: Record<string, string> = PROJECT_TYPE_LABELS
     const date = (value: unknown) => value ? new Date(String(value)).toLocaleDateString('he-IL') : '—'
     const value = (label: string, content: unknown) => `<div><b>${escapeHtml(label)}</b><span>${escapeHtml(content || '—')}</span></div>`
     const details = `<div class="cover-details">${[

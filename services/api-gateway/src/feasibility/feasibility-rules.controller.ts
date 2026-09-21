@@ -33,9 +33,10 @@ export class FeasibilityRulesController {
     @Query('code') code?: string,
     @Query('jurisdiction') jurisdiction?: string,
     @Query('includeInactive') includeInactive?: string,
+    @Query('verification') verification?: 'VERIFIED_AGAINST_SOURCE' | 'NEEDS_VERIFICATION' | 'DISPUTED',
   ) {
     return mapDomainErrors(() => this.rules.list(tenantFrom(req), {
-      code, jurisdiction, includeInactive: includeInactive === 'true',
+      code, jurisdiction, includeInactive: includeInactive === 'true', verification,
     }))
   }
 

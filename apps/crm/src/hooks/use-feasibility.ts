@@ -348,6 +348,42 @@ export function useFeasibilityDeviations(profileId: string | null) {
   })
 }
 
+// ── מה המסלול שואל ─────────────────────────────────────────────────────────
+
+/**
+ * הטבלה שמניעה את התצוגה היא זו שמניעה את הבדיקה בשרת. ה-CRM קורא אותה
+ * ואינו מחזיק עותק — עותק הוא מה שמאפשר לטופס ולבדיקה להיפרד.
+ */
+export type FeasibilityInputReadiness = {
+  key: string
+  label: string
+  intent: string
+  coverage: 'MODELLED' | 'PLANNED'
+  requirement: 'REQUIRED' | 'OPTIONAL'
+  status: 'PRESENT' | 'MISSING' | 'NOT_ENFORCED'
+}
+
+export type FeasibilityInputRequirements = {
+  projectType: string
+  projectTypeLabel: string
+  scenarioId: string | null
+  measuredAgainstScenario: boolean
+  inputs: FeasibilityInputReadiness[]
+  notApplicable: { key: string; label: string; intent: string }[]
+  summary: { requiredMissing: number; notEnforced: number; present: number }
+}
+
+export function useFeasibilityInputRequirements(projectId: string, scenarioId?: string | null) {
+  return useQuery({
+    queryKey: ['feasibility', 'input-requirements', projectId, scenarioId ?? null],
+    queryFn: () => api.get<FeasibilityInputRequirements>(
+      `/projects/${projectId}/feasibility/input-requirements${scenarioId ? `?scenarioId=${scenarioId}` : ''}`,
+    ),
+    enabled: Boolean(projectId),
+    staleTime: 30_000,
+  })
+}
+
 // ── Goal Seek ──────────────────────────────────────────────────────────────
 
 export type FeasibilityGoalSeekMetric =

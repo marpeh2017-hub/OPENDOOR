@@ -1,3 +1,4 @@
+import { PROJECT_TYPE_LABELS } from './project-type-inputs'
 import { Injectable } from '@nestjs/common'
 import { DomainError } from '../common/errors/domain-error'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
@@ -117,7 +118,9 @@ export class FeasibilityExcelExportService {
       ['שם פרויקט', input.project?.name ?? '—', 'FACT', 'צילום פרויקט'],
       ['קוד פרויקט', input.project?.code ?? '—', 'FACT', 'צילום פרויקט'],
       ['כתובת פרויקט', [input.project?.address, input.project?.city].filter(Boolean).join(', ') || '—', 'FACT', 'צילום פרויקט'],
-      ['סוג פרויקט', input.projectType ?? '—', 'FACT', 'פרופיל דוח אפס'],
+      // הייצוא הציג עד כה את קוד ה-enum הגולמי (`TAMA_38_1`), לא את שמו.
+      // אותה טבלה שמתרגמת ב-CRM וב-PDF מתרגמת גם כאן.
+      ['סוג פרויקט', PROJECT_TYPE_LABELS[input.projectType as keyof typeof PROJECT_TYPE_LABELS] ?? input.projectType ?? '—', 'FACT', 'פרופיל דוח אפס'],
       ['סוג דוח', input.reportType ?? '—', 'FACT', 'פרופיל דוח אפס'],
       ['מטרה', input.purpose ?? '—', 'FACT', 'פרופיל דוח אפס'],
       ['תאריך קובע', input.valuationDate ?? '—', 'FACT', 'פרופיל דוח אפס'],
