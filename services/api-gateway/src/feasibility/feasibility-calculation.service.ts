@@ -5,6 +5,7 @@ import { computeEquityWaterfall, type EquityFlow, type EquityTrancheTerms } from
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
+import { inputReadiness, notApplicableFor, PROJECT_TYPE_LABELS } from './project-type-inputs'
 import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto, SolveFinancingDto,
   CreateMonteCarloDto,
   MonteCarloVariableDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
@@ -1330,6 +1331,41 @@ export class FeasibilityCalculationService {
    * the scenario currently holds, and replacing one with the other is a
    * decision, not a side effect of asking the question.
    */
+  /**
+   * מה המסלול הזה שואל, ומה כבר נענה.
+   *
+   * אותה טבלה שמניעה את התצוגה מניעה גם את הבדיקה כאן, ולכן שדה שמוצג
+   * ושדה שנבדק אינם יכולים להיפרד. קלט שאינו רלוונטי למסלול אינו מוחזר
+   * כלל — ולצדו מוחזרת רשימה מפורשת של מה שהושמט ולמה, כדי שההשמטה תהיה
+   * קריאה ולא היעלמות.
+   */
+  async inputRequirements(projectId: string, scenarioId: string | null, tenantId: string) {
+    const profile = await this.feasibility.find(projectId, tenantId)
+    if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים עדיין פרופיל דוח אפס לפרויקט')
+    const scenario = scenarioId
+      ? profile.scenarios.find((entry) => entry.id === scenarioId)
+      : profile.scenarios.find((entry) => entry.isBaseline) ?? profile.scenarios[0]
+    if (scenarioId && !scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא')
+
+    const empty = { unitMix: [], costLines: [], compensations: [], cashFlowAllocations: [], considerationInKind: null, financing: null }
+    const readiness = inputReadiness(profile.projectType, profile as never, (scenario ?? empty) as never)
+    return {
+      projectType: profile.projectType,
+      projectTypeLabel: PROJECT_TYPE_LABELS[profile.projectType],
+      scenarioId: scenario?.id ?? null,
+      /** אין תרחיש עדיין — הדרישות עומדות, והמוכנות נמדדת מול ריק ולא מדולגת. */
+      measuredAgainstScenario: Boolean(scenario),
+      inputs: readiness,
+      /** מה שלא מוצג במסלול הזה, בשמו — השמטה שקטה היא מה שמייצר שדות יתומים. */
+      notApplicable: notApplicableFor(profile.projectType).map((input) => ({ key: input.key, label: input.label, intent: input.intent })),
+      summary: {
+        requiredMissing: readiness.filter((input) => input.requirement === 'REQUIRED' && input.status === 'MISSING').length,
+        notEnforced: readiness.filter((input) => input.status === 'NOT_ENFORCED').length,
+        present: readiness.filter((input) => input.status === 'PRESENT').length,
+      },
+    }
+  }
+
   async solveFinancing(projectId: string, scenarioId: string, dto: SolveFinancingDto, tenantId: string) {
     const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
     const base = this.compute(profile, scenario)
