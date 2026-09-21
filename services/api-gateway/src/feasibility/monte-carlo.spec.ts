@@ -218,10 +218,16 @@ describe('P1-7 — Monte Carlo', () => {
     await expect(engine.monteCarlo('project-1', scenario.id, { runs: 1000, seed: 1, variables: PRICE_AND_COST }, 'tenant-1'))
       .rejects.toMatchObject({ details: [{ code: 'FEASIBILITY_MONTE_CARLO_BUDGET_EXCEEDED' }] })
 
-    // ומה שכן נכנס בתקציב — רץ, ומחזיר גם את מדדי ה-IRR שרק לתזרים מתוארך יש.
-    const small = await engine.monteCarlo('project-1', scenario.id, { runs: 100, seed: 1, variables: PRICE_AND_COST }, 'tenant-1')
+    /*
+     * ומה שכן נכנס בתקציב — רץ, ומחזיר גם את מדדי ה-IRR שרק לתזרים מתוארך
+     * יש. 50 ולא 100: מאז שההון נגזר מהתזרים, כל הרצה פותרת גם XIRR הוני,
+     * ו-100 הרצות נוחתות בדיוק על גבול התקציב של 15 שניות — כך שהשומר סירב
+     * להן תחת עומס. הספירה זזה כדי שהבדיקה תמדוד את מה שהיא מתיימרת למדוד;
+     * התקציב עצמו לא זז.
+     */
+    const small = await engine.monteCarlo('project-1', scenario.id, { runs: 50, seed: 1, variables: PRICE_AND_COST }, 'tenant-1')
     // eslint-disable-next-line no-console
-    console.log(`[perf] 100 runs WITH dated cash flow — engine ${small.elapsedMs}ms (${small.msPerRun}ms/run)`)
+    console.log(`[perf] 50 runs WITH dated cash flow — engine ${small.elapsedMs}ms (${small.msPerRun}ms/run)`)
     expect(stats(small, 'projectIrrAnnual').available).toBe(true)
     expect(stats(small, 'equityIrrAnnual').available).toBe(true)
     expect(stats(small, 'projectIrrAnnual').p10).toBeLessThan(stats(small, 'projectIrrAnnual').p90!)
@@ -241,8 +247,16 @@ describe('P1-7 — Monte Carlo', () => {
   it('דוגם ריבית ומשך מימון, ומדווח את משך המימון בחודשים ולא כמקדם', async () => {
     // עם תזרים מתוארך דווקא: ריבית נצברת נגזרת מלוח המשיכות, ולכן בלי
     // תזרים שינוי בריבית אינו מזיז דבר — וזו התנהגות נכונה, לא באג.
+    /*
+     * 80 runs and not 200: with equity derived from the cash flow every
+     * scenario now has a real dated equity flow, so equity XIRR runs on every
+     * draw where it used to be skipped for want of any equity movement. That
+     * roughly doubled the cost of a dated run, and the budget guard says so
+     * rather than quietly taking half a minute. The count moved; the guard
+     * did not.
+     */
     const result = await run({
-      runs: 200, seed: 3,
+      runs: 80, seed: 3,
       variables: [
         { field: 'interestRate', distribution: 'normal', stdDevPct: '0.20' },
         { field: 'financingMonths', distribution: 'triangular', min: '18', mostLikely: '24', max: '36' },

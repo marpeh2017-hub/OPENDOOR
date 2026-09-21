@@ -176,7 +176,26 @@ export class FeasibilityCalculationService {
     const nonCanonicalPeriods = new Set<string>()
     const periods = new Map<string, { inflows: Decimal; outflows: Decimal }>()
     const debtMovementByPeriod = new Map<string, Decimal>()
+    /*
+     * ── WHERE THE EQUITY IN THE CASH FLOW COMES FROM ─────────────────────
+     *
+     * DERIVED is the default. Equity is not a number typed beside the debt
+     * schedule; it is whatever the project still needs after the debt has
+     * been drawn, injected in the month it is needed. Sizing it as a residual
+     * — total cost minus debt, dropped on one month — produced an equityIrr
+     * that did not move when the debt moved, and scenarios that ran for six
+     * months on money nobody had committed.
+     *
+     * EXPLICIT_ALLOCATIONS keeps hand-entered EQUITY allocations. It is an
+     * override, because a silent manual default is what produced those
+     * numbers in the first place.
+     */
+    const equityIsDerived = (scenario.financing?.equitySource ?? 'DERIVED') === 'DERIVED'
+    const equityBalanceFloor = scenario.financing?.equityBalanceFloor ? read(scenario.financing.equityBalanceFloor) : new Decimal(0)
     for (const allocation of scenario.cashFlowAllocations) {
+      // Derived equity is computed from the cash flow, so a typed EQUITY
+      // allocation must not also be part of the cash flow it is derived from.
+      if (equityIsDerived && allocation.sourceKind === 'EQUITY') continue
       // הדלי הוא חודש קלנדרי. תאריך שאינו הראשון בחודש נכנס לחודש שלו,
       // ומדווח — כדי שהנרמול יהיה גלוי ולא שקט.
       const month = `${allocation.periodStart.toISOString().slice(0, 7)}-01`
@@ -299,6 +318,8 @@ export class FeasibilityCalculationService {
 
     let cumulative = new Decimal(0)
     let peakNegative = new Decimal(0)
+    /** The deepest point once derived equity is in. Stays zero when equity is derived and the rule holds. */
+    let peakAfterEquity = new Decimal(0)
     const projectPeriodFlows: Decimal[] = []
     const equityPeriodFlows: Decimal[] = []
     let equityInvested = new Decimal(0)
@@ -357,19 +378,88 @@ export class FeasibilityCalculationService {
       if (outstandingDebt.greaterThan(peakDebt)) peakDebt = outstandingDebt
       const net = values.inflows.minus(values.outflows)
       const debtDrawOrRepayment = debtMovement
-      const equityMovement = scenario.cashFlowAllocations
+      const equityMovement = equityIsDerived ? new Decimal(0) : scenario.cashFlowAllocations
         .filter((allocation) => allocation.periodStart.toISOString().slice(0, 10) === periodStart && allocation.sourceKind === 'EQUITY')
         .reduce((sum, allocation) => sum.plus(allocation.direction === 'INFLOW' ? read(allocation.amount) : read(allocation.amount).negated()), new Decimal(0))
       // Project IRR is unlevered: debt/equity movements and calculated interest
       // are excluded. Equity IRR uses explicit investor contributions/distributions.
       projectPeriodFlows.push(net.minus(debtDrawOrRepayment).minus(equityMovement).plus(interest.minus(capitalisedInterest)))
-      equityPeriodFlows.push(equityMovement.negated())
-      if (equityMovement.gt(0)) equityInvested = equityInvested.plus(equityMovement)
-      if (equityMovement.lt(0)) equityDistributed = equityDistributed.plus(equityMovement.abs())
+      // Derived equity is not known yet — it is computed from this very cash
+      // flow once the axis is complete, and fills these in below.
+      if (!equityIsDerived) {
+        equityPeriodFlows.push(equityMovement.negated())
+        if (equityMovement.gt(0)) equityInvested = equityInvested.plus(equityMovement)
+        if (equityMovement.lt(0)) equityDistributed = equityDistributed.plus(equityMovement.abs())
+      }
       cumulative = cumulative.plus(net)
       if (cumulative.lessThan(peakNegative)) peakNegative = cumulative
       return { periodStart, inflows: amount(values.inflows), outflows: amount(values.outflows), net: amount(net), cumulative: amount(cumulative) }
     })
+    /*
+     * ── DERIVING THE EQUITY SCHEDULE ─────────────────────────────────────
+     *
+     * The cash flow above is complete except for equity: costs, revenue, debt
+     * draws and repayments, and the interest they carry. Walking it once with
+     * a running balance says exactly when the project runs out of money and
+     * by how much — and that shortfall, month by month, IS the equity
+     * contribution. Nothing is sized as a residual and nothing is dropped on
+     * a month somebody picked.
+     *
+     * The rule is the one a construction lender actually imposes: the balance
+     * never goes below the floor. Equity goes in when it is needed, and what
+     * is left above the floor at the end is distributed. So a schedule that
+     * draws more debt, or draws it earlier, needs less equity and needs it
+     * later — and the equity IRR moves, which is the whole point.
+     *
+     * Two quantities come out of this, and they are reported as two fields
+     * rather than one field that changed meaning. `peakEquityRequirement` is
+     * the balance BEFORE the injection: how much equity the plan needs at its
+     * deepest. `peakFundingRequirement` keeps what it has always meant — the
+     * hole left once every source is in — so under derivation it is zero, and
+     * that zero is the statement that the plan is funded.
+     *
+     * Under EXPLICIT_ALLOCATIONS the two cannot be separated: typed equity is
+     * mixed into the same flows as everything else. `peakEquityRequirement`
+     * is null there rather than a number that would quietly be the other
+     * quantity.
+     */
+    if (equityIsDerived) {
+      let balance = new Decimal(0)
+      const contributions: Decimal[] = cashFlow.map((period) => {
+        balance = balance.plus(read(period.net))
+        if (balance.gte(equityBalanceFloor)) return new Decimal(0)
+        const contribution = equityBalanceFloor.minus(balance)
+        balance = equityBalanceFloor
+        return contribution
+      })
+      // Whatever sits above the floor once the project is over goes back to
+      // the investors. Without this the equity flow has no positive leg and
+      // no IRR exists at all.
+      const surplus = balance.minus(equityBalanceFloor)
+      cashFlow.forEach((period, index) => {
+        const contribution = contributions[index]!
+        const distribution = index === cashFlow.length - 1 && surplus.gt(0) ? surplus : new Decimal(0)
+        const movement = contribution.minus(distribution)
+        if (movement.isZero()) { equityPeriodFlows.push(new Decimal(0)); return }
+        if (contribution.gt(0)) {
+          period.inflows = amount(read(period.inflows).plus(contribution))
+          equityInvested = equityInvested.plus(contribution)
+        }
+        if (distribution.gt(0)) {
+          period.outflows = amount(read(period.outflows).plus(distribution))
+          equityDistributed = equityDistributed.plus(distribution)
+        }
+        period.net = amount(read(period.inflows).minus(read(period.outflows)))
+        equityPeriodFlows.push(movement.negated())
+      })
+      let restated = new Decimal(0)
+      for (const period of cashFlow) {
+        restated = restated.plus(read(period.net))
+        period.cumulative = amount(restated)
+        if (restated.lessThan(peakAfterEquity)) peakAfterEquity = restated
+      }
+    }
+
     if (scenario.costLines.some((line) => line.category === 'FINANCING') && financingCosts.length) issues.push({ code: 'FINANCING_DOUBLE_COUNT_RISK', severity: 'WARNING', message: 'קיימות שורות עלות מימון בנוסף לריבית מחושבת; ודאו שאין ספירה כפולה.' })
     const totalCostsBeforeFinancing = totalCosts
     costs.push(...financingCosts)
@@ -853,7 +943,10 @@ export class FeasibilityCalculationService {
       },
       cashFlow: {
         periods: cashFlow,
-        peakFundingRequirement: amount(peakNegative.abs()),
+        /** What the plan needs at its deepest before any equity goes in. Null when typed equity makes the two inseparable. */
+        peakEquityRequirement: equityIsDerived ? amount(peakNegative.abs()) : null,
+        /** What is left unfunded once every source is in. Zero under derived equity, by the rule that derives it. */
+        peakFundingRequirement: amount((equityIsDerived ? peakAfterEquity : peakNegative).abs()),
         reconciliationComplete: !issues.some((issue) => issue.code === 'CASH_FLOW_ALLOCATION_MISSING' || issue.code === 'CASH_FLOW_RECONCILIATION_MISMATCH'),
       },
       dataQuality: {
@@ -1684,7 +1777,7 @@ export class FeasibilityCalculationService {
         profitMargin: result.profitability.profitMargin,
         projectIrrAnnual: result.returns.projectIrrAnnual,
         projectNpv: result.returns.projectNpv,
-        equityRequirement: result.cashFlow.peakFundingRequirement,
+        equityRequirement: result.cashFlow.peakEquityRequirement ?? result.cashFlow.peakFundingRequirement,
         residualLandValue: result.valuation.residualLandValue,
         // מסקנת הכדאיות היא מה שהרגישות באמת נשאלת עליה. הכפלת פלט קפוא
         // מעולם לא יכלה לענות עליה, משום שהיא לא הריצה את הבדיקות.
