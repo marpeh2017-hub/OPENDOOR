@@ -171,7 +171,22 @@ export function FeasibilityRulesPanel({ profileId, scenarioId, scenarios }: { pr
                       <span className="font-medium">{row.ruleName}</span>
                       <span className="block text-xs text-muted-foreground">{row.code}</span>
                     </td>
-                    <td className="py-2.5 pe-3 tabular-nums">{formatValue(row.ruleValue, row.ruleUnit)}</td>
+                    {/*
+                      * ערך הכלל, ולצדו האם מישהו קרא אותו בחזרה מהמקור.
+                      * מנגנון אימות שקיים במודל ואינו מגיע למסך אינו שונה
+                      * בהרבה ממנגנון שאינו קיים, ובדיוק כך זה היה עד כאן.
+                      */}
+                    <td className="py-2.5 pe-3 tabular-nums">
+                      {row.valueStatus === 'DECLARED_MISSING'
+                        ? <span className="text-xs text-amber-700">מוצהר כחסר</span>
+                        : formatValue(row.ruleValue, row.ruleUnit)}
+                      {row.verification && row.verification !== 'VERIFIED_AGAINST_SOURCE' && (
+                        <span
+                          title={row.verification === 'DISPUTED' ? 'נבדק, והמקור אינו מכריע — או ששני מקורות סותרים' : 'הוזן ולא אומת מול המקור שלצדו'}
+                          className={`ms-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] ${row.verification === 'DISPUTED' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}
+                        >{row.verification === 'DISPUTED' ? 'שנוי במחלוקת' : 'טעון אימות'}</span>
+                      )}
+                    </td>
                     <td className="py-2.5 pe-3 tabular-nums">{formatValue(row.assumptionValue, row.ruleUnit)}</td>
                     <td className="py-2.5 pe-3">
                       <span

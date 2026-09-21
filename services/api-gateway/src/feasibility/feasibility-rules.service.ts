@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { effectiveProjectType } from './project-type-inputs'
-import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority, type FeasibilityProjectType, type FeasibilityRuleVerification } from '@prisma/client'
+import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority, type FeasibilityProjectType, type FeasibilityRuleVerification, type FeasibilityRuleValueStatus } from '@prisma/client'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { DomainError } from '../common/errors/domain-error'
 import { PrismaService } from '../prisma.service'
@@ -48,6 +48,7 @@ export interface ResolvedRule {
   unit: string | null
   effectiveFrom: Date
   effectiveUntil: Date | null
+  valueStatus?: FeasibilityRuleValueStatus
   verification?: FeasibilityRuleVerification
   verificationNote?: string | null
   sourceReference: string
@@ -71,6 +72,8 @@ export interface RuleDeviation {
   assumptionValue: Prisma.Decimal | null
   sourceReference: string
   ruleId: string
+  /** האם הכלל מצהיר ערך בכלל, או שהחסר עצמו הוא הרישום. */
+  valueStatus: FeasibilityRuleValueStatus
   /** האם הערך בכלל נקרא בחזרה מהמקור שלצדו. */
   verification: FeasibilityRuleVerification
   /**
@@ -151,6 +154,7 @@ export interface RuleWrite {
   effectiveUntil?: Date | string | null
   sourceReference: string
   sourceUrl?: string | null
+  valueStatus?: FeasibilityRuleValueStatus
   verification?: FeasibilityRuleVerification
   verificationNote?: string | null
   notes?: string | null
@@ -318,6 +322,7 @@ export class FeasibilityRulesService {
         assumptionValue: status === 'NOT_APPLICABLE' ? null : matched?.value ?? null,
         matchedAssumptionKey: status === 'MATCHES' || status === 'OVERRIDES' ? matched?.key ?? null : null,
         sourceReference: rule.sourceReference,
+        valueStatus: rule.valueStatus ?? 'STATED',
         verification: rule.verification ?? 'NEEDS_VERIFICATION',
         ruleId: rule.ruleId,
         status,
@@ -377,7 +382,23 @@ export class FeasibilityRulesService {
     const before = await this.prisma.feasibilityRule.findFirst({ where: { id, tenantId } })
     if (!before) throw DomainError.notFound('FEASIBILITY_RULE_NOT_FOUND', 'Rule not found')
 
-    const merged = this.validated({ ...this.toWrite(before), ...dto })
+    /*
+     * ── למה לא פשוט `...dto` ──────────────────────────────────────────────
+     *
+     * ה-DTO הוא מופע מחלקה, והיעד הוא ES2022 — כלומר `useDefineForClassFields`
+     * פעיל, וכל שדה *מוצהר* קיים על המופע עם הערך `undefined` גם כשלא נשלח.
+     * פריסה של מופע כזה מעל הערכים הקיימים דורסת אותם ב-`undefined`: תיקון
+     * חלקי של שדה אחד מחק בשקט את כל השאר.
+     *
+     * `sourceReference` הוא היחיד שחובה, ולכן הוא זה שצרח — כל השאר
+     * (jurisdiction, unit, sourceUrl, notes, effectiveUntil, verificationNote)
+     * היו מתאפסים בלי אף הודעה.
+     *
+     * ההבחנה שנשמרת כאן היא זו שחזרה בכל המערכת: `undefined` משאיר כפי שהוא,
+     * `null` מנקה במפורש.
+     */
+    const provided = Object.fromEntries(Object.entries(dto).filter(([, value]) => value !== undefined))
+    const merged = this.validated({ ...this.toWrite(before), ...provided } as RuleWrite)
     await this.assertNoOverlap(tenantId, merged, id)
 
     const updated = await this.prisma.feasibilityRule.update({
@@ -433,6 +454,7 @@ export class FeasibilityRulesService {
       name: rule.name,
       authority: rule.authority,
       jurisdiction: rule.jurisdiction,
+      valueStatus: rule.valueStatus,
       numericValue: rule.numericValue,
       textValue: rule.textValue,
       unit: rule.unit,
@@ -453,6 +475,7 @@ export class FeasibilityRulesService {
       name: rule.name,
       authority: rule.authority,
       jurisdiction: rule.jurisdiction,
+      valueStatus: rule.valueStatus,
       numericValue: rule.numericValue,
       textValue: rule.textValue,
       unit: rule.unit,
@@ -499,10 +522,31 @@ export class FeasibilityRulesService {
       )
     }
 
-    if (dto.numericValue == null && !dto.textValue?.trim()) {
+    /*
+     * A rule normally states a value. The one exception is a gap somebody has
+     * decided to record: DECLARED_MISSING says the rule exists and applies and
+     * that nobody has established its number yet.
+     *
+     * Before this state existed, recording that meant typing "not yet
+     * determined" into `textValue` — which cannot be queried, and which reads
+     * as a rule that states something. That is the same hiding this register
+     * removed from UNSET, NOT_APPLICABLE and UNMAPPED.
+     *
+     * The state is exclusive on purpose: a declared gap that also carries a
+     * value is two claims at once, and the register would have to guess which.
+     */
+    if (dto.valueStatus === 'DECLARED_MISSING') {
+      if (dto.numericValue != null || dto.textValue?.trim()) {
+        throw DomainError.validation(
+          'RULE_DECLARED_MISSING_WITH_VALUE',
+          'A rule declared missing cannot also carry a value',
+          'valueStatus',
+        )
+      }
+    } else if (dto.numericValue == null && !dto.textValue?.trim()) {
       throw DomainError.validation(
         'RULE_VALUE_REQUIRED',
-        'A rule needs either a numeric or a textual value',
+        'A rule needs either a numeric or a textual value, or valueStatus DECLARED_MISSING to record that nobody has established one',
         'numericValue',
       )
     }
@@ -512,6 +556,7 @@ export class FeasibilityRulesService {
       name: dto.name?.trim() || code,
       authority: dto.authority,
       jurisdiction: dto.jurisdiction?.trim() || null,
+      ...(dto.valueStatus ? { valueStatus: dto.valueStatus } : {}),
       numericValue: dto.numericValue == null ? null : new Prisma.Decimal(dto.numericValue),
       textValue: dto.textValue?.trim() || null,
       unit: dto.unit?.trim() || null,
