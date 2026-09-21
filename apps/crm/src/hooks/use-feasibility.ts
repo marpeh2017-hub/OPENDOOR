@@ -384,6 +384,63 @@ export function useFeasibilityInputRequirements(projectId: string, scenarioId?: 
   })
 }
 
+// ── בורר המסלול והאשף ──────────────────────────────────────────────────────
+
+export type RouteAnswers = {
+  landHolder?: 'SELLER_EXITS' | 'LANDOWNER_PARTNER' | 'EXISTING_OWNERS' | 'UNKNOWN'
+  buildIntent?: 'BUILD' | 'RESELL' | 'UNKNOWN'
+  demolition?: 'YES' | 'NO' | 'UNKNOWN'
+  buildingCount?: 'SINGLE' | 'MULTIPLE' | 'UNKNOWN'
+  declaration?: 'DECLARED_OR_IN_PROGRESS' | 'NOT_DECLARED' | 'UNKNOWN'
+}
+
+export type RouteOutcome = {
+  status: 'RESOLVED' | 'UNDECIDED'
+  projectType: string | null
+  projectTypeLabel: string | null
+  nextQuestion: string | null
+  reasoning: string[]
+  blockedBy: { question: string; difference: string; options: { value: string; label: string; leadsTo: string }[] } | null
+  warnings: string[]
+  decisionId: string
+  appliedToProfile: boolean
+}
+
+export type RouteDecisionRow = RouteAnswers & {
+  id: string
+  status: 'RESOLVED' | 'UNDECIDED'
+  resolvedProjectType: string | null
+  appliedToProfile: boolean
+  reasoning: string[]
+  warnings: string[]
+  createdAt: string
+}
+
+export function useFeasibilityRouteHistory(projectId: string) {
+  return useQuery({
+    queryKey: ['feasibility', 'route-decision', projectId],
+    queryFn: () => api.get<{ projectType: string; appliedDecision: RouteDecisionRow | null; decisions: RouteDecisionRow[] }>(
+      `/projects/${projectId}/feasibility/route-decision`),
+    enabled: Boolean(projectId),
+  })
+}
+
+export function useDecideFeasibilityRoute(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: RouteAnswers & { apply?: boolean }) =>
+      api.post<RouteOutcome>(`/projects/${projectId}/feasibility/route-decision`, body),
+    onSuccess: (_result, variables) => {
+      // חקירה אינה משנה את התיק, ולכן אין מה לרענן מעבר להיסטוריה.
+      queryClient.invalidateQueries({ queryKey: ['feasibility', 'route-decision', projectId] })
+      if (variables.apply) {
+        queryClient.invalidateQueries({ queryKey: ['feasibility', projectId] })
+        queryClient.invalidateQueries({ queryKey: ['feasibility', 'input-requirements', projectId] })
+      }
+    },
+  })
+}
+
 // ── Goal Seek ──────────────────────────────────────────────────────────────
 
 export type FeasibilityGoalSeekMetric =
