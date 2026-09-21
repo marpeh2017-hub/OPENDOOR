@@ -407,6 +407,39 @@ export class UpsertFeasibilityFinancingDto extends ProvenanceDto {
   equityBalanceFloor?: string
 }
 
+/**
+ * תשובות אשף ההפניה.
+ *
+ * כל שדה אופציונלי, ו-`UNKNOWN` הוא ערך תקף ולא היעדר: "נשאלתי ואיני יודע"
+ * ו"לא נשאלתי" הן שתי עובדות שונות, ורק הראשונה אומרת שהשאלה הוצגה. שתיהן
+ * עוצרות את ההכרעה, אבל רק הראשונה נרשמת כתשובה.
+ */
+export class RouteDecisionDto {
+  @IsOptional() @IsIn(['SELLER_EXITS', 'LANDOWNER_PARTNER', 'EXISTING_OWNERS', 'UNKNOWN'])
+  landHolder?: 'SELLER_EXITS' | 'LANDOWNER_PARTNER' | 'EXISTING_OWNERS' | 'UNKNOWN'
+
+  @IsOptional() @IsIn(['BUILD', 'RESELL', 'UNKNOWN'])
+  buildIntent?: 'BUILD' | 'RESELL' | 'UNKNOWN'
+
+  @IsOptional() @IsIn(['YES', 'NO', 'UNKNOWN'])
+  demolition?: 'YES' | 'NO' | 'UNKNOWN'
+
+  @IsOptional() @IsIn(['SINGLE', 'MULTIPLE', 'UNKNOWN'])
+  buildingCount?: 'SINGLE' | 'MULTIPLE' | 'UNKNOWN'
+
+  @IsOptional() @IsIn(['DECLARED_OR_IN_PROGRESS', 'NOT_DECLARED', 'UNKNOWN'])
+  declaration?: 'DECLARED_OR_IN_PROGRESS' | 'NOT_DECLARED' | 'UNKNOWN'
+
+  /**
+   * האם לקבוע את המסלול בפרופיל, או רק לראות לאן התשובות מובילות.
+   *
+   * ברירת המחדל היא חקירה. בחינת מסלולים היא השימוש הרגיל, והיא לא אמורה
+   * לשנות דבר עד שמחליטים — ואי אפשר להחיל מסלול שלא הוכרע.
+   */
+  @IsOptional() @IsBoolean()
+  apply?: boolean
+}
+
 export class CreateFeasibilityTimelinePhaseDto extends ProvenanceDto {
   @IsEnum(FeasibilityTimelinePhaseKind)
   kind!: FeasibilityTimelinePhaseKind

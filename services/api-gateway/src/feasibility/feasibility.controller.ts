@@ -18,7 +18,7 @@ import {
   CreateSensitivityDto, CreateGoalSeekDto, SolveFinancingDto, CreateMonteCarloDto, CreateEquityTrancheDto, UpdateEquityTrancheDto, UpdateFeasibilityScenarioDto,
   CreateFeasibilityReportVersionDto,
   TransitionFeasibilityReportVersionDto,
-  UpsertFeasibilityFinancingDto,
+  UpsertFeasibilityFinancingDto, RouteDecisionDto,
 } from './dto/feasibility-foundation.dto'
 import { FeasibilityService } from './feasibility.service'
 import { FeasibilityCalculationService } from './feasibility-calculation.service'
@@ -308,6 +308,19 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Run deterministic one- or two-variable sensitivity without changing scenario inputs' })
   sensitivity(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateSensitivityDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.sensitivity(projectId, scenarioId, dto, tenantFrom(req)))
+  }
+
+  @Post('route-decision')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Run the routing wizard; records the reasoning, and only sets the project type when asked to' })
+  decideRoute(@Param('projectId') projectId: string, @Body() dto: RouteDecisionDto, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.decideRoute(projectId, dto, actorFrom(req)))
+  }
+
+  @Get('route-decision')
+  @ApiOperation({ summary: 'How the project type was arrived at, and every routing decision before it' })
+  routeDecisions(@Param('projectId') projectId: string, @Request() req: any) {
+    return mapDomainErrors(() => this.feasibility.routeDecisions(projectId, tenantFrom(req)))
   }
 
   @Get('input-requirements')

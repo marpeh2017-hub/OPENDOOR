@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { AuditService } from '../common/audit/audit.service'
 import type { AuditActor } from '../common/audit/audit.service'
+import { resolveRoute } from './project-type-wizard'
+import type { RouteDecisionDto } from './dto/feasibility-foundation.dto'
 import { DomainError } from '../common/errors/domain-error'
 import { TenantScopeService } from '../common/tenant/tenant-scope.service'
 import { PrismaService } from '../prisma.service'
@@ -800,6 +802,71 @@ export class FeasibilityService {
 
   async deleteCostLine(projectId: string, scenarioId: string, lineId: string, actor: AuditActor) {
     return this.deleteScenarioLine(projectId, scenarioId, lineId, actor, 'COST')
+  }
+
+  /**
+   * מריץ את אשף ההפניה ורושם את ההחלטה — או רק מציג אותה.
+   *
+   * `apply` הוא מה שמבדיל בין "בדקתי לאן זה מוביל" לבין "זה המסלול". אדם
+   * בוחן מסלולים ומחליף ביניהם, וזה השימוש ולא מקרה קצה, ולכן חקירה אינה
+   * משנה כלום והחלטה היא צעד מפורש.
+   *
+   * ובשני המקרים ההחלטה נרשמת. השורה היא הנימוק שמאחורי המסקנה, ובלעדיה
+   * אפשר רק לדרוס מסלול, לא לחזור ולשאול אם הוא עדיין נכון.
+   */
+  async decideRoute(projectId: string, dto: RouteDecisionDto, actor: AuditActor) {
+    const profile = await this.requireEditableProfile(projectId, actor)
+    const outcome = resolveRoute(dto)
+    const apply = Boolean(dto.apply) && outcome.status === 'RESOLVED'
+
+    return this.prisma.$transaction(async (tx) => {
+      const decision = await tx.feasibilityRouteDecision.create({
+        data: {
+          feasibilityProfileId: profile.id,
+          landHolder: dto.landHolder ?? null,
+          buildIntent: dto.buildIntent ?? null,
+          demolition: dto.demolition ?? null,
+          buildingCount: dto.buildingCount ?? null,
+          declaration: dto.declaration ?? null,
+          status: outcome.status,
+          resolvedProjectType: outcome.projectType,
+          appliedToProfile: apply,
+          reasoning: outcome.reasoning,
+          warnings: outcome.warnings,
+          decidedById: actor.userId,
+        },
+      })
+      /*
+       * שינוי מסלול נוגע בשדה אחד. שום קלט אינו נמחק: קלט שאינו רלוונטי
+       * למסלול החדש פשוט אינו מוצג, וחוזר כפי שהיה אם חוזרים. מחיקה כאן
+       * היתה הופכת בחינת מסלולים למסוכנת, וזה בדיוק מה שהאשף אמור לעודד.
+       */
+      if (apply && outcome.projectType) {
+        await tx.feasibilityProfile.update({ where: { id: profile.id }, data: { projectType: outcome.projectType, updatedById: actor.userId } })
+      }
+      await this.audit.record(actor, {
+        action: apply ? 'UPDATE' : 'READ',
+        entity: 'FeasibilityRouteDecision', entityId: decision.id,
+        metadata: { feasibilityProfileId: profile.id, status: outcome.status, resolvedProjectType: outcome.projectType, applied: apply },
+      }, tx)
+      return { ...outcome, decisionId: decision.id, appliedToProfile: apply }
+    })
+  }
+
+  /** ההחלטות שהתקבלו, החדשה ראשונה — הרצף עצמו הוא הרישום. */
+  async routeDecisions(projectId: string, tenantId: string) {
+    const profile = await this.find(projectId, tenantId)
+    if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים עדיין פרופיל דוח אפס לפרויקט')
+    const decisions = await this.prisma.feasibilityRouteDecision.findMany({
+      where: { feasibilityProfileId: profile.id },
+      orderBy: { createdAt: 'desc' },
+    })
+    return {
+      projectType: profile.projectType,
+      /** ההחלטה שקבעה את המסלול הנוכחי, אם הוא נקבע באשף בכלל. */
+      appliedDecision: decisions.find((decision) => decision.appliedToProfile && decision.resolvedProjectType === profile.projectType) ?? null,
+      decisions,
+    }
   }
 
   async upsertFinancing(projectId: string, scenarioId: string, dto: UpsertFeasibilityFinancingDto, actor: AuditActor) {
