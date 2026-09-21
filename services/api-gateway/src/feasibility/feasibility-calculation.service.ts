@@ -6,6 +6,14 @@ import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
 import { effectiveProjectType, inputReadiness, notApplicableFor } from './project-type-inputs'
+import { FeasibilityRulesService } from './feasibility-rules.service'
+
+/** הכללים שמגדירים רווח יזמי מזערי, לכל המסלולים. */
+const PROFIT_RULE_CODES = new Set([
+  'minimum-developer-profit-tama38',
+  'minimum-developer-profit-pinuy-binuy',
+  'minimum-developer-profit-combination',
+])
 import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto, SolveFinancingDto,
   CreateMonteCarloDto,
   MonteCarloVariableDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
@@ -25,6 +33,13 @@ function read(value: { toString(): string } | null | undefined) { return new Dec
 
 /** צורת הקלט הטעון, נגזרת מהשירות עצמו כדי שלא תוכל להיפרד ממנו בשקט. */
 export type LoadedFeasibilityProfile = NonNullable<Awaited<ReturnType<FeasibilityService['find']>>>
+/** מה שהרישום אומר על כלל, כפי שהקורא מוסר אותו למנוע. */
+export interface RuleBasis {
+  status: 'MATCHES' | 'OVERRIDES' | 'UNSET' | 'NOT_APPLICABLE' | 'UNMAPPED'
+  verification: 'VERIFIED_AGAINST_SOURCE' | 'NEEDS_VERIFICATION' | 'DISPUTED' | null
+  ruleCode?: string | null
+}
+
 export type LoadedFeasibilityScenario = LoadedFeasibilityProfile['scenarios'][number]
 
 /**
@@ -35,7 +50,7 @@ export type LoadedFeasibilityScenario = LoadedFeasibilityProfile['scenarios'][nu
  */
 @Injectable()
 export class FeasibilityCalculationService {
-  constructor(private readonly feasibility: FeasibilityService, private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(private readonly feasibility: FeasibilityService, private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly rules: FeasibilityRulesService) {}
 
   /**
    * טוען פרופיל ותרחיש פעם אחת. מופרד מ-`compute` כדי שניתוח הרגישות
@@ -51,7 +66,24 @@ export class FeasibilityCalculationService {
 
   async calculate(projectId: string, scenarioId: string, tenantId: string) {
     const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
-    return this.compute(profile, scenario)
+    // הנתיב הזה הוא היחיד שמדווח סטטוס לאדם, ולכן הוא היחיד שטורח ללכת
+    // לרישום. מה שנמסר מצורף לקלט; המנוע עצמו נשאר טהור.
+    return this.compute(profile, scenario, await this.profitRuleBasis(profile.id, scenario.id, tenantId))
+  }
+
+  /**
+   * מה הרישום אומר על הכלל שמאחורי הנחת הרווח היזמי, למסלול שהתרחיש הזה
+   * מייצג. כשל כאן אינו מפיל חישוב: הסיוג חוזר `null`, ומדווח `NOT_PROVIDED`
+   * — "לא נמסר" ולעולם לא "מאומת".
+   */
+  private async profitRuleBasis(profileId: string, scenarioId: string, tenantId: string): Promise<RuleBasis | null> {
+    try {
+      const { deviations } = await this.rules.deviationsForProfile(profileId, tenantId, scenarioId)
+      const row = deviations.find((deviation) => PROFIT_RULE_CODES.has(deviation.code) && deviation.status !== 'NOT_APPLICABLE')
+      return row ? { status: row.status, verification: row.verification ?? null, ruleCode: row.code } : null
+    } catch {
+      return null
+    }
   }
 
   /**
@@ -59,7 +91,12 @@ export class FeasibilityCalculationService {
    * תלות ב-`projectId`. זו הנקודה שמאפשרת לרגישות להיות הרצה אמיתית
    * ולא הכפלה של תוצאה קפואה.
    */
-  compute(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario) {
+  /**
+   * @param ruleBasis מה שהרישום אומר על הכלל שמאחורי הנחת הרווח היזמי,
+   * כשהקורא מסר זאת. אופציונלי בכוונה: המנוע אינו נעשה תלוי ברישום, ומה
+   * שלא נמסר מדווח `NOT_PROVIDED` ולעולם לא כ"מאומת".
+   */
+  compute(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario, ruleBasis?: RuleBasis | null) {
     const issues: ValidationIssue[] = []
     const revenue: CalculationLine[] = []
     const costs: CalculationLine[] = []
@@ -786,7 +823,26 @@ export class FeasibilityCalculationService {
     const evidenceRows = [...profile.parcels, ...profile.areas, ...profile.planningRights, ...scenario.revenueLines, ...scenario.costLines, ...profile.comparableTransactions.map((comparable) => ({ sourceId: comparable.sourceId, isVerified: false }))]
     const verifiedRows = evidenceRows.filter((row) => row.isVerified || row.sourceId).length
     const dataConfidenceScore = evidenceRows.length ? new Decimal(verifiedRows).div(evidenceRows.length).mul(100).toDecimalPlaces(1).toNumber() : 0
-    const requiredProfitMargin = profile.assumptions.find((assumption) => assumption.key === 'required-developer-profit-margin')?.value
+    /*
+     * ── על סמך מה ההכרעה נשענת ────────────────────────────────────────────
+     *
+     * `feasibilityStatus` הוא הדבר היחיד במערכת שקורא "כן/לא" בלי הסתייגות,
+     * והוא היחיד שלא היתה לו דרך לומר על מה הוא נשען. `ה@62k` מוכרז
+     * `NOT_FEASIBLE` על סמך מרווח של 15% שהוא הנחת מחקר — לא תקן, ולעסקת
+     * קומבינציה אין כלל ברישום בכלל.
+     *
+     * הפרובננס כבר נוסע עם ההנחה לתוך הפונקציה הזו: `classification`,
+     * `confidence`, `isVerified` ו-`sourceId` הם שדות על שורת ההנחה. המנוע
+     * לא הולך לרישום ולא נעשה תלוי בו — הוא קורא את מה שכבר קיבל. ולכן
+     * קריאה ישירה ל-`compute()` אינה יכולה לעקוף את הסיוג: הוא נוסע באותו
+     * אובייקט, ולא בשכבה שאפשר לדלג עליה.
+     *
+     * מה שההנחה לבדה אינה יודעת לומר הוא אם *הכלל* שהיא חורגת ממנו אומת,
+     * או אם הוא קיים. זו עובדה של הרישום, והקורא הוא זה שיש לו גישה לשניהם
+     * — ולכן `ruleStatus` מגיע כקלט אופציונלי ולא כשאילתה מכאן.
+     */
+    const requiredProfitMarginRow = profile.assumptions.find((assumption) => assumption.key === 'required-developer-profit-margin')
+    const requiredProfitMargin = requiredProfitMarginRow?.value
     const comparisonSubjectArea = profile.assumptions.find((assumption) => assumption.key === 'comparison-subject-area-sqm')?.value
     const comparableRates: Array<{ id: string; address: string; observedPricePerSqm: string; adjustmentFactor: string; adjustedPricePerSqm: string }> = []
     for (const comparable of profile.comparableTransactions) {
@@ -949,7 +1005,31 @@ export class FeasibilityCalculationService {
           comparables: comparableRates,
         },
       },
-      feasibility: { status: feasibilityStatus, isFinal: false },
+      feasibility: {
+        status: feasibilityStatus,
+        isFinal: false,
+        /*
+         * הסיוג אומר על סמך מה, לא במקום. `NOT_FEASIBLE` נשאר ההכרעה הנכונה
+         * תחת ההנחה שנמסרה; `basis` אומר עד כמה ההנחה הזו מבוססת.
+         */
+        basis: {
+          assumptionKey: 'required-developer-profit-margin',
+          value: requiredProfitMargin?.toString() ?? null,
+          classification: requiredProfitMarginRow?.classification ?? null,
+          confidence: requiredProfitMarginRow?.confidence ?? null,
+          isVerified: requiredProfitMarginRow?.isVerified ?? false,
+          hasSource: Boolean(requiredProfitMarginRow?.sourceId),
+          /** מה הרישום אומר על הכלל המקביל — כשהקורא מסר זאת. */
+          ruleStatus: ruleBasis?.status ?? 'NOT_PROVIDED',
+          ruleVerification: ruleBasis?.verification ?? null,
+          /*
+           * שני חוסרים שונים, ולכן שני דגלים. הנחה לא מאומתת היא דבר אחד;
+           * כלל שאינו קיים כדי לאמת מולו הוא דבר אחר, וסיוג שמציג רק את
+           * הראשון מטעה.
+           */
+          qualified: !requiredProfitMarginRow?.isVerified || (ruleBasis ? ruleBasis.status !== 'MATCHES' || ruleBasis.verification !== 'VERIFIED_AGAINST_SOURCE' : true),
+        },
+      },
       // Presentation receives a bounded, non-sensitive explanation of the
       // server calculation. Snapshots retain this alongside the numbers, so a
       // future report can be reproduced without recalculating historical data.

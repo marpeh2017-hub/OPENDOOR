@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { AlertTriangle, CircleHelp, Gavel, MinusCircle, ShieldCheck } from 'lucide-react'
 import { QueryError, RowsSkeleton } from '@/components/ui/query-states'
 import { useFeasibilityDeviations, type FeasibilityRuleDeviation } from '@/hooks/use-feasibility'
@@ -84,8 +85,9 @@ function formatValue(value: string | null, unit: string | null): string {
   return unit ? `${asNumber.toLocaleString('he-IL')} ${unit}` : asNumber.toLocaleString('he-IL')
 }
 
-export function FeasibilityRulesPanel({ profileId }: { profileId: string }) {
-  const { data, isLoading, isError, error, refetch } = useFeasibilityDeviations(profileId)
+export function FeasibilityRulesPanel({ profileId, scenarioId, scenarios }: { profileId: string; scenarioId?: string | null; scenarios?: { id: string; name: string; projectType?: string | null }[] }) {
+  const [selected, setSelected] = useState<string>(scenarioId ?? '')
+  const { data, isLoading, isError, error, refetch } = useFeasibilityDeviations(profileId, selected || null)
 
   const counts = (data?.deviations ?? []).reduce<Record<string, number>>((acc, row) => {
     acc[row.status] = (acc[row.status] ?? 0) + 1
@@ -94,10 +96,20 @@ export function FeasibilityRulesPanel({ profileId }: { profileId: string }) {
 
   return (
     <section className="card-surface p-5">
+      {(scenarios?.length ?? 0) > 0 && <div className="mb-3 flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground">הקשר:</span>
+        <select value={selected} onChange={event => setSelected(event.target.value)} className="h-8 rounded-md border border-input bg-background px-2">
+          <option value="">ברירת המחדל של התיק</option>
+          {scenarios!.map(scenario => <option key={scenario.id} value={scenario.id}>{scenario.name}{scenario.projectType ? ' · מסלול משלו' : ''}</option>)}
+        </select>
+      </div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <Gavel size={17} />
           סטייה מרישום החוקים
+          {data?.projectType && <span className="font-normal text-xs text-muted-foreground">
+            · נבדק מול {data.projectType}{data.projectTypeSource === 'SCENARIO' ? ' (מסלול התרחיש)' : ' (ברירת המחדל של התיק)'}
+          </span>}
           {data && (
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {data.deviations.length}

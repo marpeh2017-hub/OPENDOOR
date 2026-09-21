@@ -63,7 +63,7 @@ const build = (financing: Record<string, unknown> | null = { annualInterestRate:
 }
 
 const engineFor = (profile: LoadedFeasibilityProfile) =>
-  new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never)
+  new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never, null as never)
 
 const solve = (dto: Record<string, unknown> = {}, financing?: Record<string, unknown> | null) => {
   const { profile, scenario } = build(financing === undefined ? undefined : financing)
@@ -76,7 +76,7 @@ const recompute = (draw: string, repayment: string) => {
   const allocations = scenario.cashFlowAllocations as unknown as Array<{ id: string; amount: string }>
   allocations.find((a) => a.id === 'alloc-draw')!.amount = draw
   allocations.find((a) => a.id === 'alloc-repay')!.amount = repayment
-  return new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+  return new FeasibilityCalculationService(null as never, null as never, null as never, null as never).compute(profile, scenario)
 }
 
 describe('P2 — פתרון לוח המימון', () => {
@@ -161,7 +161,7 @@ describe('P2 — פתרון לוח המימון', () => {
      * כאן נמצא הגבול בחציה, ונבדק שבנקודה הראשונה שהמנוע מכריז עליה חריגה,
      * המספר המדווח אכן גדול מהמגבלה. בשמונה ספרות הבדיקה הזו נכשלת.
      */
-    const engine = new FeasibilityCalculationService(null as never, null as never, null as never)
+    const engine = new FeasibilityCalculationService(null as never, null as never, null as never, null as never)
     const at = (draw: number) => {
       const { profile, scenario } = build()
       const allocations = scenario.cashFlowAllocations as unknown as Array<{ id: string; amount: string }>

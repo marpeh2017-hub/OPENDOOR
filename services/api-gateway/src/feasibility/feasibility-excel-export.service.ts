@@ -179,6 +179,16 @@ export class FeasibilityExcelExportService {
     table('12_Financing', [
       { header: 'תרחיש', width: 24 }, { header: 'חוב', width: 22, numFmt: currencyFormat }, { header: 'הון עצמי', width: 22, numFmt: currencyFormat }, { header: 'ריבית שנתית', width: 20, numFmt: percentFormat }, { header: 'חודשי מימון', width: 18 }, { header: 'עלות מימון בצילום', width: 26, numFmt: currencyFormat },
     ], (input.scenarios ?? []).map((scenario: any) => [scenario.name, scenario.financing?.debtAmount ?? '', scenario.financing?.equityAmount ?? '', scenario.financing?.annualInterestRate ?? '', scenario.financing?.financingMonths ?? '', scenario.id === report.snapshot.scenarioId ? Number(output.financing?.accumulatedInterest ?? 0) : '']))
+    // מסלול התרחיש לצד התרחיש. כותרת התיק מתארת את ברירת המחדל ונכונה כפי
+    // שהיא; בלי השורה הזו מסמך שיוצא ללקוח על תרחיש קומבינציה לא אומר
+    // בשום מקום שהוא קומבינציה.
+    table('13_Routes', [{ header: 'תרחיש', width: 34 }, { header: 'מסלול', width: 30 }, { header: 'מקור', width: 18 }, { header: 'ברירת מחדל של התיק', width: 30 }],
+      (input.scenarios ?? []).map((scenario: any) => [
+        scenario.name,
+        PROJECT_TYPE_LABELS[(scenario.projectType ?? input.projectType) as keyof typeof PROJECT_TYPE_LABELS] ?? scenario.projectType ?? input.projectType ?? '—',
+        scenario.projectType ? 'נקבע לתרחיש' : 'יורש מהתיק',
+        PROJECT_TYPE_LABELS[input.projectType as keyof typeof PROJECT_TYPE_LABELS] ?? input.projectType ?? '—',
+      ]))
     table('13_Cash_Flow', [
       { header: 'תקופה', width: 20 }, { header: 'כניסות', width: 22, numFmt: currencyFormat }, { header: 'יציאות', width: 22, numFmt: currencyFormat }, { header: 'נטו', width: 22, numFmt: currencyFormat }, { header: 'מצטבר', width: 22, numFmt: currencyFormat },
     ], (output.cashFlow?.periods ?? []).map((row: any) => [row.periodStart, Number(row.inflows), Number(row.outflows), Number(row.net), Number(row.cumulative)]))

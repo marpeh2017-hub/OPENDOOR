@@ -12,7 +12,7 @@
 import Decimal from 'decimal.js'
 import { FeasibilityCalculationService, type LoadedFeasibilityProfile, type LoadedFeasibilityScenario } from './feasibility-calculation.service'
 
-const engine = new FeasibilityCalculationService(null as never, null as never, null as never)
+const engine = new FeasibilityCalculationService(null as never, null as never, null as never, null as never)
 
 const build = (options: { inKind?: string | null; saleSqm?: number; cashLand?: string } = {}) => {
   const profile = {
@@ -161,7 +161,7 @@ describe('פער 1 — תמורה שאינה במזומן', () => {
    */
   it('פותר את מלוא התמורה — מזומן ושווה־כסף יחד — ומחזיר סכום מוחלט', async () => {
     const { profile, scenario } = build({ inKind: '10000000' })
-    const solver = new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never)
+    const solver = new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never, null as never)
     const result = await solver.goalSeek('project-1', scenario.id, {
       solveFor: 'totalConsideration', targetMetric: 'profitOnCost', targetValue: '0.25',
     }, 'tenant-1')
