@@ -71,6 +71,8 @@ export interface RuleDeviation {
   assumptionValue: Prisma.Decimal | null
   sourceReference: string
   ruleId: string
+  /** האם הערך בכלל נקרא בחזרה מהמקור שלצדו. */
+  verification: FeasibilityRuleVerification
   /**
    * MATCHES — the project used the standard.
    * OVERRIDES — the project deliberately used something else. Not wrong, but it
@@ -316,6 +318,7 @@ export class FeasibilityRulesService {
         assumptionValue: status === 'NOT_APPLICABLE' ? null : matched?.value ?? null,
         matchedAssumptionKey: status === 'MATCHES' || status === 'OVERRIDES' ? matched?.key ?? null : null,
         sourceReference: rule.sourceReference,
+        verification: rule.verification ?? 'NEEDS_VERIFICATION',
         ruleId: rule.ruleId,
         status,
       })

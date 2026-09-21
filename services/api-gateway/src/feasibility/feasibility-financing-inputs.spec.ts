@@ -16,7 +16,7 @@ import { FeasibilityCalculationService, type LoadedFeasibilityProfile, type Load
 
 // המנוע אינו נוגע ב-Prisma, ב-audit ובשירות הטעינה. הוא מקבל קלט טעון
 // ומחזיר תוצאה, וזו בדיוק הסיבה שאפשר לבדוק אותו כך.
-const engine = new FeasibilityCalculationService(null as never, null as never, null as never)
+const engine = new FeasibilityCalculationService(null as never, null as never, null as never, null as never)
 
 type Overrides = {
   escalationRate?: string
@@ -234,7 +234,7 @@ describe('P0-1 — שדות המימון משפיעים בפועל', () => {
     const find = jest.fn().mockResolvedValueOnce(profile).mockRejectedValue(new Error('second read would observe changed data'))
     const create = jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'snapshot', ...data }))
     const prisma = { project: { findFirst: jest.fn().mockResolvedValue({ id: 'project', name: 'Synthetic test' }) }, $transaction: jest.fn().mockImplementation((fn) => fn({ feasibilityCalculationSnapshot: { create } })) }
-    const service = new FeasibilityCalculationService({ find } as never, prisma as never, { record: jest.fn() } as never)
+    const service = new FeasibilityCalculationService({ find } as never, prisma as never, { record: jest.fn() } as never, null as never)
     const snapshot = await service.createSnapshot('project', scenario.id, { tenantId: 'tenant', userId: 'user' } as never, { sensitivity: { primaryVariable: 'SALE_PRICE', primaryChanges: ['0'] } } as never)
     expect(find).toHaveBeenCalledTimes(1)
     expect(snapshot.outputSnapshot).toEqual(engine.compute(profile, scenario))

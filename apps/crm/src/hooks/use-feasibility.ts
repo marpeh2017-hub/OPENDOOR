@@ -331,6 +331,9 @@ export type FeasibilityRuleDeviation = {
 export type FeasibilityDeviations = {
   valuationDate: string
   jurisdiction: string | null
+  /** המסלול שמולו נבדקו הכללים, ומאיפה הוא הגיע. */
+  projectType: string
+  projectTypeSource: 'SCENARIO' | 'PROFILE'
   deviations: FeasibilityRuleDeviation[]
 }
 
@@ -339,10 +342,16 @@ export type FeasibilityDeviations = {
  * date. Read-only by construction — the endpoint applies nothing, it reports
  * (see FeasibilityRulesService.deviationsForProfile).
  */
-export function useFeasibilityDeviations(profileId: string | null) {
+/**
+ * `scenarioId` אינו קישוט: `appliesTo` נבדק מול המסלול שהתרחיש מייצג. בלעדיו
+ * מי שמסתכל על תרחיש קומבינציה רואה את כללי ברירת המחדל של התיק — ערכים
+ * נכונים בהקשר שגוי, וזה אותו דבר בדיוק כמו שיורי נכון עם כותרת חסרה.
+ */
+export function useFeasibilityDeviations(profileId: string | null, scenarioId?: string | null) {
   return useQuery({
-    queryKey: ['feasibility', 'deviations', profileId],
-    queryFn: () => api.get<FeasibilityDeviations>(`/feasibility/rules/deviations/${profileId}`),
+    queryKey: ['feasibility', 'deviations', profileId, scenarioId ?? null],
+    queryFn: () => api.get<FeasibilityDeviations>(
+      `/feasibility/rules/deviations/${profileId}${scenarioId ? `?scenarioId=${scenarioId}` : ''}`),
     enabled: Boolean(profileId),
     staleTime: 60_000,
   })

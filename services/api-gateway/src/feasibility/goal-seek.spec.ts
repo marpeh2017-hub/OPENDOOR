@@ -63,7 +63,7 @@ const build = (overrides: { secondPricePerSqm?: string } = {}) => {
  * שאר הנתיב — כולל `compute` ו-`applySensitivityFactors` — הוא הקוד האמיתי.
  */
 const engineFor = (profile: LoadedFeasibilityProfile) =>
-  new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never)
+  new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never, null as never)
 
 const seek = (dto: CreateGoalSeekDto, overrides?: { secondPricePerSqm?: string }) => {
   const { profile, scenario } = build(overrides)
@@ -86,7 +86,7 @@ describe('P1-6 — Goal Seek', () => {
     // ההוכחה: המספר מוזן חזרה לתרחיש רגיל, והמנוע — לא הפותר — מחשב אותו.
     const { profile, scenario } = build()
     scenario.unitMix[0]!.pricePerSqm = result.solvedInput.solvedValue as never
-    const recomputed = new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+    const recomputed = new FeasibilityCalculationService(null as never, null as never, null as never, null as never).compute(profile, scenario)
     expect(Number(recomputed.profitability.profitOnCost)).toBeCloseTo(0.40, 6)
     expect(Number(recomputed.revenue.total)).toBeCloseTo(22400000, 0)
   })

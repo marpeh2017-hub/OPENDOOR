@@ -87,7 +87,7 @@ export function ProjectFeasibilityTab({ projectId }: { projectId: string }) {
     <FoundationSection title="זכויות תכנון" icon={<Building2 size={17} />} count={data.planningRights.length} canEdit={canEdit} path="planning-rights" projectId={projectId} sources={data.sources} fields={[['category','קטגוריה',true],['status','סטטוס',true,'APPROVED'],['areaSqm','שטח במ״ר'],['unitCount','יח״ד'],['planNumber','מספר תכנית']]}> 
       {data.planningRights.map(x => <EditableFoundationRow key={x.id} projectId={projectId} path="planning-rights" canEdit={canEdit} item={x} fields={[['category','קטגוריה',true],['status','סטטוס',true],['areaSqm','שטח במ״ר'],['unitCount','יח״ד'],['planNumber','מספר תכנית']]} primary={x.category} detail={[x.status, x.areaSqm ? `${x.areaSqm} מ״ר` : null, x.unitCount ? `${x.unitCount} יח״ד` : null, x.planNumber].filter(Boolean).join(' · ')} />)}
     </FoundationSection>
-    <FeasibilityRulesPanel profileId={data.id} />
+    <FeasibilityRulesPanel profileId={data.id} scenarios={data.scenarios?.map((scenario: any) => ({ id: scenario.id, name: scenario.name, projectType: scenario.projectType }))} />
     <FeasibilityComparablesPanel projectId={projectId} comparables={data.comparableTransactions} sources={data.sources} canEdit={canEdit} />
     <FeasibilityScenariosPanel projectId={projectId} scenarios={data.scenarios} sources={data.sources} canEdit={canEdit} />
     <FeasibilityReportVersionsPanel projectId={projectId} scenarios={data.scenarios} canEdit={canEdit} canTransition={canTransition} />

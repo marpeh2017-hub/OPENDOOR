@@ -82,7 +82,7 @@ const build = (options: { withFinancing?: boolean; withCashFlow?: boolean; mixLi
 }
 
 const engineFor = (profile: LoadedFeasibilityProfile) =>
-  new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never)
+  new FeasibilityCalculationService({ find: async () => profile } as never, null as never, null as never, null as never)
 
 const run = (dto: CreateMonteCarloDto, options?: Parameters<typeof build>[0]) => {
   const { profile, scenario } = build(options)

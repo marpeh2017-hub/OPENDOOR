@@ -76,7 +76,7 @@ const build = (options: { draw?: string; equitySource?: string; equityBalanceFlo
 
 const compute = (options?: Parameters<typeof build>[0]) => {
   const { profile, scenario } = build(options)
-  return new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+  return new FeasibilityCalculationService(null as never, null as never, null as never, null as never).compute(profile, scenario)
 }
 
 describe('גזירת ההון העצמי מפער המימון', () => {
@@ -184,7 +184,7 @@ describe('גזירת ההון העצמי מפער המימון', () => {
       { id: 'late-equity-in', sourceKind: 'EQUITY', direction: 'INFLOW', periodStart: new Date(`${REVENUE}T00:00:00.000Z`), amount: '7000000', sourceLineId: null },
       { id: 'late-equity-out', sourceKind: 'EQUITY', direction: 'OUTFLOW', periodStart: new Date(`${REVENUE}T00:00:00.000Z`), amount: '7000000', sourceLineId: null },
     )
-    const result = new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+    const result = new FeasibilityCalculationService(null as never, null as never, null as never, null as never).compute(profile, scenario)
 
     // הסכומים מאוזנים, ולכן דווקא הדגל הישן שותק.
     expect(result.validation.some((issue) => issue.code === 'FUNDING_GAP')).toBe(false)
@@ -222,7 +222,7 @@ describe('מגבלת ההון כשלא נמסרה', () => {
   const withCommitment = (equityAmount: string | null) => {
     const { profile, scenario } = build()
     ;(scenario.financing as unknown as { equityAmount: string | null }).equityAmount = equityAmount
-    return new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+    return new FeasibilityCalculationService(null as never, null as never, null as never, null as never).compute(profile, scenario)
   }
   const codes = (result: ReturnType<FeasibilityCalculationService['compute']>) => result.validation.map((issue) => issue.code)
 
