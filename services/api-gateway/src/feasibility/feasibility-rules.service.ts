@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { effectiveProjectType } from './project-type-inputs'
 import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority, type FeasibilityProjectType, type FeasibilityRuleVerification } from '@prisma/client'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { DomainError } from '../common/errors/domain-error'
@@ -242,16 +243,29 @@ export class FeasibilityRulesService {
    * calculation — it reports. An appraiser signs off on the deviations; they are
    * not applied on their behalf.
    */
-  async deviationsForProfile(profileId: string, tenantId: string): Promise<{
+  async deviationsForProfile(profileId: string, tenantId: string, scenarioId?: string | null): Promise<{
     valuationDate: Date
     jurisdiction: string | null
+    projectType: FeasibilityProjectType
+    projectTypeSource: 'SCENARIO' | 'PROFILE'
     deviations: RuleDeviation[]
   }> {
     const profile = await this.prisma.feasibilityProfile.findFirst({
       where: { id: profileId, tenantId },
-      include: { assumptions: true, project: { select: { city: true } } },
+      include: { assumptions: true, project: { select: { city: true } }, scenarios: { select: { id: true, projectType: true } } },
     })
     if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'Feasibility profile not found')
+
+    /*
+     * `appliesTo` has to read the route the SCENARIO models, not the file's
+     * default, or a combination scenario in a purchase file gets measured
+     * against a purchase file's rules. Without a scenario the file's default
+     * is the honest answer — and the source is reported either way, so a
+     * caller can see which question was answered.
+     */
+    const scenario = scenarioId ? profile.scenarios.find((row) => row.id === scenarioId) : undefined
+    if (scenarioId && !scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'Scenario not found in this profile')
+    const route = effectiveProjectType(profile.projectType, scenario?.projectType ?? null)
 
     // The project's city is its jurisdiction: that is what a municipal parking
     // standard or a local plan is scoped by.
@@ -282,7 +296,7 @@ export class FeasibilityRulesService {
         .map((key) => profile.assumptions.find((row) => row.key === key && row.value !== null))
         .find((row) => row !== undefined)
 
-      const applies = !binding?.appliesTo || binding.appliesTo.includes(profile.projectType)
+      const applies = !binding?.appliesTo || binding.appliesTo.includes(route.projectType)
       const status: RuleDeviation['status'] =
         !binding
           ? 'UNMAPPED'
@@ -312,7 +326,7 @@ export class FeasibilityRulesService {
     // about the study, and whoever reads this should notice it immediately.
     const order = { OVERRIDES: 0, UNMAPPED: 1, UNSET: 2, MATCHES: 3, NOT_APPLICABLE: 4 } as const
     deviations.sort((a, b) => order[a.status] - order[b.status] || a.code.localeCompare(b.code))
-    return { valuationDate: profile.valuationDate, jurisdiction, deviations }
+    return { valuationDate: profile.valuationDate, jurisdiction, projectType: route.projectType, projectTypeSource: route.source, deviations }
   }
 
   async list(

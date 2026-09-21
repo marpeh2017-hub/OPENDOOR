@@ -2521,6 +2521,18 @@ model FeasibilityScenario {
   /// Null and zero mean the same thing here and both reduce every derived
   /// figure to its cash-only form exactly.
   considerationInKind Decimal?              @db.Decimal(18, 2)
+  /// The deal structure THIS scenario models, when it differs from the file's.
+  ///
+  /// Null means inherit, and that is a different state from a copy of the
+  /// profile's value: a copy goes stale the moment the file's default moves,
+  /// and nothing afterwards can tell whether the scenario meant to say that or
+  /// merely used to agree. Inheriting and deciding are two facts, and the
+  /// column stores which one this is.
+  ///
+  /// One file genuinely carries several structures — Tzvi Gerz 15 holds four
+  /// outright purchases beside eleven combination structures — so a single
+  /// type on the profile cannot describe it.
+  projectType        FeasibilityProjectType?
   version            Int                    @default(1)
   createdById        String
   updatedById        String
