@@ -326,6 +326,10 @@ export type FeasibilityRuleDeviation = {
   status: 'MATCHES' | 'OVERRIDES' | 'UNSET' | 'NOT_APPLICABLE' | 'UNMAPPED'
   /** Which assumption key answered the rule — the study's own, or the engine's name for it. */
   matchedAssumptionKey?: string | null
+  /** האם הכלל מצהיר ערך בכלל, או שהחסר עצמו הוא הרישום. */
+  valueStatus?: 'STATED' | 'DECLARED_MISSING'
+  /** האם הערך נקרא בחזרה מהמקור שלצדו. */
+  verification?: 'VERIFIED_AGAINST_SOURCE' | 'NEEDS_VERIFICATION' | 'DISPUTED'
 }
 
 export type FeasibilityDeviations = {

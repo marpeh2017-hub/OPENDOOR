@@ -446,6 +446,18 @@ enum FeasibilityUnitDisposition {
 /// of a register is that "what is unverified" is a question you can ask it.
 /// A free-text note cannot be queried, which is the same hiding that UNSET,
 /// NOT_APPLICABLE, UNMAPPED and NOT_ENFORCED were each introduced to end.
+/// Whether the rule states a value at all.
+///
+/// A register whose only way to say "nobody has established this number yet"
+/// is a sentence typed into a text field has no way to say it: text cannot be
+/// queried, and a reader sees a rule that looks stated. DECLARED_MISSING is
+/// the gap as a first-class state — the rule exists, it applies, and its value
+/// is openly absent rather than quietly defaulted.
+enum FeasibilityRuleValueStatus {
+  STATED
+  DECLARED_MISSING
+}
+
 enum FeasibilityRuleVerification {
   /// Read back off the cited source by a person who says so.
   VERIFIED_AGAINST_SOURCE
@@ -2416,6 +2428,9 @@ model FeasibilityRule {
   /// apply to a project in another city.
   jurisdiction    String?
 
+  /// Whether this rule states a value. DECLARED_MISSING means the gap itself
+  /// is the record: numericValue and textValue are both null on purpose.
+  valueStatus     FeasibilityRuleValueStatus @default(STATED)
   numericValue    Decimal?                 @db.Decimal(18, 6)
   textValue       String?
   unit            String?
