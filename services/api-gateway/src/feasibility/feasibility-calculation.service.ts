@@ -460,6 +460,33 @@ export class FeasibilityCalculationService {
       }
     }
 
+    /*
+     * ── התזרים נבדק על ציר הזמן, לא רק בסכום ─────────────────────────────
+     *
+     * `FUNDING_GAP` שלמטה מסכם מקורות מול שימושים. זה תנאי הכרחי ולא מספיק:
+     * ארבעה עשר תרחישי צבי גרץ עברו אותו נקיים בזמן שכל אחד מהם רץ שישה
+     * חודשים על יתרה שלילית של מיליונים — הקרקע שולמה במעמד החתימה והליווי
+     * הגיע רק עם תחילת הבנייה. הסכומים התאזנו; המועדים לא.
+     *
+     * הגזירה סוגרת את המקרה הזה בתרחישים שהיא חלה עליהם, אבל היא אינה
+     * הבדיקה: תחת `EXPLICIT_ALLOCATIONS` ההקצאות נשארות כפי שהוקלדו, והחור
+     * חוזר להיות בלתי נראה בדיוק כפי שהיה. לכן הבדיקה עומדת בפני עצמה.
+     *
+     * החודש הראשון מדווח ולא האחרון: הוא המועד שבו התוכנית מפסיקה להיות
+     * ממומנת, וזה המועד שאפשר לעשות בו משהו.
+     */
+    const balanceFloor = equityIsDerived ? equityBalanceFloor : new Decimal(0)
+    const firstShortfall = cashFlow.find((period) => read(period.cumulative).lt(balanceFloor.minus(DEBT_ROUNDING_TOLERANCE)))
+    if (firstShortfall) {
+      const deepest = cashFlow.reduce((worst, period) => read(period.cumulative).lt(read(worst.cumulative)) ? period : worst, firstShortfall)
+      issues.push({
+        code: 'CASH_FLOW_BALANCE_NEGATIVE',
+        severity: 'CRITICAL',
+        message: `התזרים יורד מתחת ליתרה המותרת ב-${firstShortfall.periodStart} ומגיע ל-${amount(read(deepest.cumulative))} ב-${deepest.periodStart}. סך המקורות עשוי להתאזן, אך במועד הזה הכסף אינו קיים.`,
+        entityId: firstShortfall.periodStart,
+      })
+    }
+
     if (scenario.costLines.some((line) => line.category === 'FINANCING') && financingCosts.length) issues.push({ code: 'FINANCING_DOUBLE_COUNT_RISK', severity: 'WARNING', message: 'קיימות שורות עלות מימון בנוסף לריבית מחושבת; ודאו שאין ספירה כפולה.' })
     const totalCostsBeforeFinancing = totalCosts
     costs.push(...financingCosts)
