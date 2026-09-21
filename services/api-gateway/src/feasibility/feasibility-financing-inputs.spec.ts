@@ -510,7 +510,14 @@ describe('P0-2 — רגישות כהרצה מלאה של המנוע', () => {
     // הכפלת הריבית מכפילה את עלות המימון, אך גם מזיזה את התזרים ואת
     // דרישת ההון — דבר שהכפלת שדה בודד לא היתה מייצרת.
     expect(new Decimal(raised.financing.accumulatedInterest).div(base.financing.accumulatedInterest).toFixed(4)).toBe('2.0000')
-    expect(new Decimal(raised.cashFlow.peakFundingRequirement).gt(base.cashFlow.peakFundingRequirement)).toBe(true)
+    /*
+     * דרישת ההון היא `peakEquityRequirement` ולא `peakFundingRequirement`:
+     * מאז שההון נגזר, מה שנותר לא ממומן הוא אפס בשני הצדדים — וזה בדיוק
+     * מה שהגזירה מבטיחה. הכמות שהבדיקה הזו תמיד התכוונה אליה היא כמה הון
+     * התוכנית דורשת, והיא זו שזזה.
+     */
+    expect(new Decimal(raised.cashFlow.peakEquityRequirement!).gt(base.cashFlow.peakEquityRequirement!)).toBe(true)
+    expect(new Decimal(raised.cashFlow.peakFundingRequirement).toFixed(2)).toBe('0.00')
   })
 
   it('חושף חריגה מ-LTC שנולדה רק בתרחיש הרגיש', () => {

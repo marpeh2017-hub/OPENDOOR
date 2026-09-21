@@ -318,6 +318,8 @@ export class FeasibilityCalculationService {
 
     let cumulative = new Decimal(0)
     let peakNegative = new Decimal(0)
+    /** The deepest point once derived equity is in. Stays zero when equity is derived and the rule holds. */
+    let peakAfterEquity = new Decimal(0)
     const projectPeriodFlows: Decimal[] = []
     const equityPeriodFlows: Decimal[] = []
     let equityInvested = new Decimal(0)
@@ -409,10 +411,17 @@ export class FeasibilityCalculationService {
      * draws more debt, or draws it earlier, needs less equity and needs it
      * later — and the equity IRR moves, which is the whole point.
      *
-     * `peakFundingRequirement` is measured on the balance BEFORE this
-     * injection, which is what the name has always meant: how much funding
-     * the plan requires. Measured after, it would be the floor by
-     * construction, and would say nothing.
+     * Two quantities come out of this, and they are reported as two fields
+     * rather than one field that changed meaning. `peakEquityRequirement` is
+     * the balance BEFORE the injection: how much equity the plan needs at its
+     * deepest. `peakFundingRequirement` keeps what it has always meant — the
+     * hole left once every source is in — so under derivation it is zero, and
+     * that zero is the statement that the plan is funded.
+     *
+     * Under EXPLICIT_ALLOCATIONS the two cannot be separated: typed equity is
+     * mixed into the same flows as everything else. `peakEquityRequirement`
+     * is null there rather than a number that would quietly be the other
+     * quantity.
      */
     if (equityIsDerived) {
       let balance = new Decimal(0)
@@ -447,6 +456,7 @@ export class FeasibilityCalculationService {
       for (const period of cashFlow) {
         restated = restated.plus(read(period.net))
         period.cumulative = amount(restated)
+        if (restated.lessThan(peakAfterEquity)) peakAfterEquity = restated
       }
     }
 
@@ -933,7 +943,10 @@ export class FeasibilityCalculationService {
       },
       cashFlow: {
         periods: cashFlow,
-        peakFundingRequirement: amount(peakNegative.abs()),
+        /** What the plan needs at its deepest before any equity goes in. Null when typed equity makes the two inseparable. */
+        peakEquityRequirement: equityIsDerived ? amount(peakNegative.abs()) : null,
+        /** What is left unfunded once every source is in. Zero under derived equity, by the rule that derives it. */
+        peakFundingRequirement: amount((equityIsDerived ? peakAfterEquity : peakNegative).abs()),
         reconciliationComplete: !issues.some((issue) => issue.code === 'CASH_FLOW_ALLOCATION_MISSING' || issue.code === 'CASH_FLOW_RECONCILIATION_MISMATCH'),
       },
       dataQuality: {
@@ -1764,7 +1777,7 @@ export class FeasibilityCalculationService {
         profitMargin: result.profitability.profitMargin,
         projectIrrAnnual: result.returns.projectIrrAnnual,
         projectNpv: result.returns.projectNpv,
-        equityRequirement: result.cashFlow.peakFundingRequirement,
+        equityRequirement: result.cashFlow.peakEquityRequirement ?? result.cashFlow.peakFundingRequirement,
         residualLandValue: result.valuation.residualLandValue,
         // מסקנת הכדאיות היא מה שהרגישות באמת נשאלת עליה. הכפלת פלט קפוא
         // מעולם לא יכלה לענות עליה, משום שהיא לא הריצה את הבדיקות.

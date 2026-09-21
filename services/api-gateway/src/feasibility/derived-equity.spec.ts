@@ -91,7 +91,7 @@ describe('גזירת ההון העצמי מפער המימון', () => {
     const first = result.cashFlow.periods.find((period) => period.periodStart === COST)!
     expect(Number(first.inflows)).toBeCloseTo(9_000_000 + 7_000_000, 2)
     expect(Number(result.returns.equityInvested)).toBeGreaterThanOrEqual(7_000_000)
-    expect(Number(result.returns.equityInvested)).toBeCloseTo(Number(result.cashFlow.peakFundingRequirement), 2)
+    expect(Number(result.returns.equityInvested)).toBeCloseTo(Number(result.cashFlow.peakEquityRequirement), 2)
     // והכלל עצמו: אף חודש אינו יורד מתחת לרצפה.
     for (const period of result.cashFlow.periods) expect(Number(period.cumulative)).toBeGreaterThanOrEqual(-0.01)
   })
@@ -145,17 +145,29 @@ describe('גזירת ההון העצמי מפער המימון', () => {
     for (const period of atFloor.cashFlow.periods) expect(Number(period.cumulative)).toBeGreaterThanOrEqual(500_000 - 0.01)
   })
 
-  it('‏peakFundingRequirement נמדד לפני הזרקת ההון — אחרת הוא היה הרצפה מעצם ההגדרה', () => {
-    const result = compute()
+  it('שתי כמויות, שני שדות: שם קיים אינו משנה משמעות מתחת לקורא', () => {
     /*
-     * החור לפני ההון מדווח כפי שהוא, למרות שהתזרים הסופי אינו יורד מתחת
-     * לאפס. נמדד אחרי ההזרקה הוא היה הרצפה מעצם ההגדרה, ולא היה אומר דבר.
+     * `peakFundingRequirement` נשאר מה שתמיד היה — מה שנותר לא ממומן אחרי
+     * כל המקורות — ולכן תחת גזירה הוא אפס, והאפס הזה הוא האמירה שהתוכנית
+     * ממומנת. הכמות החדשה קיבלה שם משלה. אחרת קורא שמכיר את השדה הישן היה
+     * קורא מספר חדש בכללים הישנים, בלי שום דרך לדעת.
      */
-    expect(Number(result.cashFlow.peakFundingRequirement)).toBeGreaterThan(7_000_000)
-    expect(Number(result.cashFlow.peakFundingRequirement)).toBeCloseTo(Number(result.returns.equityInvested), 2)
-    // ושהמדד באמת עצמאי מהרצפה: רצפה גבוהה יותר אינה מזיזה אותו.
-    expect(compute({ equityBalanceFloor: '500000' }).cashFlow.peakFundingRequirement).toBe(result.cashFlow.peakFundingRequirement)
+    const result = compute()
+    expect(Number(result.cashFlow.peakEquityRequirement)).toBeGreaterThan(7_000_000)
+    expect(Number(result.cashFlow.peakEquityRequirement)).toBeCloseTo(Number(result.returns.equityInvested), 2)
+    expect(Number(result.cashFlow.peakFundingRequirement)).toBeCloseTo(0, 2)
+    // צורך ההון עצמאי מהרצפה, ומה שנותר לא ממומן נשאר אפס בשתיהן.
+    const withFloor = compute({ equityBalanceFloor: '500000' })
+    expect(withFloor.cashFlow.peakEquityRequirement).toBe(result.cashFlow.peakEquityRequirement)
+    expect(Number(withFloor.cashFlow.peakFundingRequirement)).toBeCloseTo(0, 2)
     for (const period of result.cashFlow.periods) expect(Number(period.cumulative)).toBeGreaterThanOrEqual(-0.01)
+  })
+
+  it('בהקצאה ידנית השתיים אינן ניתנות להפרדה, ולכן צורך ההון מדווח כלא-זמין ולא כמספר', () => {
+    const explicit = compute({ equitySource: 'EXPLICIT_ALLOCATIONS', explicitEquity: '7000000' })
+    expect(explicit.cashFlow.peakEquityRequirement).toBeNull()
+    // והשדה הישן שומר בדיוק על משמעותו: החור שנשאר אחרי ההון שהוקלד.
+    expect(Number(explicit.cashFlow.peakFundingRequirement)).toBeGreaterThan(0)
   })
 
   it('תשואת הפרויקט אינה מושפעת: ההון הוא מימון, לא רווח', () => {
