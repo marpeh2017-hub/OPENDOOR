@@ -365,6 +365,24 @@ enum FeasibilityUnitDisposition {
 /// Where a regulatory threshold comes from. An appraiser has to be able to say
 /// which authority a number carries, because a statutory rate and a company
 /// convention do not defend a report equally.
+/// Whether the VALUE in a rule has been checked against its stated source.
+///
+/// Separate from `authority`, which says what kind of source it claims, and
+/// from `sourceReference`, which names it. A rule can cite a statute and still
+/// carry a number nobody has read back off that statute — and the whole point
+/// of a register is that "what is unverified" is a question you can ask it.
+/// A free-text note cannot be queried, which is the same hiding that UNSET,
+/// NOT_APPLICABLE, UNMAPPED and NOT_ENFORCED were each introduced to end.
+enum FeasibilityRuleVerification {
+  /// Read back off the cited source by a person who says so.
+  VERIFIED_AGAINST_SOURCE
+  /// Entered, plausible, and not yet checked. The default, because nobody
+  /// verifying is the normal state of a value that was just typed.
+  NEEDS_VERIFICATION
+  /// Checked, and the source does not settle it — or two sources disagree.
+  DISPUTED
+}
+
 enum FeasibilityRuleAuthority {
   STATUTE
   REGULATION
@@ -2334,6 +2352,13 @@ model FeasibilityRule {
 
   sourceReference String
   sourceUrl       String?
+  /// Whether the number above has been read back off the source named beside
+  /// it. Defaults to NEEDS_VERIFICATION: a value that was typed is not a value
+  /// that was checked.
+  verification    FeasibilityRuleVerification @default(NEEDS_VERIFICATION)
+  /// Why it is disputed, or what still has to be checked. Explanation only —
+  /// the state itself is the enum above, so it can be queried.
+  verificationNote String?
   notes           String?
   isActive        Boolean                  @default(true)
 

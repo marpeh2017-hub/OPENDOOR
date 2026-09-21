@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority, type FeasibilityProjectType } from '@prisma/client'
+import { Prisma, type FeasibilityRule, type FeasibilityRuleAuthority, type FeasibilityProjectType, type FeasibilityRuleVerification } from '@prisma/client'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { DomainError } from '../common/errors/domain-error'
 import { PrismaService } from '../prisma.service'
@@ -47,6 +47,8 @@ export interface ResolvedRule {
   unit: string | null
   effectiveFrom: Date
   effectiveUntil: Date | null
+  verification?: FeasibilityRuleVerification
+  verificationNote?: string | null
   sourceReference: string
   sourceUrl: string | null
   /** The row, so a report can cite the exact version it used. */
@@ -146,6 +148,8 @@ export interface RuleWrite {
   effectiveUntil?: Date | string | null
   sourceReference: string
   sourceUrl?: string | null
+  verification?: FeasibilityRuleVerification
+  verificationNote?: string | null
   notes?: string | null
   isActive?: boolean
 }
@@ -313,7 +317,7 @@ export class FeasibilityRulesService {
 
   async list(
     tenantId: string,
-    filters: { code?: string; jurisdiction?: string; includeInactive?: boolean } = {},
+    filters: { code?: string; jurisdiction?: string; includeInactive?: boolean; verification?: FeasibilityRuleVerification } = {},
   ): Promise<FeasibilityRule[]> {
     return this.prisma.feasibilityRule.findMany({
       where: {
@@ -321,6 +325,10 @@ export class FeasibilityRulesService {
         ...(filters.code ? { code: filters.code } : {}),
         ...(filters.jurisdiction ? { jurisdiction: filters.jurisdiction } : {}),
         ...(filters.includeInactive ? {} : { isActive: true }),
+        // "What in this register has nobody checked?" has to be a query the
+        // register can answer, which is the whole reason verification is a
+        // column and not a sentence in `notes`.
+        ...(filters.verification ? { verification: filters.verification } : {}),
       },
       orderBy: [{ code: 'asc' }, { effectiveFrom: 'desc' }],
     })
@@ -415,6 +423,8 @@ export class FeasibilityRulesService {
       effectiveUntil: rule.effectiveUntil,
       sourceReference: rule.sourceReference,
       sourceUrl: rule.sourceUrl,
+      verification: rule.verification,
+      verificationNote: rule.verificationNote,
       ruleId: rule.id,
       jurisdictionSpecific: rule.jurisdiction !== null,
     }
@@ -433,6 +443,8 @@ export class FeasibilityRulesService {
       effectiveUntil: rule.effectiveUntil,
       sourceReference: rule.sourceReference,
       sourceUrl: rule.sourceUrl,
+      verification: rule.verification,
+      verificationNote: rule.verificationNote,
       notes: rule.notes,
       isActive: rule.isActive,
     }
@@ -490,6 +502,10 @@ export class FeasibilityRulesService {
       effectiveUntil,
       sourceReference,
       sourceUrl: dto.sourceUrl?.trim() || null,
+      // Omitted means unverified, not verified: the column defaults to
+      // NEEDS_VERIFICATION and nothing here quietly upgrades it.
+      ...(dto.verification ? { verification: dto.verification } : {}),
+      verificationNote: dto.verificationNote?.trim() || null,
       notes: dto.notes?.trim() || null,
       isActive: dto.isActive ?? true,
     }

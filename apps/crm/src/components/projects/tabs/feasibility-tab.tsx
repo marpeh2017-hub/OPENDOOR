@@ -15,10 +15,21 @@ import { FeasibilityComparablesPanel } from './feasibility-comparables-panel'
 import { FeasibilityReportVersionsPanel } from './feasibility-report-versions-panel'
 import { FeasibilityRulesPanel } from './feasibility-rules-panel'
 
+/*
+ * המסלולים שמוצגים לבחירה, בתוויות שהשרת מחזיר. `OTHER` אינו כאן בכוונה:
+ * מסלול שלא הוגדר אינו מסלול, והוא נשאר קריא בתצוגה של פרופיל קיים.
+ *
+ * הרשימה הזו היתה אחת משלוש — CRM, ייצוא PDF וייצוא Excel — וכל תוספת
+ * מסלול היתה צריכה לגעת בשלושתן. השניים האחרים קוראים עכשיו מטבלת
+ * המסלולים בשרת, וזו כאן היא מה שמוצג לבחירה בלבד.
+ */
 const PROJECT_TYPES = [
-  ['TAMA_38_1', 'תמ״א 38/1'], ['TAMA_38_2', 'תמ״א 38/2'], ['PINUY_BINUY', 'פינוי־בינוי'],
-  ['NEW_CONSTRUCTION', 'בנייה חדשה'], ['COMBINATION', 'עסקת קומבינציה'], ['LAND', 'קרקע'], ['OTHER', 'אחר'],
+  ['PINUY_BINUY', 'פינוי־בינוי'], ['TAMA_38_1', 'תמ״א 38/1 — חיזוק'], ['TAMA_38_2', 'תמ״א 38/2 — הריסה ובנייה'],
+  ['COMBINATION', 'עסקת קומבינציה'], ['NEW_CONSTRUCTION', 'רכישת קרקע ובנייה'], ['LAND', 'קרקע — רכישה ומכירה ללא בנייה'],
 ]
+const PROJECT_TYPE_FALLBACK: Record<string, string> = { OTHER: 'אחר' }
+const projectTypeLabel = (value: string) =>
+  PROJECT_TYPES.find(entry => entry[0] === value)?.[1] ?? PROJECT_TYPE_FALLBACK[value] ?? value
 const AREA_LABELS: Record<string, string> = { REGISTERED: 'רשום', MEASURED: 'מדוד', PLANNING: 'תכנוני', MAIN: 'עיקרי', SERVICE: 'שירות', GROSS: 'ברוטו', SALEABLE: 'למכירה', MARKETING: 'שיווקי', BALCONY: 'מרפסות', GARDEN: 'גינות', ROOF: 'גג', PARKING: 'חניה', STORAGE: 'מחסנים', COMMERCIAL: 'מסחר', COMMON: 'שטחים משותפים' }
 
 function errorText(error: unknown) { return error instanceof Error ? error.message : 'הפעולה נכשלה. בדקו את הנתונים ונסו שוב.' }
@@ -55,7 +66,7 @@ export function ProjectFeasibilityTab({ projectId }: { projectId: string }) {
 
   return <div className="space-y-5">
     <div className="card-surface p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div><h2 className="text-lg font-bold">דוח אפס · {PROJECT_TYPES.find(x => x[0] === data.projectType)?.[1] ?? data.projectType}</h2><p className="text-sm text-muted-foreground">תאריך קובע: {new Date(data.valuationDate).toLocaleDateString('he-IL')} · מצב: {data.status === 'LOCKED' ? 'נעול' : 'טיוטה'}</p></div>
+      <div><h2 className="text-lg font-bold">דוח אפס · {projectTypeLabel(data.projectType)}</h2><p className="text-sm text-muted-foreground">תאריך קובע: {new Date(data.valuationDate).toLocaleDateString('he-IL')} · מצב: {data.status === 'LOCKED' ? 'נעול' : 'טיוטה'}</p></div>
       <div className="flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2"><ShieldAlert size={15} />נתוני המקור טרם חושבו לרווחיות</div>{canEdit && <Button size="sm" variant="outline" onClick={() => { setForm({ projectType: data.projectType, reportType: data.reportType, purpose: data.purpose, valuationDate: data.valuationDate.slice(0, 10), reportDate: data.reportDate.slice(0, 10), clientName: data.clientName ?? '', developerName: data.developerName ?? '', appraiserName: data.appraiserName ?? '', neighborhood: data.neighborhood ?? '' }); setEditingProfile(true) }}><Pencil className="ml-1 h-3.5 w-3.5" />עריכת פרטי דוח</Button>}</div>
     </div>
     {editingProfile && <section className="card-surface p-5"><div><h3 className="text-sm font-semibold">פרטי דוח אפס</h3><p className="mt-1 text-xs text-muted-foreground">העדכון מתועד ומשפיע רק על צילומי חישוב חדשים; גרסאות קפואות אינן משתנות.</p></div><form className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); updateProfile.mutate(form, { onSuccess: () => setEditingProfile(false) }) }}><Field label="סוג פרויקט"><select value={form.projectType} onChange={event => setForm({ ...form, projectType: event.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{PROJECT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="מטרת הבדיקה"><Input required value={form.purpose} onChange={event => setForm({ ...form, purpose: event.target.value })} /></Field><Field label="תאריך קובע"><Input required type="date" value={form.valuationDate} onChange={event => setForm({ ...form, valuationDate: event.target.value })} /></Field><Field label="תאריך דוח"><Input required type="date" value={form.reportDate} onChange={event => setForm({ ...form, reportDate: event.target.value })} /></Field><Field label="לקוח"><Input value={form.clientName ?? ''} onChange={event => setForm({ ...form, clientName: event.target.value })} /></Field><Field label="יזם"><Input value={form.developerName ?? ''} onChange={event => setForm({ ...form, developerName: event.target.value })} /></Field><Field label="שמאי"><Input value={form.appraiserName ?? ''} onChange={event => setForm({ ...form, appraiserName: event.target.value })} /></Field><Field label="שכונה"><Input value={form.neighborhood ?? ''} onChange={event => setForm({ ...form, neighborhood: event.target.value })} /></Field><div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="ghost" onClick={() => setEditingProfile(false)}>ביטול</Button><Button disabled={updateProfile.isPending}>{updateProfile.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}שמירה</Button></div>{updateProfile.isError && <p className="text-sm text-destructive sm:col-span-2" role="alert">{errorText(updateProfile.error)}</p>}</form></section>}

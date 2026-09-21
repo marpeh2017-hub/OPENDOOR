@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import {
-  IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, MaxLength,
+  IsBoolean, IsDateString, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, MaxLength,
 } from 'class-validator'
 
 /**
@@ -63,6 +63,18 @@ export class CreateFeasibilityRuleDto {
   @ApiPropertyOptional()
   @IsOptional() @IsUrl() @MaxLength(1000)
   sourceUrl?: string | null
+
+  /**
+   * Whether the value has been read back off the source named beside it.
+   * Omitted means NEEDS_VERIFICATION — a number that was typed is not a
+   * number that was checked, and nothing may upgrade that silently.
+   */
+  @ApiPropertyOptional({ enum: ['VERIFIED_AGAINST_SOURCE', 'NEEDS_VERIFICATION', 'DISPUTED'] })
+  @IsOptional() @IsIn(['VERIFIED_AGAINST_SOURCE', 'NEEDS_VERIFICATION', 'DISPUTED'])
+  verification?: 'VERIFIED_AGAINST_SOURCE' | 'NEEDS_VERIFICATION' | 'DISPUTED'
+
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000)
+  verificationNote?: string | null
 
   @ApiPropertyOptional()
   @IsOptional() @IsString() @MaxLength(2000)
