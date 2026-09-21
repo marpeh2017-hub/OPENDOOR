@@ -170,6 +170,37 @@ describe('גזירת ההון העצמי מפער המימון', () => {
     expect(Number(explicit.cashFlow.peakFundingRequirement)).toBeGreaterThan(0)
   })
 
+  it('יתרה מצטברת שלילית נתפסת גם כשהסכומים הכוללים מאוזנים לחלוטין', () => {
+    /*
+     * זו הבדיקה שארבעה עשר תרחישים עברו בלעדיה. ההון המוקלד כאן מכסה את
+     * מלוא העלות — `FUNDING_GAP` לא יכול לפעול — אבל הוא מוזרם חודש אחרי
+     * שהעלות שולמה, ולכן התוכנית רצה תקופה שלמה על כסף שאינו קיים. סכום
+     * המקורות מאוזן; המועדים אינם.
+     */
+    const { profile, scenario } = build({ equitySource: 'EXPLICIT_ALLOCATIONS' })
+    const allocations = scenario.cashFlowAllocations as unknown as Array<{ id: string; sourceKind: string; direction: string; periodStart: Date; amount: string; sourceLineId: string | null }>
+    // ההון נכנס במועד ההכנסה, כלומר אחרי שהבנייה כבר שולמה.
+    allocations.push(
+      { id: 'late-equity-in', sourceKind: 'EQUITY', direction: 'INFLOW', periodStart: new Date(`${REVENUE}T00:00:00.000Z`), amount: '7000000', sourceLineId: null },
+      { id: 'late-equity-out', sourceKind: 'EQUITY', direction: 'OUTFLOW', periodStart: new Date(`${REVENUE}T00:00:00.000Z`), amount: '7000000', sourceLineId: null },
+    )
+    const result = new FeasibilityCalculationService(null as never, null as never, null as never).compute(profile, scenario)
+
+    // הסכומים מאוזנים, ולכן דווקא הדגל הישן שותק.
+    expect(result.validation.some((issue) => issue.code === 'FUNDING_GAP')).toBe(false)
+    // והדגל שעל ציר הזמן מדבר.
+    const shortfall = result.validation.find((issue) => issue.code === 'CASH_FLOW_BALANCE_NEGATIVE')
+    expect(shortfall).toBeDefined()
+    expect(shortfall!.severity).toBe('CRITICAL')
+    // ומצביע על החודש שבו זה קורה, לא על זה שבו זה מסתיים.
+    expect(shortfall!.entityId).toBe(COST)
+  })
+
+  it('תחת גזירה הבדיקה שותקת — לא כי היא כבויה, אלא כי הכלל שגוזר מונע את המצב', () => {
+    expect(compute().validation.some((issue) => issue.code === 'CASH_FLOW_BALANCE_NEGATIVE')).toBe(false)
+    expect(compute({ equityBalanceFloor: '500000' }).validation.some((issue) => issue.code === 'CASH_FLOW_BALANCE_NEGATIVE')).toBe(false)
+  })
+
   it('תשואת הפרויקט אינה מושפעת: ההון הוא מימון, לא רווח', () => {
     const derived = compute()
     const explicit = compute({ equitySource: 'EXPLICIT_ALLOCATIONS', explicitEquity: '7000000' })
