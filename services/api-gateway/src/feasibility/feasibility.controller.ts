@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Request, StreamableFile } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Request, StreamableFile } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -308,6 +308,12 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Run deterministic one- or two-variable sensitivity without changing scenario inputs' })
   sensitivity(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateSensitivityDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.sensitivity(projectId, scenarioId, dto, tenantFrom(req)))
+  }
+
+  @Get('input-requirements')
+  @ApiOperation({ summary: 'What this project type asks for, what has been answered, and what it deliberately does not ask' })
+  inputRequirements(@Param('projectId') projectId: string, @Query('scenarioId') scenarioId: string | undefined, @Request() req: any) {
+    return mapDomainErrors(() => this.calculations.inputRequirements(projectId, scenarioId ?? null, tenantFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/financing/solve')
