@@ -212,6 +212,15 @@ export class CreateFeasibilityScenarioDto {
    */
   @IsOptional() @Matches(/^\d+(\.\d+)?$/)
   considerationInKind?: string
+
+  /**
+   * מבנה העסקה שהתרחיש הזה מייצג, כשהוא שונה מזה של התיק.
+   *
+   * השמטה = ירושה מהפרופיל. `null` = חזרה לירושה. שניהם שונים מהעתקה של
+   * ערך הפרופיל, שמתיישנת ברגע שברירת המחדל זזה.
+   */
+  @IsOptional() @ValidateIf((object: { projectType?: unknown }) => object.projectType !== null) @IsEnum(FeasibilityProjectType)
+  projectType?: FeasibilityProjectType | null
 }
 
 export class UpdateFeasibilityScenarioDto extends PartialType(CreateFeasibilityScenarioDto) {}

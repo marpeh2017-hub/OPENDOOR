@@ -246,3 +246,37 @@ export function inputReadiness(projectType: FeasibilityProjectType, profile: Rea
     })
     .sort((a, b) => (STATUS_ORDER[`${a.requirement}:${a.status}`] ?? 9) - (STATUS_ORDER[`${b.requirement}:${b.status}`] ?? 9))
 }
+
+/**
+ * ── מסלול ברמת התרחיש ─────────────────────────────────────────────────────
+ *
+ * תיק אחד נושא לעיתים כמה מבני עסקה. בצבי גרץ 15 יש ארבע רכישות במזומן לצד
+ * אחת עשרה מבני קומבינציה, ומסלול אחד לתיק פשוט אינו מתאר את זה.
+ *
+ * `projectType` על הפרופיל נשאר ברירת המחדל; על התרחיש הוא אופציונלי ודורס.
+ * תרחיש בלי ערך **יורש** — ולא מחזיק העתק. העתק מתיישן ברגע שברירת המחדל
+ * זזה, ואחר כך אי אפשר לדעת אם התרחיש התכוון לערך הזה או רק במקרה הסכים
+ * איתו. "יורש" ו"נקבע במפורש" הן שתי עובדות, והמבנה שומר איזו מהן זו.
+ */
+export type ProjectTypeSource = 'SCENARIO' | 'PROFILE'
+
+export interface EffectiveProjectType {
+  projectType: FeasibilityProjectType
+  label: string
+  source: ProjectTypeSource
+  /** ברירת המחדל של התיק, תמיד — כדי שדריסה תהיה קריאה כדריסה. */
+  profileDefault: FeasibilityProjectType
+}
+
+export function effectiveProjectType(
+  profileType: FeasibilityProjectType,
+  scenarioType: FeasibilityProjectType | null | undefined,
+): EffectiveProjectType {
+  const projectType = scenarioType ?? profileType
+  return {
+    projectType,
+    label: PROJECT_TYPE_LABELS[projectType],
+    source: scenarioType ? 'SCENARIO' : 'PROFILE',
+    profileDefault: profileType,
+  }
+}

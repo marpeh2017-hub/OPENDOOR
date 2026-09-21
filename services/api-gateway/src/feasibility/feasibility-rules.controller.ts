@@ -62,8 +62,8 @@ export class FeasibilityRulesController {
 
   @Get('deviations/:profileId')
   @ApiOperation({ summary: 'How one study deviates from the registry on its determining date' })
-  deviations(@Param('profileId') profileId: string, @Request() req: any) {
-    return mapDomainErrors(() => this.rules.deviationsForProfile(profileId, tenantFrom(req)))
+  deviations(@Param('profileId') profileId: string, @Query('scenarioId') scenarioId: string | undefined, @Request() req: any) {
+    return mapDomainErrors(() => this.rules.deviationsForProfile(profileId, tenantFrom(req), scenarioId ?? null))
   }
 
   @Post()

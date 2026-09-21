@@ -1,0 +1,11 @@
+-- The deal structure a single scenario models.
+--
+-- One file genuinely carries several: Tzvi Gerz 15 holds four outright
+-- purchases beside eleven combination structures, and a single type on the
+-- profile cannot describe that. Splitting into separate files would duplicate
+-- the parcels, areas and rights into two places that drift apart.
+--
+-- Null means inherit, deliberately, rather than copying the profile's value
+-- down: a copy goes stale the moment the default moves, and afterwards nothing
+-- can tell whether the scenario meant to say that or merely used to agree.
+ALTER TABLE "feasibility_scenarios" ADD COLUMN "projectType" "FeasibilityProjectType";

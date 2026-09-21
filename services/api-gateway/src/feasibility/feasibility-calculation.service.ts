@@ -5,7 +5,7 @@ import { computeEquityWaterfall, type EquityFlow, type EquityTrancheTerms } from
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
-import { inputReadiness, notApplicableFor, PROJECT_TYPE_LABELS } from './project-type-inputs'
+import { effectiveProjectType, inputReadiness, notApplicableFor } from './project-type-inputs'
 import type { CreateFeasibilitySnapshotDto, CreateGoalSeekDto, SolveFinancingDto,
   CreateMonteCarloDto,
   MonteCarloVariableDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
@@ -1348,16 +1348,21 @@ export class FeasibilityCalculationService {
     if (scenarioId && !scenario) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא')
 
     const empty = { unitMix: [], costLines: [], compensations: [], cashFlowAllocations: [], considerationInKind: null, financing: null }
-    const readiness = inputReadiness(profile.projectType, profile as never, (scenario ?? empty) as never)
+    // מסלול התרחיש דורס את ברירת המחדל של התיק; העדרו הוא ירושה ולא העתק.
+    const route = effectiveProjectType(profile.projectType, scenario?.projectType ?? null)
+    const readiness = inputReadiness(route.projectType, profile as never, (scenario ?? empty) as never)
     return {
-      projectType: profile.projectType,
-      projectTypeLabel: PROJECT_TYPE_LABELS[profile.projectType],
+      projectType: route.projectType,
+      projectTypeLabel: route.label,
+      /** מאיפה המסלול הגיע, ומה ברירת המחדל של התיק — כדי שדריסה תיקרא כדריסה. */
+      projectTypeSource: route.source,
+      profileDefaultProjectType: route.profileDefault,
       scenarioId: scenario?.id ?? null,
       /** אין תרחיש עדיין — הדרישות עומדות, והמוכנות נמדדת מול ריק ולא מדולגת. */
       measuredAgainstScenario: Boolean(scenario),
       inputs: readiness,
       /** מה שלא מוצג במסלול הזה, בשמו — השמטה שקטה היא מה שמייצר שדות יתומים. */
-      notApplicable: notApplicableFor(profile.projectType).map((input) => ({ key: input.key, label: input.label, intent: input.intent })),
+      notApplicable: notApplicableFor(route.projectType).map((input) => ({ key: input.key, label: input.label, intent: input.intent })),
       summary: {
         requiredMissing: readiness.filter((input) => input.requirement === 'REQUIRED' && input.status === 'MISSING').length,
         notEnforced: readiness.filter((input) => input.status === 'NOT_ENFORCED').length,

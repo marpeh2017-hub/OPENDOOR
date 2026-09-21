@@ -395,7 +395,7 @@ export class FeasibilityService {
       const isBaseline = dto.isBaseline ?? existingCount === 0
       if (isBaseline) await tx.feasibilityScenario.updateMany({ where: { feasibilityProfileId: profile.id, isBaseline: true }, data: { isBaseline: false } })
       const row = await tx.feasibilityScenario.create({
-        data: { feasibilityProfileId: profile.id, tenantId: actor.tenantId, name: dto.name, kind: dto.kind, description: dto.description, probability: decimal(dto.probability), considerationInKind: decimal(dto.considerationInKind), isBaseline, createdById: actor.userId, updatedById: actor.userId },
+        data: { feasibilityProfileId: profile.id, tenantId: actor.tenantId, name: dto.name, kind: dto.kind, description: dto.description, probability: decimal(dto.probability), considerationInKind: decimal(dto.considerationInKind), projectType: dto.projectType ?? null, isBaseline, createdById: actor.userId, updatedById: actor.userId },
       })
       await this.audit.record(actor, { action: 'CREATE', entity: 'FeasibilityScenario', entityId: row.id, metadata: { feasibilityProfileId: profile.id, kind: row.kind } }, tx)
       return row
@@ -408,7 +408,7 @@ export class FeasibilityService {
       const source = await tx.feasibilityScenario.findFirst({ where: { id: scenarioId, feasibilityProfileId: profile.id, tenantId: actor.tenantId }, include: { unitMix: true } })
       if (!source) throw DomainError.notFound('FEASIBILITY_SCENARIO_NOT_FOUND', 'התרחיש לא נמצא בפרויקט')
       const name = await this.nextCopyName(tx, profile.id, source.name)
-      const copy = await tx.feasibilityScenario.create({ data: { feasibilityProfileId: profile.id, tenantId: actor.tenantId, name, kind: 'CUSTOM', description: source.description, probability: source.probability, considerationInKind: source.considerationInKind, createdById: actor.userId, updatedById: actor.userId } })
+      const copy = await tx.feasibilityScenario.create({ data: { feasibilityProfileId: profile.id, tenantId: actor.tenantId, name, kind: 'CUSTOM', description: source.description, probability: source.probability, considerationInKind: source.considerationInKind, projectType: source.projectType, createdById: actor.userId, updatedById: actor.userId } })
       if (source.unitMix.length) await tx.feasibilityUnitMixLine.createMany({ data: source.unitMix.map((line) => ({ scenarioId: copy.id, label: line.label, rooms: line.rooms, unitCount: line.unitCount, netAreaSqm: line.netAreaSqm, grossAreaSqm: line.grossAreaSqm, saleableAreaSqm: line.saleableAreaSqm, balconyAreaSqm: line.balconyAreaSqm, storageAreaSqm: line.storageAreaSqm, parkingSpaces: line.parkingSpaces, floorFrom: line.floorFrom, floorTo: line.floorTo, orientation: line.orientation, pricePerSqm: line.pricePerSqm, fixedUnitPrice: line.fixedUnitPrice, balconyPricePerSqm: line.balconyPricePerSqm, parkingPrice: line.parkingPrice, storagePricePerSqm: line.storagePricePerSqm, adjustmentFactor: line.adjustmentFactor, disposition: line.disposition, classification: line.classification, confidence: line.confidence, isVerified: line.isVerified, sourceId: line.sourceId, sourceDate: line.sourceDate, notes: line.notes, createdById: actor.userId, updatedById: actor.userId })) })
       await this.audit.record(actor, { action: 'CREATE', entity: 'FeasibilityScenario', entityId: copy.id, metadata: { copiedFromId: source.id, feasibilityProfileId: profile.id } }, tx)
       return copy
@@ -667,6 +667,8 @@ export class FeasibilityService {
           ...(dto.description !== undefined ? { description: dto.description } : {}),
           ...(dto.probability !== undefined ? { probability: decimal(dto.probability) } : {}),
           ...(dto.considerationInKind !== undefined ? { considerationInKind: decimal(dto.considerationInKind) } : {}),
+          // undefined משאיר כפי שהוא; null מחזיר לירושה מהפרופיל.
+          ...(dto.projectType !== undefined ? { projectType: dto.projectType } : {}),
           ...(dto.isBaseline !== undefined ? { isBaseline: dto.isBaseline } : {}),
           updatedById: actor.userId,
         },
