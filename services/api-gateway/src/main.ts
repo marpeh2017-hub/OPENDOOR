@@ -56,7 +56,19 @@ async function bootstrap() {
   }
 
   // Security
-  app.use(helmet())
+  // Helmet's defaults are already right for an API — CSP `default-src 'self'`,
+  // HSTS at a year, nosniff, COOP/CORP same-origin. Two things it does not do:
+  //
+  //   frameguard defaults to SAMEORIGIN. Nothing here is ever meant to render in
+  //   a frame, not even our own, so DENY is the accurate statement.
+  //
+  //   Permissions-Policy is not set at all. An API has no use for a camera or a
+  //   microphone, and saying so costs one header.
+  app.use(helmet({ frameguard: { action: 'deny' } }))
+  app.use((_req: any, res: any, next: any) => {
+    res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()')
+    next()
+  })
   app.use(compression())
 
   // CORS ג€“ allow CRM and Portal origins
