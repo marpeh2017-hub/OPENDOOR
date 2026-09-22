@@ -2,6 +2,20 @@ import { Global, Inject, Module, OnModuleDestroy } from '@nestjs/common'
 
 export const REDIS = 'REDIS'
 
+/**
+ * Marks the in-memory stand-in so it can be told apart from a real client.
+ *
+ * Without this the two are indistinguishable at runtime, and the health check
+ * reports `redis: ok` either way — which is accurate about the probe it ran
+ * and misleading about what is actually storing sessions and OTP codes.
+ *
+ * The fallback cannot occur in production: an unset REDIS_URL throws below, and
+ * a set-but-unreachable URL yields a real client whose failing commands the
+ * health check reports as an error. This exists so that a developer or a
+ * staging box is never quietly convinced it has Redis when it does not.
+ */
+export const REDIS_IN_MEMORY = Symbol.for('redis.in-memory-fallback')
+
 @Global()
 @Module({
   providers: [
@@ -72,11 +86,16 @@ export class RedisModule implements OnModuleDestroy {
 function createMemoryFallback() {
   const store = new Map<string, { value: string; expiresAt?: number }>()
 
+  // Per-process, so on more than one instance a revoked session stays valid on
+  // the others and OTP rate limits reset per machine. Fine for one dev process,
+  // wrong for anything serving real people.
+
   function isExpired(item: { value: string; expiresAt?: number }) {
     return item.expiresAt !== undefined && Date.now() > item.expiresAt
   }
 
   return {
+    [REDIS_IN_MEMORY]: true,
     set: async (key: string, value: string, _ex?: string, _ttl?: number) => {
       store.set(key, { value })
       return 'OK'

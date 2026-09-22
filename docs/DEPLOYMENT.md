@@ -18,11 +18,13 @@ payment details and running the deploy commands are yours.
 | Redis | Upstash or Fly Redis | Sessions, OTP storage, rate limiting. **Not optional** — see the note below. |
 
 > **Redis is not a cache here.** It holds OTP codes, session revocation and rate
-> limit counters. `RedisModule` falls back to an in-memory stub when it cannot
-> connect, and the fallback is per-process: with more than one machine, a
-> revoked session stays valid on the others and OTP rate limits reset per
-> instance. The fallback is a development convenience and is not safe in
-> production. Provision real Redis before scaling past one machine.
+> limit counters, so it is load-bearing for authentication.
+>
+> Production is already guarded: an unset `REDIS_URL` throws at start-up, and a
+> set-but-unreachable one yields a real client whose failing commands the health
+> check reports as an error. The in-memory fallback is a development
+> convenience and cannot silently engage in production. `redisMode` in the
+> health response says which is answering.
 
 ---
 
@@ -73,10 +75,13 @@ Verify before going further:
 curl -s https://odg-api.fly.dev/api/v1/health
 ```
 
-Expect `{"status":"healthy","checks":{"api":"ok","database":"ok","redis":"ok"}}`.
-A `degraded` response names which dependency is failing. **If `redis` is `ok`
-but you did not provision Redis, the in-memory fallback is active** — the health
-check cannot tell the difference, so confirm `REDIS_URL` was actually set.
+Expect `"status":"healthy"`, every check `ok`, and **`"redisMode":"client"`**.
+A `degraded` response names the failing dependency.
+
+`redisMode` is the one to read. `in-memory-fallback` means the per-process
+stand-in is answering rather than Redis — which cannot happen in production, but
+is worth confirming rather than assuming on any environment you are about to
+trust.
 
 ## 4. Front ends on Vercel
 
@@ -172,10 +177,9 @@ browser ignores over plain HTTP — nothing is broken, nothing is protected yet.
 
 - [ ] `MESSAGING_SIMULATE=false`, and a test message actually arrives
 - [ ] `FIELD_ENCRYPTION_KEY` escrowed somewhere that survives losing this laptop
-- [ ] Real Redis confirmed, not the in-memory fallback
+- [ ] Health reports `"redisMode":"client"`
 - [ ] `prisma migrate deploy` succeeded — check the first boot's logs
 - [ ] First admin created via `pnpm bootstrap`
-- [ ] The duplicate `/api/v1/health` route collision resolved (see `fly.toml`)
 - [ ] **Automated backups configured and a restore actually tested** (R10)
 - [ ] **Uptime and error alerting configured** (R11)
 
