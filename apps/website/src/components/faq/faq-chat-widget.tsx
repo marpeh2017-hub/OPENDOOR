@@ -123,7 +123,15 @@ export function FaqChatWidget() {
     // below the mobile nav drawer (z-drawer, 50) — so the drawer's
     // full-screen overlay covers this button instead of the two competing
     // for the same corner of the screen. See design-system/src/tokens.ts.
-    <div dir="rtl" className="fixed bottom-4 right-4 z-[45] sm:bottom-6 sm:right-6">
+    // Offsets are `max(spacing, inset)` rather than padding. Padding on a fixed
+    // round button inflates it — it grows an oval collar instead of moving — so
+    // the POSITION is what has to clear the home indicator, and in landscape the
+    // notch. `max()` keeps the original 1rem/1.5rem wherever the inset is 0, so
+    // nothing shifts on hardware without a cutout.
+    <div
+      dir="rtl"
+      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[45] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] sm:right-[max(1.5rem,env(safe-area-inset-right))]"
+    >
       {open && (
         <div
           role="dialog"

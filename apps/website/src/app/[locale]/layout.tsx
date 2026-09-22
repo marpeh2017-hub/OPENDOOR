@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { SITE_URL } from '@/lib/site-config'
 import { notFound } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
@@ -47,6 +47,25 @@ const heebo = Heebo({
  */
 // Read the current publication on every request, including withdrawals.
 export const dynamic = 'force-dynamic'
+
+/**
+ * `viewport-fit=cover` is what makes `env(safe-area-inset-*)` mean anything.
+ *
+ * Without it the browser keeps the page inside the safe area itself and every
+ * inset resolves to 0 — so safe-area CSS written without this line is not
+ * "defensive", it is dead code that reads as though the case were handled.
+ *
+ * Turning it on is a real change, not a formality: the page now extends UNDER
+ * the notch, the Dynamic Island and the home indicator, so anything pinned to a
+ * screen edge has to opt back out using the insets. The elements that do are
+ * the sticky header, the mobile navigation drawer and the chat button; each
+ * carries the reason at its own call site.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
