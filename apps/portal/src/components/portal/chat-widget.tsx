@@ -131,10 +131,15 @@ export function ChatWidget() {
   }
 
   return (
-    // bottom-24: clears the fixed BottomNav (h-16, ~64px) plus a margin, so
-    // the two never overlap — see components/layout/bottom-nav.tsx. z-40 is
-    // below the nav's z-50 in case anything ever does overlap.
-    <div dir="rtl" className="fixed bottom-24 right-4 z-40 sm:bottom-24 sm:right-6">
+    // 6rem clears the fixed BottomNav (h-16, ~64px) plus a margin, so the two
+    // never overlap — see components/layout/bottom-nav.tsx. z-40 is below the
+    // nav's z-50 in case anything ever does.
+    //
+    // The inset is ADDED rather than taken as max(): the nav grows by the
+    // home-indicator inset, so the button has to rise with it. max(6rem,
+    // 1.5rem + inset) could never exceed 6rem for any real inset, which would
+    // pin the button while the nav rose underneath it.
+    <div dir="rtl" className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-40 sm:right-6">
       {open && (
         <div
           role="dialog"

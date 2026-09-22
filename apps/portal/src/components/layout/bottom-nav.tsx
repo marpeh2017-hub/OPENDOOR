@@ -15,8 +15,12 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname()
+  // Padding rather than a bottom offset: the bar's background should reach the
+  // physical bottom of the screen, with only the tappable row lifted above the
+  // home indicator. Offsetting the whole nav would leave a strip of page
+  // showing beneath it.
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border">
+    <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-lg mx-auto flex items-center justify-around h-16">
         {tabs.map(({ href, icon: Icon, label }) => {
           const isActive = pathname.startsWith(href)

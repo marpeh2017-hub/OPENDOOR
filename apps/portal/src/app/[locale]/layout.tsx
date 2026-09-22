@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { ThemeProvider } from 'next-themes'
@@ -17,6 +17,21 @@ const assistant = Assistant({
   variable: '--font-assistant',
   display: 'swap',
 })
+
+/**
+ * `viewport-fit=cover` is what makes `env(safe-area-inset-*)` mean anything —
+ * without it the browser keeps the page inside the safe area and every inset
+ * resolves to 0.
+ *
+ * It matters more here than on the marketing site: residents live in this app
+ * on a phone, and the bottom navigation sits exactly where the home indicator
+ * is.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
 
 export const metadata: Metadata = {
   title: {
