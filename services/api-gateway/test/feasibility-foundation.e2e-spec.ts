@@ -93,7 +93,12 @@ describe('Feasibility foundation (e2e)', () => {
     app = module.createNestApplication()
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    }))
     await app.init()
     prisma = app.get(PrismaService)
     dataQuality = app.get(DataQualityEngine)
