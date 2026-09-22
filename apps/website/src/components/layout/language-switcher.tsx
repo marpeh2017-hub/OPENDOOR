@@ -36,7 +36,7 @@ export function LanguageSwitcher() {
             locale: event.target.value as AppLocale,
           })
         }}
-        className="min-h-[44px] min-w-[44px] rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700"
+        className="min-h-[44px] min-w-[44px] rounded-md border border-gray-300 bg-white px-2 text-base text-gray-700"
       >
         {routing.locales.map((code) => (
           <option key={code} value={code}>

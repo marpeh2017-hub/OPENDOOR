@@ -63,14 +63,14 @@ export async function SiteFooter() {
           <p className="text-xs text-gray-600">
             © {new Date().getFullYear()} {tBrand('name')} · {tFooter('rights')} · odg.co.il
           </p>
-          <nav aria-label={tFooter('legal')} className="flex gap-4">
-            <Link href="/privacy" className="text-xs text-gray-600 hover:text-teal-700">
+          <nav aria-label={tFooter('legal')} className="flex flex-wrap gap-x-4">
+            <Link href="/privacy" className="inline-flex min-h-[24px] items-center py-1 text-xs text-gray-600 hover:text-teal-700">
               {tFooter('privacy')}
             </Link>
-            <Link href="/terms" className="text-xs text-gray-600 hover:text-teal-700">
+            <Link href="/terms" className="inline-flex min-h-[24px] items-center py-1 text-xs text-gray-600 hover:text-teal-700">
               {tFooter('terms')}
             </Link>
-            <Link href="/accessibility" className="text-xs text-gray-600 hover:text-teal-700">
+            <Link href="/accessibility" className="inline-flex min-h-[24px] items-center py-1 text-xs text-gray-600 hover:text-teal-700">
               {tFooter('accessibility')}
             </Link>
           </nav>

@@ -66,7 +66,7 @@ export function TextSectionBlockView({
           {cta && (
             <Link
               href={cta.href}
-              className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-teal-700"
+              className="group mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-teal-700"
             >
               <span className="border-b border-transparent pb-0.5 transition-colors group-hover:border-teal-700">
                 {cta.label}
