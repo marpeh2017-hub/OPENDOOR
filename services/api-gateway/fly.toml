@@ -1,0 +1,63 @@
+# Fly.io deployment for the API gateway.
+#
+# Build context is the REPOSITORY ROOT, not this directory: the Dockerfile
+# copies pnpm-workspace.yaml, the lockfile and packages/db, none of which are
+# reachable from services/api-gateway. Deploy with:
+#
+#   flyctl deploy --config services/api-gateway/fly.toml --dockerfile services/api-gateway/Dockerfile .
+#
+# run from the repository root, with the trailing dot.
+
+app = "odg-api"
+primary_region = "cdg"   # Paris — closest Fly region to Israel with full service
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "4000"
+  # Fly terminates TLS at its edge and forwards over the private network, so the
+  # client IP arrives in X-Forwarded-For with exactly one proxy hop in front.
+  # Rate limiting keys on that header, and an unset TRUST_PROXY would bucket
+  # every request in the world under Fly's own address.
+  TRUST_PROXY = "1"
+
+[http_service]
+  internal_port = 4000
+  # Fly issues and renews the certificate, and redirects http -> https at the
+  # edge. This line is what actually delivers the TLS that the HSTS headers
+  # already shipped in the apps have been asserting.
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  # The gateway holds a Prisma pool and a Redis connection, and start.sh runs
+  # `prisma migrate deploy` on boot. Scaling to zero would re-run migrations on
+  # every cold start and make the first request after idle pay for a full boot.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    # /api/v1/health is @Public() and verifies Postgres and Redis, returning 503
+    # when either is down — so a machine that cannot reach its database is taken
+    # out of rotation rather than serving errors.
+    #
+    # WARNING: two controllers currently register this path — the @Public() one
+    # in src/health.controller.ts and the tenant health-score one in
+    # src/health/health.controller.ts, which requires a JWT. Which answers
+    # depends on module registration order. If the authenticated one ever wins,
+    # this check gets 401 and Fly will kill the machine in a loop. Resolve the
+    # collision before relying on this in production.
+    path = "/api/v1/health"
+    method = "GET"
+    interval = "15s"
+    timeout = "4s"
+    grace_period = "30s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"   # Prisma plus the PDF renderer; 512mb OOMs during export
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# NOT set here. Anything in [env] is committed to git and visible in the app's
+# metadata. Every value in the SECRETS list of docs/DEPLOYMENT.md goes through
+# `flyctl secrets set`, which stores it encrypted and restarts the app.
