@@ -77,7 +77,7 @@ export async function ProjectsBlockView({
         <SectionHeading heading={block.heading} intro={block.intro} t={t} size="lg" />
         <Link
           href="/projects"
-          className="group inline-flex items-center gap-2 text-sm font-semibold text-teal-700"
+          className="group inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-teal-700"
         >
           <span className="border-b border-transparent pb-0.5 transition-colors group-hover:border-teal-700">
             {tLinks('allProjects')}
