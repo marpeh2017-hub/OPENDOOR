@@ -2,3 +2,10 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'services/*'
+
+# Both are transitive-only, so there is no direct dependency to raise:
+#   sharp  reaches us through next (image optimization) — libvips + libheif CVEs
+#   multer reaches us through @nestjs/platform-express — five DoS advisories
+overrides:
+  sharp: '^0.35.4'
+  multer: '^2.3.0'
