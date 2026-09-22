@@ -1,3 +1,4 @@
+import { CreateLeadDto } from './dto/create-lead.dto'
 import {
   Controller, Get, Post, Patch, Param, Body, Query, Request, UnauthorizedException,
 } from '@nestjs/common'
@@ -34,9 +35,9 @@ export class LeadsController {
 
   @Post()
   @Roles('SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'RESIDENT_RELATIONS_MANAGER', 'FIELD_AGENT')
-  create(@Body() body: any, @Request() req: any) {
+  create(@Body() dto: CreateLeadDto, @Request() req: any) {
     if (!req.user?.tenantId) throw new UnauthorizedException('Missing tenant context')
-    return this.leadsService.create(body, req.user.tenantId)
+    return this.leadsService.create(dto, req.user.tenantId)
   }
 
   @Patch(':id/status')

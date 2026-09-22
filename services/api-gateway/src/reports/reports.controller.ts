@@ -1,3 +1,4 @@
+import { CreateSavedReportDto } from './dto/saved-report.dto'
 import {
   Controller, Get, Post, Delete,
   Param, Body, Request, UnauthorizedException, NotFoundException,
@@ -42,10 +43,12 @@ export class ReportsController {
   @Post()
   @Roles('SUPER_ADMIN','COMPANY_ADMIN','PROJECT_MANAGER')
   @ApiOperation({ summary: 'Save a report configuration' })
-  create(@Body() body: any, @Request() req: any) {
+  create(@Body() dto: CreateSavedReportDto, @Request() req: any) {
     const tenantId = this.tenantId(req)
     return this.prisma.savedReport.create({
-      data: { ...body, tenantId, createdById: req.user.userId },
+      // `config`/`schedule` הם עמודות Json; ה-DTO מאמת שהם אובייקטים,
+      // וההמרה כאן היא לטיפוס ה-Json של Prisma ולא הרפיה של האימות.
+      data: { ...dto, config: dto.config as never, schedule: (dto.schedule ?? null) as never, tenantId, createdById: req.user.userId },
     })
   }
 
@@ -56,6 +59,9 @@ export class ReportsController {
     const tenantId = this.tenantId(req)
     const report = await this.prisma.savedReport.findFirst({ where: { id, tenantId } })
     if (!report) throw new NotFoundException('Report not found')
-    return this.prisma.savedReport.delete({ where: { id } })
+    // המחיקה מוגבלת לטננט בעצמה ולא נשענת על הקריאה שלפניה.
+    const { count } = await this.prisma.savedReport.deleteMany({ where: { id, tenantId } })
+    if (count === 0) throw new NotFoundException('Report not found')
+    return report
   }
 }

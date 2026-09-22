@@ -105,7 +105,20 @@ describe('Tenant isolation (e2e)', () => {
     app = moduleFixture.createNestApplication()
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))
+    /*
+     * The SAME pipe configuration main.ts ships, `forbidNonWhitelisted`
+     * included. Without it this suite ran weaker than production: an
+     * undeclared field was stripped silently instead of being refused, so a
+     * mass-assignment probe here would have proved "quietly dropped" while
+     * production actually answers 400. A security suite that tests a softer
+     * app than the one that ships can only under-report.
+     */
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    }))
     await app.init()
 
     prisma = app.get(PrismaService, { strict: false })
@@ -367,6 +380,90 @@ describe('Tenant isolation (e2e)', () => {
 
       const still = await prisma.resident.findUnique({ where: { id: bResidentId } })
       expect(still?.signatureStatus).toBe('NOT_CONTACTED')
+    })
+  })
+
+  /* ── Mass assignment: the body must not be able to move a row ───── */
+
+  describe('a request body cannot move a record between tenants', () => {
+    /**
+     * This is the hole the other tests in this file could not see. They probe
+     * tenant A reaching for tenant B's ROWS, and every one of those is refused.
+     * This probes something else: tenant A editing its OWN row, and naming
+     * another tenant in the body.
+     *
+     * The controller read the task scoped to the tenant and then wrote it
+     * unscoped — `update({ where: { id }, data: body })` — with `body` typed
+     * `any`, so ValidationPipe never ran and `tenantId` went straight to
+     * Prisma. The request was legitimate right up to the write.
+     *
+     * Two layers answer it and the test exercises both: the DTO rejects an
+     * undeclared `tenantId` outright (400, not a silent drop), and the write
+     * itself is scoped, so it would find nothing even if the DTO were removed.
+     */
+    let ownTaskId: string
+
+    beforeAll(async () => {
+      const own = await prisma.task.create({
+        data: { tenantId: tenantAId, title: 'Tenant A own task', status: 'PENDING' },
+      })
+      ownTaskId = own.id
+    })
+
+    afterAll(async () => {
+      await prisma.task.deleteMany({ where: { id: ownTaskId } })
+    })
+
+    it('PATCH /tasks/:ownId with a foreign tenantId in the body → rejected, and the task stays put', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/tasks/${ownTaskId}`)
+        .set(asA())
+        .send({ title: 'still mine', tenantId: tenantBId })
+
+      // 400: an undeclared field is REFUSED, not quietly dropped.
+      expect(res.status).toBe(400)
+
+      const still = await prisma.task.findUnique({ where: { id: ownTaskId } })
+      expect(still?.tenantId).toBe(tenantAId)
+      expect(still?.title).toBe('Tenant A own task')
+    })
+
+    it('POST /tasks with a foreign tenantId in the body → rejected', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/tasks')
+        .set(asA())
+        .send({ title: 'planted', tenantId: tenantBId })
+      expect(res.status).toBe(400)
+
+      const planted = await prisma.task.findMany({ where: { tenantId: tenantBId, title: 'planted' } })
+      expect(planted).toHaveLength(0)
+    })
+
+    it('a legitimate edit still works, so the guard is not just refusing everything', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/tasks/${ownTaskId}`)
+        .set(asA())
+        .send({ title: 'renamed by its owner', priority: 'HIGH' })
+      expect(res.status).toBe(200)
+      expect(res.body.title).toBe('renamed by its owner')
+      expect(res.body.priority).toBe('HIGH')
+      expect(res.body.tenantId).toBe(tenantAId)
+    })
+
+    it('the WRITE is scoped too, not only the read: tenant A cannot edit tenant B\'s task', async () => {
+      /*
+       * The second layer, proved directly. Even with a body the DTO accepts,
+       * the update finds no row — because `tenantId` is in the `where`, not
+       * merely in a read that preceded it.
+       */
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/tasks/${bTaskId}`)
+        .set(asA())
+        .send({ title: 'hijacked' })
+      expect(res.status).toBe(404)
+
+      const still = await prisma.task.findUnique({ where: { id: bTaskId } })
+      expect(still?.title).toBe('Tenant B task')
     })
   })
 

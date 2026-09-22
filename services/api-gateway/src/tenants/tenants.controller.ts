@@ -1,3 +1,4 @@
+import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto'
 import {
   Controller, Get, Post, Patch, Delete,
   Param, Body, Request, NotFoundException,
@@ -35,18 +36,25 @@ export class TenantsController {
   @Post()
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Create a tenant (SUPER_ADMIN only)' })
-  create(@Body() body: any) {
-    return this.prisma.tenant.create({ data: body })
+  create(@Body() dto: CreateTenantDto) {
+    return this.prisma.tenant.create({ data: { ...dto, settings: dto.settings as never, features: dto.features as never } })
   }
 
   @Patch(':id')
   @Roles('SUPER_ADMIN','COMPANY_ADMIN')
   @ApiOperation({ summary: 'Update a tenant' })
-  async update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async update(@Param('id') id: string, @Body() dto: UpdateTenantDto, @Request() req: any) {
+    /*
+     * The tenant IS the row here, so there is no cross-tenant move to
+     * prevent — a COMPANY_ADMIN is already pinned to its own id above. What
+     * the DTO adds is that only the columns the product means to expose can
+     * be written: `@Body() body: any` made every column on the tenant
+     * client-writable, retention included, and retention drives deletes.
+     */
     if (req.user.role === 'COMPANY_ADMIN' && req.user.tenantId !== id) {
       throw new NotFoundException('Tenant not found')
     }
-    return this.prisma.tenant.update({ where: { id }, data: body })
+    return this.prisma.tenant.update({ where: { id }, data: { ...dto, settings: dto.settings as never, features: dto.features as never } })
   }
 
   @Delete(':id')
