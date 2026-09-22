@@ -71,16 +71,37 @@ async function bootstrap() {
   })
   app.use(compression())
 
-  // CORS ג€“ allow CRM and Portal origins
-  app.enableCors({
-    origin: [
-      process.env['CRM_URL'] ?? 'http://localhost:3001',
-      process.env['PORTAL_URL'] ?? 'http://localhost:3002',
-      process.env['WEB_URL'] ?? 'http://localhost:3000',
-      process.env['WEBSITE_URL'] ?? 'http://localhost:3003',
-    ],
-    credentials: true,
+  // CORS — the four first-party front ends.
+  //
+  // The localhost values are DEVELOPMENT DEFAULTS ONLY. `credentials: true`
+  // means a listed origin can send the session cookie and read the response, so
+  // an origin left at its default in production would be a browser-trusted
+  // entry point that nobody configured on purpose. Worse, it would work
+  // perfectly in testing and fail open in production, which is the combination
+  // that does not get noticed.
+  //
+  // So in production the variables are required, and a missing one stops the
+  // process at boot rather than quietly admitting http://localhost.
+  const FRONT_ENDS = [
+    ['CRM_URL', 'http://localhost:3001'],
+    ['PORTAL_URL', 'http://localhost:3002'],
+    ['WEB_URL', 'http://localhost:3000'],
+    ['WEBSITE_URL', 'http://localhost:3003'],
+  ] as const
+
+  const origins = FRONT_ENDS.map(([key, fallback]) => {
+    const configured = process.env[key]?.trim()
+    if (configured) return configured
+    if (process.env['NODE_ENV'] === 'production') {
+      throw new Error(
+        `${key} must be set in production. Leaving it unset would put ${fallback} ` +
+        'into a credentialed CORS allowlist on a public deployment.',
+      )
+    }
+    return fallback
   })
+
+  app.enableCors({ origin: origins, credentials: true })
 
   // Global prefix + versioning
   app.setGlobalPrefix('api')
