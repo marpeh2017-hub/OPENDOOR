@@ -19,6 +19,7 @@ import {
   TransitionFeasibilityReportVersionDto,
   UpsertFeasibilityFinancingDto,
 } from './dto/feasibility-foundation.dto'
+import { CreateGoalSeekDto } from './dto/feasibility-goal-seek.dto'
 import { FeasibilityService } from './feasibility.service'
 import { FeasibilityCalculationService } from './feasibility-calculation.service'
 import { FeasibilityReportVersionService } from './feasibility-report-version.service'
@@ -271,6 +272,17 @@ export class FeasibilityController {
   @ApiOperation({ summary: 'Run deterministic one- or two-variable sensitivity without changing scenario inputs' })
   sensitivity(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateSensitivityDto, @Request() req: any) {
     return mapDomainErrors(() => this.calculations.sensitivity(projectId, scenarioId, dto, tenantFrom(req)))
+  }
+
+  /**
+   * The inverse of sensitivity: instead of "what happens at -5%", it answers
+   * "what input reaches this target". Reads only — the scenario is untouched.
+   */
+  @Post('scenarios/:scenarioId/goal-seek')
+  @Roles(...FEASIBILITY_EDIT_ROLES)
+  @ApiOperation({ summary: 'Solve for the input value that makes a scenario hit a target metric' })
+  goalSeek(@Param('projectId') projectId: string, @Param('scenarioId') scenarioId: string, @Body() dto: CreateGoalSeekDto, @Request() req: any) {
+    return mapDomainErrors(() => this.calculations.goalSeekScenario(projectId, scenarioId, dto, tenantFrom(req)))
   }
 
   @Post('scenarios/:scenarioId/snapshots')

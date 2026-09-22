@@ -5,6 +5,8 @@ import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { PrismaService } from '../prisma.service'
 import { annualizeMonthlyRate, averageMonthlyDebtInterest, continuousMonthlyPeriodAxis, daysBetween, irr, isUniformMonthlyAxis, monthlyPeriodDistance, monthlyRateFromAnnual, npv, xirr, xnpv } from './financial-math'
 import type { CreateFeasibilitySnapshotDto, CreateSensitivityDto } from './dto/feasibility-foundation.dto'
+import type { CreateGoalSeekDto, GoalSeekMetric } from './dto/feasibility-goal-seek.dto'
+import { goalSeek } from './goal-seek'
 import { FeasibilityService } from './feasibility.service'
 import { type ReplacementAllocation, replacementAllocationSummary } from './replacement-allocation'
 
@@ -875,6 +877,125 @@ export class FeasibilityCalculationService {
     }
   }
 
+  async goalSeekScenario(projectId: string, scenarioId: string, dto: CreateGoalSeekDto, tenantId: string) {
+    const { profile, scenario } = await this.load(projectId, scenarioId, tenantId)
+    return this.computeGoalSeek(profile, scenario, dto)
+  }
+
+  /**
+   * "What sale price makes this project work?"
+   *
+   * The question a developer actually asks, and the one a sensitivity grid
+   * answers only by eye: the grid shows -10%, -5%, 0, +5%, and the reader
+   * interpolates between two rows to guess where the threshold sits. This solves
+   * for it.
+   *
+   * ── EVERY ITERATION IS A FULL ENGINE RUN ─────────────────────────
+   *
+   * It reuses `applySensitivityFactors` + `compute`, so interest, percentage-
+   * based costs, escalation and the financing checks are all recalculated at
+   * every candidate price. Scaling a frozen result instead would be faster and
+   * would answer a different question — and would miss exactly the thing the
+   * answer is for, namely that the LTC covenant breaks before the margin target
+   * is reached.
+   */
+  private computeGoalSeek(profile: LoadedFeasibilityProfile, scenario: LoadedFeasibilityScenario, dto: CreateGoalSeekDto) {
+    const base = this.compute(profile, scenario)
+
+    const target = new Decimal(dto.targetValue)
+    // The search is over a MULTIPLIER on the chosen input, not the input itself,
+    // because "sale price" is not one number — it is every price on every unit
+    // mix and revenue line. The multiplier moves them together and preserves the
+    // mix, which is what a developer means by "raise prices by enough".
+    const lowerBound = new Decimal(dto.lowerFactor ?? '0.25')
+    const upperBound = new Decimal(dto.upperFactor ?? '4')
+    if (lowerBound.lte(0)) throw DomainError.validation('FEASIBILITY_GOAL_SEEK_INVALID', 'גבול תחתון חייב להיות גדול מאפס.')
+    if (lowerBound.gte(upperBound)) throw DomainError.validation('FEASIBILITY_GOAL_SEEK_INVALID', 'הגבול התחתון חייב להיות נמוך מהעליון.')
+
+    const runAt = (factor: Decimal) => {
+      const adjusted = this.applySensitivityFactors(profile, scenario, new Map([[dto.variable, factor]]))
+      return this.compute(adjusted.profile, adjusted.scenario)
+    }
+
+    const metricOf = (result: ReturnType<FeasibilityCalculationService['compute']>): Decimal | null => {
+      const raw = GOAL_SEEK_METRICS[dto.metric](result)
+      return raw === null || raw === undefined ? null : new Decimal(raw)
+    }
+
+    const solved = goalSeek({
+      evaluate: (factor) => metricOf(runAt(factor)),
+      target,
+      lowerBound,
+      upperBound,
+      // Tight enough that the answer is stable, loose enough that a metric the
+      // engine reports to 8-10 decimals can actually reach it.
+      toleranceY: new Decimal(dto.tolerance ?? '1e-7'),
+      toleranceX: new Decimal('1e-10'),
+      maxIterations: 80,
+    })
+
+    const solution = solved.solution
+    const atSolution = solution ? runAt(solution) : null
+
+    // New problems that the solution ITSELF creates. A price that reaches a 20%
+    // margin by breaching the LTC covenant has not solved anything, and this is
+    // the only place that fact surfaces.
+    const triggeredIssues = atSolution
+      ? atSolution.validation
+        .filter((issue) => !base.validation.some((baseIssue) => baseIssue.code === issue.code && baseIssue.entityId === issue.entityId))
+        .map((issue) => ({ code: issue.code, severity: issue.severity, message: issue.message }))
+      : []
+
+    return {
+      scenarioId: scenario.id,
+      variable: dto.variable,
+      metric: dto.metric,
+      targetValue: target.toFixed(10),
+      status: solved.status,
+      method: 'BISECTION_FULL_RECALCULATION',
+      engineVersion: base.engineVersion,
+      iterations: solved.iterations,
+
+      /** The multiplier on the input, and the same thing as a percentage move. */
+      solutionFactor: solution?.toFixed(10) ?? null,
+      requiredChangePercent: solution ? solution.minus(1).mul(100).toFixed(6) : null,
+      achievedMetric: solved.achieved?.toFixed(10) ?? null,
+
+      baseline: {
+        metric: metricOf(base)?.toFixed(10) ?? null,
+        revenue: base.revenue.total,
+        costs: base.costs.total,
+        profit: base.profitability.profit,
+        feasibilityStatus: base.feasibility.status,
+      },
+
+      atSolution: atSolution ? {
+        revenue: atSolution.revenue.total,
+        costs: atSolution.costs.total,
+        profit: atSolution.profitability.profit,
+        profitMargin: atSolution.profitability.profitMargin,
+        profitOnCost: atSolution.profitability.profitOnCost,
+        projectIrrAnnual: atSolution.returns.projectIrrAnnual,
+        projectNpv: atSolution.returns.projectNpv,
+        peakDebt: atSolution.financing.peakDebt,
+        peakFundingRequirement: atSolution.cashFlow.peakFundingRequirement,
+        residualLandValue: atSolution.valuation.residualLandValue,
+        feasibilityStatus: atSolution.feasibility.status,
+        triggeredIssues,
+      } : null,
+
+      /** On NOT_BRACKETED: what the ends of the searched range actually produce. */
+      searchedRange: {
+        lowerFactor: lowerBound.toFixed(10),
+        upperFactor: upperBound.toFixed(10),
+        metricAtLower: solved.boundsProbe?.lower?.toFixed(10) ?? null,
+        metricAtUpper: solved.boundsProbe?.upper?.toFixed(10) ?? null,
+      },
+
+      notes: GOAL_SEEK_NOTES[solved.status](base),
+    }
+  }
+
   async createSnapshot(projectId: string, scenarioId: string, actor: AuditActor, dto?: CreateFeasibilitySnapshotDto) {
     const profile = await this.feasibility.find(projectId, actor.tenantId)
     if (!profile) throw DomainError.notFound('FEASIBILITY_PROFILE_NOT_FOUND', 'לא קיים עדיין פרופיל דוח אפס לפרויקט')
@@ -932,4 +1053,40 @@ export class FeasibilityCalculationService {
       }
     }
   }
+}
+
+/**
+ * The metrics a goal seek can target.
+ *
+ * A registry rather than a switch so an unknown metric is impossible by
+ * construction: the DTO's union and this object are checked against each other
+ * by the compiler, and a metric present in one but not the other will not build.
+ */
+const GOAL_SEEK_METRICS: Record<GoalSeekMetric, (result: ReturnType<FeasibilityCalculationService['compute']>) => string | null> = {
+  PROFIT_MARGIN: (result) => result.profitability.profitMargin,
+  PROFIT_ON_COST: (result) => result.profitability.profitOnCost,
+  PROFIT: (result) => result.profitability.profit,
+  PROJECT_IRR_ANNUAL: (result) => result.returns.projectIrrAnnual,
+  PROJECT_NPV: (result) => result.returns.projectNpv,
+  RESIDUAL_LAND_VALUE: (result) => result.valuation.residualLandValue,
+}
+
+/** Why the answer is what it is, in the language of the person reading it. */
+const GOAL_SEEK_NOTES: Record<string, (base: ReturnType<FeasibilityCalculationService['compute']>) => string[]> = {
+  CONVERGED: (base) => [
+    'כל איטרציה היא הרצה מלאה של מנוע החישוב על קלט מותאם, ולא הכפלה של תוצאת הבסיס.',
+    ...(base.cashFlow.reconciliationComplete ? [] : ['התזרים הבסיסי אינו מפויס במלואו — IRR ו-NPV אינם אמינים.']),
+  ],
+  NOT_BRACKETED: () => [
+    'היעד אינו מושג בשום נקודה בטווח שנסרק. השדה searchedRange מראה למה הטווח כן מגיע — הרחיבו את הטווח או הנמיכו את היעד.',
+  ],
+  UNDEFINED_AT_BOUNDS: () => [
+    'המדד אינו מוגדר באחד מקצות הטווח — לרוב IRR ללא תזרים מפויס. השלימו את הקצאות התזרים.',
+  ],
+  DISCONTINUITY: () => [
+    'המדד קופץ מעל היעד ואינו חוצה אותו: אין ערך קלט שמייצר אותו בדיוק. לרוב זו מדרגה של סף מימון או כלל ולידציה שנדלק.',
+  ],
+  EXHAUSTED: () => [
+    'מספר האיטרציות מוצה לפני שהושגה הסטייה המבוקשת. הערך המוחזר הוא קירוב ולא פתרון.',
+  ],
 }
