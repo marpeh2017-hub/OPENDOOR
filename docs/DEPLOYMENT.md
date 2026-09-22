@@ -152,9 +152,17 @@ browser ignores over plain HTTP — nothing is broken, nothing is protected yet.
 | `VONAGE_API_KEY`, `VONAGE_API_SECRET`, `VONAGE_FROM` | SMS / OTP delivery |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT` | Document storage |
 | `CMS_REVALIDATE_SECRET` | Shared with the website for on-demand revalidation |
-| `COMSIGN_API_KEY`, `COMSIGN_WEBHOOK_SECRET` | E-signature. The webhook secret is what makes HMAC verification meaningful. |
+| ~~`COMSIGN_API_KEY`~~ | **Do NOT set.** `createSignatureProvider()` throws on boot if it is present — the ComSign provider is a stub that raises on every call. Setting it takes the gateway down. |
+| ~~`DOCUSIGN_CLIENT_ID`~~ | **Do NOT set.** Same: the factory throws, DocuSign has no provider implementation at all. |
 | `ANTHROPIC_API_KEY` | Assistant features |
 | `RESEND_API_KEY` *or* `SENDGRID_API_KEY` | Email, whichever is used |
+
+> **E-signature is IN-HOUSE.** With neither `COMSIGN_API_KEY` nor
+> `DOCUSIGN_CLIENT_ID` set, the factory returns `NativeSignatureProvider` and
+> signing works. Both third-party providers are unimplemented, and the factory
+> throws at start-up rather than silently degrading if either variable appears —
+> so the absence of these secrets is the correct production configuration, not
+> an omission.
 
 ### Configuration — safe in `[env]` or the Vercel UI
 
