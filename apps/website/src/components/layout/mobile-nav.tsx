@@ -145,7 +145,10 @@ export function MobileNav({
             // `end-0` not `right-0`: the panel opens from the inline end, so it
             // slides from the correct side in both RTL and LTR without a
             // direction check.
-            className="absolute inset-y-0 end-0 flex w-80 max-w-[85vw] flex-col bg-white shadow-xl"
+            // Full height, so once viewport-fit=cover is on its first row sits under
+              // the Dynamic Island and its last under the home indicator. The panel
+              // keeps its own background across the inset; only the CONTENT insets.
+              className="absolute inset-y-0 end-0 flex w-80 max-w-[85vw] flex-col bg-white shadow-xl [padding-block:env(safe-area-inset-top)_env(safe-area-inset-bottom)] [padding-inline-end:env(safe-area-inset-right)]"
           >
             <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
               <span className="text-sm font-semibold text-gray-500">{navLabel}</span>

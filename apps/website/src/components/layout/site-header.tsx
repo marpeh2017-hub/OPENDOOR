@@ -51,7 +51,10 @@ export async function SiteHeader() {
 
   return (
     <HeaderShell>
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 lg:px-8">
+      {/* Inline padding falls back to the original px-4 when the inset is 0.
+          In landscape on a notched phone the cutout sits at an inline edge,
+          and without this the logo or the language control renders under it. */}
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
         <Link
           href="/"
           className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
