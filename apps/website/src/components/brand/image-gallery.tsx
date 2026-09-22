@@ -7,6 +7,13 @@ import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
 interface GalleryImage { id: string; src: string; alt: string }
 interface Labels { gallery: string; previous: string; next: string; pause: string; play: string; image: string }
 
+/**
+ * How long one slide is held. Also the dot's fill duration, so the animation
+ * cannot drift out of step with the timer it is depicting — the two read the
+ * same constant rather than each carrying their own copy.
+ */
+const SLIDE_MS = 6000
+
 /** One CMS-ordered gallery. Pause on interaction, offscreen, hidden tab or reduced motion. */
 export function ImageGallery({ images, labels, priority = false }: {
   images: GalleryImage[]; labels: Labels; priority?: boolean
@@ -38,11 +45,13 @@ export function ImageGallery({ images, labels, priority = false }: {
     }
   }, [])
 
+  const running = slides.length > 1 && !paused && !hovered && !reduced && visible && pageVisible
+
   useEffect(() => {
-    if (slides.length < 2 || paused || hovered || reduced || !visible || !pageVisible) return
-    const timer = window.setInterval(() => setIndex((value) => (value + 1) % slides.length), 6000)
+    if (!running) return
+    const timer = window.setInterval(() => setIndex((value) => (value + 1) % slides.length), SLIDE_MS)
     return () => window.clearInterval(timer)
-  }, [slides.length, paused, hovered, reduced, visible, pageVisible])
+  }, [running, slides.length])
 
   if (!slides.length) return null
   const choose = (value: number) => { setPaused(true); setIndex((value + slides.length) % slides.length) }
@@ -75,6 +84,64 @@ export function ImageGallery({ images, labels, priority = false }: {
           <span className="sr-only" aria-live={paused ? 'polite' : 'off'}>{labels.image} {current + 1} / {slides.length}</span>
           <button type="button" className={`${buttonClass} absolute end-1 top-1/2 -translate-y-1/2 sm:end-3`} aria-label={labels.next} onClick={() => choose(current + 1)}><ChevronRight aria-hidden="true" className={`${iconClass} rtl:rotate-180`} size={26} /></button>
           {!reduced && <button data-playback type="button" className={`${buttonClass} absolute bottom-1 end-1 sm:bottom-2 sm:end-3`} aria-label={paused ? labels.play : labels.pause} onClick={() => setPaused((value) => !value)}>{paused ? <Play aria-hidden="true" className={iconClass} size={24} /> : <Pause aria-hidden="true" className={iconClass} size={24} />}</button>}
+
+          {/*
+            Where you are in the sequence, and how long is left of this slide.
+            Unlike the arrows these stay visible: an indicator that appears only
+            on hover cannot tell you anything on a phone, where there is no
+            hover at all.
+
+            Each dot is a real button. A row of divs would show position and
+            then refuse to act on it, which is worse than showing nothing —
+            people click these.
+
+            The row is laid out with logical properties and no explicit
+            direction, so in Hebrew the first slide's dot sits on the RIGHT,
+            matching the reading order and the arrow keys.
+          */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center pb-3">
+            <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/40 px-3 py-2 backdrop-blur-sm">
+              {slides.map((image, position) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => choose(position)}
+                  aria-label={`${labels.image} ${position + 1}`}
+                  aria-current={position === current ? 'true' : undefined}
+                  // A 10px dot is far under the 24px minimum for a touch
+                  // target, so the button is grown to 24px and the dot is drawn
+                  // inside it.
+                  //
+                  // min-w rather than w: the active pill is 28px, and a fixed
+                  // 24px button silently clipped it back to 24 — the expanded
+                  // state was being drawn at the wrong size with no error,
+                  // which is the kind of thing only a computed-style check
+                  // catches.
+                  className="group/dot inline-flex h-6 min-w-6 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`relative block overflow-hidden rounded-full transition-all duration-300 motion-reduce:transition-none ${
+                      position === current ? 'h-2.5 w-7 bg-white/40' : 'h-2.5 w-2.5 bg-white/50 group-hover/dot:bg-white/80'
+                    }`}
+                  >
+                    {position === current && (
+                      // The fill is keyed on `current` so it restarts from zero
+                      // on every slide change, and it is only animated while the
+                      // timer is actually running — paused, hovered, offscreen
+                      // or reduced-motion leaves a static full bar rather than a
+                      // progress indicator that lies about advancing.
+                      <span
+                        key={`${current}-${running}`}
+                        className={`absolute inset-y-0 start-0 block rounded-full bg-white ${running ? 'odg-gallery-progress' : 'w-full'}`}
+                        style={running ? { animationDuration: `${SLIDE_MS}ms` } : undefined}
+                      />
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </>
       )}
     </div>
