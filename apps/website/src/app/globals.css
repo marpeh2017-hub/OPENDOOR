@@ -171,7 +171,32 @@ summary:focus-visible {
  * stuck at zero opacity because the reveal was disabled but the hidden state
  * was not.
  */
+/*
+ * The fill inside the active gallery dot, showing how much of this slide is
+ * left. Duration is set inline from SLIDE_MS in image-gallery.tsx, so the bar
+ * and the timer it depicts cannot drift apart.
+ *
+ * Width rather than transform: the bar is 28px wide and a scaleX on a rounded
+ * pill distorts the end caps as it grows. At this size the layout cost is one
+ * small absolutely-positioned element and is not worth the visual artefact.
+ */
+@keyframes odg-gallery-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.odg-gallery-progress {
+  animation: odg-gallery-progress linear forwards;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
+  /* A full static bar marks the current slide without implying it is moving. */
+  .odg-gallery-progress {
+    animation: none !important;
+    width: 100%;
+  }
+
   .odg-reveal,
   .odg-reveal-out,
   .odg-reveal-in {
