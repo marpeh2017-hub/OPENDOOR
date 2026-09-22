@@ -447,11 +447,66 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
+  /* 8 ── VERIFIABLE FACTS ───────────────────────────── */
+  /**
+   * Sits BEFORE the trust index on purpose: this answers "who are you, and can
+   * I check it", which a reader asks before "how do you work".
+   *
+   * Every line is verifiable somewhere other than this website — the registrar,
+   * or the agreement the owners will hold. Nothing here is a statistic, because
+   * there is no real one to give yet, and the section is written to be complete
+   * without one rather than to look like it is waiting.
+   *
+   * The company number is repeated here as literal copy rather than read from
+   * `site-config`: this is editorial text a person may reword in the CMS, and
+   * a value interpolated into a CMS string cannot be edited there.
+   */
+  {
+    id: 'home-verifiable-facts',
+    type: 'VERIFIABLE_FACTS',
+    order: 8,
+    hidden: false,
+    heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
+    intro: {
+      he: 'בלי ממוצעים ובלי הבטחות. שלוש עובדות שאפשר לאמת מול רשם החברות ומול ההסכם.',
+      en: 'No averages and no promises. Three facts you can verify at the registrar and in the agreement.',
+    },
+    items: [
+      {
+        id: 'vf-registered',
+        icon: 'building',
+        title: { he: 'מי אנחנו, רשמית', en: 'Who we are, officially' },
+        body: {
+          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334. חברה רשומה — אפשר לבדוק אותנו ברשם החברות לפני שמדברים איתנו.',
+          en: 'Kvutsat OpenDoor Yazamut VeHithadshut Ltd., company number 515856334. A registered company — you can look us up before you speak to us.',
+        },
+      },
+      {
+        id: 'vf-who-pays',
+        icon: 'receipt',
+        title: { he: 'מי משלם לנו', en: 'Who pays us' },
+        body: {
+          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר — וזה כתוב בהסכם שתקבלו לידיים.',
+          en: 'The developer pays us. Apartment owners pay the company nothing directly — and that is written into the agreement you will hold.',
+        },
+      },
+      {
+        id: 'vf-boundary',
+        icon: 'scale',
+        title: { he: 'מה אנחנו לא', en: 'What we are not' },
+        body: {
+          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך — בעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
+          en: 'Not the developer, not the construction company, not the contractor. We coordinate the process — the owners choose the professionals and the developer.',
+        },
+      },
+    ],
+  },
+
   /* 8 ── TRUST ────────────────────────────────────────────────────────── */
   {
     id: 'home-trust',
     type: 'TRUST',
-    order: 8,
+    order: 9,
     hidden: false,
     heading: { he: 'איך אנחנו עובדים בפועל', en: 'How we actually work' },
     intro: {
@@ -514,7 +569,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-knowledge',
     type: 'KNOWLEDGE',
-    order: 9,
+    order: 10,
     hidden: false,
     heading: { he: 'מרכז ידע', en: 'Knowledge centre' },
     intro: {
@@ -528,7 +583,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-faq',
     type: 'FAQ',
-    order: 10,
+    order: 11,
     hidden: false,
     heading: { he: 'שאלות שחוזרות', en: 'Questions we are asked' },
     limit: 5,
@@ -538,7 +593,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-cta',
     type: 'CTA',
-    order: 11,
+    order: 12,
     hidden: false,
     heading: {
       he: 'רוצים להבין מה האפשרויות בבניין שלכם?',

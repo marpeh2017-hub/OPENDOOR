@@ -4,6 +4,7 @@ import { WhyBlockView } from './why-block'
 import { ProcessBlockView } from './process-block'
 import { TransparencyBlockView } from './transparency-block'
 import { TrustBlockView } from './trust-block'
+import { VerifiableFactsBlockView } from './verifiable-facts-block'
 
 /**
  * Dispatcher for the four blocks that share the `FeatureGridBlock` SHAPE —
@@ -36,6 +37,8 @@ export function FeatureGridBlockView({
       return <TransparencyBlockView block={block} t={t} />
     case 'TRUST':
       return <TrustBlockView block={block} t={t} />
+    case 'VERIFIABLE_FACTS':
+      return <VerifiableFactsBlockView block={block} t={t} />
     default:
       return <WhyBlockView block={block} t={t} />
   }

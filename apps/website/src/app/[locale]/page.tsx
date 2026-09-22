@@ -128,6 +128,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           case 'PROCESS':
           case 'PROJECT_TRANSPARENCY':
           case 'TRUST':
+          case 'VERIFIABLE_FACTS':
             rendered = <FeatureGridBlockView block={block} t={t} />
             break
 
