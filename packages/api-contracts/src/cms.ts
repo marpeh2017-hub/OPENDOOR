@@ -39,6 +39,7 @@ export type BlockType =
   | 'PROJECTS'
   | 'PROJECT_TRANSPARENCY'
   | 'TRUST'
+  | 'VERIFIABLE_FACTS'
   | 'PORTAL'
   | 'KNOWLEDGE'
   | 'FAQ'
@@ -59,7 +60,7 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   // Process
   'JOURNEY', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
-  'FEATURE_GRID', 'TRUST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
+  'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
   // Other
   'PORTAL', 'MEDIA', 'CTA',
 ] as const
@@ -370,7 +371,7 @@ export interface CollectionBlock extends BlockBase {
  * renderer rather than to the content.
  */
 export interface FeatureGridBlock extends BlockBase {
-  type: 'FEATURE_GRID' | 'PROCESS' | 'PROJECT_TRANSPARENCY' | 'TRUST'
+  type: 'FEATURE_GRID' | 'PROCESS' | 'PROJECT_TRANSPARENCY' | 'TRUST' | 'VERIFIABLE_FACTS'
   heading: LocalizedText
   intro?: LocalizedTextOptional
   items: NarrativeItem[]

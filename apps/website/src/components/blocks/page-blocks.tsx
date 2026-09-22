@@ -53,7 +53,7 @@ import { CtaBlockView } from './cta-block'
 const SELF_WRAPPING = new Set([
   'PAGE_HEADER', 'COMPARISON', 'ROLE_MAP', 'JOURNEY',
   'EXTERNAL_RESOURCES', 'MEDIA', 'CTA', 'FEATURE_GRID', 'PROCESS',
-  'PROJECT_TRANSPARENCY', 'TRUST', 'TEXT_SECTION',
+  'PROJECT_TRANSPARENCY', 'TRUST', 'VERIFIABLE_FACTS', 'TEXT_SECTION',
 ])
 
 export async function PageBlocks({
@@ -173,6 +173,7 @@ async function renderBlockBody(
     case 'PROCESS':
     case 'PROJECT_TRANSPARENCY':
     case 'TRUST':
+    case 'VERIFIABLE_FACTS':
       return <FeatureGridBlockView block={block} t={t} />
 
     case 'TEXT_SECTION':
