@@ -41,12 +41,16 @@ primary_region = "cdg"   # Paris — closest Fly region to Israel with full serv
     # when either is down — so a machine that cannot reach its database is taken
     # out of rotation rather than serving errors.
     #
-    # WARNING: two controllers currently register this path — the @Public() one
-    # in src/health.controller.ts and the tenant health-score one in
-    # src/health/health.controller.ts, which requires a JWT. Which answers
-    # depends on module registration order. If the authenticated one ever wins,
-    # this check gets 401 and Fly will kill the machine in a loop. Resolve the
-    # collision before relying on this in production.
+    # Two controllers sit under `health`, and they do NOT collide: the @Public()
+    # one in src/health.controller.ts owns the bare path with @Get(), while the
+    # tenant health-score one in src/health/health.controller.ts only defines
+    # @Get('portfolio') and @Get(':projectId'). Verified against a running
+    # server: /api/v1/health returns the health JSON, /api/v1/health/portfolio
+    # returns 401.
+    #
+    # The one thing to keep in mind is that `@Get(':projectId')` will swallow
+    # any new single-segment route added under health, so a future /health/live
+    # would resolve to a project lookup and return 401 here.
     path = "/api/v1/health"
     method = "GET"
     interval = "15s"

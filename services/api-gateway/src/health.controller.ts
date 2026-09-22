@@ -2,7 +2,7 @@ import { Controller, Get, Inject, HttpStatus, Res } from '@nestjs/common'
 import { Response } from 'express'
 import { Public } from './auth/decorators/public.decorator'
 import { PrismaService } from './prisma.service'
-import { REDIS } from './redis/redis.module'
+import { REDIS, REDIS_IN_MEMORY } from './redis/redis.module'
 
 @Controller('health')
 export class HealthController {
@@ -40,6 +40,19 @@ export class HealthController {
     const status  = allOk ? 'healthy' : 'degraded'
     const httpCode = allOk ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE
 
-    return res.status(httpCode).json({ status, checks, timestamp: new Date().toISOString() })
+    // Which implementation answered, not just whether it answered. A passing
+    // probe against the in-memory stand-in looks exactly like a passing probe
+    // against Redis, and the difference is whether session revocation and OTP
+    // limits survive a second process. Reported rather than inferred.
+    const redisMode = (this.redis as Record<PropertyKey, unknown>)[REDIS_IN_MEMORY]
+      ? 'in-memory-fallback'
+      : 'client'
+
+    return res.status(httpCode).json({
+      status,
+      checks,
+      redisMode,
+      timestamp: new Date().toISOString(),
+    })
   }
 }
