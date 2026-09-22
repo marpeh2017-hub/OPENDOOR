@@ -15,6 +15,8 @@ import { SignatureExpiryService }    from './signature-expiry.service'
 import { EvidencePackageService }    from './evidence-package.service'
 import { StorageService }            from '../storage/storage.service'
 import { CreatePackageDto }          from './dto/create-package.dto'
+import { AddSignerDto }              from './dto/add-signer.dto'
+import { DeclineSigningDto, VerifySigningOtpDto } from './dto/portal-signing.dto'
 
 @ApiTags('signatures')
 @ApiBearerAuth()
@@ -81,7 +83,7 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Add a signer to a DRAFT package' })
   addSigner(
     @Param('id') id: string,
-    @Body() body: { ownerId: string; apartmentId: string; signerRole?: string; required?: boolean; signingOrder?: number },
+    @Body() body: AddSignerDto,
     @Request() req: any,
   ) {
     return this.packages.addSigner(id, body, req.user.tenantId)
@@ -233,11 +235,11 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Verify OTP code' })
   verifyOtp(
     @Param('token') token: string,
-    @Body('code') code: string,
+    @Body() dto: VerifySigningOtpDto,
     @Ip() ip: string,
     @Headers('user-agent') ua: string,
   ) {
-    return this.sessions.verifyOtp(token, code, ip, ua)
+    return this.sessions.verifyOtp(token, dto.code, ip, ua)
   }
 
   /**
@@ -272,9 +274,9 @@ export class SignaturesController {
   @ApiOperation({ summary: 'Decline signing with reason' })
   decline(
     @Param('token') token: string,
-    @Body('reason') reason: string,
+    @Body() dto: DeclineSigningDto,
     @Ip() ip: string,
   ) {
-    return this.sessions.decline(token, reason, ip)
+    return this.sessions.decline(token, dto.reason, ip)
   }
 }

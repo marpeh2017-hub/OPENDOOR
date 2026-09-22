@@ -126,7 +126,7 @@ describe('GIS geocoding (e2e)', () => {
       imports: [AppModule],
     }).compile()
 
-    app = moduleFixture.createNestApplication()
+    app = moduleFixture.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     // Mirrors main.ts exactly, including forbidNonWhitelisted — the allow-list

@@ -80,7 +80,7 @@ describe('Rate limits on authenticating paths (e2e)', () => {
   beforeAll(async () => {
     // No ThrottlerStorage override — see the header.
     const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile()
-    app = mod.createNestApplication()
+    app = mod.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     app.useGlobalPipes(new ValidationPipe({

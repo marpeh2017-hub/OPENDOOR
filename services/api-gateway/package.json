@@ -12,7 +12,9 @@
     "test": "jest --config jest.unit.config.js",
     "test:unit": "jest --config jest.unit.config.js",
     "test:e2e": "jest --config jest.config.js --runInBand",
-    "test:feasibility": "jest --config jest.unit.config.js src/feasibility && jest --config jest.config.js --runInBand test/feasibility"
+    "test:feasibility": "jest --config jest.unit.config.js src/feasibility && jest --config jest.config.js --runInBand test/feasibility",
+    "check:body-dtos": "ts-node scripts/check-body-dtos.ts",
+    "prebuild": "npm run check:body-dtos"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

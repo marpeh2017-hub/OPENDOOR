@@ -312,7 +312,7 @@ export class SigningSessionService {
   }
 
   /** Decline signing */
-  async decline(token: string, reason: string, ip?: string) {
+  async decline(token: string, reason: string | undefined, ip?: string) {
     const session = await this.resolveSession(token)
     if (!session.verifiedAt) throw new UnauthorizedException('OTP לא אומת')
 
@@ -322,7 +322,7 @@ export class SigningSessionService {
 
     await this.prisma.signatureRecord.update({
       where: { id: record.id },
-      data: { status: 'DECLINED', declineReason: reason },
+      data: { status: 'DECLINED', declineReason: reason ?? null },
     })
 
     await this.prisma.signingSession.update({

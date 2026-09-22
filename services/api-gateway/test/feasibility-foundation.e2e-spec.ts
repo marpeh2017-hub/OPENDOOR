@@ -90,7 +90,7 @@ describe('Feasibility foundation (e2e)', () => {
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile()
-    app = module.createNestApplication()
+    app = module.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     app.useGlobalPipes(new ValidationPipe({

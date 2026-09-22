@@ -61,7 +61,7 @@ describe('Meeting invitation rotation (e2e)', () => {
 
   beforeAll(async () => {
     const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile()
-    app = mod.createNestApplication()
+    app = mod.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     app.useGlobalPipes(new ValidationPipe({

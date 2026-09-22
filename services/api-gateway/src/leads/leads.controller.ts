@@ -7,6 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator'
 import { STAFF_ROLES } from '../auth/roles.constants'
 import { LeadsService } from './leads.service'
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto'
+import { AddLeadActivityDto } from './dto/lead-activity.dto'
 
 @ApiTags('leads')
 @ApiBearerAuth()
@@ -58,7 +59,7 @@ export class LeadsController {
   @Roles('SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'RESIDENT_RELATIONS_MANAGER', 'FIELD_AGENT')
   addActivity(
     @Param('id') id: string,
-    @Body() body: { type: string; note: string },
+    @Body() body: AddLeadActivityDto,
     @Request() req: any,
   ) {
     if (!req.user?.tenantId) throw new UnauthorizedException('Missing tenant context')

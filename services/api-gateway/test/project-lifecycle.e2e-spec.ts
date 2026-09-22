@@ -98,7 +98,7 @@ describe('Project lifecycle closure (e2e)', () => {
       imports: [AppModule],
     }).compile()
 
-    app = moduleFixture.createNestApplication()
+    app = moduleFixture.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     app.useGlobalPipes(new ValidationPipe({

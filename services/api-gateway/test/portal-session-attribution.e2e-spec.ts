@@ -174,7 +174,7 @@ describe('Portal session attribution on token paths (e2e)', () => {
       })
       .compile()
 
-    app = mod.createNestApplication()
+    app = mod.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     app.useGlobalPipes(new ValidationPipe({

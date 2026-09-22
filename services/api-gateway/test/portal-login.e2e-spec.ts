@@ -157,7 +157,7 @@ describe('Resident portal login (e2e)', () => {
       })
       .compile()
 
-    app = mod.createNestApplication()
+    app = mod.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     // Mirrors main.ts. `forbidNonWhitelisted` is what turns an unexpected body
@@ -673,7 +673,7 @@ describe('Resident portal login — per-IP rate limit (e2e)', () => {
     // No ThrottlerStorage override here. This suite exists precisely to prove
     // the limits the other one has to switch off in order to run at all.
     const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile()
-    app = mod.createNestApplication()
+    app = mod.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))

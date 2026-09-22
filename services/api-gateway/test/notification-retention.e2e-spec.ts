@@ -90,7 +90,7 @@ describe('Notification retention (e2e)', () => {
       })
       .compile()
 
-    app = moduleFixture.createNestApplication()
+    app = moduleFixture.createNestApplication({ rawBody: true })
     await app.init()
 
     prisma = app.get(PrismaService, { strict: false })

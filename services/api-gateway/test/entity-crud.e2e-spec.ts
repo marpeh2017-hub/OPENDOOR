@@ -86,7 +86,7 @@ describe('Entity CRUD (e2e)', () => {
       imports: [AppModule],
     }).compile()
 
-    app = moduleFixture.createNestApplication()
+    app = moduleFixture.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     // Mirrors main.ts, including forbidNonWhitelisted — the mass-assignment

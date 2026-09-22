@@ -98,7 +98,7 @@ describe('Public lead capture (e2e)', () => {
       imports: [AppModule],
     }).compile()
 
-    app = moduleFixture.createNestApplication()
+    app = moduleFixture.createNestApplication({ rawBody: true })
     // Trust one proxy hop so ThrottlerGuard buckets on X-Forwarded-For, exactly
     // as a deployment behind a load balancer must (TRUST_PROXY in main.ts).
     // Without this every test in the file shares one rate-limit bucket and the

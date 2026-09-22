@@ -118,7 +118,7 @@ describe('Document upload (e2e)', () => {
       })
       .compile()
 
-    app = moduleFixture.createNestApplication()
+    app = moduleFixture.createNestApplication({ rawBody: true })
     app.setGlobalPrefix('api')
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })
     // Mirrors main.ts exactly — `forbidNonWhitelisted` is what turns a

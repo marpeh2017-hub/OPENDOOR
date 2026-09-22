@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { MANAGER_ROLES, STAFF_ROLES, SUPER_ADMIN_ONLY } from '../auth/roles.constants'
 import { DataQualityService, type ListIssuesFilters } from './data-quality.service'
+import { IssueActionDto } from './dto/issue-action.dto'
 
 /**
  * RBAC rationale:
@@ -113,28 +114,28 @@ export class DataQualityController {
   @Patch('issues/:id/resolve')
   @Roles(...MANAGER_ROLES)
   @ApiOperation({ summary: 'Mark an issue as resolved (manager+)' })
-  resolve(@Param('id') id: string, @Body() body: { note?: string }, @Request() req: any) {
+  resolve(@Param('id') id: string, @Body() body: IssueActionDto, @Request() req: any) {
     return this.service.resolveIssue(this.tenantId(req), id, this.actor(req), body?.note)
   }
 
   @Patch('issues/:id/ignore')
   @Roles(...MANAGER_ROLES)
   @ApiOperation({ summary: 'Ignore an issue — scans will not reopen it (manager+)' })
-  ignore(@Param('id') id: string, @Body() body: { note?: string }, @Request() req: any) {
+  ignore(@Param('id') id: string, @Body() body: IssueActionDto, @Request() req: any) {
     return this.service.ignoreIssue(this.tenantId(req), id, this.actor(req), body?.note)
   }
 
   @Patch('issues/:id/reopen')
   @Roles(...MANAGER_ROLES)
   @ApiOperation({ summary: 'Reopen a resolved or ignored issue (manager+)' })
-  reopen(@Param('id') id: string, @Body() body: { note?: string }, @Request() req: any) {
+  reopen(@Param('id') id: string, @Body() body: IssueActionDto, @Request() req: any) {
     return this.service.reopenIssue(this.tenantId(req), id, this.actor(req), body?.note)
   }
 
   @Patch('issues/:id/start')
   @Roles(...MANAGER_ROLES)
   @ApiOperation({ summary: 'Mark an issue as being worked on (manager+)' })
-  start(@Param('id') id: string, @Body() body: { note?: string }, @Request() req: any) {
+  start(@Param('id') id: string, @Body() body: IssueActionDto, @Request() req: any) {
     return this.service.startIssue(this.tenantId(req), id, this.actor(req), body?.note)
   }
 
