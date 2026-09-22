@@ -163,7 +163,12 @@ describe('Resident portal login (e2e)', () => {
     // Mirrors main.ts. `forbidNonWhitelisted` is what turns an unexpected body
     // field into a 400 instead of a silently ignored one — see the forged
     // tenantId test.
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    }))
     await app.init()
 
     prisma = app.get(PrismaService)

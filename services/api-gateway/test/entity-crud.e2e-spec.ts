@@ -92,7 +92,12 @@ describe('Entity CRUD (e2e)', () => {
     // Mirrors main.ts, including forbidNonWhitelisted — the mass-assignment
     // guard these DTOs rely on.
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
     )
     await app.init()
 
