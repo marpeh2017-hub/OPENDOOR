@@ -27,7 +27,7 @@ export async function SiteFooter() {
             <a
               href={CONTACT.phoneHref}
               dir="ltr"
-              className="mt-3 block w-fit py-2 text-sm text-gray-700 underline"
+              className="mt-3 mb-2 block w-fit py-2 text-sm text-gray-700 underline"
             >
               {CONTACT.phone}
             </a>

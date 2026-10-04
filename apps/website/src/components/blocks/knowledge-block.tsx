@@ -38,7 +38,13 @@ export async function KnowledgeBlockView({
 }) {
   const tLinks = await getTranslations('links')
   const [lead, ...rest] = articles
-  const tPage = await getTranslations('pages.knowledge')
+
+  // No approved article: the homepage section is omitted rather than shown
+  // empty. A heading over a promise that articles will appear later reads, to
+  // an owner deciding whether to trust us, as a company that is not ready.
+  // The section returns on its own the moment the first article is approved,
+  // and the knowledge centre stays reachable from the main navigation.
+  if (!lead) return null
 
   return (
     <Section tone="sunken" size="lg">
@@ -61,7 +67,6 @@ export async function KnowledgeBlockView({
       </div>
 
       <div className="mt-12 grid gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
-        {!lead && <p className="text-gray-700">{tPage('empty')}</p>}
         {/* ── the lead ──────────────────────────────────────────────────── */}
         {lead && (
           <Link

@@ -531,7 +531,7 @@ const trustBlocks: PageBlock[] = [
     type: 'PROSE',
     order: 2,
     hidden: false,
-    heading: { he: 'תיק הדייר הדיגיטלי', en: 'The digital resident area' },
+    heading: { he: 'התיק הדיגיטלי שלכם', en: 'The digital resident area' },
     lead: {
       he: 'הסביבה הדיגיטלית לבעלי הדירות נמצאת בבנייה. חלק מהיכולות המתוארות כאן טרם זמינות.',
       en: 'The digital environment for owners is being built. Some of the capabilities described here are not yet available.',

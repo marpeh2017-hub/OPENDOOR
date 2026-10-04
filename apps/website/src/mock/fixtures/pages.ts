@@ -50,7 +50,7 @@ const homepageBlocks: PageBlock[] = [
       en: "Talk to us about your building",
     },
     primaryCtaHref: '/eligibility',
-    secondaryCtaLabel: { he: 'מידע על תיק הדייר', en: 'Resident portal' },
+    secondaryCtaLabel: { he: 'מידע על התיק שלכם', en: 'Resident portal' },
     secondaryCtaHref: '/resident-portal',
     note: {
       he: 'התשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
@@ -78,8 +78,8 @@ const homepageBlocks: PageBlock[] = [
         icon: 'route',
         title: { he: 'ניהול התהליך', en: 'Managing the process' },
         body: {
-          he: 'מרכזים את אנשי המקצוע, המסמכים והעדכונים. אתם יודעים מה הצעד הבא.',
-          en: 'Professionals, documents and updates, coordinated. You know what comes next.',
+          he: 'אתם יודעים בכל שלב מה הצעד הבא, ומחליטים מתי לצאת אליו. אנחנו מרכזים את אנשי המקצוע, המסמכים והעדכונים.',
+          en: 'You know the next step at every stage, and decide when to take it. We coordinate the professionals, the documents and the updates.',
         },
       },
       {
@@ -87,8 +87,8 @@ const homepageBlocks: PageBlock[] = [
         icon: 'users',
         title: { he: 'כוח מאורגן לבעלי הדירות', en: 'Organised standing for owners' },
         body: {
-          he: 'בונים נציגות ועמדה משותפת, כדי להגיע לתהליך כקבוצה מאורגנת.',
-          en: 'Build a representative group and a shared position, together.',
+          he: 'אתם בונים נציגות ועמדה משותפת מול הגורמים בתהליך, אנחנו תומכים.',
+          en: 'You build a representation and a shared position towards the other parties in the process, and we support you.',
         },
       },
       {
@@ -423,7 +423,7 @@ const homepageBlocks: PageBlock[] = [
       {
         id: 'pg-resident',
         audience: { he: 'לכל בעלי הדירות', en: 'For every owner' },
-        title: { he: 'תיק הדייר', en: 'Resident area' },
+        title: { he: 'התיק שלכם', en: 'Resident area' },
         items: [
           { he: 'סטטוס הפרויקט והשלב הנוכחי', en: 'Project status and current stage' },
           { he: 'מסמכים שרלוונטיים לדירה שלכם', en: 'Documents relevant to your apartment' },

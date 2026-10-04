@@ -23,7 +23,7 @@ export default async function ResidentPortalPage({
   return (
     <>
       <PageHeader
-        title={he ? 'תיק הדייר' : 'Resident portal'}
+        title={he ? 'התיק שלכם' : 'Resident portal'}
         standfirst={
           he
             ? 'מידע ושירות לבעלי דירות במתחמים שאנחנו מלווים.'

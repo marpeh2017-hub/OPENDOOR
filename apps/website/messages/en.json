@@ -68,11 +68,11 @@
     },
     "knowledge": {
       "title": "Knowledge centre",
-      "empty": "Looking for an explanation of the process? Start with How we work, or contact us with a question. Articles will appear here once approved."
+      "empty": "Looking for an explanation of the process? Start with How we work, or contact us with a question."
     },
     "faq": {
       "title": "FAQ",
-      "empty": "Wondering how to begin, what the representation does, or who is involved? Send us your question. General answers will appear here once approved."
+      "empty": "Wondering how to begin, what the representation does, or who is involved? Send us your question."
     },
     "contact": {
       "title": "Contact"
