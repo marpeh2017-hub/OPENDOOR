@@ -129,14 +129,6 @@
     "menu": "Menu",
     "opensInNewTab": "opens in a new tab"
   },
-  "journey": {
-    "city": "The city",
-    "threshold": "The threshold",
-    "process": "The process",
-    "project": "The project",
-    "transparency": "Transparency",
-    "portal": "Resident area"
-  },
   "projects": {
     "noFilterResults": "No projects match these filters. Try another city or project type.",
     "emptyTitle": "Projects will be published here once the owners have approved.",

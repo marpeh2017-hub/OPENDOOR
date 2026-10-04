@@ -33,7 +33,7 @@ export default async function ResidentPortalPage({
       <Section size="md">
         <p className="mb-8 max-w-prose text-lg leading-relaxed text-gray-700">
           {he
-            ? 'הכניסה לתיק דייר דיגיטלי אינה זמינה כרגע. לקבלת מידע על הפרויקט, מסמכים או עדכונים, פנו אלינו ישירות. מידע אישי של בעלי דירות אינו מוצג באתר הציבורי.'
+            ? 'הכניסה לתיק הדיגיטלי שלכם אינה זמינה כרגע. לקבלת מידע על הפרויקט, מסמכים או עדכונים, פנו אלינו ישירות. מידע אישי של בעלי דירות אינו מוצג באתר הציבורי.'
             : 'Online resident sign-in is currently unavailable. Contact us directly for project information, documents or updates. Personal owner information is not displayed on the public website.'}
         </p>
         <DirectContact />

@@ -6,7 +6,6 @@ import type { Locale } from '@urban-renewal/api-contracts'
 import { getHomePage, getFeaturedProjects, getKnowledgeArticles, getFaqItems } from '@/mock'
 import { makeLocalizer } from '@/lib/localize'
 import { SectionConnector } from '@/components/brand/architecture'
-import { JourneyThread } from '@/components/brand/journey-thread'
 import { CityBandBlockView } from '@/components/blocks/city-band-block'
 import { HeroBlockView } from '@/components/blocks/hero-block'
 import { FeatureGridBlockView } from '@/components/blocks/feature-grid-block'
@@ -88,10 +87,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   setRequestLocale(locale)
 
   const t = makeLocalizer(locale as Locale)
-  const [tLinks, tJourney] = await Promise.all([
-    getTranslations('links'),
-    getTranslations('journey'),
-  ])
+  const tLinks = await getTranslations('links')
 
   const [page, projects, articles, faqItems] = await Promise.all([
     getHomePage(),
@@ -102,20 +98,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   if (!page) notFound()
 
-  /**
-   * The journey's waypoints. Content, so they come from the catalogue rather
-   * than this file — and they are the same six beats the page argues in prose,
-   * which is what makes the thread a summary of the page rather than an
-   * ornament running beside it.
-   */
-  const waypoints = ['city', 'threshold', 'process', 'project', 'transparency', 'portal'].map(
-    (key) => tJourney(key),
-  )
-
   return (
     <div className="relative">
-      <JourneyThread waypoints={waypoints} />
-
       {page.blocks.map((block) => {
         let rendered: React.ReactNode = null
 
