@@ -15,10 +15,12 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  * ── WHAT IS NOT HERE, AND WILL NOT BE INVENTED ─────────────────────────────
  *
  * No founding year. No project count. No resident count. No years of
- * experience. No team members. No awards. No partners. No offices. No
- * statistics of any kind. The pages are composed so they read as finished
- * without them — a layout that needs "over 40 projects" to look complete is a
- * layout that creates pressure to invent the number.
+ * experience. No awards. No partners. No offices. No statistics of any kind.
+ * No team members beyond Michael Rosenbach, whose biography on /about the
+ * company supplied; nothing is added to it by inference. The pages are
+ * composed so they read as finished without the rest — a layout that needs
+ * "over 40 projects" to look complete is a layout that creates pressure to
+ * invent the number.
  *
  * ── POSITIONING RULES THE COPY OBEYS ───────────────────────────────────────
  *
@@ -29,11 +31,16 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  *      it says plainly that a developer representing its own interests is
  *      normal and necessary.
  *   3. NO FEAR. Nothing warns the reader about what might happen to them.
+ *      Naming a worry owners already have, as /about opens by doing, is not
+ *      a warning, provided the next thing the page does is answer it.
  *   4. CURRENT PRACTICE IS SEPARATED FROM WHAT IS BEING BUILT. On /trust the
  *      digital resident area is described in the future tense and labelled,
  *      because describing unbuilt software in the present tense is the same
  *      category of untruth as an invented statistic.
- *   5. THE COST SENTENCE APPEARS ONCE, on /about. Flagged for legal review.
+ *   5. WHO PAYS IS SAID ONE WAY. Where a page states it (the homepage note
+ *      and facts block, the /about role section) it is the same two clauses:
+ *      the developer alone pays the company, and owners pay it nothing
+ *      directly. Flagged for legal review.
  */
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -49,69 +56,85 @@ const aboutBlocks: PageBlock[] = [
     eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
     heading: {
       he: 'התחדשות עירונית שמתחילה בבעלי הדירות',
-      en: 'Urban renewal that starts with apartment owners',
+      en: 'Urban renewal that starts with the apartment owners',
     },
     standfirst: {
       he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים: פינוי מהדירה, אי-ודאות, בירוקרטיה, טרדה יומיומית, ומסמכים משפטיים וכלכליים שלא תמיד קל להבין.',
-      en: 'Even when a serious developer comes to your neighborhood, residents see the risks first: eviction concerns, uncertainty, bureaucracy, daily harassment, and legal and financial documents that are not always easy to understand.',
+      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first: having to move out, uncertainty, bureaucracy, everyday disruption, and legal and financial documents that are not always easy to follow.',
+    },
+  },
+  {
+    id: 'about-statement',
+    type: 'STATEMENT',
+    order: 1,
+    hidden: false,
+    statement: {
+      he: 'אתם צריכים מישהו שנמצא בצד שלכם.',
+      en: 'You need someone on your side.',
     },
   },
   {
     id: 'about-checking-offers',
     type: 'PROSE',
-    order: 1,
+    order: 2,
     hidden: false,
-    heading: { he: 'בדיקת ההצעה', en: 'Checking the offer' },
+    lead: {
+      he: 'אנחנו בודקים את ההצעה, משווים בין יזמים, מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם — ובעיקר מוודאים שהאינטרסים שלכם נשמרים לאורך כל הדרך.',
+      en: 'We check the offer, compare developers, explain the financial and legal implications in your language — and above all make sure your interests are protected all the way through.',
+    },
     body: {
-      he: 'בדיוק בשביל זה אתם צריכים מישהו שנמצא בצד שלכם: מישהו שיידע לבדוק את ההצעה, להשוות בין יזמים, להבין את המשמעות הכלכלית והמשפטית, לדבר בשפה שלכם — ובעיקר לוודא שהאינטרסים שלכם נשמרים לאורך כל הדרך.\n\nכשיזם מציג הצעה, הוא מגיע עם מספרים, מצגות והבטחות. אנחנו בודקים מה עומד מאחוריהם. אנחנו בוחנים את הנתונים הכלכליים, את התמורות לדיירים, את לוחות הזמנים, את הבטוחות, את ההתחייבויות ואת הסיכונים. המטרה היא פשוטה: שלא תצאו מהדירה, תחתמו על מסמך או תתקדמו בפרויקט בלי להבין בדיוק מה אתם מקבלים — ומה אתם עלולים להפסיד.',
-      en: 'You need someone on your side: someone who can check the offer, compare developers, understand the financial and legal implications, speak your language — and most importantly, ensure your interests are protected throughout. When a developer presents an offer, they come with numbers, presentations and promises. We check what stands behind them. We examine the financial data, the compensation to residents, the timelines, the guarantees, the commitments and the risks. The goal is simple: you should not leave your apartment, sign a document or move a project forward without understanding exactly what you are getting — and what you might lose.',
+      he: 'הצעה של יזם מגיעה עם מספרים, מצגות ותוכניות. אנחנו בודקים מה עומד מאחוריהם: הנתונים הכלכליים, התמורות לבעלי הדירות, לוחות הזמנים, הבטוחות, ההתחייבויות והסיכונים.\n\nהמטרה פשוטה: שלא תצאו מהדירה, תחתמו על מסמך או תתקדמו בפרויקט בלי להבין בדיוק מה אתם מקבלים ולמה אתם מתחייבים.',
+      en: 'A developer’s offer comes with figures, presentations and plans. We examine what stands behind them: the financial data, the consideration for the owners, the timelines, the guarantees, the commitments and the risks.\n\nThe aim is simple: that you do not move out, sign a document or move the project forward without understanding exactly what you are getting and what you are committing to.',
     },
   },
   {
     id: 'about-transparency',
     type: 'PROSE',
-    order: 2,
+    order: 3,
     hidden: false,
     heading: { he: 'שקיפות בתהליך', en: 'Transparency in the process' },
     body: {
-      he: 'התחדשות עירונית היא תהליך מורכב. יש בו החלטות קשות, פשרות, עלויות, עיכובים, אינטרסים שונים ולעיתים גם מחלוקות בין בעלי הדירות עצמם. אנחנו לא מטשטשים את זה. להפך: אנחנו מסבירים איפה נמצאים הסיכונים, מה המשמעות של כל בחירה, ומה האפשרויות שעומדות בפניכם. רק כך אפשר לקבל החלטה אמיתית, אחראית ומבוססת.',
-      en: 'Urban renewal is a complex process. It involves difficult decisions, compromises, costs, delays, different interests and sometimes disputes among the residents themselves. We do not obscure this. On the contrary: we explain where the risks are, what each choice means, and what options stand before you. Only this way can you make a true, responsible and informed decision.',
+      he: 'התחדשות עירונית היא תהליך מורכב. יש בו החלטות קשות, פשרות, עלויות, עיכובים, אינטרסים שונים, ולעיתים גם מחלוקות בין בעלי הדירות עצמם.\n\nאנחנו לא מטשטשים את זה. אנחנו מסבירים איפה נמצאים הסיכונים, מה המשמעות של כל בחירה ואילו אפשרויות עומדות בפניכם — כי רק כך אפשר לקבל החלטה אחראית ומבוססת.',
+      en: 'Urban renewal is a complex process. It involves hard decisions, compromises, costs, delays, competing interests and, at times, disagreements among the owners themselves.\n\nWe do not blur any of that. We explain where the risks lie, what each choice means and which options are open to you — because that is the only way to reach a responsible, well-founded decision.',
     },
   },
   {
     id: 'about-role',
     type: 'PROSE',
-    order: 3,
+    order: 4,
     hidden: false,
     heading: { he: 'תפקידנו', en: 'Our role' },
     body: {
-      he: 'אנחנו לא יזמים, ולא פועלים מטעם חברת נדל״ן. אנחנו מייצגים ומארגנים בעלי דירות בתהליכי התחדשות עירונית. התפקיד שלנו הוא לתת לכם שליטה בתהליך: להנגיש את המידע, לבנות נציגות מסודרת, להביא חלופות, לנהל משא ומתן, ולהעלות כל החלטה משמעותית לבחירת בעלי הדירות. בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
-      en: 'We are not developers and we do not act on behalf of real estate companies. We represent and organise apartment owners in urban renewal processes. Our role is to give you control of the process: make information accessible, build an organised representation, bring alternatives, conduct negotiations, and put every significant decision to the owners’ vote. In the end, you decide. We ensure you do it with all the information you need.',
+      he: 'אנחנו לא יזמים ולא בונים. אנחנו מארגנים ומלווים בעלי דירות בתהליכי התחדשות עירונית, ונותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות.\n\nהתשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר — וזה כתוב בהסכם שתקבלו לידיים.\n\nבסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
+      en: 'We are not developers, and we do not build. We organise and support apartment owners through urban renewal and give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners.\n\nThe developer pays us. Apartment owners pay the company nothing directly — and that is written into the agreement you will hold.\n\nIn the end, you decide. We make sure you do so with all the information you need.',
     },
   },
   {
     id: 'about-michael',
     type: 'PROSE',
-    order: 4,
+    order: 5,
     hidden: false,
     heading: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
     body: {
-      he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים ובתל אביב, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן. הוא בעל תואר במנהל עסקים עם התמחות במערכות מידע, ובעל רישיון תיווך. השילוב הזה מאפשר לו לקרוא הצעות ומסמכים בעין עסקית, להבין נתונים ומספרים, לזהות פערים בין הבטחות להתחייבויות, ולתווך בין בעלי דירות, יזמים ואנשי מקצוע בצורה ברורה ומעשית.\n\nמיכאל אינו יזם. התפקיד שלו הוא לעמוד לצד בעלי הדירות: להביא יזמים מתאימים, לנתח הצעות, לסייע בבניית נציגות, לנהל משא ומתן, ולוודא שבעלי הדירות מבינים את המשמעות של כל החלטה לפני שהם מתקדמים. התפיסה שמובילה אותו פשוטה: בעלי דירות חזקים יותר כשהם מאורגנים, מבינים את הזכויות שלהם, ומיוצגים על ידי גורם שמכיר את השחקנים, את המספרים ואת התהליך — אבל מחויב קודם כל אליהם.',
-      en: 'Michael Rosenbach works in urban renewal in Jerusalem and Tel Aviv, advising owners and representations opposite developers, professionals and real estate companies. He holds a degree in business administration with a specialization in information systems, and a real estate broker\'s license. This combination allows him to read offers and documents with a business eye, understand data and numbers, identify gaps between promises and commitments, and mediate between owners, developers and professionals in a clear and practical way.\n\nMichael is not a developer. His role is to stand beside the owners: bring suitable developers, analyse offers, help build representation, conduct negotiations, and ensure owners understand the implications of each decision before they move forward. The principle that guides him is simple: apartment owners are stronger when they are organised, understand their rights, and are represented by someone who knows the players, the numbers and the process — but is accountable, first and foremost, to them.',
+      he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים ובתל אביב, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן.\n\nהוא בעל תואר במנהל עסקים עם התמחות במערכות מידע, ובעל רישיון תיווך. השילוב הזה מאפשר לו לקרוא הצעות ומסמכים בעין עסקית, להבין נתונים ומספרים, לבדוק שמה שמוצג בהצעה מעוגן בהתחייבויות, ולנהל את השיח בין בעלי הדירות, היזמים ואנשי המקצוע בצורה ברורה ומעשית.\n\nהתפיסה שמובילה אותו פשוטה: בעלי דירות חזקים יותר כשהם מאורגנים, מבינים את הזכויות שלהם ומלווים על ידי מי שמכיר את השחקנים, את המספרים ואת התהליך — אבל מחויב קודם כל אליהם.\n\nמיכאל יכול לעזור לכם להבין מה ההצעה כוללת, מה חסר בה, איפה נמצאים הסיכונים ומה הצעדים הבאים שכדאי לשקול — גם אם אתם כבר בתוך תהליך.',
+      en: 'Michael Rosenbach works in urban renewal in Jerusalem and Tel Aviv, supporting owners and their representations in their dealings with developers, professionals and real-estate companies.\n\nHe holds a degree in business administration, specialising in information systems, and a real-estate broker’s licence. That combination lets him read offers and documents with a business eye, make sense of data and figures, check that what an offer presents is backed by commitments, and keep the conversation between owners, developers and professionals clear and practical.\n\nThe principle that guides him is simple: owners are stronger when they are organised, understand their rights and are supported by someone who knows the players, the numbers and the process — but is committed, first and foremost, to them.\n\nMichael can help you understand what an offer includes, what is missing from it, where the risks lie and which next steps are worth considering — even if you are already in a process.',
     },
   },
   {
+    // A CTA pointing at /eligibility renders `links.enquiryIntro` in place of
+    // its own body (cta-block.tsx), so the body below only decides whether that
+    // line appears. It repeats the message so this file shows what renders.
     id: 'about-cta',
     type: 'CTA',
-    order: 5,
+    order: 6,
     hidden: false,
     heading: {
-      he: 'אם יזם הגיע לבניין שלכם',
-      en: 'If a developer came to your building',
+      he: 'יזם הגיע לבניין שלכם?',
+      en: 'Has a developer come to your building?',
     },
     body: {
-      he: 'אם יזם הגיע לבניין שלכם, אם אתם כבר בתוך תהליך, או אם אתם שוקלים הצעה להתחדשות עירונית — כדאי לעצור רגע ולבדוק מה באמת עומד על השולחן. מיכאל יכול לעזור לכם להבין מה ההצעה כוללת, מה חסר בה, איפה נמצאים הסיכונים, ומה הצעדים הבאים שכדאי לשקול.',
-      en: 'If a developer has come to your building, if you are already in a process, or if you are considering a proposal for urban renewal — it is worth pausing to check what is really on the table. Michael can help you understand what the proposal includes, what is missing, where the risks are, and what next steps might be worth considering.',
+      he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
+      en: 'Contact us for an initial conversation about your building.',
     },
     ctaLabel: { he: 'דברו איתנו', en: 'Talk to us' },
     ctaHref: '/eligibility',
@@ -743,15 +766,15 @@ export const CORE_PAGES: readonly CmsPage[] = [
       he: {
         title: 'מי אנחנו',
         description:
-          'OpenDoor Group מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'OpenDoor Group מארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
       },
       en: {
         title: 'About us',
         description:
-          'OpenDoor Group represents and organises apartment owners through urban renewal, from the first review to the finished project.',
+          'OpenDoor Group organises and supports apartment owners through urban renewal, from the first review to the finished project.',
       },
     },
-    updatedAt: '2026-08-31T00:00:00.000Z',
+    updatedAt: '2026-10-04T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
   {
