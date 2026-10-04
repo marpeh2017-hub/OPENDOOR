@@ -35,8 +35,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | OpenDoor – פורטל דיירים',
-    default: 'OpenDoor – פורטל דיירים',
+    template: '%s | OpenDoor – אזור אישי',
+    default: 'OpenDoor – אזור אישי',
   },
   description: 'הפורטל האישי שלך לפרויקט ההתחדשות העירונית – OpenDoor',
 }
