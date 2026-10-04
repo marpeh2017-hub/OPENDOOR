@@ -3,7 +3,21 @@
  * Hebrew-first, RTL-native design system
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Assistant:wght@300;400;500;600;700;800&display=swap');
+/*
+ * No Google Fonts @import. Every app loads Heebo (and, where used, Assistant)
+ * through `next/font`, which self-hosts the files and exposes them as
+ * `--font-heebo`. An @import here used to fetch the SAME family from
+ * fonts.googleapis.com as a render-blocking stylesheet — and because the font
+ * stacks below named the literal 'Heebo', that Google copy was the one that
+ * actually painted, while the self-hosted copy downloaded and went unused.
+ *
+ * Measured on the website's production build before removal: Lighthouse
+ * mobile put the blocking request at ~1.6 s of avoidable delay, and the hero
+ * image waited ~1.9 s to render after it had finished downloading.
+ *
+ * It also sent every visitor's IP address to Google on page load, which is a
+ * third-party transfer the privacy notice does not list.
+ */
 
 @tailwind base;
 @tailwind components;
@@ -99,7 +113,7 @@
 @layer base {
   html {
     direction: rtl;
-    font-family: 'Heebo', 'Assistant', Arial, sans-serif;
+    font-family: var(--font-heebo), 'Heebo', 'Assistant', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -109,7 +123,7 @@
   html[lang="en"],
   [dir="ltr"] {
     direction: ltr;
-    font-family: 'Inter', 'Heebo', Arial, sans-serif;
+    font-family: 'Inter', var(--font-heebo), 'Heebo', Arial, sans-serif;
   }
 
   * {

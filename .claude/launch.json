@@ -56,6 +56,17 @@
       ],
       "port": 3003,
       "autoPort": false
+    },
+    {
+      "name": "website-prod",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@urban-renewal/website",
+        "start"
+      ],
+      "port": 3003,
+      "autoPort": false
     }
   ]
 }

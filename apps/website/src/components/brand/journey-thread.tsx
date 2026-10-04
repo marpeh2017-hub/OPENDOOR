@@ -131,7 +131,7 @@ export function JourneyThread({
                 />
                 <span
                   className="ms-3 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.16em] transition-colors duration-300"
-                  style={{ color: reached ? STROKE.tealDeep : '#959ba2' }}
+                  style={{ color: reached ? STROKE.tealDeep : '#6D7378' }}
                 >
                   {label}
                 </span>

@@ -100,7 +100,10 @@ export const spacing = {
 
 export const typography = {
   fontFamily: {
-    hebrew:    ['Heebo', 'Assistant', 'Arial', 'sans-serif'] as string[],
+    // var(--font-heebo) first: it is the self-hosted copy each app registers
+    // through next/font. The literal 'Heebo' only resolved while a Google
+    // Fonts @import registered that name, which it no longer does.
+    hebrew:    ['var(--font-heebo)', 'Heebo', 'Assistant', 'Arial', 'sans-serif'] as string[],
     sans:      ['Inter', 'Heebo', 'Arial', 'sans-serif'] as string[],
     mono:      ['JetBrains Mono', 'Fira Code', 'monospace'] as string[],
   },

@@ -58,7 +58,6 @@ export async function SiteHeader() {
         <Link
           href="/"
           className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
-          aria-label={tBrand('name')}
         >
           <BrandMark name={tBrand('name')} tagline={tBrand('wordmarkTagline')} />
         </Link>
