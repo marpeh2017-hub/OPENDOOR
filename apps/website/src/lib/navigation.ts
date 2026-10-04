@@ -42,17 +42,19 @@ export const NAV_ITEMS: readonly NavItem[] = [
 ] as const
 
 /**
- * Where the resident portal lives.
- *
- * TODAY it is a separate app on :3002 with no shared origin, so this is a
- * placeholder route inside the website that explains the situation rather than
- * a dead link to a port a visitor cannot reach.
- *
- * AFTER the Phase 2 cutover documented in `docs/ODG_WEBSITE_PHASE1_PLAN.md`
- * §3.3, the Portal is served at `/resident` on this origin and this constant
- * becomes `/resident`. One edit, because nothing else hardcodes it.
+ * The page that EXPLAINS the residents' personal area: how access works, and
+ * how to reach us if signing in does not. It is not the sign-in itself.
  */
 export const RESIDENT_PORTAL_HREF = '/resident-portal'
+
+/**
+ * Where every "personal area" link points. `/portal` forwards to the portal
+ * app when `NEXT_PUBLIC_PORTAL_URL` is set, and to `RESIDENT_PORTAL_HREF` when
+ * it is not — so a link labelled as a sign-in is never a dead address, and
+ * the Phase 2 cutover in `docs/ODG_WEBSITE_PHASE1_PLAN.md` §3.3 is a change to
+ * that variable rather than to any link.
+ */
+export const PERSONAL_AREA_HREF = '/portal'
 
 /** Footer groups. Mirrors §63 without inventing registration numbers or
  *  addresses, which the specification explicitly forbids. */

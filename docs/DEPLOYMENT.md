@@ -114,6 +114,24 @@ WEB_URL=https://app.odg.co.il
 On **Vercel**, per project, the gateway's address. The portal additionally needs
 the server-side `WEBSITE_URL` for its legal links.
 
+The **website** additionally needs `NEXT_PUBLIC_PORTAL_URL` — the portal's
+public address, e.g. `https://portal.odg.co.il`. Every "אזור אישי" link on the
+site goes through `/portal`, which forwards to that address.
+
+> **If it is not set, the site still works, but no owner can sign in from it.**
+> `/portal` then forwards to the explanatory page instead, so a production build
+> without the variable has no dead links — and also no working route to the
+> personal area. Set it in the same step as the portal goes live, redeploy the
+> website (Vercel applies a changed variable only to new deployments), and check
+> that `https://odg.co.il/he/portal` lands on the portal's login page.
+
+> **Open decision: subdomain or path.** This document assumes `portal.odg.co.il`.
+> `docs/ODG_WEBSITE_PHASE1_PLAN.md` §3.3 instead plans the portal at `/resident`
+> on the main domain. Either works with the variable above
+> (`https://odg.co.il/resident`), but the DNS table, the gateway's `PORTAL_URL`
+> and the portal's own base path all follow from the choice, so settle it before
+> the portal is deployed rather than after.
+
 ## 6. DNS for odg.co.il
 
 Add at the registrar. Vercel and Fly both show the exact target after you add
@@ -188,6 +206,8 @@ browser ignores over plain HTTP — nothing is broken, nothing is protected yet.
 - [ ] Health reports `"redisMode":"client"`
 - [ ] `prisma migrate deploy` succeeded — check the first boot's logs
 - [ ] First admin created via `pnpm bootstrap`
+- [ ] `NEXT_PUBLIC_PORTAL_URL` set on the website, and `https://odg.co.il/he/portal` lands on the portal's login page — unset, every "אזור אישי" link quietly falls back to the explanatory page
+- [ ] `RESIDENT_ACCESS` decided in `apps/website/src/lib/project-presentation.ts`. While it is `COMING_SOON`, every project page tells owners their environment is still being set up and offers no sign-in, even with the portal live and linked from the header
 - [ ] **Automated backups configured and a restore actually tested** (R10)
 - [ ] **Uptime and error alerting configured** (R11)
 

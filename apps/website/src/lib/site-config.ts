@@ -3,6 +3,20 @@ export const SITE_URL = (process.env['NEXT_PUBLIC_SITE_URL'] || 'https://odg.co.
   /\/+$/,
   '',
 )
+/**
+ * Where the residents' personal area (the portal app) is served, or null when
+ * it is not configured.
+ *
+ * Deliberately NO default. The site's own URL falls back to its production
+ * domain because the site always exists; the portal's address is not settled
+ * — the Phase 1 plan puts it at `/resident` on this origin, the deployment
+ * notes at a `portal.` subdomain — and a guessed default would ship a link to
+ * an address that does not resolve. Unset, every "personal area" link lands on
+ * the explanatory page instead (see `app/[locale]/portal/page.tsx`).
+ */
+export const PORTAL_URL: string | null =
+  process.env['NEXT_PUBLIC_PORTAL_URL']?.trim().replace(/\/+$/, '') || null
+
 export const CONTACT = {
   phone: '054-8018613',
   phoneHref: 'tel:+972548018613',

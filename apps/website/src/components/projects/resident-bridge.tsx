@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
+import { PERSONAL_AREA_HREF, RESIDENT_PORTAL_HREF } from '@/lib/navigation'
 import { STROKE } from '@/components/brand/architecture'
 import { RESIDENT_ACCESS } from '@/lib/project-presentation'
 
@@ -78,14 +79,14 @@ export async function ResidentBridge() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             {available ? (
               <Link
-                href="/resident-portal"
+                href={PERSONAL_AREA_HREF}
                 className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-teal-600 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-teal-700"
               >
                 {t('signIn')}
               </Link>
             ) : (
               <Link
-                href="/resident-portal"
+                href={RESIDENT_PORTAL_HREF}
                 className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-gray-400 bg-white px-6 py-3.5 text-[15px] font-semibold text-gray-800 transition-colors hover:border-teal-600 hover:text-teal-800"
               >
                 {t('about')}

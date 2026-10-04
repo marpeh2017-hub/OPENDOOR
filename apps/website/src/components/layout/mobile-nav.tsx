@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Menu, X } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
-import { RESIDENT_PORTAL_HREF } from '@/lib/navigation'
+import { PERSONAL_AREA_HREF } from '@/lib/navigation'
 
 /**
  * Mobile navigation.
@@ -177,7 +177,7 @@ export function MobileNav({
 
             <div className="border-t border-gray-200 p-4">
               <Link
-                href={RESIDENT_PORTAL_HREF}
+                href={PERSONAL_AREA_HREF}
                 onClick={() => setOpen(false)}
                 className="block rounded-md border border-teal-600 px-4 py-3 text-center text-sm font-semibold text-teal-700 hover:bg-teal-50"
               >

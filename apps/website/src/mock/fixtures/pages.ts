@@ -50,8 +50,8 @@ const homepageBlocks: PageBlock[] = [
       en: "Talk to us about your building",
     },
     primaryCtaHref: '/eligibility',
-    secondaryCtaLabel: { he: 'מידע על התיק שלכם', en: 'Resident portal' },
-    secondaryCtaHref: '/resident-portal',
+    secondaryCtaLabel: { he: 'אזור אישי', en: 'Personal area' },
+    secondaryCtaHref: '/portal',
     note: {
       he: 'התשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
       en: 'OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.',
