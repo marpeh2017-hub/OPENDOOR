@@ -86,7 +86,7 @@ const aboutBlocks: PageBlock[] = [
     heading: { he: 'תפקידנו', en: 'Our role' },
     body: {
       he: 'אנחנו לא יזמים, ולא פועלים מטעם חברת נדל״ן. אנחנו מייצגים ומארגנים בעלי דירות בתהליכי התחדשות עירונית. התפקיד שלנו הוא לתת לכם שליטה בתהליך: להנגיש את המידע, לבנות נציגות מסודרת, להביא חלופות, לנהל משא ומתן, ולהעלות כל החלטה משמעותית לבחירת בעלי הדירות. בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
-      en: 'We are not developers and we do not act on behalf of real estate companies. We represent and organise apartment owners in urban renewal processes. Our role is to give you control of the process: make information accessible, build an organised representation, bring alternatives, conduct negotiations, and put every significant decision to the owners' vote. In the end, you decide. We ensure you do it with all the information you need.',
+      en: 'We are not developers and we do not act on behalf of real estate companies. We represent and organise apartment owners in urban renewal processes. Our role is to give you control of the process: make information accessible, build an organised representation, bring alternatives, conduct negotiations, and put every significant decision to the owners’ vote. In the end, you decide. We ensure you do it with all the information you need.',
     },
   },
   {
