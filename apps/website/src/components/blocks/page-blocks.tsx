@@ -13,6 +13,8 @@ import { FeatureGridBlockView } from './feature-grid-block'
 import { TextSectionBlockView } from './text-section-block'
 import { CityBandBlockView } from './city-band-block'
 import { CtaBlockView } from './cta-block'
+import { ChapterBlockView } from './chapter-block'
+import { ChecklistBlockView } from './checklist-block'
 
 /**
  * Renders a CMS page's blocks, in order.
@@ -54,6 +56,7 @@ const SELF_WRAPPING = new Set([
   'PAGE_HEADER', 'COMPARISON', 'ROLE_MAP', 'JOURNEY',
   'EXTERNAL_RESOURCES', 'MEDIA', 'CTA', 'FEATURE_GRID', 'PROCESS',
   'PROJECT_TRANSPARENCY', 'TRUST', 'VERIFIABLE_FACTS', 'TEXT_SECTION',
+  'CHAPTER', 'CHECKLIST',
 ])
 
 export async function PageBlocks({
@@ -69,6 +72,7 @@ export async function PageBlocks({
   const visible = blocks.filter((block) => !block.hidden)
 
   const rendered: React.ReactNode[] = []
+  let chapterPosition = 0
 
   for (let index = 0; index < visible.length; index += 1) {
     const block = visible[index]!
@@ -87,7 +91,7 @@ export async function PageBlocks({
             <div className="lg:sticky lg:top-28 lg:self-start">
               <StatementBlockView block={block} t={t} />
             </div>
-            <ProseBlockView block={next} t={t} />
+            <ProseBlockView block={next} t={t} justify />
           </div>
         </Section>,
       )
@@ -112,6 +116,19 @@ export async function PageBlocks({
           </div>
         </Section>,
       )
+      continue
+    }
+
+    /* ── SEQUENCE RULE: chapters alternate ─────────────────────────────────
+     * Each CHAPTER learns its position among the page's chapters, which sets
+     * the image's side and the surface. Counted across the whole page rather
+     * than per run, so a chapter after an interruption still alternates from
+     * the last one a reader saw. */
+    if (block.type === 'CHAPTER') {
+      rendered.push(
+        <ChapterBlockView key={block.id} block={block} t={t} position={chapterPosition} />,
+      )
+      chapterPosition += 1
       continue
     }
 
@@ -184,6 +201,13 @@ async function renderBlockBody(
 
     case 'CTA':
       return <CtaBlockView block={block} t={t} />
+
+    case 'CHECKLIST':
+      return <ChecklistBlockView block={block} t={t} />
+
+    case 'CHAPTER':
+      // Normally rendered by the sequence rule above, which knows its position.
+      return <ChapterBlockView block={block} t={t} position={0} />
 
     default:
       // An unknown block renders nothing rather than crashing the page. Once

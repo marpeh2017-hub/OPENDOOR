@@ -150,6 +150,26 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     asset: null,
   },
 
+  /* ── /about, the chapter about Michael ───────────────────────────────── */
+  ABOUT_MICHAEL_PORTRAIT: {
+    id: 'ABOUT_MICHAEL_PORTRAIT',
+    purpose:
+      'Puts a face to the person an owner will actually meet. Until the photograph exists the drawing holds the place: a generated likeness of a real person is a fabrication, not a placeholder.',
+    orientation: 'portrait',
+    desktopRatio: '4 / 5',
+    mobileRatio: '4 / 5',
+    minResolution: '1200 × 1500',
+    altIntent: 'Michael Rosenbach, named, in the setting the photograph shows.',
+    // What renders today. When the photograph arrives its classification needs
+    // a decision: ImageClaim has no value for a photograph of the company's own
+    // people, and VERIFIED_PROJECT_PHOTO means a project's building.
+    claim: 'ARCHITECTURAL_PATTERN',
+    direction:
+      'A real, recent photograph of Michael Rosenbach, supplied by the company. Natural light, at work or against Jerusalem stone. Must NOT be: an AI-generated or retouched likeness, a stock model, or a group shot cropped down.',
+    fallback: 'pattern',
+    asset: null,
+  },
+
   /* ── 5 ── /how-we-work ───────────────────────────────────────────────── */
   RENEWED_ALONGSIDE_EXISTING: {
     id: 'RENEWED_ALONGSIDE_EXISTING',

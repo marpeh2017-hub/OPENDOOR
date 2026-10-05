@@ -30,6 +30,7 @@ export type BlockType =
   | 'PAGE_HEADER'
   | 'STATEMENT'
   | 'PROSE'
+  | 'CHAPTER'
   | 'TEXT_SECTION'
   | 'COMPARISON'
   | 'ROLE_MAP'
@@ -40,6 +41,7 @@ export type BlockType =
   | 'PROJECT_TRANSPARENCY'
   | 'TRUST'
   | 'VERIFIABLE_FACTS'
+  | 'CHECKLIST'
   | 'PORTAL'
   | 'KNOWLEDGE'
   | 'FAQ'
@@ -56,11 +58,11 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   // Openings
   'HERO', 'PAGE_HEADER',
   // Editorial
-  'STATEMENT', 'PROSE', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
+  'STATEMENT', 'PROSE', 'CHAPTER', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
   // Process
   'JOURNEY', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
-  'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
+  'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'CHECKLIST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
   // Other
   'PORTAL', 'MEDIA', 'CTA',
 ] as const
@@ -216,7 +218,47 @@ export interface ProseBlock extends BlockBase {
   heading?: LocalizedTextOptional
   /** Set larger than the body. Optional: not every prose block needs one. */
   lead?: LocalizedTextOptional
-  body: LocalizedText
+  /** Optional since a lead can carry a block alone, as beside a STATEMENT
+   *  when the whole point is one sentence. */
+  body?: LocalizedTextOptional
+}
+
+/**
+ * One section of a longer argument, with an image beside it.
+ *
+ * ── WHY NOT PROSE WITH AN IMAGE FIELD ──────────────────────────────────────
+ *
+ * PROSE is a column of text that sits inside whatever composition surrounds
+ * it, including the sticky STATEMENT pairing. A chapter is the composition:
+ * text and image side by side across the full column, its own surface, an
+ * optional numeral. Folding that into PROSE would give every prose block a
+ * layout it must not take inside the pairing.
+ *
+ * ── THE SEQUENCE IS THE RENDERER'S, NOT THE EDITOR'S ───────────────────────
+ *
+ * There is no side or surface field. The Nth chapter on a page alternates the
+ * image's side and the surface from the one before it, so chapters read as a
+ * sequence however an editor reorders them, and no editor can produce three
+ * images in a column on the same side.
+ */
+export interface ChapterBlock extends BlockBase {
+  type: 'CHAPTER'
+  /** Rendered as a large outline numeral, e.g. "01". Not localized: it reads
+   *  the same in every language. A chapter about a person carries none. */
+  numeral?: string
+  heading: LocalizedText
+  /** Set larger than the body. */
+  lead?: LocalizedTextOptional
+  /** Plain text, split on blank lines, as in PROSE. */
+  body?: LocalizedTextOptional
+  /** A pull quote at display size under the heading. The quote marks are part
+   *  of the text, so an editor decides whether it is a quotation. */
+  quote?: LocalizedTextOptional
+  /** One closing line in the accent colour. */
+  emphasis?: LocalizedTextOptional
+  /** Slot in the site's image inventory. Until the slot has an asset its
+   *  drawing renders, so a chapter can ship before its photograph exists. */
+  slotId?: string
 }
 
 /**
@@ -375,6 +417,13 @@ export interface FeatureGridBlock extends BlockBase {
   heading: LocalizedText
   intro?: LocalizedTextOptional
   items: NarrativeItem[]
+  /**
+   * `inverse` puts VERIFIABLE_FACTS on the dark surface. Honoured by that
+   * renderer only. The homepage keeps it light because the trust index is
+   * already its one dark band; a page with no other dark band, such as /about,
+   * can give the facts that weight instead.
+   */
+  tone?: 'inverse'
 }
 
 export interface NarrativeItem {
@@ -385,6 +434,29 @@ export interface NarrativeItem {
    * Icon name from a fixed set, not an arbitrary upload. An editor who can
    * upload an icon per item produces a page with eight visual languages.
    */
+  icon?: string
+}
+
+/**
+ * Named things, each with an icon: what we check in an offer.
+ *
+ * Labels only, deliberately. An item that needs a sentence of its own is a
+ * FEATURE_GRID item; this is for lists a reader takes in at a glance, where a
+ * paragraph under every label would bury the list it is supposed to be.
+ */
+export interface ChecklistBlock extends BlockBase {
+  type: 'CHECKLIST'
+  heading: LocalizedText
+  items: ChecklistItem[]
+  /** One closing sentence under the grid. */
+  note?: LocalizedTextOptional
+}
+
+export interface ChecklistItem {
+  id: string
+  label: LocalizedText
+  /** Name from the renderer's fixed icon set, for the same reason as
+   *  NarrativeItem's: one visual language, not one per editor. */
   icon?: string
 }
 
@@ -457,8 +529,8 @@ export interface PortalAudienceGroup {
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
-  | PageHeaderBlock | StatementBlock | ProseBlock
-  | ComparisonBlock | RoleMapBlock | JourneyBlock
+  | PageHeaderBlock | StatementBlock | ProseBlock | ChapterBlock
+  | ComparisonBlock | RoleMapBlock | JourneyBlock | ChecklistBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 
