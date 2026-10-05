@@ -2,7 +2,6 @@ import type { MediaBlock } from '@urban-renewal/api-contracts'
 import type { Localizer } from '@/lib/localize'
 import { EditorialImage } from '@/components/brand/editorial-image'
 import { getImageSlot, IMAGE_SLOTS } from '@/mock/fixtures/images'
-import { STROKE } from '@/components/brand/architecture'
 
 /**
  * The city band.
@@ -49,29 +48,18 @@ export async function CityBandBlockView({ block, t }: { block: MediaBlock; t: Lo
           produces a horizontal scrollbar. `clip` removes that overflow WITHOUT
           creating a scroll container — which `hidden` would, breaking the
           `position: sticky` columns elsewhere on the page. */}
+      {/* No line is drawn over the photograph. A 1px "thread" used to cross
+          it at the column's inline start, continuing a line that no page
+          draws above or below the band; on its own it read as a stray
+          scrollbar on the picture. */}
       <div className="relative left-1/2 w-screen -translate-x-1/2">
-        <div className="relative">
-          <EditorialImage
-            t={t}
-            slot={slot}
-            sizes="100vw"
-            captionHidden
-            className="aspect-[3/2] w-full sm:aspect-[2/1] lg:aspect-[21/9]"
-          />
-
-          {/* The thread crosses the band — the journey does not pause for the
-              photograph, it passes through it. */}
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 top-0 hidden lg:block"
-            style={{
-              insetInlineStart: 'max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem))',
-              width: '1px',
-              background: `linear-gradient(to bottom, ${STROKE.teal}, ${STROKE.teal})`,
-              opacity: 0.55,
-            }}
-          />
-        </div>
+        <EditorialImage
+          t={t}
+          slot={slot}
+          sizes="100vw"
+          captionHidden
+          className="aspect-[3/2] w-full sm:aspect-[2/1] lg:aspect-[21/9]"
+        />
       </div>
 
       {/* The framing line, back inside the page column. */}
