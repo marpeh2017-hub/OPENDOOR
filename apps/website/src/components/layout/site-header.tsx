@@ -32,10 +32,10 @@ import { BrandMark } from '@/components/brand/brand-mark'
  * ── WHAT IS DELIBERATELY UNCHANGED ─────────────────────────────────────────
  *
  * Two persistent actions, neither rotating — a primary CTA that changes on its
- * own gives a returning visitor no stable target. The wordmark is still text:
- * the logo asset has not been supplied, and a placeholder image would need
- * replacing everywhere and would ship broken in the meantime. `BrandMark`
- * swaps to the SVG with a one-line change and no header redesign.
+ * own gives a returning visitor no stable target.
+ *
+ * The brand is the official logo (`BrandMark`), at a height the bar holds
+ * without changing: the bar is 64px at every width.
  */
 export async function SiteHeader() {
   const [tNav, tCta, tBrand] = await Promise.all([
@@ -53,13 +53,16 @@ export async function SiteHeader() {
     <HeaderShell>
       {/* Inline padding falls back to the original px-4 when the inset is 0.
           In landscape on a notched phone the cutout sits at an inline edge,
-          and without this the logo or the language control renders under it. */}
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
+          and without this the logo or the language control renders under it.
+          Below `sm` the gaps are tighter: the logo, the language control, the
+          CTA and the menu button need 318px together, and a 360px phone has
+          322px inside the padding. With the wider gaps the CTA wrapped. */}
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 sm:gap-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
         <Link
           href="/"
           className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
         >
-          <BrandMark name={tBrand('name')} tagline={tBrand('wordmarkTagline')} />
+          <BrandMark name={tBrand('name')} />
         </Link>
 
         {/* `aria-label` distinguishes this from the footer's nav landmark. */}
@@ -78,7 +81,7 @@ export async function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ms-auto flex items-center gap-1.5 lg:ms-0">
+        <div className="ms-auto flex items-center gap-1 sm:gap-1.5 lg:ms-0">
           <LanguageSwitcher />
 
           <Link
@@ -93,7 +96,7 @@ export async function SiteHeader() {
               buried inside the menu. */}
           <Link
             href="/eligibility"
-            className="inline-flex min-h-[44px] items-center rounded-md bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 lg:min-h-0 lg:px-4"
+            className="inline-flex min-h-[44px] items-center rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 sm:px-3.5 lg:min-h-0 lg:px-4"
           >
             <span className="hidden sm:inline">{tCta('eligibility')}</span>
             <span className="sm:hidden">{tCta('eligibilityShort')}</span>

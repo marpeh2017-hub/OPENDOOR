@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { FOOTER_GROUPS } from '@/lib/navigation'
 import { CONTACT } from '@/lib/site-config'
+import { BrandMark } from '@/components/brand/brand-mark'
 
 /**
  * Site footer.
@@ -22,8 +23,8 @@ export async function SiteFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="text-base font-bold text-teal-700">{tBrand('name')}</p>
-            <p className="mt-2 max-w-narrow text-sm text-gray-600">{tBrand('tagline')}</p>
+            <BrandMark name={tBrand('name')} variant="footer" />
+            <p className="mt-3 max-w-narrow text-sm text-gray-600">{tBrand('tagline')}</p>
             <a
               href={CONTACT.phoneHref}
               dir="ltr"

@@ -82,13 +82,12 @@ export async function generateMetadata({
   /**
    * Open Graph / Twitter.
    *
-   * The image is a BRAND CARD, not a photograph: the door and the skyline in
-   * the site's own lines on its dark surface (public/og/odg-share.png). The
-   * reason this file once shipped no image still holds, since a placeholder
-   * photograph would be a small lie about the brand in every preview. A card
-   * drawn from the brand's own vocabulary claims nothing it is not, and a link
-   * shared in WhatsApp no longer arrives as a bare line of text. Replace it with
-   * a real photograph per `ODG_IMAGE_REQUIREMENTS.md` when one exists.
+   * The image is a BRAND CARD, not a photograph: the official logo on white
+   * with the domain beneath (public/og/odg-share.png, rendered from the brand
+   * kit). The reason this file once shipped no image still holds, since a
+   * placeholder photograph would be a small lie about the brand in every
+   * preview. The card claims nothing but the name, and a link shared in
+   * WhatsApp no longer arrives as a bare line of text.
    *
    * The share title carries the tagline. The name alone told a recipient
    * nothing about what the link was.
@@ -140,7 +139,8 @@ export default async function LocaleLayout({
     name: 'OpenDoor Group',
     legalName: locale === 'he' ? COMPANY.legalName : COMPANY.legalNameEn,
     url: `${SITE_URL}/${locale}`,
-    logo: `${SITE_URL}/apple-icon.png`,
+    // The shield on white, square: what search results show beside the name.
+    logo: `${SITE_URL}/brand/opendoor-icon-512.png`,
     telephone: CONTACT.phoneHref.replace('tel:', ''),
     email: CONTACT.email,
     areaServed: locale === 'he' ? 'ירושלים והסביבה' : 'Jerusalem and its surroundings',
