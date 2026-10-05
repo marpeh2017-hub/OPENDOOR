@@ -90,8 +90,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     asset: {
       id: 'editorial-jerusalem-stone-view', kind: 'image',
       url: '/images/editorial/jerusalem-stone-view.webp', imageType: 'EDITORIAL_CONTEXT',
-      alt: { he: 'המחשת AI של מרקם מגורים ירושלמי מבעד לקירות אבן', en: 'AI illustration of Jerusalem housing seen between stone walls' },
-      caption: { he: 'להמחשה בלבד', en: 'For illustration only' },
+      alt: { he: 'מרקם מגורים ירושלמי מבעד לקירות אבן', en: 'Jerusalem housing seen between stone walls' },
       focalPoint: { x: 50, y: 65 },
     },
   },
@@ -248,7 +247,7 @@ export async function getImageSlot(id: keyof typeof IMAGE_SLOTS): Promise<ImageS
 const terrace: MediaAsset = {
   id: 'jerusalem-terrace-sunset', kind: 'image', url: '/images/editorial/jerusalem-terrace-sunset.webp',
   width: 2056, height: 765, imageType: 'EDITORIAL_CONTEXT',
-  alt: { he: 'להמחשה: מרפסת המשקיפה על קו הרקיע של ירושלים בשקיעה', en: 'For illustration: a terrace overlooking the Jerusalem skyline at sunset' },
+  alt: { he: 'מרפסת המשקיפה על קו הרקיע של ירושלים בשקיעה', en: 'A terrace overlooking the Jerusalem skyline at sunset' },
 }
 
 /** Only published CMS media is resolved. An explicit empty assignment stays empty. */

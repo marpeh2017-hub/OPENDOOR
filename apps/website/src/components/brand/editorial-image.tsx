@@ -16,10 +16,11 @@ import { JerusalemHillside, ChordsBridgeGeometry, LightRailStreet } from './jeru
  *      declared in the inventory and applied to the container, so swapping a
  *      drawing for a photograph — or a slow photograph arriving late — cannot
  *      shift the page. This is the whole of the CLS defence.
- *   2. AN EDITORIAL_CONTEXT IMAGE ALWAYS CARRIES ITS CAPTION. Not on hover,
- *      not in a tooltip, not only for screen readers. A photograph of the
- *      Chords Bridge on a company homepage is read as that company's work
- *      unless the page says otherwise, and the caption is what says otherwise.
+ *   2. AN EDITORIAL_CONTEXT IMAGE SHOWS ITS CAPTION WHEN IT HAS ONE. Not on
+ *      hover, not in a tooltip, not only for screen readers. A photograph of
+ *      the Chords Bridge on a company homepage is read as that company's work
+ *      unless the page says otherwise, and the caption is what says otherwise:
+ *      a photograph of a place the company did not build should carry one.
  *   3. NOTHING CAN BE SHOWN AS A PROJECT PHOTOGRAPH BY ACCIDENT. Only
  *      `VERIFIED_PROJECT_PHOTO` renders without a context caption, and the
  *      project card never passes anything else.
@@ -74,7 +75,8 @@ export function EditorialImage({
   // need to: it is visibly a drawing and therefore claims nothing.
   // Authored marketing layouts may suppress repeated captions. The asset's
   // classification and descriptive alt remain unchanged.
-  const needsCaption = !captionHidden && asset?.imageType !== 'VERIFIED_PROJECT_PHOTO'
+  const needsCaption =
+    !captionHidden && asset?.imageType !== 'VERIFIED_PROJECT_PHOTO' && Boolean(asset?.caption || asset?.credit)
 
   return (
     <figure className="relative m-0">

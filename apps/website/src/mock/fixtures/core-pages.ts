@@ -70,10 +70,6 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     assets: [],
     slotId: 'HERO_JERUSALEM_ARCHITECTURE',
-    caption: {
-      he: 'המחשת AI של מרקם מגורים ירושלמי. אינה תיעוד של פרויקט של החברה.',
-      en: 'AI illustration of Jerusalem housing. Not documentation of a company project.',
-    },
   },
   {
     id: 'about-statement',
@@ -541,10 +537,6 @@ const howWeWorkBlocks: PageBlock[] = [
     hidden: false,
     slotId: 'RESIDENT_MEETING',
     assets: [],
-    caption: {
-      he: 'בנייה קיימת לצד בנייה מחודשת. תמונת הקשר, לא פרויקט של החברה.',
-      en: 'Existing construction beside renewed construction. Context, not a project of ours.',
-    },
   },
   {
     id: 'how-cta',
