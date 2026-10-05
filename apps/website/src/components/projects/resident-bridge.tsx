@@ -22,7 +22,8 @@ import { RESIDENT_ACCESS } from '@/lib/project-presentation'
  *   AVAILABLE   a sign-in link out to the portal.
  *   COMING_SOON no sign-in at all. It states what exists TODAY — meetings,
  *               written summaries, direct contact with the representation —
- *               and offers contact instead. This is the current state.
+ *               and offers contact instead. Shown only while the portal's
+ *               address is not configured (see `RESIDENT_ACCESS`).
  *   HIDDEN      nothing, for a representation that has asked that no resident
  *               channel be advertised publicly.
  *
@@ -114,7 +115,9 @@ export async function ResidentBridge() {
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-900">{t('privateHeading')}</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                {t(available ? 'privateHeadingLive' : 'privateHeading')}
+              </h3>
               <ul className="mt-2.5 list-disc space-y-1.5 ps-4 text-[13px] leading-relaxed text-gray-600">
                 <li>{t('private1')}</li>
                 <li>{t('private2')}</li>

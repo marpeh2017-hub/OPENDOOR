@@ -41,8 +41,9 @@ export interface PortalDemoStrings {
  *      a caption underneath — inside, always, in both views.
  *   2. No real project name, address, resident, date or number anywhere in the
  *      content. Enforced at the fixture, not here.
- *   3. The section's own `buildNotice` says the environment is still being
- *      built, and it renders next to the heading rather than below the fold.
+ *   3. The section's own `buildNotice` says what is still being built (the
+ *      representation workspace, since the owners' personal area is live),
+ *      and it renders next to the heading rather than below the fold.
  *
  * ── NOT A FLOATING BROWSER SCREENSHOT ──────────────────────────────────────
  *

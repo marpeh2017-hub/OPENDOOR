@@ -207,7 +207,7 @@ browser ignores over plain HTTP — nothing is broken, nothing is protected yet.
 - [ ] `prisma migrate deploy` succeeded — check the first boot's logs
 - [ ] First admin created via `pnpm bootstrap`
 - [ ] `NEXT_PUBLIC_PORTAL_URL` set on the website, and `https://odg.co.il/he/portal` lands on the portal's login page — unset, every "אזור אישי" link quietly falls back to the explanatory page
-- [ ] `RESIDENT_ACCESS` decided in `apps/website/src/lib/project-presentation.ts`. While it is `COMING_SOON`, every project page tells owners their environment is still being set up and offers no sign-in, even with the portal live and linked from the header
+- [ ] Project pages show "כניסה לבעלי דירות". Owners can sign in from launch (decided 2026-10-05), and `RESIDENT_ACCESS` follows the same `NEXT_PUBLIC_PORTAL_URL` as the header link, so this confirms the variable reached the build. Owners' phone numbers must already be registered in the portal, or they reach a sign-in they cannot pass
 - [ ] **Automated backups configured and a restore actually tested** (R10)
 - [ ] **Uptime and error alerting configured** (R11)
 

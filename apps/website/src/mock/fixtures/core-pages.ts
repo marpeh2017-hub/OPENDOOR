@@ -36,10 +36,12 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  *   3. NO FEAR. Nothing warns the reader about what might happen to them.
  *      Naming a worry owners already have, as /about opens by doing, is not
  *      a warning, provided the next thing the page does is answer it.
- *   4. CURRENT PRACTICE IS SEPARATED FROM WHAT IS BEING BUILT. On /trust the
- *      digital resident area is described in the future tense and labelled,
- *      because describing unbuilt software in the present tense is the same
- *      category of untruth as an invented statistic.
+ *   4. CURRENT PRACTICE IS SEPARATED FROM WHAT IS BEING BUILT. Describing
+ *      unbuilt software in the present tense is the same category of untruth
+ *      as an invented statistic. The personal area for owners is live from
+ *      launch (decided 2026-10-05), so /trust describes it in the present
+ *      tense, limited to what the portal does. The representation workspace
+ *      is not built and stays in the future tense, labelled.
  *   5. WHO PAYS IS SAID ONE WAY. Where a page states it (the homepage note
  *      and facts block, the /about role section) it is the same two clauses:
  *      the developer alone pays the company, and owners pay it nothing
@@ -652,14 +654,14 @@ const trustBlocks: PageBlock[] = [
     type: 'PROSE',
     order: 2,
     hidden: false,
-    heading: { he: 'התיק הדיגיטלי שלכם', en: 'The digital resident area' },
+    heading: { he: 'האזור האישי', en: 'The personal area' },
     lead: {
-      he: 'הסביבה הדיגיטלית לבעלי הדירות נמצאת בבנייה. חלק מהיכולות המתוארות כאן טרם זמינות.',
-      en: 'The digital environment for owners is being built. Some of the capabilities described here are not yet available.',
+      he: 'באזור האישי כל בעל דירה רואה במקום אחד את השלב שבו הפרויקט נמצא, את העדכונים, את המסמכים שנוגעים לדירה שלו ואת הפגישות הקרובות.',
+      en: 'In the personal area every owner sees in one place which stage the project has reached, the updates, the documents relevant to their apartment, and the meetings coming up.',
     },
     body: {
-      he: 'הכוונה היא שכל בעל דירה יוכל לראות במקום אחד את השלב שבו הפרויקט נמצא, את העדכון האחרון, את המסמכים שנוגעים לדירה שלו ואת המועדים הקרובים. לחברי הנציגות מתוכננת סביבה נוספת לניהול ההחלטות והמשימות.\n\nעד שהסביבה תהיה זמינה במלואה, הנהלים שלמעלה מתקיימים בערוצים הרגילים: פגישות, סיכומים כתובים ותקשורת ישירה מול הנציגות.',
-      en: 'The intent is that every owner can see in one place which stage the project has reached, the latest update, the documents relevant to their apartment, and what is coming up. A further environment for managing decisions and tasks is planned for representation members.\n\nUntil that environment is fully available, the practices above run through the ordinary channels: meetings, written summaries, and direct communication with the representation.',
+      he: 'משם אפשר גם לשלוח הודעות ופניות, ולחתום על מסמכים כשנדרש. הכניסה נעשית בקוד חד־פעמי שנשלח לטלפון הנייד הרשום אצלנו. סביבה לחברי הנציגות, לניהול ההחלטות והמשימות, עדיין בבנייה.\n\nלצד האזור האישי, הנהלים שלמעלה ממשיכים להתקיים גם בערוצים הרגילים: פגישות, סיכומים כתובים ותקשורת ישירה מול הנציגות.',
+      en: 'From there owners can also send messages and requests, and sign documents when needed. Sign-in is by a one-time code sent to the mobile number we hold. A workspace for representation members, for managing decisions and tasks, is still being built.\n\nAlongside the personal area, the practices above continue through the ordinary channels too: meetings, written summaries, and direct communication with the representation.',
     },
   },
   {

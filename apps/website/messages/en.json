@@ -97,7 +97,7 @@
       "title": "Accessibility statement"
     },
     "residentPortal": {
-      "title": "Resident portal"
+      "title": "Personal area"
     }
   },
   "links": {
@@ -353,6 +353,7 @@
     "public3": "Verified figures",
     "public4": "The milestone record",
     "privateHeading": "In the planned resident area",
+    "privateHeadingLive": "In the personal area",
     "private1": "Running updates",
     "private2": "Documents about the apartment",
     "private3": "Meeting summaries",

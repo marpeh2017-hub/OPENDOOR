@@ -289,8 +289,8 @@ const homepageBlocks: PageBlock[] = [
       en: 'Knowing where the project stands, and what comes next',
     },
     intro: {
-      he: 'המערכת הדיגיטלית של OpenDoor Group נבנית כדי שבעלי הדירות יוכלו לעקוב אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
-      en: 'OpenDoor\u2019s digital system is being built so owners can follow the project\u2019s progress, documents, updates and meetings without waiting for a phone call. The view below demonstrates the structure and does not describe an existing project.',
+      he: 'באזור האישי בעלי הדירות עוקבים אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
+      en: 'In the personal area, owners follow the project\u2019s progress, documents, updates and meetings without waiting for a phone call. The view below demonstrates the structure and does not describe an existing project.',
     },
     items: [
       {
@@ -331,12 +331,12 @@ const homepageBlocks: PageBlock[] = [
       en: 'Transparency that continues past the website',
     },
     intro: {
-      he: 'הסביבה המתוכננת מיועדת לרכז מידע לבעלי הדירות, ולסייע לחברי הנציגות בניהול ההחלטות והמשימות.',
-      en: 'The planned environment will bring information together for owners and help representation members manage decisions and tasks.',
+      he: 'האזור האישי מרכז את המידע לבעלי הדירות במקום אחד, ובהמשך יסייע גם לחברי הנציגות בניהול ההחלטות והמשימות.',
+      en: 'The personal area brings owners\u2019 information together in one place, and will also help representation members manage decisions and tasks.',
     },
     buildNotice: {
-      he: 'הסביבה הדיגיטלית נמצאת בבנייה. חלק מהיכולות המתוארות כאן טרם זמינות.',
-      en: 'The digital environment is under construction. Some of the capabilities described here are not yet available.',
+      he: 'סביבת הנציגות עדיין בבנייה. האזור האישי לבעלי הדירות פעיל.',
+      en: 'The representation workspace is still being built. The personal area for owners is live.',
     },
     /**
      * The interface demonstration.
@@ -423,7 +423,7 @@ const homepageBlocks: PageBlock[] = [
       {
         id: 'pg-resident',
         audience: { he: 'לכל בעלי הדירות', en: 'For every owner' },
-        title: { he: 'התיק שלכם', en: 'Resident area' },
+        title: { he: 'האזור האישי', en: 'Personal area' },
         items: [
           { he: 'סטטוס הפרויקט והשלב הנוכחי', en: 'Project status and current stage' },
           { he: 'מסמכים שרלוונטיים לדירה שלכם', en: 'Documents relevant to your apartment' },

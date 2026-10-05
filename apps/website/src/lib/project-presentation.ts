@@ -1,4 +1,5 @@
 import type { MediaAsset, PublicProject } from '@urban-renewal/api-contracts'
+import { PORTAL_URL } from '@/lib/site-config'
 
 /**
  * Presentation decisions for the project system.
@@ -19,9 +20,13 @@ import type { MediaAsset, PublicProject } from '@urban-renewal/api-contracts'
  * Whether the private environment for apartment owners can actually be
  * reached.
  *
- * `COMING_SOON` is the honest value TODAY: the environment is being built, no
- * authentication exists on this site, and the brief is explicit that the
- * bridge must not imply private access is live when it is not.
+ * It follows `NEXT_PUBLIC_PORTAL_URL`, the same switch as the header's "אזור
+ * אישי" link and the explanatory page. The company decided on 2026-10-05 that
+ * owners can sign in from launch, and setting the portal's address is what
+ * makes that true. Unset, a project page saying "sign in" would send owners to
+ * a page saying sign-in is unavailable, so without the variable this stays
+ * `COMING_SOON`. One switch, so the site cannot say "being built" in one place
+ * while offering a working sign-in in another.
  *
  * Three states rather than a boolean because "not available" and "not
  * mentioned" are genuinely different products:
@@ -34,12 +39,11 @@ import type { MediaAsset, PublicProject } from '@urban-renewal/api-contracts'
  *               representation has asked that the project not advertise a
  *               resident channel publicly.
  *
- * Changing this to `AVAILABLE` is a deliberate act that requires the portal
- * to exist. It is not a feature flag to flip optimistically.
+ * `HIDDEN` is still set by hand, here, when a representation asks for it.
  */
 export type ResidentAccessState = 'AVAILABLE' | 'COMING_SOON' | 'HIDDEN'
 
-export const RESIDENT_ACCESS: ResidentAccessState = 'COMING_SOON'
+export const RESIDENT_ACCESS: ResidentAccessState = PORTAL_URL ? 'AVAILABLE' : 'COMING_SOON'
 
 /* ── FILTER VISIBILITY ──────────────────────────────────────────────────── */
 
