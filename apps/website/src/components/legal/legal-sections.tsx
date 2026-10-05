@@ -32,7 +32,7 @@ const ENTITY_EN = `${COMPANY.legalNameEn} (company no. ${COMPANY.registrationNum
 /* ── Privacy ─────────────────────────────────────────────────────────────── */
 
 const hePrivacy: Section[] = [
-  { title: 'מי אנחנו', body: `האתר מופעל על ידי ${ENTITY_HE}, הפועלת תחת השם OpenDoor Group, המארגנת ומייצגת בעלי דירות בתהליכי התחדשות עירונית. החברה היא בעלת מאגר המידע כמשמעותו בחוק הגנת הפרטיות, התשמ״א-1981. מדיניות זו מסבירה כיצד אנו מטפלים במידע שמתקבל דרך האתר.` },
+  { title: 'מי אנחנו', body: `האתר מופעל על ידי ${ENTITY_HE}, הפועלת תחת השם OpenDoor Group, המארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית. החברה היא בעלת מאגר המידע כמשמעותו בחוק הגנת הפרטיות, התשמ״א-1981. מדיניות זו מסבירה כיצד אנו מטפלים במידע שמתקבל דרך האתר.` },
   { title: 'איזה מידע אנו מקבלים', body: 'כאשר אתם פונים אלינו או משתמשים בטופס פנייה, אנו מקבלים את הפרטים שבחרתם למסור: שם, טלפון, ובאופן אופציונלי דוא״ל, כתובת הבניין, מספר הדירות ותוכן הפנייה. אנו מתעדים גם את אישורי ההסכמה שסימנתם ואת מועד מסירתם. האתר מקבל גם מידע טכני הנדרש להפעלה ולאבטחה.' },
   { title: 'מסירת המידע אינה חובה', body: 'אינכם חייבים למסור לנו מידע, ומסירתו תלויה ברצונכם בלבד. בלא הפרטים המסומנים כשדות חובה לא נוכל ליצור עמכם קשר או לטפל בפנייה. הודעה זו ניתנת לפי סעיף 11 לחוק הגנת הפרטיות.' },
   { title: 'לשם מה אנו משתמשים במידע', body: 'אנו משתמשים במידע כדי להשיב לפניות, לבחון אם מתאים לקיים שיחה על בניין, למסור מידע שביקשתם, לשמור על אבטחת האתר ולעמוד בחובות שבדין. איננו עושים במידע שימוש לדיוור פרסומי ללא הסכמה נפרדת ומפורשת מראש.' },
@@ -45,7 +45,7 @@ const hePrivacy: Section[] = [
 ]
 
 const enPrivacy: Section[] = [
-  { title: 'Who we are', body: `This site is operated by ${ENTITY_EN}, trading as OpenDoor Group, which organises and represents apartment owners in urban-renewal processes. The company is the database owner under the Protection of Privacy Law, 5741-1981.` },
+  { title: 'Who we are', body: `This site is operated by ${ENTITY_EN}, trading as OpenDoor Group, which organises and supports apartment owners in urban-renewal processes. The company is the database owner under the Protection of Privacy Law, 5741-1981.` },
   { title: 'Information we receive', body: 'When you contact us or use an enquiry form we receive the details you choose to provide: name and telephone, and optionally email, building address, number of apartments and your message. We also record the consents you ticked and when you gave them, plus technical information needed to operate and secure the site.' },
   { title: 'Providing information is voluntary', body: 'You are not obliged to give us any information. Without the fields marked as required we cannot contact you or handle your enquiry. This notice is given under section 11 of the Protection of Privacy Law.' },
   { title: 'Use and sharing', body: 'We use information to answer enquiries, consider whether a conversation about a building is appropriate, provide requested information, maintain security and comply with law. Service providers may process information for hosting, storage, communications and security. We do not sell personal information, and we do not use it for marketing without separate, explicit prior consent. Any storage outside Israel is subject to the Protection of Privacy (Transfer of Data Abroad) Regulations, 5761-2001.' },
@@ -65,7 +65,7 @@ export function PrivacyContent({ english = false }: { english?: boolean }) {
 
 const heTerms: Section[] = [
   { title: 'על התנאים', body: `תנאים אלה חלים על אתר OpenDoor Group, המופעל על ידי ${ENTITY_HE}. השימוש באתר מותר בכפוף לדין ולשימוש אחראי. התנאים מנוסחים בלשון זכר מטעמי נוחות ומתייחסים לכל המגדרים.` },
-  { title: 'מידע כללי בלבד', body: 'האתר מוסר מידע כללי על ארגון וייצוג בעלי דירות. אין לראות בו ייעוץ משפטי, תכנוני, שמאי, מס או השקעות, והוא אינו מחליף ייעוץ מקצועי עצמאי.' },
+  { title: 'מידע כללי בלבד', body: 'האתר מוסר מידע כללי על ארגון וליווי בעלי דירות. אין לראות בו ייעוץ משפטי, תכנוני, שמאי, מס או השקעות, והוא אינו מחליף ייעוץ מקצועי עצמאי.' },
   { title: 'אין התחייבות לפרויקט', body: 'תיאורי התהליך, הדוגמאות והתמונות הם כלליים או להמחשה. הם אינם התחייבות לאישור, מימון, בנייה או השלמה של פרויקט, ואינם מתארים פרויקט מאומת של OpenDoor אלא אם נאמר במפורש אחרת. הליכי התחדשות עירונית תלויים בהחלטות רשויות התכנון ובהסכמות בעלי הדירות, שאינן בשליטת החברה.' },
   { title: 'פניות וקניין רוחני', body: 'שליחת פנייה אינה יוצרת הסכם ייצוג או התחייבות להתקשר. כל התקשרות כפופה להסכם נפרד בכתב חתום על ידי מורשי החתימה של החברה. תוכן האתר שייך ל־OpenDoor Group או למורשים מטעמה, ואין להעתיקו או לעשות בו שימוש מסחרי ללא רשות.' },
   { title: 'הגבלת אחריות', body: 'האתר מוצע כמות שהוא. איננו מתחייבים לזמינות רציפה, לתקינות מלאה או להיעדר תקלות, ואנו רשאים לשנות או להפסיק את פעילותו. בכפוף להוראות כל דין, לא נישא באחריות לנזק עקיף, תוצאתי או מיוחד שנגרם משימוש באתר או מהסתמכות על תכניו. אין באמור כדי לגרוע מאחריות שלא ניתן להגבילה על פי דין.' },

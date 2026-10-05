@@ -107,11 +107,11 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-role',
     order: 6,
-    group: { he: 'מי אתם ומי אתם מייצגים?', en: 'Who you are and who you represent' },
+    group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
     question: { he: 'מה בדיוק התפקיד שלכם?', en: 'What exactly is your role?' },
     answer: {
-      he: 'אנחנו מייצגים אתכם בלבד. מארגנים את המתחם, מביאים בעלי מקצוע מיטביים מטעמכם, מנהלים את המכרז מול היזמים - ומלווים אתכם עד לקבלת המפתח.',
-      en: 'We represent you and no one else. We organise the complex, bring in well-suited professionals on your behalf, run the tender with the developers - and stay with you until you receive the key.',
+      he: 'אנחנו מארגנים ומלווים את בעלי הדירות: מארגנים את המתחם, מביאים בעלי מקצוע מטעמכם, מנהלים את המכרז מול היזמים ומלווים אתכם עד לקבלת המפתח. התשלום לחברה מגיע מהיזם בלבד, וזה כתוב בהסכם שתקבלו לידיים.',
+      en: 'We organise and support the apartment owners: we organise the complex, bring in professionals on your behalf, run the tender with the developers and stay with you until you receive the key. The company is paid by the developer only, and that is written into the agreement you will hold.',
     },
   },
 ]

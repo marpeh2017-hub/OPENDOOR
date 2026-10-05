@@ -145,7 +145,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
       'Contemporary Israeli residential buildings. Describe the fabric shown without naming a place, a project, or implying OpenDoor involvement.',
     claim: 'EDITORIAL_CONTEXT',
     direction:
-      'Contemporary ISRAELI residential architecture, deliberately NOT city-specific: apartment blocks, balconies, ordinary urban density. This slot exists to carry the national positioning, so anything unmistakably Jerusalem belongs in the homepage slots instead. Daylight, flat or overcast. Must NOT be: a luxury tower, a marketing render, a construction site, or an empty styled street.',
+      'Contemporary ISRAELI residential architecture, deliberately NOT city-specific: apartment blocks, balconies, ordinary urban density. This slot was for the national positioning. Since 2026-10-05 the company presents itself in Jerusalem and its surroundings, and /about uses HERO_JERUSALEM_ARCHITECTURE instead, so the slot is unused. Daylight, flat or overcast. Must NOT be: a luxury tower, a marketing render, a construction site, or an empty styled street.',
     fallback: 'hillside',
     asset: null,
   },

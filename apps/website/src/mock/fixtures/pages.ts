@@ -42,8 +42,8 @@ const homepageBlocks: PageBlock[] = [
       en: 'A new chapter for your building. Led by you.',
     },
     subheading: {
-      he: 'OpenDoor Group מארגנת ומייצגת בעלי דירות בהתחדשות עירונית. אנחנו מלווים. אתם מחליטים.',
-      en: 'OpenDoor Group organises and represents apartment owners through urban renewal. We guide. You decide.',
+      he: 'OpenDoor Group מארגנת בעלי דירות בהתחדשות עירונית בירושלים והסביבה. אנחנו מלווים. אתם מחליטים.',
+      en: 'OpenDoor Group organises apartment owners through urban renewal in and around Jerusalem. We guide. You decide.',
     },
     primaryCtaLabel: {
       he: 'דברו איתנו על הבניין שלכם',
@@ -617,14 +617,14 @@ export const MOCK_PAGES: readonly CmsPage[] = [
     blocks: homepageBlocks,
     seo: {
       he: {
-        title: 'OpenDoor Group: ייצוג וארגון בעלי דירות בהתחדשות עירונית',
+        title: 'OpenDoor Group: ארגון וליווי בעלי דירות בהתחדשות עירונית בירושלים',
         description:
-          'OpenDoor Group מייצגת ומארגנת בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'OpenDoor Group מארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית בירושלים והסביבה, מהבדיקה הראשונית ועד למימוש הפרויקט.',
       },
       en: {
-        title: 'OpenDoor Group: representing apartment owners in urban renewal',
+        title: 'OpenDoor Group: organising apartment owners in urban renewal in Jerusalem',
         description:
-          'OpenDoor Group represents and organises apartment owners through urban-renewal processes, from the initial review to realising the project.',
+          'OpenDoor Group organises and supports apartment owners through urban-renewal processes in and around Jerusalem, from the initial review to realising the project.',
       },
     },
     updatedAt: '2026-08-27T00:00:00.000Z',

@@ -1,7 +1,7 @@
 {
   "brand": {
     "name": "OpenDoor Group",
-    "tagline": "Representing and organising apartment owners in urban renewal",
+    "tagline": "Organising and supporting apartment owners in urban renewal, in and around Jerusalem",
     "wordmarkTagline": "Urban renewal"
   },
   "nav": {
@@ -134,7 +134,7 @@
     "emptyTitle": "Projects will be published here once the owners have approved.",
     "emptyBody": "Project information will appear here after review and approval for publication. Contact us directly about your building or a particular complex.",
     "eyebrow": "Urban renewal in Israel",
-    "standfirst": "Complexes where we represent and organise the apartment owners. Each project shows the information verified as of its update date.",
+    "standfirst": "Complexes where we organise and support the apartment owners. Each project shows the information verified as of its update date.",
     "verifiedOnly": "Each project shows verified information only. A missing figure does not mean nothing is happening; it means nobody has verified that figure for publication yet."
   },
   "forms": {

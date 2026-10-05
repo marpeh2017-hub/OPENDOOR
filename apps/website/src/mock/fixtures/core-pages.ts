@@ -24,11 +24,10 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  *
  * ── POSITIONING RULES THE COPY OBEYS ───────────────────────────────────────
  *
- *   1. NATIONAL, NOT ONE CITY. No sentence says or implies that the company
- *      works only in Jerusalem. The Jerusalem graphics stay on the homepage.
- *      One deliberate exception: Michael's biography on /about names
- *      Jerusalem and its surroundings, worded so at the company's request.
- *      Whether the company itself is still positioned nationally is open.
+ *   1. JERUSALEM AND ITS SURROUNDINGS. The company decided on 2026-10-05 to
+ *      present itself as working in Jerusalem and its surroundings, which is
+ *      where its projects are. Say it plainly, never "only", and make no
+ *      claim about other cities either way.
  *   2. THE DEVELOPER IS A PARTNER, NOT AN OPPONENT. The comparison on
  *      /why-organizer describes a structure. It never suggests bad faith, and
  *      it says plainly that a developer representing its own interests is
@@ -866,12 +865,12 @@ export const CORE_PAGES: readonly CmsPage[] = [
       he: {
         title: 'מי אנחנו',
         description:
-          'OpenDoor Group מארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית, מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'OpenDoor Group מארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית בירושלים והסביבה, מהבדיקה הראשונית ועד למימוש הפרויקט.',
       },
       en: {
         title: 'About us',
         description:
-          'OpenDoor Group organises and supports apartment owners through urban renewal, from the first review to the finished project.',
+          'OpenDoor Group organises and supports apartment owners through urban renewal in and around Jerusalem, from the first review to the finished project.',
       },
     },
     updatedAt: '2026-10-04T00:00:00.000Z',
