@@ -1,3 +1,4 @@
+import { localeAlternates } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
@@ -29,7 +30,7 @@ import { DirectContact } from '@/components/forms/direct-contact'
  * contact page that names a channel and then hides it behind a form is the
  * first thing a visitor in a hurry gives up on.
  */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>
@@ -84,4 +85,15 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       </Section>
     </>
   )
+}
+
+/**
+ * Canonical and hreflang, added around the page's own metadata so each page
+ * keeps owning its title and description.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale } = await props.params
+  return { ...(await pageMetadata(props)), alternates: localeAlternates(locale, '/contact') }
 }

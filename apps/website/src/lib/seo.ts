@@ -17,3 +17,20 @@
  * finished page from search results, which is the opposite mistake.
  */
 export const STUB_ROBOTS = { index: false, follow: true } as const
+
+/**
+ * Canonical and hreflang for a page that exists in every locale.
+ *
+ * Paths are relative and resolve against `metadataBase` (SITE_URL), so the
+ * production domain is set once, by env. `x-default` is Hebrew: the site's
+ * primary language and the one a visitor with no match should land in.
+ *
+ * Per page, not in the layout: the layout does not know the path, and a
+ * middleware `Link` header loses to the preload header Next sends after it.
+ */
+export function localeAlternates(locale: string, path: string) {
+  return {
+    canonical: `/${locale}${path}`,
+    languages: { he: `/he${path}`, en: `/en${path}`, 'x-default': `/he${path}` },
+  }
+}

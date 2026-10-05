@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { SITE_URL } from '@/lib/site-config'
+import { COMPANY, CONTACT, SITE_URL } from '@/lib/site-config'
 import { notFound } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
@@ -80,14 +80,18 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'brand' })
 
   /**
-   * Open Graph / Twitter: the STRUCTURE only, no image.
+   * Open Graph / Twitter.
    *
-   * `og:image` needs a real 1200×630 asset, and none exists — see
-   * `ODG_IMAGE_REQUIREMENTS.md`. Shipping the surrounding fields now means
-   * that asset is a one-line addition later rather than a second metadata
-   * pass; a share card with no image today is a worse but honest fallback,
-   * where a placeholder image would be a small lie about the brand shipped to
-   * every social preview.
+   * The image is a BRAND CARD, not a photograph: the door and the skyline in
+   * the site's own lines on its dark surface (public/og/odg-share.png). The
+   * reason this file once shipped no image still holds, since a placeholder
+   * photograph would be a small lie about the brand in every preview. A card
+   * drawn from the brand's own vocabulary claims nothing it is not, and a link
+   * shared in WhatsApp no longer arrives as a bare line of text. Replace it with
+   * a real photograph per `ODG_IMAGE_REQUIREMENTS.md` when one exists.
+   *
+   * The share title carries the tagline. The name alone told a recipient
+   * nothing about what the link was.
    */
   return {
     // `%s` is filled by each page's own title; the brand suffix is defined once.
@@ -99,13 +103,15 @@ export async function generateMetadata({
       type: 'website',
       siteName: t('name'),
       locale: locale === 'he' ? 'he_IL' : 'en_US',
-      title: t('name'),
+      title: `${t('name')}: ${t('tagline')}`,
       description: t('tagline'),
+      images: [{ url: '/og/odg-share.png', width: 1200, height: 630, alt: t('name') }],
     },
     twitter: {
-      card: 'summary',
-      title: t('name'),
+      card: 'summary_large_image',
+      title: `${t('name')}: ${t('tagline')}`,
       description: t('tagline'),
+      images: ['/og/odg-share.png'],
     },
   }
 }
@@ -125,9 +131,37 @@ export default async function LocaleLayout({
   const { projectPreview: _previewMessages, ...messages } = await getMessages()
   const dir = LOCALE_DIRECTION[locale as AppLocale]
 
+  // Who the site belongs to, in the form search engines read. Every value is
+  // one the site already states on its own pages: the registered name and
+  // number, the phone and email, and where the company works.
+  const organization = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'OpenDoor Group',
+    legalName: locale === 'he' ? COMPANY.legalName : COMPANY.legalNameEn,
+    url: `${SITE_URL}/${locale}`,
+    logo: `${SITE_URL}/apple-icon.png`,
+    telephone: CONTACT.phoneHref.replace('tel:', ''),
+    email: CONTACT.email,
+    areaServed: locale === 'he' ? 'ירושלים והסביבה' : 'Jerusalem and its surroundings',
+    identifier: {
+      '@type': 'PropertyValue',
+      propertyID: locale === 'he' ? 'ח.פ.' : 'Israeli company number',
+      value: COMPANY.registrationNumber,
+    },
+  }
+
   return (
     <html lang={locale} dir={dir} className={heebo.variable} suppressHydrationWarning>
       <body className="min-h-dvh bg-surface-page font-sans text-gray-800 antialiased">
+        <script
+          type="application/ld+json"
+          // Static values from site-config, serialised by JSON.stringify: no
+          // visitor input reaches this string. `<` is escaped regardless.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organization).replace(/</g, '\\u003c'),
+          }}
+        />
         <NextIntlClientProvider messages={messages}>
           <SkipLink />
           <SiteHeader />

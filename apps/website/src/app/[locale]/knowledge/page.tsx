@@ -1,3 +1,4 @@
+import { localeAlternates } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { Locale } from '@urban-renewal/api-contracts'
@@ -17,7 +18,7 @@ import { makeLocalizer } from '@/lib/localize'
  * visitor sees until someone publishes a real article — never a placeholder,
  * never fabricated content.
  */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>
@@ -77,4 +78,15 @@ export default async function KnowledgePage({ params }: { params: Promise<{ loca
       </Section>
     </>
   )
+}
+
+/**
+ * Canonical and hreflang, added around the page's own metadata so each page
+ * keeps owning its title and description.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale } = await props.params
+  return { ...(await pageMetadata(props)), alternates: localeAlternates(locale, '/knowledge') }
 }

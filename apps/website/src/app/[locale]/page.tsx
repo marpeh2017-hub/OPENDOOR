@@ -1,3 +1,4 @@
+import { localeAlternates } from '@/lib/seo'
 import { Fragment } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -59,7 +60,7 @@ import { CtaBlockView } from '@/components/blocks/cta-block'
  * are fetched here in parallel. Three awaits sequentially would serialise three
  * round trips once these are real API calls.
  */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>
@@ -212,4 +213,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       })}
     </div>
   )
+}
+
+/**
+ * Canonical and hreflang, added around the page's own metadata so each page
+ * keeps owning its title and description.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale } = await props.params
+  return { ...(await pageMetadata(props)), alternates: localeAlternates(locale, '') }
 }

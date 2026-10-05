@@ -1,3 +1,4 @@
+import { localeAlternates } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getProjects, getProjectCities, getProjectTypes } from '@/mock'
@@ -60,7 +61,7 @@ import type { Locale } from '@urban-renewal/api-contracts'
  * joined `SITE_ROUTES` in `sitemap.ts` in the same change, as that file's
  * comment requires.
  */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>
@@ -143,4 +144,15 @@ export default async function ProjectsPage({
       </Section>
     </>
   )
+}
+
+/**
+ * Canonical and hreflang, added around the page's own metadata so each page
+ * keeps owning its title and description.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale } = await props.params
+  return { ...(await pageMetadata(props)), alternates: localeAlternates(locale, '/projects') }
 }

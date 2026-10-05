@@ -22,7 +22,7 @@ import { ProjectBody } from '@/components/projects/project-body'
  * is deliberate: a "this project is not published" page would confirm the
  * record exists, which is itself a disclosure.
  */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>
@@ -70,4 +70,15 @@ export default async function ProjectDetailPage({
       t={makeLocalizer(locale as Locale)}
     />
   )
+}
+
+/**
+ * A self-canonical, added around the page's own metadata. No hreflang: the
+ * English version of an entry may be the Hebrew content under an English shell.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale, slug } = await props.params
+  return { ...(await pageMetadata(props)), alternates: { canonical: `/${locale}/projects/${slug}` } }
 }

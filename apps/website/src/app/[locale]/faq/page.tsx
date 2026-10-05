@@ -1,3 +1,4 @@
+import { localeAlternates } from '@/lib/seo'
 import { Link } from '@/i18n/navigation'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
@@ -33,7 +34,7 @@ import { makeLocalizer } from '@/lib/localize'
  * the headings the copy was written with. CMS items carry no group and render
  * flat, as before. The empty state stays for the case where both are empty.
  */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>
@@ -129,4 +130,15 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
       </Section>
     </>
   )
+}
+
+/**
+ * Canonical and hreflang, added around the page's own metadata so each page
+ * keeps owning its title and description.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale } = await props.params
+  return { ...(await pageMetadata(props)), alternates: localeAlternates(locale, '/faq') }
 }

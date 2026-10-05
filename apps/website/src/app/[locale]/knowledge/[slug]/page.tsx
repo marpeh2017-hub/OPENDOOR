@@ -9,7 +9,7 @@ import { getCmsArticleBySlug, getPublicMediaUrl } from '@/lib/cms-source'
 import { makeLocalizer } from '@/lib/localize'
 
 /** Published CMS articles only. Unapproved fixtures never reach this route. */
-export async function generateMetadata({
+async function pageMetadata({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>
@@ -78,4 +78,15 @@ export default async function KnowledgeArticlePage({
   }
 
   notFound()
+}
+
+/**
+ * A self-canonical, added around the page's own metadata. No hreflang: the
+ * English version of an entry may be the Hebrew content under an English shell.
+ */
+export async function generateMetadata(
+  props: Parameters<typeof pageMetadata>[0],
+): Promise<Metadata> {
+  const { locale, slug } = await props.params
+  return { ...(await pageMetadata(props)), alternates: { canonical: `/${locale}/knowledge/${slug}` } }
 }
