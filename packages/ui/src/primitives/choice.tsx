@@ -143,13 +143,17 @@ export interface RadioOption {
 }
 
 export interface RadioGroupProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>, 'children'> {
+  extends Omit<React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>, 'children' | 'dir'> {
   options: readonly RadioOption[]
   /** Names the group for assistive tech. Required — a set of radios with no
    *  group label is announced as unrelated controls. */
   ariaLabel?: string
   ariaLabelledBy?: string
   error?: string | null
+  /** Required. Radix writes `dir` on the group element and assumes `ltr` when
+   *  it is not told, which overrides a right-to-left page: in Hebrew the dots
+   *  sat to the left of their labels. It also sets which arrow key moves on. */
+  dir: 'ltr' | 'rtl'
 }
 
 export const RadioGroup = React.forwardRef<

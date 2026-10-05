@@ -237,7 +237,18 @@ Textarea.displayName = 'Textarea'
  * platform picker, which is faster, familiar, and correct with a screen reader
  * without any work. A custom listbox is warranted when it must show rich
  * content; none of the Phase 1 forms do.
+ *
+ * ── THE ARROW ──────────────────────────────────────────────────────────────
+ *
+ * The forms plugin draws the arrow as a background image pinned to the right
+ * and expects 2.5rem of right padding to hold it. `controlBase` sets `px-3`,
+ * so the arrow sat on the text, and in a right-to-left form it sat on the
+ * first letter of "בחרו אפשרות". It now sits at the inline end in each
+ * direction, with the padding on that side.
  */
+const selectArrow =
+  'pe-10 ltr:bg-[position:right_0.75rem_center] rtl:bg-[position:left_0.75rem_center]'
+
 export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement> & ControlProps
@@ -246,7 +257,7 @@ export const Select = React.forwardRef<
   return (
     <select
       ref={ref}
-      className={cn(controlBase, controlHeight[controlSize], className)}
+      className={cn(controlBase, controlHeight[controlSize], selectArrow, className)}
       {...control}
       {...props}
     >

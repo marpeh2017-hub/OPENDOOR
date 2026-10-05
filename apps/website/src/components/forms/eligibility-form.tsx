@@ -15,6 +15,7 @@ import type {
   OrganizingStatusAnswer,
 } from '@urban-renewal/api-contracts'
 import { Link } from '@/i18n/navigation'
+import { LOCALE_DIRECTION } from '@/i18n/routing'
 import { ISRAEL_CITY_SUGGESTIONS } from '@/lib/israel-cities'
 import { buildSubmissionMetadata, getLeadSubmissionService, submitSafely } from '@/lib/submission'
 import {
@@ -343,6 +344,7 @@ export function EligibilityForm() {
           <span className="ms-1.5 text-xs font-normal text-gray-600">{tForms('optional')}</span>
         </legend>
         <RadioGroup
+          dir={LOCALE_DIRECTION[locale]}
           ariaLabel={t('organizingLabel')}
           value={organizing}
           onValueChange={(value) => setOrganizing(value as OrganizingStatusAnswer)}
