@@ -10,10 +10,10 @@ export async function DirectContact({ eligibility = false }: { eligibility?: boo
         {he
           ? eligibility
             ? 'לבדיקה ראשונית של האפשרויות בבניין שלכם, פנו אלינו בטלפון או בדוא״ל וציינו את כתובת הבניין. הבדיקה אינה אישור להתאמת המתחם לפרויקט.'
-            : 'אפשר לפנות אל OpenDoor Group בטלפון או בדוא״ל. נשמח לשמוע מכם.'
+            : 'אפשר לפנות אל OpenDoor Group בטלפון או בדוא״ל. אנחנו פועלים בירושלים והסביבה.'
           : eligibility
             ? 'For an initial enquiry about your building, call or email us with its address. An enquiry does not confirm project eligibility.'
-            : 'Call or email OpenDoor Group. We look forward to hearing from you.'}
+            : 'Call or email OpenDoor Group. We work in and around Jerusalem.'}
       </p>
       <div className="mt-6 flex flex-wrap gap-4">
         <a

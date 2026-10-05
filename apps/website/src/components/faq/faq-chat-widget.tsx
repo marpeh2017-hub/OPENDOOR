@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useLocale } from 'next-intl'
 import { MessageCircle, Send, X } from 'lucide-react'
 
 interface ChatMessage {
@@ -42,6 +43,7 @@ function saveHistory(messages: ChatMessage[]) {
  * network call; it holds the Anthropic API key server-side.
  */
 export function FaqChatWidget() {
+  const endIsLeft = useLocale() === 'he'
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -128,9 +130,18 @@ export function FaqChatWidget() {
     // the POSITION is what has to clear the home indicator, and in landscape the
     // notch. `max()` keeps the original 1rem/1.5rem wherever the inset is 0, so
     // nothing shifts on hardware without a cutout.
+    //
+    // The corner is the END of the line for the page's language: left on the
+    // Hebrew site, right on the English one. Pinned to the start, it sat over
+    // the beginning of every line it passed, including the footer's phone
+    // number and the forms' consent boxes.
     <div
       dir="rtl"
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[45] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] sm:right-[max(1.5rem,env(safe-area-inset-right))]"
+      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] z-[45] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] ${
+        endIsLeft
+          ? 'left-[max(1rem,env(safe-area-inset-left))] sm:left-[max(1.5rem,env(safe-area-inset-left))]'
+          : 'right-[max(1rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))]'
+      }`}
     >
       {open && (
         <div
@@ -140,7 +151,7 @@ export function FaqChatWidget() {
           className="mb-3 flex h-[70vh] max-h-[560px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
         >
           <div className="flex items-center justify-between border-b border-gray-200 bg-teal-900 px-4 py-3 text-white">
-            <span className="text-sm font-semibold">שוחח איתנו</span>
+            <span className="text-sm font-semibold">שוחחו איתנו</span>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -218,11 +229,13 @@ export function FaqChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label={open ? 'סגור צ\'אט' : 'שוחח איתנו'}
-        className="flex items-center gap-2 rounded-full bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-teal-800"
+        aria-label={open ? 'סגירת הצ\'אט' : 'שוחחו איתנו'}
+        className="flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-teal-700 text-sm font-semibold text-white shadow-lg transition hover:bg-teal-800 sm:h-auto sm:w-auto sm:px-4 sm:py-3"
       >
-        <MessageCircle size={18} />
-        <span>שוחח איתנו</span>
+        <MessageCircle size={20} aria-hidden="true" />
+        {/* On a phone the button is the icon alone, so it covers as little of
+            the page as it can; the label stays for screen readers. */}
+        <span className="sr-only sm:not-sr-only">שוחחו איתנו</span>
       </button>
     </div>
   )

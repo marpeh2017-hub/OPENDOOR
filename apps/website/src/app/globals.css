@@ -162,6 +162,23 @@ summary:focus-visible {
   min-height: 0;
 }
 
+/* ── Hebrew is not letter-spaced ──────────────────────────────────────────
+ * The small eyebrow labels borrow their tracking from Latin small capitals,
+ * where it helps legibility. Across Hebrew letters it pulls words apart, so on
+ * the Hebrew site those utilities fall back to normal spacing. `:lang(he)`
+ * rather than editing each label: one rule covers every label written now and
+ * later. Numerals keep theirs: `tracking-[0.2em]` on tabular figures is not in
+ * this list.
+ */
+:lang(he) .tracking-wide,
+:lang(he) .tracking-wider,
+:lang(he) .tracking-widest,
+:lang(he) .tracking-\[0\.1em\],
+:lang(he) .tracking-\[0\.14em\],
+:lang(he) .tracking-\[0\.18em\] {
+  letter-spacing: normal;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
  * 4 · REDUCED MOTION
  * ══════════════════════════════════════════════════════════════════════════

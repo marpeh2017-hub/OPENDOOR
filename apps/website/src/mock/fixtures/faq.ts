@@ -35,8 +35,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What does it cost us, the apartment owners?',
     },
     answer: {
-      he: 'בדרך כלל אפס שקלים. כל תהליך ההתחדשות העירונית ממומן על ידי היזם - כולל שכר הטרחה של עורך הדין, המפקח והשמאי מטעמכם, שכר הדירה לתקופת הבנייה והובלת הציוד הלוך וחזור.',
-      en: 'Usually nothing. The whole urban-renewal process is funded by the developer - including the fees of the lawyer, supervisor and appraiser acting for you, the rent for the construction period, and moving costs both ways.',
+      he: 'בפרויקטים של התחדשות עירונית מקובל שהיזם נושא בעלויות הפרויקט, ובדרך כלל גם בשכר אנשי המקצוע מטעם בעלי הדירות (עורך דין, שמאי ומפקח), בשכר הדירה בתקופת הבנייה ובהובלה. מה בדיוק משולם, ועל ידי מי, נקבע בהסכם של כל פרויקט. לחברה עצמה בעלי הדירות אינם משלמים תשלום ישיר: התשלום לחברה מגיע מהיזם בלבד, וזה כתוב בהסכם.',
+      en: 'In urban-renewal projects the developer customarily bears the project costs, and usually also the fees of the professionals acting for the owners (lawyer, appraiser and supervisor), rent during construction and moving costs. Exactly what is paid, and by whom, is set in each project agreement. Owners pay the company itself nothing directly: the company is paid by the developer only, and that is written into the agreement.',
     },
   },
   {
@@ -48,8 +48,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What happens with municipal tax and building fees in the new building?',
     },
     answer: {
-      he: 'הדירה החדשה תהיה גדולה יותר, ולכן התשלומים עשויים לעלות. בחלק מהפרויקטים אנחנו דואגים לקרן תחזוקה מהיזם שמסבסדת את ההפרש בשנים הראשונות.',
-      en: 'The new apartment will be larger, so these payments may rise. In some projects we arrange a maintenance fund from the developer that subsidises the difference in the first years.',
+      he: 'הדירה החדשה גדולה יותר, ולכן הארנונה ודמי ועד הבית עשויים לעלות. בחלק מהפרויקטים נקבע בהסכם עם היזם מנגנון שמסבסד את ההפרש בשנים הראשונות, למשל קרן תחזוקה. זה אחד הנושאים שכדאי לבדוק בהצעה.',
+      en: 'The new apartment is larger, so municipal tax and building fees may rise. Some projects set a mechanism in the agreement with the developer that subsidises the difference for the first years, such as a maintenance fund. It is one of the things worth checking in an offer.',
     },
   },
   {
@@ -61,8 +61,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What do we receive in exchange for our existing apartment?',
     },
     answer: {
-      he: 'תוספת מטראז’, מרפסת שמש, ממ"ד, חניה תת-קרקעית ומחסן - בבניין חדיש שמעלה משמעותית את ערך הנכס, בכפוף לכדאיות הכלכלית ולמדיניות הרשות. התמורה המדויקת נקבעת לכל פרויקט בנפרד.',
-      en: 'Additional floor area, a balcony, a protected room, underground parking and storage - in a modern building that raises the value of the property considerably, subject to financial viability and to local authority policy. The exact consideration is settled per project.',
+      he: 'בדרך כלל דירה חדשה בבניין חדש, ולעיתים קרובות עם תוספת שטח, מרפסת, ממ״ד, חניה ומחסן. מה בדיוק תקבלו תלוי בכדאיות הכלכלית של הפרויקט ובמדיניות הרשות, ונקבע בהסכם. בדיקת התמורה היא חלק מבדיקת ההצעה.',
+      en: 'Usually a new apartment in a new building, often with additional area, a balcony, a protected room, parking and storage. What exactly you receive depends on the project financial viability and local authority policy, and is set in the agreement. Checking the consideration is part of checking the offer.',
     },
   },
   {
@@ -87,8 +87,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What happens if the developer runs into difficulty?',
     },
     answer: {
-      he: 'לא מתחילים בנייה בלי ערבויות בנקאיות לפי חוק המכר - ערבות בשווי הדירה החדשה, ערבות שכירות, ערבות בדק וערבות רישום. הערבויות נועדו להבטיח את השלמת הפרויקט או את החזר שווי הדירה במקרה של קשיים.',
-      en: 'Construction does not begin without bank guarantees under the Sale Law - a guarantee for the value of the new apartment, a rent guarantee, a defects guarantee and a registration guarantee. The guarantees are intended to secure completion of the project, or repayment of the value of the apartment, should difficulties arise.',
+      he: 'ההסכם עם היזם צריך לכלול ערבויות בנקאיות לפני תחילת הבנייה: ערבות לפי חוק המכר בשווי הדירה החדשה, ערבות לתשלום שכר הדירה, ערבות בדק וערבות רישום. הערבויות נועדו להבטיח את השלמת הפרויקט, או את החזר שווי הדירה במקרה של קשיים, ולכן בודקים אותן בהסכם לפני החתימה.',
+      en: 'The agreement with the developer should include bank guarantees before construction begins: a Sale Law guarantee for the value of the new apartment, a rent guarantee, a defects guarantee and a registration guarantee. They are meant to secure completion of the project, or repayment of the value of the apartment if difficulties arise, which is why they are checked in the agreement before signing.',
     },
   },
   {

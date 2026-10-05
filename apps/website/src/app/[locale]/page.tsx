@@ -164,12 +164,39 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         if (!rendered) return null
 
         // Keep detailed product explanations available without making every
-        // first-time visitor read three long sections before reaching contact.
-        if (block.type === 'PORTAL' || block.type === 'PROJECT_TRANSPARENCY' || block.type === 'TRUST') {
+        // first-time visitor read them before reaching contact. PORTAL is no
+        // longer folded: the personal area is live from launch, and it is the
+        // part of this page a visitor cannot get from any other company.
+        //
+        // A folded section says what it holds and that it opens: the intro
+        // line under the heading, and a plus that turns as it does. A bare
+        // heading with the browser's small triangle read as a faint link, and
+        // visitors walked past what it was hiding.
+        if (block.type === 'PROJECT_TRANSPARENCY' || block.type === 'TRUST') {
           return (
-            <details key={block.id} className="mx-auto max-w-7xl border-b border-gray-200 px-4 lg:px-8">
-              <summary className="cursor-pointer py-6 text-xl font-semibold text-teal-800">
-                {t(block.heading)}
+            <details
+              key={block.id}
+              className="group mx-auto max-w-7xl border-b border-gray-200 px-4 lg:px-8"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-7 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0">
+                  <span className="block text-xl font-semibold text-teal-800 sm:text-2xl">
+                    {t(block.heading)}
+                  </span>
+                  {block.intro && (
+                    <span className="mt-2 block max-w-3xl text-[15px] leading-relaxed text-gray-600 group-open:hidden">
+                      {t(block.intro)}
+                    </span>
+                  )}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-600 text-teal-700 transition-transform duration-200 group-open:rotate-45"
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M9 3v12M3 9h12" />
+                  </svg>
+                </span>
               </summary>
               {rendered}
             </details>

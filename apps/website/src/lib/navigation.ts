@@ -26,7 +26,10 @@ export const PRIMARY_NAV_KEYS = [
   'whyOrganizer',
   'howWeWork',
   'projects',
-  'knowledge',
+  // FAQ rather than the knowledge centre: the FAQ has content today, and a
+  // top-level link to an empty page is a promise the bar cannot keep. The
+  // knowledge centre stays in the footer and the mobile menu.
+  'faq',
 ] as const
 
 export const NAV_ITEMS: readonly NavItem[] = [

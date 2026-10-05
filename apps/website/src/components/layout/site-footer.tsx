@@ -43,12 +43,15 @@ export async function SiteFooter() {
           {FOOTER_GROUPS.map((group) => (
             <nav key={group.titleKey} aria-label={tFooter(group.titleKey)}>
               <h2 className="text-sm font-semibold text-gray-900">{tFooter(group.titleKey)}</h2>
-              <ul className="mt-3 space-y-2">
+              {/* Each link is a 44px row on a phone, where these were 20px
+                  targets stacked 8px apart; compact again from `sm` up, where
+                  a pointer does the aiming. */}
+              <ul className="mt-2 sm:mt-3 sm:space-y-2">
                 {group.items.map((item) => (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className="text-sm text-gray-600 transition-colors hover:text-teal-700"
+                      className="inline-flex min-h-11 items-center text-sm text-gray-600 transition-colors hover:text-teal-700 sm:min-h-0"
                     >
                       {tNav(item.key)}
                     </Link>

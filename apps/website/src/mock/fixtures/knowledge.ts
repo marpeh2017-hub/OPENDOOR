@@ -172,7 +172,7 @@ export const MOCK_FAQ: readonly FaqItem[] = [
   {
     id: 'q-cost',
     question: 'כמה עולה השירות לבעלי הדירות?',
-    answer: 'השירות לבעלי הדירות אינו כרוך בעלות ישירה מצד הדיירים.',
+    answer: 'השירות לבעלי הדירות אינו כרוך בעלות ישירה מצדם.',
     category: 'כללי',
     order: 1,
   },

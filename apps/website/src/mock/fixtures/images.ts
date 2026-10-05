@@ -248,7 +248,7 @@ export async function getImageSlot(id: keyof typeof IMAGE_SLOTS): Promise<ImageS
 const terrace: MediaAsset = {
   id: 'jerusalem-terrace-sunset', kind: 'image', url: '/images/editorial/jerusalem-terrace-sunset.png',
   width: 2056, height: 765, imageType: 'EDITORIAL_CONTEXT',
-  alt: { he: 'מרפסת המשקיפה על קו הרקיע של ירושלים בשקיעה', en: 'A terrace overlooking the Jerusalem skyline at sunset' },
+  alt: { he: 'להמחשה: מרפסת המשקיפה על קו הרקיע של ירושלים בשקיעה', en: 'For illustration: a terrace overlooking the Jerusalem skyline at sunset' },
 }
 
 /** Only published CMS media is resolved. An explicit empty assignment stays empty. */
@@ -256,7 +256,9 @@ export async function getSlotGallery(id: string): Promise<MediaAsset[]> {
   const assigned = (await getCmsImageSlots())[id]
   if (!assigned) {
     const fallback = IMAGE_SLOTS[id]?.asset
-    return id === 'HERO_JERUSALEM_ARCHITECTURE' ? [terrace, ...(fallback ? [fallback] : [])] : fallback ? [fallback] : []
+    // The slot's own brief leads: residential fabric in daylight, no golden
+    // hour, no luxury. The terrace follows rather than opening the page.
+    return id === 'HERO_JERUSALEM_ARCHITECTURE' ? [...(fallback ? [fallback] : []), terrace] : fallback ? [fallback] : []
   }
   const resolved = await Promise.all(slotImages(assigned).map(async (image, index): Promise<MediaAsset | null> => {
     const url = await getPublicMediaUrl(image.storageKey)

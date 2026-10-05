@@ -78,7 +78,7 @@
       "title": "Contact"
     },
     "eligibility": {
-      "title": "Check your building's suitability"
+      "title": "Talk to us about your building"
     },
     "search": {
       "title": "Search"
@@ -170,7 +170,7 @@
     "loadingLabel": "Loading"
   },
   "eligibility": {
-    "title": "Urban renewal suitability check",
+    "title": "Talk to us about your building",
     "heading": "Start with a conversation about your building",
     "standfirst": "Considering urban renewal, talking with neighbours, or already represented? Tell us where things stand and what you would like to understand.",
     "addressLabel": "Building or complex address",

@@ -26,7 +26,7 @@
   "cta": {
     "eligibility": "דברו איתנו על הבניין שלכם",
     "residentPortal": "אזור אישי",
-    "eligibilityShort": "שיחה ראשונית"
+    "eligibilityShort": "דברו איתנו"
   },
   "footer": {
     "company": "החברה",
@@ -78,7 +78,7 @@
       "title": "יצירת קשר"
     },
     "eligibility": {
-      "title": "בדיקת התאמה להתחדשות עירונית"
+      "title": "דברו איתנו על הבניין שלכם"
     },
     "search": {
       "title": "חיפוש"
@@ -143,8 +143,8 @@
     "optional": "רשות",
     "selectPlaceholder": "בחרו אפשרות",
     "submitting": "שולח",
-    "contactConsentLabel": "אני מסכים שאופן־דור גרופ תחזור אליי בנוגע לפנייה.",
-    "privacyConsentLabel": "קראתי ואני מאשר את",
+    "contactConsentLabel": "אני מסכים/ה שחברת OpenDoor Group תחזור אליי בנוגע לפנייה.",
+    "privacyConsentLabel": "קראתי ואני מאשר/ת את",
     "consentLinkText": "מדיניות הפרטיות",
     "errorSummaryTitle": "לא הצלחנו לשלוח. יש פרטים שחסרים או שצריך לתקן.",
     "failureTitle": "השליחה לא הושלמה.",
@@ -170,7 +170,7 @@
     "loadingLabel": "טוען"
   },
   "eligibility": {
-    "title": "בדיקת התאמה להתחדשות עירונית",
+    "title": "דברו איתנו על הבניין שלכם",
     "heading": "מתחילים בשיחה על הבניין שלכם",
     "standfirst": "יש מחשבה על התחדשות עירונית, שיחה בין שכנים או נציגות פעילה? ספרו לנו איפה הדברים עומדים ומה תרצו לברר.",
     "addressLabel": "כתובת הבניין או המתחם",
@@ -197,7 +197,7 @@
     "privacyBody": "לפנייה ראשונית מספיק לציין פרטי קשר וכתובת בניין. אין צורך לצרף תעודת זהות או מסמכים אישיים.",
     "org": {
       "NOT_STARTED": "טרם התחלנו להתארגן",
-      "EARLY_CONVERSATION": "התחלנו לדבר בין הדיירים",
+      "EARLY_CONVERSATION": "התחלנו לדבר בין בעלי הדירות",
       "REPRESENTATION_FORMED": "קיימת נציגות",
       "PROCESS_ACTIVE": "כבר מתקיים תהליך"
     },

@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation'
 import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
 import { ContactForm } from '@/components/forms/contact-form'
+import { DirectContact } from '@/components/forms/direct-contact'
 
 /**
  * General contact.
@@ -20,6 +21,13 @@ import { ContactForm } from '@/components/forms/contact-form'
  * actually wants the suitability check is better served by a sentence that
  * explains the difference than by a second control competing for the same
  * attention as the one they are already filling in.
+ *
+ * ── THE PHONE AND THE ADDRESS COME FIRST ───────────────────────────────────
+ *
+ * The header promises "בטלפון או בדוא״ל", so both sit directly under it, above
+ * the form, on every screen size. They used to appear only in the footer: a
+ * contact page that names a channel and then hides it behind a form is the
+ * first thing a visitor in a hurry gives up on.
  */
 export async function generateMetadata({
   params,
@@ -41,6 +49,9 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       <PageHeader title={t('heading')} standfirst={t('standfirst')} />
 
       <Section size="md">
+        <div className="mb-12 max-w-[640px]">
+          <DirectContact />
+        </div>
         <div className="grid gap-12 lg:grid-cols-[minmax(0,640px)_1fr] lg:gap-16">
           <ContactForm />
 

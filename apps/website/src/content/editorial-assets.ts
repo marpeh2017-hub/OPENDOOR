@@ -16,6 +16,6 @@ export const stageImages: Record<string, { title: string; asset: MediaAsset }> =
 
 export const residentMeeting: MediaAsset = {
  id: 'editorial-resident-meeting', width: 1536, height: 1024, kind: 'image', url: '/images/editorial/resident-meeting.png', imageType: 'EDITORIAL_CONTEXT',
- alt: { he: 'המחשת AI של כנס דיירים בירושלים במסגרת תהליך התחדשות עירונית', en: 'AI illustration of a residents meeting in Jerusalem about urban renewal' },
- caption: { he: 'המחשת AI לכנס דיירים בירושלים; אינה תיעוד של אירוע של OpenDoor Group.', en: 'AI illustration of a residents meeting in Jerusalem; not documentation of an OpenDoor Group event.' }
+ alt: { he: 'המחשת AI של כנס בעלי דירות בירושלים במסגרת תהליך התחדשות עירונית', en: 'AI illustration of a residents meeting in Jerusalem about urban renewal' },
+ caption: { he: 'המחשת AI לכנס בעלי דירות בירושלים; אינה תיעוד של אירוע של OpenDoor Group.', en: 'AI illustration of a residents meeting in Jerusalem; not documentation of an OpenDoor Group event.' }
 }

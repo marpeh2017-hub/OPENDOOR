@@ -235,7 +235,7 @@ const aboutBlocks: PageBlock[] = [
       he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
       en: 'Contact us for an initial conversation about your building.',
     },
-    ctaLabel: { he: 'דברו איתנו', en: 'Talk to us' },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
   },
 ]
@@ -348,7 +348,7 @@ const whyOrganizerBlocks: PageBlock[] = [
       {
         id: 'rm-representation',
         side: 'owners',
-        label: { he: 'נציגות הדיירים', en: 'The residents’ representation' },
+        label: { he: 'נציגות בעלי הדירות', en: 'The owners’ representation' },
         detail: {
           he: 'נבחרת מתוך בעלי הדירות, מרכזת את התקשורת ומביאה סוגיות להכרעה בפני כלל הבעלים.',
           en: 'Chosen from among the owners. It centralises communication and brings matters to all the owners for decision.',
@@ -368,7 +368,7 @@ const whyOrganizerBlocks: PageBlock[] = [
       {
         id: 'rm-lawyer',
         side: 'process',
-        label: { he: 'עורך הדין של הדיירים', en: 'The residents’ lawyer' },
+        label: { he: 'עורך הדין של בעלי הדירות', en: 'The owners’ lawyer' },
         detail: {
           he: 'מייצג את בעלי הדירות בהסכמים, ונבחר על ידם. עורך דין מטעם היזם אינו מייצג אותם.',
           en: 'Represents the owners in the agreements, and is appointed by them. The developer’s lawyer does not represent them.',
@@ -413,7 +413,7 @@ const whyOrganizerBlocks: PageBlock[] = [
     order: 3,
     hidden: false,
     heading: { he: 'רוצים לראות איך זה עובד בפועל?', en: 'Want to see how this works in practice?' },
-    ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: 'Check your building’s suitability' },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
   },
 ]
@@ -555,7 +555,7 @@ const howWeWorkBlocks: PageBlock[] = [
       he: 'השלב הראשון הוא בדיקה, והוא לא מחייב אתכם בכלום.',
       en: 'The first stage is a review, and it commits you to nothing.',
     },
-    ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: 'Check your building’s suitability' },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
   },
 ]
@@ -608,7 +608,7 @@ const trustBlocks: PageBlock[] = [
       },
       {
         id: 'tp-updates',
-        title: { he: 'עדכונים לדיירים', en: 'Updates to residents' },
+        title: { he: 'עדכונים לבעלי הדירות', en: 'Updates to owners' },
         body: {
           he: 'אנחנו מעדכנים גם כשאין התפתחות דרמטית. שתיקה ארוכה שוחקת אמון יותר מבשורה לא נוחה.',
           en: 'We send an update even when there is no dramatic development. A long silence erodes trust more than unwelcome news does.',
@@ -680,7 +680,7 @@ const trustBlocks: PageBlock[] = [
     order: 4,
     hidden: false,
     heading: { he: 'יש שאלה שלא נענתה כאן?', en: 'A question this page did not answer?' },
-    ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: 'Check your building’s suitability' },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
   },
 ]
@@ -699,8 +699,8 @@ const servicesBlocks: PageBlock[] = [
     eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
     heading: { he: 'מעטפת מקצועית מלאה', en: 'A complete professional envelope' },
     standfirst: {
-      he: 'מובילים את בעלי הדירות ממתחם ישן לבית חדש, בבטחה ובשקיפות.',
-      en: 'Leading residents from an ageing complex to a new home, safely and transparently.',
+      he: 'מלווים את בעלי הדירות ממתחם ישן לבית חדש, עם מידע ברור בכל שלב.',
+      en: 'Guiding owners from an ageing complex to a new home, with clear information at every stage.',
     },
   },
   {
@@ -720,15 +720,15 @@ const servicesBlocks: PageBlock[] = [
           en: 'Planning and financial feasibility review',
         },
         body: {
-          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות כלכלית ראשונית - עבורכם ועבור היזמים. ללא עלות וללא התחייבות.',
-          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment - for you and for the developers. At no cost and with no obligation.',
+          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות כלכלית ראשונית - עבורכם ועבור היזמים.',
+          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment - for you and for the developers.',
         },
       },
       {
         id: 'sv-2',
         title: {
-          he: 'התארגנות הדיירים ובחירת נציגות',
-          en: 'Organising the residents and electing a representation',
+          he: 'התארגנות בעלי הדירות ובחירת נציגות',
+          en: 'Organising the owners and electing a representation',
         },
         body: {
           he: 'ניהול אספות, הקמת נציגות בית מוסמכת, מינוי עורך דין ומפקח בנייה מטעמכם, ויצירת ערוצי תקשורת שקופים בין כלל בעלי הדירות.',
@@ -739,8 +739,8 @@ const servicesBlocks: PageBlock[] = [
         id: 'sv-3',
         title: { he: 'מכרז יזמים תחרותי', en: 'A competitive developer tender' },
         body: {
-          he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים מובילים בשוק, ניהול המשא ומתן - כדי שתקבלו תמורה מיטבית וערבויות חזקות.',
-          en: 'Writing a technical specification and mandatory requirements, approaching developers active in the market, and running the negotiation - so that you receive sound consideration and strong guarantees.',
+          he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים, ניהול המשא ומתן והשוואת ההצעות על בסיס אחיד.',
+          en: 'Writing a technical specification and mandatory requirements, approaching developers, running the negotiation and comparing the offers on common terms.',
         },
       },
       {
@@ -756,7 +756,7 @@ const servicesBlocks: PageBlock[] = [
       },
       {
         id: 'sv-5',
-        title: { he: 'פיקוח על הבנייה והאכלוס', en: 'Overseeing construction and occupancy' },
+        title: { he: 'ליווי בשלב הבנייה והאכלוס', en: 'Support through construction and occupancy' },
         body: {
           he: 'תקשורת שוטפת מול היזם והרשויות, סיוע בשלבי הרישוי והבנייה - עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
           en: 'Ongoing communication with the developer and the authorities, support through licensing and construction - up to the handover inspection and the key to the new apartment.',
@@ -775,17 +775,17 @@ const servicesBlocks: PageBlock[] = [
         {
           id: 'sc-b-time',
           title: { he: 'זמן להסכם', en: 'Time to an agreement' },
-          body: { he: 'שנים, עם עיכובים.', en: 'Years, with delays.' },
+          body: { he: 'כל שלב תלוי בזמינות של בעלי הדירות עצמם.', en: 'Each step depends on the owners’ own availability.' },
         },
         {
           id: 'sc-b-power',
           title: { he: 'כוח מיקוח', en: 'Bargaining position' },
-          body: { he: 'מוגבל.', en: 'Limited.' },
+          body: { he: 'כל בעל דירה מול היזם בנפרד.', en: 'Each owner faces the developer separately.' },
         },
         {
           id: 'sc-b-clarity',
           title: { he: 'שקיפות', en: 'Transparency' },
-          body: { he: 'חוסר ודאות.', en: 'Uncertainty.' },
+          body: { he: 'מידע מגיע מכמה מקורות, בזמנים שונים.', en: 'Information arrives from several sources, at different times.' },
         },
       ],
     },
@@ -803,7 +803,7 @@ const servicesBlocks: PageBlock[] = [
         {
           id: 'sc-o-power',
           title: { he: 'כוח מיקוח', en: 'Bargaining position' },
-          body: { he: 'גב מקצועי מול היזם.', en: 'Professional backing opposite the developer.' },
+          body: { he: 'עמדה משותפת, עם אנשי מקצוע מטעם בעלי הדירות.', en: 'A shared position, with professionals acting for the owners.' },
         },
         {
           id: 'sc-o-clarity',
@@ -823,10 +823,10 @@ const servicesBlocks: PageBlock[] = [
       en: 'Want to check whether your building is suitable?',
     },
     body: {
-      he: 'פנו לפגישת ייעוץ ראשונית - ללא עלות וללא התחייבות.',
-      en: 'Get in touch for an initial consultation - at no cost and with no obligation.',
+      he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
+      en: 'Contact us for an initial conversation about your building.',
     },
-    ctaLabel: { he: 'בדיקת התאמה להתחדשות עירונית', en: 'Check your building’s suitability' },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
   },
 ]

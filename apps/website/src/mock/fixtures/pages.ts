@@ -69,7 +69,7 @@ const homepageBlocks: PageBlock[] = [
       en: 'You are the owners. We manage the way through.',
     },
     intro: {
-      he: 'מהשיחה הראשונה ועד להחלטות המשותפות — לצד בעלי הדירות.',
+      he: 'מהשיחה הראשונה ועד להחלטות המשותפות - לצד בעלי הדירות.',
       en: 'From the first conversation to shared decisions — alongside the owners.',
     },
     items: [
@@ -203,8 +203,8 @@ const homepageBlocks: PageBlock[] = [
     hidden: false,
     heading: { he: 'כך אנחנו עובדים', en: 'How we work' },
     intro: {
-      he: 'התהליך מורכב ממספר שלבים. כך הוא נראה במבט כללי.',
-      en: 'The full process has eleven stages. This is how it looks from above.',
+      he: 'התהליך במבט כללי. כל שמונת השלבים, ומה נדרש מבעלי הדירות בכל אחד מהם, מפורטים בעמוד ״כך אנחנו עובדים״.',
+      en: 'The process at a glance. All eight stages, and what is asked of owners at each, are set out on the How we work page.',
     },
     items: [
       {
@@ -477,7 +477,7 @@ const homepageBlocks: PageBlock[] = [
         icon: 'building',
         title: { he: 'מי אנחנו, רשמית', en: 'Who we are, officially' },
         body: {
-          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334. חברה רשומה — אפשר לבדוק אותנו ברשם החברות לפני שמדברים איתנו.',
+          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334. חברה רשומה - אפשר לבדוק אותנו ברשם החברות לפני שמדברים איתנו.',
           en: 'Kvutsat OpenDoor Yazamut VeHithadshut Ltd., company number 515856334. A registered company — you can look us up before you speak to us.',
         },
       },
@@ -486,7 +486,7 @@ const homepageBlocks: PageBlock[] = [
         icon: 'receipt',
         title: { he: 'מי משלם לנו', en: 'Who pays us' },
         body: {
-          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר — וזה כתוב בהסכם שתקבלו לידיים.',
+          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר - וזה כתוב בהסכם שתקבלו לידיים.',
           en: 'The developer pays us. Apartment owners pay the company nothing directly — and that is written into the agreement you will hold.',
         },
       },
@@ -495,7 +495,7 @@ const homepageBlocks: PageBlock[] = [
         icon: 'scale',
         title: { he: 'מה אנחנו לא', en: 'What we are not' },
         body: {
-          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך — בעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
+          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך - בעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
           en: 'Not the developer, not the construction company, not the contractor. We coordinate the process — the owners choose the professionals and the developer.',
         },
       },
@@ -596,8 +596,8 @@ const homepageBlocks: PageBlock[] = [
     order: 12,
     hidden: false,
     heading: {
-      he: 'רוצים להבין מה האפשרויות בבניין שלכם?',
-      en: 'Want to understand the options for your building?',
+      he: 'רוצים לבדוק מה אפשרי אצלכם?',
+      en: 'Want to see what is possible for you?',
     },
     body: {
       he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
