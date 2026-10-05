@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Menu, X } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import { PERSONAL_AREA_HREF } from '@/lib/navigation'
+import { LanguageSwitcher } from './language-switcher'
 
 /**
  * Mobile navigation.
@@ -86,7 +87,7 @@ export function MobileNav({
       if (event.key !== 'Tab') return
 
       const focusables = panelRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled])',
+        'a[href], button:not([disabled]), select',
       )
       if (!focusables || focusables.length === 0) return
 
@@ -176,6 +177,8 @@ export function MobileNav({
             </nav>
 
             <div className="border-t border-gray-200 p-4">
+              {/* Phones only: from `sm` up the header carries the switcher. */}
+              <LanguageSwitcher className="mb-4 sm:hidden" labelVisible onSwitch={() => setOpen(false)} />
               <Link
                 href={PERSONAL_AREA_HREF}
                 onClick={() => setOpen(false)}

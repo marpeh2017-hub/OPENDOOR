@@ -53,11 +53,8 @@ export async function SiteHeader() {
     <HeaderShell>
       {/* Inline padding falls back to the original px-4 when the inset is 0.
           In landscape on a notched phone the cutout sits at an inline edge,
-          and without this the logo or the language control renders under it.
-          Below `sm` the gaps are tighter: the logo, the language control, the
-          CTA and the menu button need 318px together, and a 360px phone has
-          322px inside the padding. With the wider gaps the CTA wrapped. */}
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 sm:gap-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
+          and without this the logo or the language control renders under it. */}
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
         <Link
           href="/"
           className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
@@ -74,15 +71,17 @@ export async function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-teal-800"
+              className="rounded-md px-2 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-teal-800 xl:px-3"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="ms-auto flex items-center gap-1 sm:gap-1.5 lg:ms-0">
-          <LanguageSwitcher />
+        <div className="ms-auto flex items-center gap-1.5 lg:ms-0">
+          {/* From `sm` up. On a phone the switcher is in the mobile menu: the
+              bar has no room for it once its arrow has room. */}
+          <LanguageSwitcher className="hidden sm:block" />
 
           <Link
             href={PERSONAL_AREA_HREF}
@@ -93,13 +92,19 @@ export async function SiteHeader() {
 
           {/* The primary conversion. Visible at every width — on mobile it is
               the single most important control on the page, so it must not be
-              buried inside the menu. */}
+              buried inside the menu.
+
+              The full label where the bar has room for it: from `md` to `lg`,
+              where the routes are in the menu, and from `xl`. Below `md` and
+              between `lg` and `xl` it takes the short label. At 1024px the five
+              routes need 531px in Hebrew, and with the full label they had
+              416px and wrapped onto two lines. */}
           <Link
             href="/eligibility"
-            className="inline-flex min-h-[44px] items-center rounded-md bg-teal-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 sm:px-3.5 lg:min-h-0 lg:px-4"
+            className="inline-flex min-h-[44px] items-center rounded-md bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 lg:min-h-0 lg:px-4"
           >
-            <span className="hidden sm:inline">{tCta('eligibility')}</span>
-            <span className="sm:hidden">{tCta('eligibilityShort')}</span>
+            <span className="hidden md:inline lg:hidden xl:inline">{tCta('eligibility')}</span>
+            <span className="md:hidden lg:inline xl:hidden">{tCta('eligibilityShort')}</span>
           </Link>
 
           {/* The mobile menu still carries the FULL route list, including the
