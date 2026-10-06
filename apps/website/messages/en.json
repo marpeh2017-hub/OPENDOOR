@@ -73,7 +73,13 @@
     },
     "faq": {
       "title": "FAQ",
-      "empty": "Wondering how to begin, what the representation does, or who is involved? Send us your question."
+      "empty": "Wondering how to begin, what the representation does, or who is involved? Send us your question.",
+      "heading": "What apartment owners ask us",
+      "standfirst": "Short, straight answers. Choose a topic, and open only the question you want answered.",
+      "topics": "Topics",
+      "count": "{count, plural, one {# question} other {# questions}}",
+      "helpHeading": "Didn’t find your answer?",
+      "helpBody": "Every building is different. Tell us what is on your mind, and we will come back with an answer that fits you."
     },
     "contact": {
       "title": "Contact"

@@ -1,4 +1,5 @@
 import type { CmsFaqEntry } from '@/lib/cms-source'
+import type { LineIconName } from '@/components/brand/line-icon'
 
 /**
  * FAQ seed content.
@@ -18,18 +19,50 @@ import type { CmsFaqEntry } from '@/lib/cms-source'
  * CMS wins everywhere and this file stops being read.
  *
  * `group` is not part of `CmsFaqEntry`; it exists only here, so the seed can
- * carry the section headings the copy was written with. Items that arrive
- * from the CMS have no group and render as a flat list, exactly as before.
+ * carry the topics the copy was written under. Items that arrive from the CMS
+ * have no group and render as one list, without the topic cards.
  */
 export interface FaqSeedEntry extends CmsFaqEntry {
-  group: { he: string; en: string }
+  group: FaqTopic
+}
+
+/**
+ * A topic of the FAQ. `id` is the anchor the page's topic cards link to, so
+ * it is part of the page's addresses: /faq#costs. `icon` is drawn on the card
+ * and beside the topic's heading.
+ */
+export interface FaqTopic {
+  id: string
+  icon: LineIconName
+  label: { he: string; en: string }
+}
+
+const COSTS: FaqTopic = {
+  id: 'costs',
+  icon: 'receipt',
+  label: { he: 'עלויות ופיננסים', en: 'Cost and finance' },
+}
+const RIGHTS: FaqTopic = {
+  id: 'rights',
+  icon: 'home',
+  label: { he: 'התמורה והזכויות שלכם', en: 'Your consideration and rights' },
+}
+const SECURITY: FaqTopic = {
+  id: 'security',
+  icon: 'shield',
+  label: { he: 'ביטחון וערבויות', en: 'Security and guarantees' },
+}
+const ABOUT_US: FaqTopic = {
+  id: 'about',
+  icon: 'users',
+  label: { he: 'מי אתם ומה התפקיד שלכם', en: 'Who you are and what you do' },
 }
 
 export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-cost',
     order: 0,
-    group: { he: 'עלויות ופיננסים', en: 'Cost and finance' },
+    group: COSTS,
     question: {
       he: 'כמה זה עולה לנו, בעלי הדירות?',
       en: 'What does it cost us, the apartment owners?',
@@ -42,7 +75,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-running-costs',
     order: 1,
-    group: { he: 'עלויות ופיננסים', en: 'Cost and finance' },
+    group: COSTS,
     question: {
       he: 'מה קורה עם ארנונה וועד בית בבניין החדש?',
       en: 'What happens with municipal tax and building fees in the new building?',
@@ -55,7 +88,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-consideration',
     order: 2,
-    group: { he: 'התמורה והזכויות שלכם', en: 'Your consideration and rights' },
+    group: RIGHTS,
     question: {
       he: 'מה אנחנו מקבלים בתמורה לדירה הקיימת?',
       en: 'What do we receive in exchange for our existing apartment?',
@@ -68,7 +101,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-where-live',
     order: 3,
-    group: { he: 'התמורה והזכויות שלכם', en: 'Your consideration and rights' },
+    group: RIGHTS,
     question: {
       he: 'איפה גרים בזמן שהבניין נהרס?',
       en: 'Where do we live while the building is demolished?',
@@ -81,7 +114,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-guarantees',
     order: 4,
-    group: { he: 'ביטחון וערבויות', en: 'Security and guarantees' },
+    group: SECURITY,
     question: {
       he: 'מה קורה אם היזם נקלע לקשיים?',
       en: 'What happens if the developer runs into difficulty?',
@@ -94,7 +127,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-refusal',
     order: 5,
-    group: { he: 'ביטחון וערבויות', en: 'Security and guarantees' },
+    group: SECURITY,
     question: {
       he: 'מה עושים אם שכן מסרב לחתום?',
       en: 'What if a neighbour refuses to sign?',
@@ -107,7 +140,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-role',
     order: 6,
-    group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
+    group: ABOUT_US,
     question: { he: 'מה בדיוק התפקיד שלכם?', en: 'What exactly is your role?' },
     answer: {
       he: 'OpenDoor Group היא חברת יזמות והתחדשות עירונית. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים ומלווים את בעלי הדירות: מארגנים את המתחם, מביאים בעלי מקצוע מטעמכם, מנהלים את המכרז מול היזמים ומלווים אתכם עד לקבלת המפתח. התפקיד שלנו בכל פרויקט נאמר מראש וכתוב בהסכם שתקבלו לידיים.',
@@ -117,7 +150,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-recommend',
     order: 7,
-    group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
+    group: ABOUT_US,
     question: {
       he: 'אתם יכולים להמליץ על עורך דין, שמאי או אדריכל?',
       en: 'Can you recommend a lawyer, an appraiser or an architect?',
@@ -130,7 +163,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-stalled',
     order: 8,
-    group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
+    group: ABOUT_US,
     question: {
       he: 'הפרויקט שלנו נתקע. אתם יכולים לעזור?',
       en: 'Our project has stalled. Can you help?',
