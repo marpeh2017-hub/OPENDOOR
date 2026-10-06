@@ -170,6 +170,18 @@ const PATHS = {
       <path d="M3.5 6.5l8.5 6 8.5-6" />
     </>
   ),
+  pin: (
+    <>
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </>
+  ),
+  'shield-check': (
+    <>
+      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+      <path d="M9 12.3l2.2 2.2 4-4.2" />
+    </>
+  ),
   // Starting again: a project set moving.
   restart: (
     <>

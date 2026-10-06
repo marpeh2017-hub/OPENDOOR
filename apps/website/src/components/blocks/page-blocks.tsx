@@ -22,6 +22,9 @@ import { PrinciplesBlockView } from './principles-block'
 import { StageIndexBlockView } from './stage-index-block'
 import { RisksBlockView } from './risks-block'
 import { NetworkBlockView } from './network-block'
+import { PageHeroBlockView } from './page-hero-block'
+import { ModelsBlockView } from './models-block'
+import { DiagnosisBlockView } from './diagnosis-block'
 
 /**
  * Renders a CMS page's blocks, in order.
@@ -64,7 +67,7 @@ const SELF_WRAPPING = new Set([
   'EXTERNAL_RESOURCES', 'MEDIA', 'CTA', 'FEATURE_GRID', 'PROCESS',
   'PROJECT_TRANSPARENCY', 'TRUST', 'VERIFIABLE_FACTS', 'TEXT_SECTION',
   'CHAPTER', 'CHECKLIST', 'DOORS', 'FACT_STRIP', 'PROFILE', 'PRINCIPLES',
-  'STAGE_INDEX', 'RISKS', 'NETWORK',
+  'STAGE_INDEX', 'RISKS', 'NETWORK', 'PAGE_HERO', 'MODELS', 'DIAGNOSIS',
 ])
 
 export async function PageBlocks({
@@ -246,6 +249,15 @@ async function renderBlockBody(
 
     case 'NETWORK':
       return <NetworkBlockView block={block} t={t} />
+
+    case 'PAGE_HERO':
+      return <PageHeroBlockView block={block} t={t} />
+
+    case 'MODELS':
+      return <ModelsBlockView block={block} t={t} />
+
+    case 'DIAGNOSIS':
+      return <DiagnosisBlockView block={block} t={t} />
 
     case 'CHAPTER':
       // Normally rendered by the sequence rule above, which knows its position.

@@ -5,47 +5,31 @@ import type { Localizer } from '@/lib/localize'
 /**
  * "מה שאפשר לבדוק עלינו" — the facts a visitor can verify without us.
  *
- * ── WHY THIS EXISTS WHEN `TrustBlockView` ALREADY DOES ─────────────────────
+ * ── WHAT THIS ANSWERS ──────────────────────────────────────────────────────
  *
- * They answer different questions, and a reader needs both in this order.
+ * "Who are you, and can I check it": a company number that resolves at the
+ * registrar, the company's role and who pays it as the agreement states
+ * them, and that the owners' professionals are theirs. Every line is
+ * checkable somewhere other than this website. /about is the one place the
+ * facts appear in full; the homepage's strip cuts each to a line and links
+ * here, to the section's id.
  *
- * The trust index answers "how does this company work" — how decisions are
- * made, how updates arrive, what the representation may do. Its own intro says
- * trust is built from a clear process rather than from declarations, and it is
- * right. But it assumes the reader has already decided we are a real company
- * worth reading about.
+ * ── LAYOUT (2026-10) ───────────────────────────────────────────────────────
  *
- * This answers the question before that one: "who are you, and can I check it."
- * A company number that resolves at the registrar, a payment model the reader
- * will see again in the agreement, and a boundary on our role. Every line here
- * is checkable somewhere other than this website, which is the only kind of
- * claim worth making to someone deciding about the largest asset they own.
+ * The heading and its line on one side; the facts as a grid of two on the
+ * other, each under a hairline, as the approved /about design draws them.
+ * The numerals that used to run down a single list are gone: four facts
+ * read at a glance in a grid, and a number beside each implied a ranking
+ * among them that there is not.
  *
- * ── WHY IT IS NOT A SECOND DARK BAND ───────────────────────────────────────
- *
- * The first draft of this was on the inverse surface, because the content felt
- * weighty enough to deserve it. That would have broken the rule `trust-block`
- * sets out and depends on: one dark band on the homepage is emphasis, two are
- * a stripe pattern, and the trust index would have lost the distinction that
- * makes it land.
- *
- * So this is light and sits BEFORE it, and the composition is better for the
- * constraint — the reader gets the institutional facts on an ordinary surface,
- * then the process on the one dark moment in the page. Weight comes from the
- * 2px graphite rule and the teal numerals instead of from a fill.
+ * `tone: 'inverse'` puts the section on the dark surface (/about); the light
+ * tone remains for a page that already has its dark band.
  *
  * ── NO STATISTICS, DELIBERATELY ────────────────────────────────────────────
  *
  * There is no project count, no resident count and no shekel figure, because
- * there is nothing real to put in them yet. The section is built so that it is
- * COMPLETE without them rather than visibly waiting for them: a reader cannot
- * tell that anything is missing, because nothing is.
- *
- * ── `tone: 'inverse'` ──────────────────────────────────────────────────────
- *
- * The rule above is the homepage's. On a page with no other dark band, /about,
- * the facts can take the dark surface without starting a stripe pattern, and
- * the approved design for that page does exactly that.
+ * there is nothing real to put in them yet. The section is complete without
+ * them rather than visibly waiting for them.
  */
 export function VerifiableFactsBlockView({
   block,
@@ -59,64 +43,27 @@ export function VerifiableFactsBlockView({
   return (
     // The id is the anchor the homepage's fact strip links to; the scroll
     // margin keeps the heading clear of the sticky header when it lands.
-    <Section id={block.id} size="lg" tone={inverse ? 'inverse' : 'page'} className="scroll-mt-16">
-      <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
+    <Section id={block.id} size="md" tone={inverse ? 'inverse' : 'page'} className="scroll-mt-16">
+      <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         <div>
-          <h2
-            className={`max-w-[15ch] type-h2 font-bold text-balance ${
-              inverse ? 'text-white' : 'text-gray-900'
-            }`}
-          >
+          <h2 className={`max-w-[18ch] type-h2 font-bold text-balance ${inverse ? 'text-white' : 'text-gray-900'}`}>
             {t(block.heading)}
           </h2>
           {block.intro && (
-            <p
-              className={`mt-4 max-w-md type-body ${
-                inverse ? 'text-gray-300' : 'text-gray-600'
-              }`}
-            >
+            <p className={`mt-4 max-w-md type-body ${inverse ? 'text-teal-100' : 'text-gray-600'}`}>
               {t(block.intro)}
             </p>
           )}
-          <span
-            aria-hidden="true"
-            className={`mt-8 block h-[3px] w-16 ${inverse ? 'bg-teal-400' : 'bg-teal-500'}`}
-          />
         </div>
 
-        {/* A 2px rule opens the list: the darkest neutral on the light surface,
-            a translucent white on the dark one, as the trust index uses. */}
-        <ol className={`border-t-2 ${inverse ? 'border-white/30' : 'border-gray-800'}`}>
-          {block.items.map((item, index) => (
-            <li
-              key={item.id}
-              className={`flex gap-6 border-b py-6 sm:gap-7 ${
-                inverse ? 'border-white/15' : 'border-gray-200'
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className={`pt-1 text-xs font-bold tabular-nums tracking-[0.2em] ${
-                  inverse ? 'text-teal-300' : 'text-teal-700'
-                }`}
-              >
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <div>
-                <h3 className={`type-h3 font-semibold ${inverse ? 'text-white' : 'text-gray-900'}`}>
-                  {t(item.title)}
-                </h3>
-                <p
-                  className={`mt-1.5 type-body ${
-                    inverse ? 'text-gray-300' : 'text-gray-600'
-                  }`}
-                >
-                  {t(item.body)}
-                </p>
-              </div>
+        <ul className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+          {block.items.map((item) => (
+            <li key={item.id} className={`border-t pt-4 ${inverse ? 'border-white/20' : 'border-gray-200'}`}>
+              <h3 className={`type-h3 font-bold ${inverse ? 'text-white' : 'text-gray-900'}`}>{t(item.title)}</h3>
+              <p className={`mt-1.5 type-body ${inverse ? 'text-teal-100' : 'text-gray-600'}`}>{t(item.body)}</p>
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
     </Section>
   )

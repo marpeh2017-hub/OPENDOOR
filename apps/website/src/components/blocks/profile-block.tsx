@@ -6,30 +6,23 @@ import { getImageSlot, IMAGE_SLOTS } from '@/mock/fixtures/images'
 import { Section } from './section'
 
 /**
- * A person, at a glance: portrait, one line in their own words, one sentence
- * about them, and the rest behind "read more".
+ * A person, compactly: a small portrait, the name, one sentence, and the rest
+ * behind "read more".
  *
- * ── WHY NOT A CHAPTER ──────────────────────────────────────────────────────
+ * ── SINCE 2026-10 ──────────────────────────────────────────────────────────
  *
- * Michael's section on /about used to be a CHAPTER: a pull quote of 30 words,
- * then two paragraphs of biography, beside a drawing where his photograph
- * would go. On a phone that was a hundred words before the page moved on. The
- * design review asked for a face, one line, and the rest on request. The full
- * quotation and biography are still in the page, unchanged, inside the
- * disclosure; the visible line and sentence are cut from them.
+ * On /about the large portrait and the line in Michael's own words moved up
+ * into the page's opening, where the approved design puts a face to the
+ * company on the first screen. This block is now the biography further down:
+ * one row with the portrait small, so the face is recognised rather than
+ * repeated, and the full quotation and biography under the disclosure,
+ * unchanged. `pullQuote`, when content still sets it, is not shown here.
  *
  * ── THE DISCLOSURE ─────────────────────────────────────────────────────────
  *
  * A native <details>: keyboard and screen-reader support without script, and
- * the text is in the page for search engines and reader mode whether it is
- * open or not. Its summary is a 44px target styled as a quiet button.
- *
- * ── THE PORTRAIT ───────────────────────────────────────────────────────────
- *
- * From the image inventory, like every image on the site, with the claim
- * PERSON_PORTRAIT. If the slot has no asset nothing is drawn in its place: a
- * placeholder silhouette beside a real person's name is not neutral. The
- * offset ring is decoration, in the brand teal.
+ * the text is in the page for search engines and reader mode open or closed.
+ * Its summary is a 44px target styled as a quiet button.
  */
 export async function ProfileBlockView({ block, t }: { block: ProfileBlock; t: Localizer }) {
   const tUi = await getTranslations('ui')
@@ -44,75 +37,60 @@ export async function ProfileBlockView({ block, t }: { block: ProfileBlock; t: L
   const hasMore = Boolean(t(block.quote)) || paragraphs.length > 0
 
   return (
-    <Section tone="sunken" size="md">
-      <div className="grid items-center gap-10 md:grid-cols-[auto_minmax(0,1fr)] md:gap-16">
-        {portrait && (
-          <div className="relative mx-auto w-44 md:mx-0 md:w-60 lg:w-64">
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 translate-x-3 translate-y-3 rounded-full border-2 border-teal-500 rtl:-translate-x-3"
-            />
+    <Section id={block.id} size="sm" className="scroll-mt-16">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-5 sm:gap-7">
+          {portrait && (
             <Image
               src={portrait.url}
-              alt={t.text(portrait.alt)}
+              alt=""
               width={portrait.width ?? 960}
               height={portrait.height ?? 960}
-              sizes="(min-width: 1024px) 16rem, (min-width: 768px) 15rem, 11rem"
-              className="relative aspect-square w-full rounded-full bg-white object-cover shadow-[0_14px_32px_-18px_rgba(20,49,47,0.5)] ring-1 ring-gray-200"
+              sizes="6rem"
+              className="h-20 w-20 shrink-0 rounded-full bg-white object-cover ring-1 ring-gray-200 sm:h-24 sm:w-24"
             />
-          </div>
-        )}
-
-        <div className="min-w-0">
-          <figure className="m-0">
-            <blockquote className="m-0">
-              <p className="max-w-[24ch] type-h2 font-bold text-teal-700 text-balance">
-                {t(block.pullQuote)}
-              </p>
-            </blockquote>
-            <figcaption className="mt-5">
-              <h2 className="type-h3 font-bold text-gray-900">{t(block.name)}</h2>
-            </figcaption>
-          </figure>
-
-          <p className="mt-2 max-w-2xl type-body text-gray-700">{t(block.summary)}</p>
-
-          {hasMore && (
-            <details className="group mt-6 max-w-2xl">
-              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-teal-600 px-4 type-body font-semibold text-teal-600 hover:bg-white hover:text-teal-700 [&::-webkit-details-marker]:hidden">
-                <span className="group-open:hidden">{tUi('readMore')}</span>
-                <span className="hidden group-open:inline">{tUi('readLess')}</span>
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="group-open:rotate-180 motion-safe:transition-transform"
-                >
-                  <path d="M4 6l4 4 4-4" />
-                </svg>
-              </summary>
-
-              <div className="mt-6 space-y-4">
-                {t(block.quote) && (
-                  <blockquote className="m-0 border-s-2 border-teal-500 ps-5">
-                    <p className="type-lead font-semibold text-gray-900">{t(block.quote)}</p>
-                  </blockquote>
-                )}
-                {paragraphs.map((paragraph, index) => (
-                  <p key={index} className="type-body text-gray-600">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </details>
           )}
+          <div className="min-w-0 flex-[999_1_20rem]">
+            <h2 className="type-h3 font-bold text-gray-900">{t(block.name)}</h2>
+            <p className="mt-1 type-body text-gray-600">{t(block.summary)}</p>
+          </div>
         </div>
+
+        {hasMore && (
+          <details className="group mt-5">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-teal-600 px-4 type-body font-semibold text-teal-600 hover:bg-teal-50 hover:text-teal-700 [&::-webkit-details-marker]:hidden">
+              <span className="group-open:hidden">{tUi('readMore')}</span>
+              <span className="hidden group-open:inline">{tUi('readLess')}</span>
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="group-open:rotate-180 motion-safe:transition-transform"
+              >
+                <path d="M4 6l4 4 4-4" />
+              </svg>
+            </summary>
+
+            <div className="mt-6 max-w-3xl space-y-4">
+              {t(block.quote) && (
+                <blockquote className="m-0 border-s-2 border-teal-500 ps-5">
+                  <p className="type-lead font-semibold text-gray-900">{t(block.quote)}</p>
+                </blockquote>
+              )}
+              {paragraphs.map((paragraph, index) => (
+                <p key={index} className="type-body text-gray-600">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </Section>
   )

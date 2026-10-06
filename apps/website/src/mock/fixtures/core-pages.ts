@@ -63,118 +63,240 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
 
 const aboutBlocks: PageBlock[] = [
   {
-    id: 'about-header',
-    type: 'PAGE_HEADER',
+    // Rebuilt on 2026-10-06 from the company's own text and the approved
+    // design: who the company is and where it works, the action and the
+    // phone, and Michael's face and one line where a stock photograph was.
+    id: 'about-hero',
+    type: 'PAGE_HERO',
     order: 0,
     hidden: false,
-    eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
+    eyebrow: { he: 'מי אנחנו', en: 'About us' },
     heading: {
-      he: 'יזמות והתחדשות עירונית שמתחילה בבעלי הדירות',
-      en: 'Urban renewal and development that starts with the owners',
+      he: 'התחדשות עירונית מצליחה מתחילה באמון.',
+      en: 'Successful urban renewal starts with trust.',
     },
-  },
-  {
-    id: 'about-image',
-    type: 'MEDIA',
-    order: 1,
-    hidden: false,
-    assets: [],
-    slotId: 'HERO_JERUSALEM_ARCHITECTURE',
-  },
-  {
-    id: 'about-statement',
-    type: 'STATEMENT',
-    order: 2,
-    hidden: false,
-    // Since 2026-10-06: the company is also a developer, so its opening line
-    // is what that gives owners rather than a claim to sit only on their side.
-    statement: {
-      he: 'אנחנו מכירים את שני צדי השולחן.',
-      en: 'We know both sides of the table.',
+    standfirst: {
+      he: 'OpenDoor Group (קבוצת אופן דור יזמות והתחדשות בע״מ) פועלת בתחום ההתחדשות העירונית, עם התמחות בפרויקטי פינוי־בינוי. אנחנו עובדים בעיקר בירושלים והסביבה, מול בעלי דירות, יזמים, אנשי מקצוע ורשויות.',
+      en: 'OpenDoor Group (Kvutsat OpenDoor Yazamut VeHithadshut Ltd.) works in urban renewal, specialising in evacuate-and-rebuild (pinui-binui) projects. We work mainly in and around Jerusalem, with apartment owners, developers, professionals and the authorities.',
     },
-  },
-  {
-    // The company in its own words: both roles, and what being a developer
-    // gives the owners. How and why the company was founded has not been
-    // supplied, so it is a marked placeholder (`pending`) that renders outside
-    // production only.
-    id: 'about-story',
-    type: 'PROSE',
-    order: 3,
-    hidden: false,
-    lead: {
-      he: 'OpenDoor Group היא חברת יזמות והתחדשות עירונית. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים את בעלי הדירות ומלווים אותם מול יזם אחר. בשני המקרים נקודת המוצא זהה: פרויקט טוב מתחיל בבעלי דירות שמבינים מה הם מקבלים.',
-      en: 'OpenDoor Group is an urban renewal and development company. In some projects we are the developer; in others we organise the owners and support them in dealing with another developer. Either way we start from the same place: a good project starts with owners who understand what they are getting.',
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
+    ctaHref: '/eligibility',
+    showPhone: true,
+    visual: {
+      kind: 'portrait',
+      slotId: 'ABOUT_MICHAEL_PORTRAIT',
+      quote: {
+        he: '״בעלי דירות חזקים יותר כשהם מאורגנים.״',
+        en: '“Owners are stronger when they are organised.”',
+      },
+      quoteBy: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
     },
-    body: {
-      he: 'כיוון שאנחנו מכירים את הצד של היזם מבפנים, אנחנו יודעים מה לבדוק בהצעה, איפה פרויקטים נתקעים, ואיך מחזירים אותם לתנועה.',
-      en: 'Because we know the developer’s side from the inside, we know what to check in an offer, where projects stall, and how to get them moving again.',
-    },
-    pending: {
-      he: 'ממתין לנוסח מהחברה: שניים או שלושה משפטים על איך ולמה הוקמה OpenDoor.',
-      en: 'Waiting for the company’s text: two or three sentences on how and why OpenDoor was founded.',
-    },
-  },
-  {
-    // The three chapters that used to sit here, one line each. Each line is
-    // cut from the approved text it links to, which is stated in full there:
-    // the offer check on /services, transparency on /trust, the role on
-    // /why-organizer.
-    id: 'about-principles',
-    type: 'PRINCIPLES',
-    order: 4,
-    hidden: false,
-    heading: { he: 'העמדה שלנו', en: 'Where we stand' },
-    items: [
+    points: [
       {
-        id: 'pr-check',
-        icon: 'search',
-        title: { he: 'בודקים כל הצעה', en: 'We check every offer' },
-        body: {
-          he: 'משווים בין יזמים ומסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם.',
-          en: 'We compare developers and explain the financial and legal implications in your language.',
-        },
-        linkLabel: { he: 'בדיקת ההצעה', en: 'Checking the offer' },
-        href: '/services#services-offer-check',
+        id: 'about-pt-pinui',
+        icon: 'building',
+        title: { he: 'התמחות בפינוי־בינוי', en: 'Evacuate-and-rebuild specialists' },
+        body: { he: 'מהבדיקה הראשונית ועד המסירה', en: 'From the first review to handover' },
       },
       {
-        id: 'pr-clear',
-        icon: 'eye',
-        title: { he: 'לא מטשטשים', en: 'We do not blur things' },
+        id: 'about-pt-area',
+        icon: 'pin',
+        title: { he: 'ירושלים והסביבה', en: 'Jerusalem and its surroundings' },
         body: {
-          he: 'מסבירים איפה נמצאים הסיכונים ומה המשמעות של כל בחירה.',
-          en: 'We explain where the risks lie and what each choice means.',
+          he: 'בעלי דירות, יזמים, אנשי מקצוע ורשויות',
+          en: 'Owners, developers, professionals and the authorities',
         },
-        linkLabel: { he: 'שקיפות בתהליך', en: 'Transparency in the process' },
-        href: '/trust#trust-in-process',
       },
       {
-        id: 'pr-decide',
-        icon: 'check-circle',
-        title: { he: 'אתם מחליטים', en: 'You decide' },
-        body: {
-          he: 'כל החלטה משמעותית עולה להכרעת בעלי הדירות.',
-          en: 'Every significant decision goes to the owners.',
-        },
-        linkLabel: { he: 'תפקידנו', en: 'Our role' },
-        href: '/why-organizer#why-role',
+        id: 'about-pt-role',
+        icon: 'document-check',
+        title: { he: 'יזם או מארגנים, בגלוי', en: 'Developer or organiser, openly' },
+        body: { he: 'אומרים מראש, וכותבים בהסכם', en: 'Said up front, and written into the agreement' },
       },
     ],
   },
   {
-    // Michael's approved text, unchanged in meaning: the large line is the
-    // opening clause of his quotation (approved for this use on 2026-10-06),
-    // the visible sentence is the biography's first, and the full quotation
-    // and the rest of the biography open under "לקריאה נוספת".
+    id: 'about-models',
+    type: 'MODELS',
+    order: 1,
+    hidden: false,
+    heading: { he: 'שני מודלים של עבודה', en: 'Two ways of working' },
+    items: [
+      {
+        id: 'model-developer',
+        icon: 'building',
+        title: { he: 'כשאנחנו היזם', en: 'When we are the developer' },
+        body: {
+          he: 'אנחנו מובילים את הפרויקט מהבדיקה הראשונית ועד המסירה. אנחנו בודקים את הכדאיות, מגבשים את התכנון, מחתימים את הדיירים ומלווים את הביצוע.',
+          en: 'We lead the project from the first review to handover. We check viability, shape the plans, sign the residents and see construction through.',
+        },
+        highlight: {
+          he: 'ההבדל אצלנו: הדיירים מקבלים את התמונה המלאה כבר מההתחלה, כולל מה הפרויקט צריך כדי להיות כדאי, ולמה.',
+          en: 'What is different with us: residents get the full picture from the start, including what the project needs in order to be viable, and why.',
+        },
+      },
+      {
+        id: 'model-organiser',
+        icon: 'users',
+        title: { he: 'כשאנחנו מארגנים את בעלי הדירות', en: 'When we organise the owners' },
+        body: {
+          he: 'אנחנו מרכזים את הבעלים לנציגות מסודרת, אוספים את המידע הקנייני והתכנוני, ויוצאים לשוק כקבוצה מאורגנת ולא כאוסף של חתימות בודדות.',
+          en: 'We bring the owners together into an orderly representation, gather the ownership and planning information, and go to the market as an organised group rather than a collection of individual signatures.',
+        },
+        highlight: {
+          he: 'אנחנו בונים את הבסיס להשוואה בין הצעות, ובוחנים כל הצעה לפי מה שבאמת חשוב: תמורה, ערבויות, לוחות זמנים, ואיתנות היזם.',
+          en: 'We build the basis for comparing offers, and examine each one by what really matters: consideration, guarantees, timelines and the developer’s strength.',
+        },
+      },
+    ],
+    note: {
+      he: 'בכל פרויקט אומרים מראש באיזה מודל אנחנו עובדים, וזה כתוב בהסכם.',
+      en: 'In every project we say up front which model we are working in, and it is written into the agreement.',
+    },
+  },
+  {
+    // The company's five checks, in its words. They replace the six-label
+    // checklist /services used to carry; /services links here.
+    id: 'about-checks',
+    type: 'CHECKLIST',
+    order: 2,
+    hidden: false,
+    heading: { he: 'מה אנחנו בודקים בהצעה', en: 'What we check in an offer' },
+    items: [
+      {
+        id: 'check-consideration',
+        icon: 'chart',
+        label: { he: 'התמורה', en: 'The consideration' },
+        body: {
+          he: 'אם התמורה לדיירים נשענת על כדאיות כלכלית אמיתית, או על הנחות שיתפרקו בהמשך.',
+          en: 'Whether the consideration for residents rests on real economic viability, or on assumptions that will fall apart later.',
+        },
+      },
+      {
+        id: 'check-guarantees',
+        icon: 'shield',
+        label: { he: 'הערבויות', en: 'The guarantees' },
+        body: {
+          he: 'מה מכסות הערבויות בפועל, ומתי הן נכנסות לתוקף.',
+          en: 'What the guarantees actually cover, and when they take effect.',
+        },
+      },
+      {
+        id: 'check-timelines',
+        icon: 'calendar',
+        label: { he: 'לוחות הזמנים', en: 'The timelines' },
+        body: {
+          he: 'אם לוחות הזמנים ריאליים ביחס למצב התכנוני.',
+          en: 'Whether the timelines are realistic given the planning status.',
+        },
+      },
+      {
+        id: 'check-developer',
+        icon: 'building',
+        label: { he: 'היזם', en: 'The developer' },
+        body: {
+          he: 'ניסיון היזם, היכולת הפיננסית שלו ופרויקטים קודמים.',
+          en: 'The developer’s experience, financial capacity and previous projects.',
+        },
+      },
+      {
+        id: 'check-risks',
+        icon: 'alert',
+        label: { he: 'הסיכונים', en: 'The risks' },
+        body: {
+          he: 'מה הסעיפים שמעבירים סיכון מהיזם אל הדיירים.',
+          en: 'Which clauses shift risk from the developer to the residents.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'about-stuck',
+    type: 'DIAGNOSIS',
+    order: 3,
+    hidden: false,
+    heading: {
+      he: 'איפה פרויקטים נתקעים, ואיך מחזירים אותם לתנועה',
+      en: 'Where projects stall, and how to get them moving again',
+    },
+    lead: {
+      he: 'רוב הפרויקטים נתקעים בגלל חוסר אמון, מידע חלקי, דיירים שלא מרגישים שמישהו מקשיב להם, או הצעה שלא הייתה כדאית מלכתחילה.',
+      en: 'Most projects stall because of mistrust, partial information, residents who do not feel anyone is listening to them, or an offer that was never viable in the first place.',
+    },
+    body: {
+      he: 'כשפרויקט נתקע, אנחנו מתחילים מאבחון: איפה בדיוק הבעיה, מי צריך לשמוע מה, ומה אפשר לתקן.',
+      en: 'When a project stalls, we start with a diagnosis: where exactly the problem is, who needs to hear what, and what can be fixed.',
+    },
+    start: { he: 'אבחון', en: 'Diagnosis' },
+    outcomes: [
+      { id: 'outcome-offer', label: { he: 'תיקון בהצעה', en: 'Correcting the offer' } },
+      { id: 'outcome-residents', label: { he: 'תהליך מחודש מול הדיירים', en: 'A fresh process with the residents' } },
+      { id: 'outcome-partner', label: { he: 'שותף אחר', en: 'A different partner' } },
+    ],
+    caption: {
+      he: 'לפעמים זה תיקון בהצעה, לפעמים זה תהליך מחודש מול הדיירים, ולפעמים זו ההבנה שצריך שותף אחר.',
+      en: 'Sometimes it is a correction to the offer, sometimes a fresh process with the residents, and sometimes the realisation that a different partner is needed.',
+    },
+    linkLabel: { he: 'לעמוד הפרויקטים התקועים', en: 'Stalled projects' },
+    linkHref: '/stalled-projects',
+  },
+  {
+    // The company's four principles, in its words. They replace "העמדה
+    // שלנו", whose three lines linked to texts on other pages.
+    id: 'about-how-we-work',
+    type: 'PRINCIPLES',
+    order: 4,
+    hidden: false,
+    heading: { he: 'איך אנחנו עובדים', en: 'How we work' },
+    items: [
+      {
+        id: 'pr-data',
+        icon: 'files',
+        title: { he: 'נתונים, לא הערכות', en: 'Data, not estimates' },
+        body: {
+          he: 'כל המלצה נשענת על בדיקה: נסח טאבו, מצב תכנוני ותחשיב כלכלי.',
+          en: 'Every recommendation rests on checks: the land registry extract, the planning status and an economic calculation.',
+        },
+      },
+      {
+        id: 'pr-transparency',
+        icon: 'eye',
+        title: { he: 'שקיפות בתהליך', en: 'Transparency in the process' },
+        body: {
+          he: 'בעלי הדירות יודעים בכל שלב איפה הפרויקט עומד, מה נדרש ממי, ומה הצעד הבא.',
+          en: 'Owners know at every stage where the project stands, what is required of whom, and what the next step is.',
+        },
+      },
+      {
+        id: 'pr-listening',
+        icon: 'chat',
+        title: { he: 'הקשבה לפני חתימה', en: 'Listening before signing' },
+        body: {
+          he: 'כל דייר מגיע עם שאלות, חששות ונסיבות משלו. אנחנו מתחילים משם.',
+          en: 'Every resident comes with their own questions, worries and circumstances. We start there.',
+        },
+      },
+      {
+        id: 'pr-responsibility',
+        icon: 'shield-check',
+        title: { he: 'אחריות לאורך כל הדרך', en: 'Responsibility all the way' },
+        body: {
+          he: 'אנחנו לא נעלמים אחרי החתימות.',
+          en: 'We do not disappear after the signatures.',
+        },
+      },
+    ],
+  },
+  {
+    // Michael's approved text, unchanged: the biography's first sentence is
+    // visible, the full quotation and the rest open under "לקריאה נוספת".
+    // The opening clause of the quotation is set large in the page's opening,
+    // beside his photograph.
     id: 'about-michael',
     type: 'PROFILE',
     order: 5,
     hidden: false,
     name: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
-    pullQuote: {
-      he: '״בעלי דירות חזקים יותר כשהם מאורגנים.״',
-      en: '“Owners are stronger when they are organised.”',
-    },
     summary: {
       he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים והסביבה, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן.',
       en: 'Michael Rosenbach works in urban renewal in and around Jerusalem, supporting owners and their representations in their dealings with developers, professionals and real-estate companies.',
@@ -228,8 +350,8 @@ const aboutBlocks: PageBlock[] = [
         icon: 'receipt',
         title: { he: 'מי משלם לנו', en: 'Who pays us' },
         body: {
-          he: 'כשאנחנו מארגנים את בעלי הדירות מול יזם, התשלום לחברה מגיע מהיזם בלבד, ובעלי הדירות אינם משלמים לחברה תשלום ישיר. כשאנחנו היזם, הרווח שלנו מגיע מהפרויקט עצמו, כמו של כל יזם. בשני המקרים זה כתוב בהסכם.',
-          en: 'When we organise the owners in dealing with a developer, the developer alone pays us, and owners pay the company nothing directly. When we are the developer, we earn from the project itself, as any developer does. Either way, it is written into the agreement.',
+          he: 'כמארגנים: היזם בלבד, ובעלי הדירות אינם משלמים לחברה תשלום ישיר. כיזם: הרווח שלנו מגיע מהפרויקט עצמו. בשני המקרים זה כתוב בהסכם.',
+          en: 'As organisers: the developer alone, and owners pay the company nothing directly. As the developer: we earn from the project itself. Either way, it is written into the agreement.',
         },
       },
       {
@@ -244,20 +366,14 @@ const aboutBlocks: PageBlock[] = [
     ],
   },
   {
-    // A CTA pointing at /eligibility renders `links.enquiryIntro` in place of
-    // its own body (cta-block.tsx), so the body below only decides whether that
-    // line appears. It repeats the message so this file shows what renders.
     id: 'about-cta',
     type: 'CTA',
     order: 7,
     hidden: false,
+    eyebrow: { he: 'השורה התחתונה', en: 'The bottom line' },
     heading: {
-      he: 'יזם הגיע לבניין שלכם?',
-      en: 'Has a developer come to your building?',
-    },
-    body: {
-      he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
-      en: 'Contact us for an initial conversation about your building.',
+      he: 'המטרה שלנו היא שכל בעל דירה יבין את האפשרויות שלו, יתקדם בביטחון, ושהפרויקט ישרת גם את הדיירים וגם את עתיד השכונה.',
+      en: 'Our aim is for every owner to understand their options and move forward with confidence, and for the project to serve both the residents and the future of the neighbourhood.',
     },
     ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
@@ -1163,12 +1279,12 @@ export const CORE_PAGES: readonly CmsPage[] = [
       he: {
         title: 'מי אנחנו',
         description:
-          'OpenDoor Group היא חברת יזמות והתחדשות עירונית בירושלים והסביבה. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים ומלווים את בעלי הדירות.',
+          'OpenDoor Group פועלת בהתחדשות עירונית, עם התמחות בפרויקטי פינוי־בינוי בירושלים והסביבה. שני מודלים של עבודה: כיזם, וכמארגנים של בעלי הדירות.',
       },
       en: {
         title: 'About us',
         description:
-          'OpenDoor Group is an urban renewal and development company in and around Jerusalem. In some projects we are the developer; in others we organise and support the owners.',
+          'OpenDoor Group works in urban renewal, specialising in evacuate-and-rebuild projects in and around Jerusalem. Two ways of working: as the developer, and as the owners’ organiser.',
       },
     },
     updatedAt: '2026-10-06T00:00:00.000Z',

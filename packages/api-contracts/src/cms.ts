@@ -55,6 +55,9 @@ export type BlockType =
   | 'STAGE_INDEX'
   | 'RISKS'
   | 'NETWORK'
+  | 'PAGE_HERO'
+  | 'MODELS'
+  | 'DIAGNOSIS'
 
 /**
  * Ordered for the block picker. A closed list, deliberately: adding a block is
@@ -63,11 +66,11 @@ export type BlockType =
  */
 export const BLOCK_TYPES: readonly BlockType[] = [
   // Openings
-  'HERO', 'PAGE_HEADER',
+  'HERO', 'PAGE_HERO', 'PAGE_HEADER',
   // Wayfinding
   'DOORS',
   // Editorial
-  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'PRINCIPLES', 'RISKS', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
+  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'MODELS', 'DIAGNOSIS', 'PRINCIPLES', 'RISKS', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
   // Process
   'JOURNEY', 'STAGE_INDEX', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
@@ -493,6 +496,9 @@ export interface ChecklistBlock extends BlockBase {
 export interface ChecklistItem {
   id: string
   label: LocalizedText
+  /** One sentence under the label, for a check that needs saying in full
+   *  (the five checks on /about). Labels alone remain the default. */
+  body?: LocalizedTextOptional
   /** Name from the renderer's fixed icon set, for the same reason as
    *  NarrativeItem's: one visual language, not one per editor. */
   icon?: string
@@ -618,9 +624,11 @@ export interface FactStripBlock extends BlockBase {
 export interface ProfileBlock extends BlockBase {
   type: 'PROFILE'
   name: LocalizedText
-  /** A line from the person's own words, set large. Quote marks are part of
-   *  the text. */
-  pullQuote: LocalizedText
+  /** A line from the person's own words. Optional since 2026-10: on /about
+   *  it is set large in the page's opening, beside the portrait, and the
+   *  profile further down holds the biography. Quote marks are part of the
+   *  text. */
+  pullQuote?: LocalizedTextOptional
   /** One or two sentences, always visible. */
   summary: LocalizedText
   /** The full quotation, revealed under "read more". */
@@ -714,13 +722,94 @@ export interface NetworkBlock extends BlockBase {
   note?: LocalizedTextOptional
 }
 
+/**
+ * The opening of an inner page that has to persuade, not only title.
+ *
+ * PAGE_HEADER's grammar (eyebrow, one h1, a standfirst) plus what the
+ * approved page designs of 2026-10 open with: the page's main action, the
+ * company phone beside it, a visual, and up to three proof points under the
+ * whole. The visual is chosen by kind, from the renderer's fixed set, for
+ * the same reason icons are: one visual language across the site.
+ */
+export interface PageHeroBlock extends BlockBase {
+  type: 'PAGE_HERO'
+  eyebrow?: LocalizedTextOptional
+  heading: LocalizedText
+  standfirst?: LocalizedTextOptional
+  ctaLabel?: LocalizedTextOptional
+  ctaHref?: string
+  /** Shows the company phone beside the action, from site configuration. */
+  showPhone?: boolean
+  visual?: PageHeroVisual
+  /** One line each, with an icon, under the opening. */
+  points?: PageHeroPoint[]
+}
+
+export type PageHeroVisual = PortraitVisual
+
+/** A real photograph of a named person, with a line in their words. */
+export interface PortraitVisual {
+  kind: 'portrait'
+  /** Image-inventory slot; nothing is drawn while it has no asset. */
+  slotId: string
+  quote?: LocalizedTextOptional
+  quoteBy?: LocalizedTextOptional
+}
+
+export interface PageHeroPoint {
+  id: string
+  icon?: string
+  title: LocalizedText
+  body?: LocalizedTextOptional
+}
+
+/**
+ * The ways the company works, side by side: a card each, with what is done
+ * and, set apart, what is different about it. Built for /about's "שני
+ * מודלים של עבודה" (developer, and organiser of the owners).
+ */
+export interface ModelsBlock extends BlockBase {
+  type: 'MODELS'
+  heading: LocalizedText
+  items: ModelItem[]
+  /** One line under the cards, e.g. that the model is stated in advance. */
+  note?: LocalizedTextOptional
+}
+
+export interface ModelItem {
+  id: string
+  icon?: string
+  title: LocalizedText
+  body: LocalizedText
+  /** The difference, set apart on the wash. */
+  highlight?: LocalizedTextOptional
+}
+
+/**
+ * Where something goes wrong, and the diagnosis that starts the fix, drawn
+ * as one step branching into its possible outcomes. The outcomes are said
+ * again in words in `caption`, so the drawing never carries a fact alone.
+ */
+export interface DiagnosisBlock extends BlockBase {
+  type: 'DIAGNOSIS'
+  heading: LocalizedText
+  lead?: LocalizedTextOptional
+  body?: LocalizedTextOptional
+  /** The first step, at the top of the drawing. */
+  start: LocalizedText
+  outcomes: { id: string; label: LocalizedText }[]
+  caption?: LocalizedTextOptional
+  linkLabel?: LocalizedTextOptional
+  linkHref?: string
+}
+
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
   | PageHeaderBlock | StatementBlock | ProseBlock | ChapterBlock
   | ComparisonBlock | RoleMapBlock | JourneyBlock | ChecklistBlock
   | DoorsBlock | FactStripBlock | ProfileBlock | PrinciplesBlock | StageIndexBlock
-  | RisksBlock | NetworkBlock
+  | RisksBlock | NetworkBlock | PageHeroBlock | ModelsBlock | DiagnosisBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 
