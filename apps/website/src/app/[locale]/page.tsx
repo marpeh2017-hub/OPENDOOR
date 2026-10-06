@@ -17,6 +17,7 @@ import { FaqBlockView } from '@/components/blocks/faq-block'
 import { CtaBlockView } from '@/components/blocks/cta-block'
 import { DoorsBlockView } from '@/components/blocks/doors-block'
 import { FactStripBlockView } from '@/components/blocks/fact-strip-block'
+import { NetworkBlockView } from '@/components/blocks/network-block'
 
 /**
  * Homepage.
@@ -115,6 +116,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
           case 'FACT_STRIP':
             rendered = <FactStripBlockView block={block} t={t} />
+            break
+
+          case 'NETWORK':
+            rendered = <NetworkBlockView block={block} t={t} />
             break
 
           case 'FEATURE_GRID':

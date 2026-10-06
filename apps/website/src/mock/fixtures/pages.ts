@@ -163,7 +163,59 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
-  /* 4 ── THE FACTS, ONE LINE EACH ─────────────────────────────────────── */
+  /* 4 ── THE PEOPLE WE BRING ─────────────────────────────────────────── */
+  /**
+   * The company's partners, by role, as the company describes them, and the
+   * professionals it can recommend (2026-10-06). No firm is named: names wait
+   * for each firm's written agreement. The recommendation line keeps the
+   * owners' choice in the same sentence.
+   */
+  {
+    id: 'home-network',
+    type: 'NETWORK',
+    order: 3,
+    hidden: false,
+    heading: { he: 'האנשים שאנחנו מביאים לשולחן', en: 'The people we bring to the table' },
+    intro: {
+      he: 'פרויקט התחדשות עירונית טוב כמו האנשים שעובדים עליו. בנינו קשרי עבודה קרובים עם יזמים גדולים ומבוססים, עם משרדי אדריכלים מובילים ועם בודקי בית מנוסים.',
+      en: 'An urban-renewal project is as good as the people working on it. We have built close working relationships with large, established developers, leading architecture firms and experienced home inspectors.',
+    },
+    items: [
+      {
+        id: 'net-developers',
+        icon: 'building',
+        title: { he: 'יזמים', en: 'Developers' },
+        body: {
+          he: 'חברות חזקות, עם ניסיון בפרויקטים דומים ויכולת לממן אותם. כך ההצעות שמגיעות אליכם רציניות מההתחלה.',
+          en: 'Strong companies with experience of similar projects and the means to finance them, so the offers you receive are serious from the start.',
+        },
+      },
+      {
+        id: 'net-architects',
+        icon: 'drafting',
+        title: { he: 'אדריכלים', en: 'Architects' },
+        body: {
+          he: 'משרדים שמכירים את התכנון בירושלים, ויודעים לתכנן בניין שמתאים גם לבעלי הדירות וגם לדרישות הוועדה.',
+          en: 'Firms that know planning in Jerusalem, and can design a building that suits both the owners and the planning committee.',
+        },
+      },
+      {
+        id: 'net-inspectors',
+        icon: 'home-check',
+        title: { he: 'בודקי בית', en: 'Home inspectors' },
+        body: {
+          he: 'בדיקה מקצועית של הדירה החדשה לפני קבלת המפתח, כדי שתקבלו בדיוק את מה שהובטח.',
+          en: 'A professional inspection of the new apartment before you take the keys, so you receive exactly what was promised.',
+        },
+      },
+    ],
+    note: {
+      he: 'כאנשים מהתחום, אנחנו יכולים גם להמליץ לכם על שמאים, עורכי דין ואדריכלים שאנחנו מכירים. ההמלצה היא רק המלצה: אתם בוחרים, ואנשי המקצוע פועלים מטעמכם.',
+      en: 'As people in the field, we can also recommend appraisers, lawyers and architects we know. A recommendation is only that: you choose, and the professionals act for you.',
+    },
+  },
+
+  /* 5 ── THE FACTS, ONE LINE EACH ─────────────────────────────────────── */
   /**
    * The short form of /about's "מה שאפשר לבדוק עלינו", which is the one place
    * the facts appear in full. Each line here is that page's wording cut down.
@@ -179,7 +231,7 @@ const homepageBlocks: PageBlock[] = [
   {
     id: 'home-facts',
     type: 'FACT_STRIP',
-    order: 3,
+    order: 4,
     hidden: false,
     // Read by screen readers as the strip's heading; the titles are visible.
     heading: { he: 'עובדות על החברה', en: 'Facts about the company' },
@@ -216,11 +268,11 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
-  /* 5 ── THE PERSONAL AREA ────────────────────────────────────────────── */
+  /* 6 ── THE PERSONAL AREA ────────────────────────────────────────────── */
   {
     id: 'home-portal',
     type: 'PORTAL',
-    order: 4,
+    order: 5,
     hidden: false,
     heading: { he: 'האזור האישי', en: 'The personal area' },
     intro: {
@@ -286,7 +338,7 @@ const homepageBlocks: PageBlock[] = [
     groups: [],
   },
 
-  /* 6 ── PROJECTS: hidden until the first one is published ───────────── */
+  /* 7 ── PROJECTS: hidden until the first one is published ───────────── */
   {
     // Hidden, not deleted: the projects page is empty today, and a homepage
     // section that leads to an empty page is a promise it cannot keep. Unhide
@@ -294,7 +346,7 @@ const homepageBlocks: PageBlock[] = [
     // back in PRIMARY_NAV_KEYS (lib/navigation.ts) at the same time.
     id: 'home-projects',
     type: 'PROJECTS',
-    order: 5,
+    order: 6,
     hidden: true,
     heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
@@ -304,11 +356,11 @@ const homepageBlocks: PageBlock[] = [
     limit: 3,
   },
 
-  /* 7 ── FINAL CTA ────────────────────────────────────────────────────── */
+  /* 8 ── FINAL CTA ────────────────────────────────────────────────────── */
   {
     id: 'home-cta',
     type: 'CTA',
-    order: 6,
+    order: 7,
     hidden: false,
     heading: {
       he: 'רוצים לבדוק מה אפשרי אצלכם?',

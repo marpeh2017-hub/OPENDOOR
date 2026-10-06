@@ -161,6 +161,23 @@ const PATHS = {
       <path d="M14 7l3 3" />
     </>
   ),
+  // An architect's compass.
+  drafting: (
+    <>
+      <circle cx="12" cy="5" r="1.6" />
+      <path d="M11.3 6.5L6 20" />
+      <path d="M12.7 6.5L18 20" />
+      <path d="M7.5 16.2c3 1.4 6 1.4 9 0" />
+    </>
+  ),
+  // A home, checked: the inspection before handover.
+  'home-check': (
+    <>
+      <path d="M3 11l9-7 9 7" />
+      <path d="M5 10v10h14V10" />
+      <path d="M9 15.2l2.2 2.2 4.3-4.4" />
+    </>
+  ),
 } as const
 
 export type LineIconName = keyof typeof PATHS

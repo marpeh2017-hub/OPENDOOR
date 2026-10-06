@@ -54,6 +54,7 @@ export type BlockType =
   | 'PRINCIPLES'
   | 'STAGE_INDEX'
   | 'RISKS'
+  | 'NETWORK'
 
 /**
  * Ordered for the block picker. A closed list, deliberately: adding a block is
@@ -70,7 +71,7 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   // Process
   'JOURNEY', 'STAGE_INDEX', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
-  'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'FACT_STRIP', 'CHECKLIST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
+  'FEATURE_GRID', 'NETWORK', 'TRUST', 'VERIFIABLE_FACTS', 'FACT_STRIP', 'CHECKLIST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
   // Other
   'PORTAL', 'MEDIA', 'CTA',
 ] as const
@@ -684,13 +685,30 @@ export interface RiskRow {
   icon?: string
 }
 
+/**
+ * The professionals a company works with, by role, and whom it can recommend.
+ *
+ * Roles only, never firm names or logos unless the firms have agreed in
+ * writing: naming a firm says it works with the company, which only the firm
+ * can confirm. `note` is the recommendation line, rendered beside the roles,
+ * and must keep the owners' choice explicit: a recommendation is never an
+ * appointment.
+ */
+export interface NetworkBlock extends BlockBase {
+  type: 'NETWORK'
+  heading: LocalizedText
+  intro?: LocalizedTextOptional
+  items: NarrativeItem[]
+  note?: LocalizedTextOptional
+}
+
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
   | PageHeaderBlock | StatementBlock | ProseBlock | ChapterBlock
   | ComparisonBlock | RoleMapBlock | JourneyBlock | ChecklistBlock
   | DoorsBlock | FactStripBlock | ProfileBlock | PrinciplesBlock | StageIndexBlock
-  | RisksBlock
+  | RisksBlock | NetworkBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 

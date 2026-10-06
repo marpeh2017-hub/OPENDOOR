@@ -114,4 +114,17 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'OpenDoor Group is an urban renewal and development company. In some projects we are the developer; in others we organise and support the owners: we organise the complex, bring in professionals on your behalf, run the tender with the developers and stay with you until you receive the key. Our role in each project is stated up front and written into the agreement you will hold.',
     },
   },
+  {
+    id: 'faq-recommend',
+    order: 7,
+    group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
+    question: {
+      he: 'אתם יכולים להמליץ על עורך דין, שמאי או אדריכל?',
+      en: 'Can you recommend a lawyer, an appraiser or an architect?',
+    },
+    answer: {
+      he: 'כן. כאנשים מהתחום אנחנו מכירים שמאים, עורכי דין ואדריכלים, ויכולים להמליץ עליהם. ההמלצה היא רק המלצה: אתם בוחרים, ואנשי המקצוע פועלים מטעמכם.',
+      en: 'Yes. As people in the field we know appraisers, lawyers and architects, and can recommend them. A recommendation is only that: you choose, and the professionals act for you.',
+    },
+  },
 ]
