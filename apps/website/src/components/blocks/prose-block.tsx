@@ -1,5 +1,6 @@
 import type { ProseBlock } from '@urban-renewal/api-contracts'
 import type { Localizer } from '@/lib/localize'
+import { PendingNote } from '@/components/brand/pending-note'
 
 /**
  * Long-form body copy.
@@ -68,6 +69,8 @@ export function ProseBlockView({
           ))}
         </div>
       )}
+
+      {block.pending && <PendingNote text={t(block.pending)} className="mt-6" />}
     </div>
   )
 }

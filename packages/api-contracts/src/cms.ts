@@ -221,6 +221,14 @@ export interface ProseBlock extends BlockBase {
   /** Optional since a lead can carry a block alone, as beside a STATEMENT
    *  when the whole point is one sentence. */
   body?: LocalizedTextOptional
+  /**
+   * Editor-facing: text the company still owes this block, e.g. "two or three
+   * sentences on how the company was founded". Rendered as a marked
+   * placeholder in development and in the preview build, never in production,
+   * so missing copy cannot be forgotten and a visitor never meets the note.
+   * Never invent the missing text to fill the gap.
+   */
+  pending?: LocalizedTextOptional
 }
 
 /**

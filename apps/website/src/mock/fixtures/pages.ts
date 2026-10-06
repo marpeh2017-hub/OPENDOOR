@@ -23,13 +23,24 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  *
  * ── CLAIMS ABOUT THE DIGITAL PRODUCT ───────────────────────────────────────
  *
- * The portal and transparency sections describe capability that is still being
- * built. Their copy says so — "נבנית", "יאפשר" — rather than the present tense
- * a finished product would use. A marketing page that describes unbuilt
+ * The personal area for owners is live, so the homepage describes it in the
+ * present tense. The representation workspace is not, and the homepage leaves
+ * it out rather than describing it. A marketing page that describes unbuilt
  * software in the present tense is the same category of untruth as an invented
  * statistic.
  */
 
+/**
+ * ── THE HOMEPAGE IS A FRONT DOOR, NOT THE WHOLE HOUSE ──────────────────────
+ *
+ * Until 2026-10 this page carried twelve sections and every argument the site
+ * makes, in full. The design review measured it at eleven phone screens and
+ * about 690 words, with the same facts repeated word for word on /about. It
+ * now says one thing per section, in a line or two, and points to the page
+ * where each idea is stated in full: who we are on /about, why owners organise
+ * on /why-organizer, the eight stages on /how-we-work. A sentence lives in one
+ * place; everywhere else it gets at most a line and a link.
+ */
 const homepageBlocks: PageBlock[] = [
   /* 1 ── HERO ─────────────────────────────────────────────────────────── */
   {
@@ -52,160 +63,16 @@ const homepageBlocks: PageBlock[] = [
     primaryCtaHref: '/eligibility',
     secondaryCtaLabel: { he: 'אזור אישי', en: 'Personal area' },
     secondaryCtaHref: '/portal',
-    note: {
-      he: 'התשלום לחברת OpenDoor Group מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
-      en: 'OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.',
-    },
+    // No `note`: who pays is stated once on this page, in the facts below.
   },
 
-  /* 2 ── WHY OPENDOOR ─────────────────────────────────────────────────── */
-  {
-    id: 'home-why-opendoor',
-    type: 'FEATURE_GRID',
-    order: 1,
-    hidden: false,
-    heading: {
-      he: 'אתם בעלי הדירות. אנחנו מנהלים את הדרך.',
-      en: 'You are the owners. We manage the way through.',
-    },
-    intro: {
-      he: 'מהשיחה הראשונה ועד להחלטות המשותפות - לצד בעלי הדירות.',
-      en: 'From the first conversation to shared decisions — alongside the owners.',
-    },
-    items: [
-      {
-        id: 'wo-management',
-        icon: 'route',
-        title: { he: 'ניהול התהליך', en: 'Managing the process' },
-        body: {
-          he: 'אתם יודעים בכל שלב מה הצעד הבא, ומחליטים מתי לצאת אליו. אנחנו מרכזים את אנשי המקצוע, המסמכים והעדכונים.',
-          en: 'You know the next step at every stage, and decide when to take it. We coordinate the professionals, the documents and the updates.',
-        },
-      },
-      {
-        id: 'wo-power',
-        icon: 'users',
-        title: { he: 'כוח מאורגן לבעלי הדירות', en: 'Organised standing for owners' },
-        body: {
-          he: 'אתם בונים נציגות ועמדה משותפת מול הגורמים בתהליך, אנחנו תומכים.',
-          en: 'You build a representation and a shared position towards the other parties in the process, and we support you.',
-        },
-      },
-      {
-        id: 'wo-selection',
-        icon: 'scale',
-        title: {
-          he: 'בחירת אנשי המקצוע והיזם',
-          en: 'Choosing the professionals and the developer',
-        },
-        body: {
-          he: 'אנחנו מרכזים ומשווים חלופות. בעלי הדירות בוחרים את אנשי המקצוע והיזם.',
-          en: 'We bring and compare alternatives. The owners choose the professionals and developer.',
-        },
-      },
-    ],
-  },
-
-  /* 3 ── WHY AN ORGANIZING COMPANY ────────────────────────────────────── */
-  {
-    id: 'home-why-organizer',
-    type: 'TEXT_SECTION',
-    order: 2,
-    hidden: false,
-    heading: { he: 'מה זו חברה מארגנת?', en: 'What is an organising company?' },
-    body: {
-      he: 'אנחנו מארגנים את בעלי הדירות ומרכזים את העבודה מול אנשי המקצוע. אנחנו לא היזם ולא חברת הבנייה. ההחלטות נשארות שלכם.',
-      en: 'We organise the owners and coordinate the professionals. We are not the developer or the construction company. The decisions remain yours.',
-    },
-
-    /**
-     * The relationship map.
-     *
-     * Note what is NOT here: no firm names, no logos, no "our partners", no
-     * count of professionals. Each entry describes what a ROLE does. That is
-     * the difference between explaining a structure and claiming a
-     * relationship, and only the first is true.
-     */
-    roleMap: {
-      principal: {
-        id: 'rm-owners',
-        side: 'owners',
-        label: { he: 'בעלי הדירות', en: 'The apartment owners' },
-        detail: {
-          he: 'בעלי הזכויות בנכס. ההחלטות המהותיות בתהליך הן שלהם.',
-          en: 'The rights holders. The substantive decisions in the process are theirs.',
-        },
-      },
-      organiser: {
-        id: 'rm-opendoor',
-        side: 'owners',
-        label: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
-        detail: {
-          he: 'מארגנת את בעלי הדירות ומרכזת את העבודה מול הגורמים בתהליך, מהצד של בעלי הדירות.',
-          en: 'Organises the owners and coordinates the work with the other parties, from the owners’ side.',
-        },
-      },
-      parties: [
-        {
-          id: 'rm-lawyer',
-          side: 'process',
-          label: { he: 'עורך דין', en: 'Lawyer' },
-          detail: {
-            he: 'מייצג את בעלי הדירות בהסכמים. נבחר על ידם.',
-            en: 'Represents the owners in the agreements. Chosen by them.',
-          },
-        },
-        {
-          id: 'rm-appraiser',
-          side: 'process',
-          label: { he: 'שמאי', en: 'Appraiser' },
-          detail: {
-            he: 'בוחן את הכדאיות והתמורות מנקודת המבט של בעלי הדירות.',
-            en: 'Examines viability and consideration from the owners’ point of view.',
-          },
-        },
-        {
-          id: 'rm-architect',
-          side: 'process',
-          label: { he: 'אדריכל', en: 'Architect' },
-          detail: {
-            he: 'אחראי לתכנון הפרויקט מול מוסדות התכנון.',
-            en: 'Responsible for the project design before the planning institutions.',
-          },
-        },
-        {
-          id: 'rm-developer',
-          side: 'process',
-          label: { he: 'יזם', en: 'Developer' },
-          detail: {
-            he: 'מבצע את הפרויקט ונושא בעלויות הבנייה. צד נפרד, עם אינטרס נפרד.',
-            en: 'Carries out the project and bears the construction costs. A separate party, with a separate interest.',
-          },
-        },
-        {
-          id: 'rm-authority',
-          side: 'process',
-          label: { he: 'הרשויות', en: 'The authorities' },
-          detail: {
-            he: 'הרשות המקומית ומוסדות התכנון, שמאשרים את התוכנית.',
-            en: 'The municipality and the planning institutions, which approve the plan.',
-          },
-        },
-      ],
-    },
-  },
-
-  /* 4 ── HOW WE WORK ──────────────────────────────────────────────────── */
+  /* 2 ── HOW WE WORK, AT A GLANCE ─────────────────────────────────────── */
   {
     id: 'home-process',
     type: 'PROCESS',
-    order: 3,
+    order: 1,
     hidden: false,
     heading: { he: 'כך אנחנו עובדים', en: 'How we work' },
-    intro: {
-      he: 'התהליך במבט כללי. כל שמונת השלבים, ומה נדרש מבעלי הדירות בכל אחד מהם, מפורטים בעמוד ״כך אנחנו עובדים״.',
-      en: 'The process at a glance. All eight stages, and what is asked of owners at each, are set out on the How we work page.',
-    },
     items: [
       {
         id: 'ph-1',
@@ -250,108 +117,80 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
-  /* 4.5 ── CITY BAND — the light rail ─────────────────────────────────── */
+  /* 3 ── THE FACTS, ONE LINE EACH ─────────────────────────────────────── */
+  /**
+   * The short form of /about's "מה שאפשר לבדוק עלינו", which is the one place
+   * the facts appear in full. Each line here is that page's wording cut down,
+   * never reworded: the payment line keeps both clauses (the developer alone
+   * pays; owners pay the company nothing DIRECTLY), because the second clause
+   * is the one legal review flagged.
+   *
+   * The company number is literal copy rather than read from `site-config`:
+   * this is editorial text a person may reword in the CMS.
+   */
   {
-    id: 'home-city-rail',
-    type: 'MEDIA',
-    order: 4,
+    id: 'home-verifiable-facts',
+    type: 'VERIFIABLE_FACTS',
+    order: 2,
     hidden: false,
-    slotId: 'JERUSALEM_LIGHT_RAIL',
-    assets: [],
-    caption: {
-      he: 'ירושלים משתנה: תשתיות, תחבורה ומרקם מגורים. OpenDoor Group פועלת בתוך העיר הזאת, ואינה קשורה לפרויקטים העירוניים שבתמונה.',
-      en: 'Jerusalem is changing: infrastructure, transport and residential fabric. OpenDoor works inside this city, and is not connected to the municipal projects pictured.',
-    },
-  },
-
-  /* 5 ── PROJECTS ─────────────────────────────────────────────────────── */
-  {
-    id: 'home-projects',
-    type: 'PROJECTS',
-    order: 5,
-    hidden: false,
-    heading: { he: 'פרויקטים', en: 'Projects' },
-    intro: {
-      he: 'מתחמים שOpenDoor Group מלווה ומארגנת.',
-      en: 'Complexes OpenDoor accompanies and organises.',
-    },
-    limit: 3,
-  },
-
-  /* 6 ── PROJECT TRANSPARENCY ─────────────────────────────────────────── */
-  {
-    id: 'home-transparency',
-    type: 'PROJECT_TRANSPARENCY',
-    order: 6,
-    hidden: false,
-    heading: {
-      he: 'לדעת איפה הפרויקט עומד, ומה השלב הבא',
-      en: 'Knowing where the project stands, and what comes next',
-    },
-    intro: {
-      he: 'באזור האישי בעלי הדירות עוקבים אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
-      en: 'In the personal area, owners follow the project\u2019s progress, documents, updates and meetings without waiting for a phone call. The view below demonstrates the structure and does not describe an existing project.',
-    },
+    heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
     items: [
       {
-        id: 'tr-completed',
-        title: { he: 'הושלם', en: 'Completed' },
+        id: 'vf-registered',
+        icon: 'building',
+        title: { he: 'חברה רשומה', en: 'A registered company' },
         body: {
-          he: 'שלבים שהסתיימו, עם התיעוד שנוצר בהם.',
-          en: 'Stages that finished, with the documentation they produced.',
+          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334.',
+          en: 'Kvutsat OpenDoor Yazamut VeHithadshut Ltd., company number 515856334.',
         },
       },
       {
-        id: 'tr-current',
-        title: { he: 'השלב הנוכחי', en: 'Current stage' },
+        id: 'vf-who-pays',
+        icon: 'receipt',
+        title: { he: 'מי משלם לנו', en: 'Who pays us' },
         body: {
-          he: 'מה קורה עכשיו, ומה נדרש מבעלי הדירות בשלב הזה.',
-          en: 'What is happening now, and what is asked of owners at this stage.',
+          he: 'היזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
+          en: 'The developer alone. Apartment owners pay the company nothing directly.',
         },
       },
       {
-        id: 'tr-next',
-        title: { he: 'הבא בתור', en: 'Next' },
+        id: 'vf-boundary',
+        icon: 'scale',
+        title: { he: 'מה אנחנו לא', en: 'What we are not' },
         body: {
-          he: 'נקודת ההחלטה הבאה, כדי שאף אחד לא מופתע.',
-          en: 'The next decision point, so nobody is taken by surprise.',
+          he: 'לא היזם, לא חברת הבנייה, לא הקבלן.',
+          en: 'Not the developer, not the construction company, not the contractor.',
         },
       },
     ],
   },
 
-  /* 7 ── RESIDENT PORTAL / REPRESENTATION ─────────────────────────────── */
+  /* 4 ── THE PERSONAL AREA ────────────────────────────────────────────── */
   {
     id: 'home-portal',
     type: 'PORTAL',
-    order: 7,
+    order: 3,
     hidden: false,
-    heading: {
-      he: 'שקיפות שממשיכה גם אחרי האתר',
-      en: 'Transparency that continues past the website',
-    },
+    heading: { he: 'האזור האישי', en: 'The personal area' },
     intro: {
-      he: 'האזור האישי מרכז את המידע לבעלי הדירות במקום אחד, ובהמשך יסייע גם לחברי הנציגות בניהול ההחלטות והמשימות.',
-      en: 'The personal area brings owners\u2019 information together in one place, and will also help representation members manage decisions and tasks.',
+      he: 'איפה הפרויקט עומד, מה השלב הבא, והמסמכים שלכם, בלי לחכות לשיחת טלפון.',
+      en: 'Where the project stands, what comes next, and your documents, without waiting for a phone call.',
     },
-    buildNotice: {
-      he: 'סביבת הנציגות עדיין בבנייה. האזור האישי לבעלי הדירות פעיל.',
-      en: 'The representation workspace is still being built. The personal area for owners is live.',
-    },
+    ctaLabel: { he: 'כניסה לאזור האישי', en: 'Go to the personal area' },
+    ctaHref: '/portal',
     /**
      * The interface demonstration.
      *
      * ── EVERY STRING HERE IS DELIBERATELY GENERIC ─────────────────────────
      *
      * "הפרויקט שלי" instead of a project name. No address, no building, no
-     * resident, no date, no number. The demo shows the SHAPE of the resident's
-     * view — which is a truthful thing to show about software being built —
-     * and it carries a permanent "תצוגה לדוגמה" badge so the frame cannot be
-     * read as a live account belonging to a real project.
+     * resident, no date, no number. The demo shows the SHAPE of the owner's
+     * view, which is a truthful thing to show about live software, and it
+     * carries a permanent "תצוגה לדוגמה" badge so the frame cannot be read as
+     * a live account belonging to a real project.
      *
-     * The stage list matches the public process above it on purpose: a visitor
-     * should recognise the same five stages they just read about, now as the
-     * thing they would personally follow.
+     * Owners only: the representation workspace is still being built, and the
+     * homepage describes what an owner gets today.
      */
     demo: {
       label: { he: 'תצוגה לדוגמה', en: 'Illustrative view' },
@@ -392,208 +231,33 @@ const homepageBlocks: PageBlock[] = [
         { he: 'עדכונים', en: 'Updates' },
         { he: 'פגישות', en: 'Meetings' },
       ],
-      representation: {
-        label: { he: 'תצוגת נציגות', en: 'Representation view' },
-        items: [
-          {
-            id: 'dr-decisions',
-            label: { he: 'החלטות פתוחות', en: 'Open decisions' },
-            value: { he: 'ממתינות להכרעת הנציגות', en: 'Awaiting the representation’s resolution' },
-          },
-          {
-            id: 'dr-tasks',
-            label: { he: 'משימות', en: 'Tasks' },
-            value: { he: 'מחולקות בין חברי הנציגות', en: 'Divided among representation members' },
-          },
-          {
-            id: 'dr-milestones',
-            label: { he: 'אבני דרך', en: 'Milestones' },
-            value: { he: 'מה הושלם ומה לפנינו', en: 'What is complete and what lies ahead' },
-          },
-          {
-            id: 'dr-items',
-            label: { he: 'נושאים פתוחים', en: 'Open items' },
-            value: { he: 'נושאים שטרם נסגרו', en: 'Matters not yet closed' },
-          },
-        ],
-      },
     },
-
-    groups: [
-      {
-        id: 'pg-resident',
-        audience: { he: 'לכל בעלי הדירות', en: 'For every owner' },
-        title: { he: 'האזור האישי', en: 'Personal area' },
-        items: [
-          { he: 'סטטוס הפרויקט והשלב הנוכחי', en: 'Project status and current stage' },
-          { he: 'מסמכים שרלוונטיים לדירה שלכם', en: 'Documents relevant to your apartment' },
-          { he: 'עדכונים מהשטח', en: 'Updates from the project' },
-          { he: 'פגישות ואישורי הגעה', en: 'Meetings and RSVPs' },
-          { he: 'מה נדרש מכם, אם נדרש', en: 'What is asked of you, if anything' },
-        ],
-      },
-      {
-        id: 'pg-representative',
-        audience: { he: 'לחברי הנציגות', en: 'For representation members' },
-        title: { he: 'סביבת הנציגות', en: 'Representation workspace' },
-        items: [
-          { he: 'החלטות פתוחות שממתינות להכרעה', en: 'Open decisions awaiting resolution' },
-          { he: 'משימות הנציגות', en: 'Representation tasks' },
-          { he: 'אבני דרך בפרויקט', en: 'Project milestones' },
-          { he: 'פגישות וסיכומים', en: 'Meetings and summaries' },
-          { he: 'נושאים פתוחים', en: 'Open items' },
-        ],
-      },
-    ],
+    groups: [],
   },
 
-  /* 8 ── VERIFIABLE FACTS ───────────────────────────── */
-  /**
-   * Sits BEFORE the trust index on purpose: this answers "who are you, and can
-   * I check it", which a reader asks before "how do you work".
-   *
-   * Every line is verifiable somewhere other than this website — the registrar,
-   * or the agreement the owners will hold. Nothing here is a statistic, because
-   * there is no real one to give yet, and the section is written to be complete
-   * without one rather than to look like it is waiting.
-   *
-   * The company number is repeated here as literal copy rather than read from
-   * `site-config`: this is editorial text a person may reword in the CMS, and
-   * a value interpolated into a CMS string cannot be edited there.
-   */
+  /* 5 ── PROJECTS: hidden until the first one is published ───────────── */
   {
-    id: 'home-verifiable-facts',
-    type: 'VERIFIABLE_FACTS',
-    order: 8,
-    hidden: false,
-    heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
+    // Hidden, not deleted: the projects page is empty today, and a homepage
+    // section that leads to an empty page is a promise it cannot keep. Unhide
+    // it in the CMS when the first project is published, and put "פרויקטים"
+    // back in PRIMARY_NAV_KEYS (lib/navigation.ts) at the same time.
+    id: 'home-projects',
+    type: 'PROJECTS',
+    order: 4,
+    hidden: true,
+    heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
-      he: 'בלי ממוצעים ובלי הבטחות. שלוש עובדות שאפשר לאמת מול רשם החברות ומול ההסכם.',
-      en: 'No averages and no promises. Three facts you can verify at the registrar and in the agreement.',
-    },
-    items: [
-      {
-        id: 'vf-registered',
-        icon: 'building',
-        title: { he: 'מי אנחנו, רשמית', en: 'Who we are, officially' },
-        body: {
-          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334. חברה רשומה - אפשר לבדוק אותנו ברשם החברות לפני שמדברים איתנו.',
-          en: 'Kvutsat OpenDoor Yazamut VeHithadshut Ltd., company number 515856334. A registered company — you can look us up before you speak to us.',
-        },
-      },
-      {
-        id: 'vf-who-pays',
-        icon: 'receipt',
-        title: { he: 'מי משלם לנו', en: 'Who pays us' },
-        body: {
-          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר - וזה כתוב בהסכם שתקבלו לידיים.',
-          en: 'The developer pays us. Apartment owners pay the company nothing directly — and that is written into the agreement you will hold.',
-        },
-      },
-      {
-        id: 'vf-boundary',
-        icon: 'scale',
-        title: { he: 'מה אנחנו לא', en: 'What we are not' },
-        body: {
-          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך - בעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
-          en: 'Not the developer, not the construction company, not the contractor. We coordinate the process — the owners choose the professionals and the developer.',
-        },
-      },
-    ],
-  },
-
-  /* 8 ── TRUST ────────────────────────────────────────────────────────── */
-  {
-    id: 'home-trust',
-    type: 'TRUST',
-    order: 9,
-    hidden: false,
-    heading: { he: 'איך אנחנו עובדים בפועל', en: 'How we actually work' },
-    intro: {
-      he: 'אמון נבנה מתהליך ברור, לא מהצהרות. אלה הדברים שאנחנו מסבירים במלואם.',
-      en: 'Trust comes from a clear process, not from claims. These are the things we explain in full.',
-    },
-    items: [
-      {
-        id: 'tc-decisions',
-        title: { he: 'איך מתקבלות החלטות', en: 'How decisions are made' },
-        body: {
-          he: 'מי מחליט, על מה, ומתי הנושא מובא לכלל בעלי הדירות.',
-          en: 'Who decides what, and when a matter goes to all owners.',
-        },
-      },
-      {
-        id: 'tc-updates',
-        title: { he: 'איך מתעדכנים', en: 'How you stay updated' },
-        body: {
-          he: 'באילו ערוצים מגיע מידע, ובאיזו תדירות.',
-          en: 'Which channels carry information, and how often.',
-        },
-      },
-      {
-        id: 'tc-representation',
-        title: { he: 'תפקיד הנציגות', en: 'The role of the representation' },
-        body: {
-          he: 'מה הנציגות מוסמכת לעשות, ומה נשאר בידי בעלי הדירות.',
-          en: 'What the representation may do, and what stays with the owners.',
-        },
-      },
-      {
-        id: 'tc-professionals',
-        title: { he: 'בחירת אנשי מקצוע', en: 'Selecting professionals' },
-        body: {
-          he: 'איך נבחרים עורכי דין, שמאים ואדריכלים, ומי מייצג את מי.',
-          en: 'How lawyers, appraisers and architects are chosen, and who represents whom.',
-        },
-      },
-      {
-        id: 'tc-privacy',
-        title: { he: 'פרטיות ואבטחת מידע', en: 'Privacy and information security' },
-        body: {
-          he: 'איזה מידע נשמר, מי רשאי לראות אותו, ואיך הוא מוגן.',
-          en: 'What is stored, who may see it, and how it is protected.',
-        },
-      },
-      {
-        id: 'tc-sources',
-        title: { he: 'מקורות מידע מקצועיים', en: 'Professional information sources' },
-        body: {
-          he: 'הפניות למקורות רשמיים, כדי שתוכלו לבדוק בעצמכם.',
-          en: 'Pointers to official sources, so you can check for yourself.',
-        },
-      },
-    ],
-  },
-
-  /* 9 ── KNOWLEDGE ────────────────────────────────────────────────────── */
-  {
-    id: 'home-knowledge',
-    type: 'KNOWLEDGE',
-    order: 10,
-    hidden: false,
-    heading: { he: 'מרכז ידע', en: 'Knowledge centre' },
-    intro: {
-      he: 'הסברים על התהליך, התפקידים והזכויות, בשפה ברורה, בלי הבטחות.',
-      en: 'Explanations of the process, the roles and the rights, in plain language, without promises.',
+      he: 'מתחמים שOpenDoor Group מלווה ומארגנת.',
+      en: 'Complexes OpenDoor accompanies and organises.',
     },
     limit: 3,
   },
 
-  /* 10 ── FAQ ─────────────────────────────────────────────────────────── */
-  {
-    id: 'home-faq',
-    type: 'FAQ',
-    order: 11,
-    hidden: false,
-    heading: { he: 'שאלות שחוזרות', en: 'Questions we are asked' },
-    limit: 5,
-  },
-
-  /* 11 ── FINAL CTA ───────────────────────────────────────────────────── */
+  /* 6 ── FINAL CTA ────────────────────────────────────────────────────── */
   {
     id: 'home-cta',
     type: 'CTA',
-    order: 12,
+    order: 5,
     hidden: false,
     heading: {
       he: 'רוצים לבדוק מה אפשרי אצלכם?',
@@ -601,7 +265,7 @@ const homepageBlocks: PageBlock[] = [
     },
     body: {
       he: 'פנו אלינו לשיחה ראשונית על האפשרויות בבניין שלכם.',
-      en: 'The suitability check takes a few minutes and commits you to nothing.',
+      en: 'Contact us for an initial conversation about your building.',
     },
     ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: "Talk to us about your building" },
     ctaHref: '/eligibility',
@@ -627,7 +291,7 @@ export const MOCK_PAGES: readonly CmsPage[] = [
           'OpenDoor Group organises and supports apartment owners through urban-renewal processes in and around Jerusalem, from the initial review to realising the project.',
       },
     },
-    updatedAt: '2026-08-27T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
 ] as const

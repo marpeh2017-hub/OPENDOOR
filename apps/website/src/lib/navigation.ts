@@ -25,21 +25,29 @@ export const PRIMARY_NAV_KEYS = [
   'about',
   'whyOrganizer',
   'howWeWork',
-  'projects',
+  // Services rather than projects since 2026-10: the projects page is empty
+  // until the first project is published, and it stays in the footer until
+  // then. Put 'projects' back here when the homepage's projects block is
+  // unhidden.
+  'services',
   // FAQ rather than the knowledge centre: the FAQ has content today, and a
   // top-level link to an empty page is a promise the bar cannot keep. The
   // knowledge centre stays in the footer and the mobile menu.
   'faq',
 ] as const
 
+/**
+ * Every route in the menu, in reading order. The desktop bar shows the
+ * PRIMARY_NAV_KEYS subset in this same order, so the order here is the bar's.
+ * Projects is footer-only for now, for the reason given above.
+ */
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'about', href: '/about' },
-  { key: 'services', href: '/services' },
   { key: 'whyOrganizer', href: '/why-organizer' },
   { key: 'howWeWork', href: '/how-we-work' },
-  { key: 'projects', href: '/projects' },
-  { key: 'knowledge', href: '/knowledge' },
+  { key: 'services', href: '/services' },
   { key: 'faq', href: '/faq' },
+  { key: 'knowledge', href: '/knowledge' },
   { key: 'contact', href: '/contact' },
   { key: 'search', href: '/search' },
 ] as const

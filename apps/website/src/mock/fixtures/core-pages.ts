@@ -41,10 +41,14 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  *      launch (decided 2026-10-05), so /trust describes it in the present
  *      tense, limited to what the portal does. The representation workspace
  *      is not built and stays in the future tense, labelled.
- *   5. WHO PAYS IS SAID ONE WAY. Where a page states it (the homepage note
- *      and facts block, the /about role section) it is the same two clauses:
- *      the developer alone pays the company, and owners pay it nothing
- *      directly. Flagged for legal review.
+ *   5. WHO PAYS IS SAID ONE WAY. Where a page states it (the homepage facts
+ *      and the /about facts) it is the same two clauses: the developer alone
+ *      pays the company, and owners pay it nothing directly. Flagged for
+ *      legal review.
+ *   6. ONE PLACE PER IDEA. Since the 2026-10 design review each approved text
+ *      is stated in full on one page: the offer check on /services, the
+ *      transparency text on /trust, "תפקידנו" on /why-organizer, the facts on
+ *      /about. Elsewhere it gets at most a line and a link.
  */
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -82,86 +86,45 @@ const aboutBlocks: PageBlock[] = [
     },
   },
   {
-    id: 'about-intro',
+    // The company in its own words. The lead is "תפקידנו" cut down to its first
+    // sentence; that text is stated in full on /why-organizer. How and why the
+    // company was founded has not been supplied, so it is a marked placeholder
+    // (`pending`) that renders outside production only.
+    id: 'about-story',
     type: 'PROSE',
     order: 3,
     hidden: false,
     lead: {
-      he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים: פינוי מהדירה, אי-ודאות, בירוקרטיה, טרדה יומיומית, ומסמכים משפטיים וכלכליים שלא תמיד קל להבין.',
-      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first: having to move out, uncertainty, bureaucracy, everyday disruption, and legal and financial documents that are not always easy to follow.',
+      he: 'אנחנו לא יזמים ולא בונים. אנחנו מארגנים ומלווים בעלי דירות בתהליכי התחדשות עירונית, ונותנים לכם שליטה בתהליך.',
+      en: 'We are not developers, and we do not build. We organise and support apartment owners through urban renewal, and give you control of the process.',
+    },
+    pending: {
+      he: 'ממתין לנוסח מהחברה: שניים או שלושה משפטים על איך ולמה הוקמה OpenDoor.',
+      en: 'Waiting for the company’s text: two or three sentences on how and why OpenDoor was founded.',
     },
   },
   {
-    id: 'about-checks',
-    type: 'CHECKLIST',
+    id: 'about-michael',
+    type: 'CHAPTER',
     order: 4,
     hidden: false,
-    heading: {
-      he: 'הצעה של יזם מגיעה עם מספרים, מצגות ותוכניות. אנחנו בודקים מה עומד מאחוריהם.',
-      en: 'A developer’s offer comes with figures, presentations and plans. We examine what stands behind them.',
+    heading: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
+    quote: {
+      he: '״בעלי דירות חזקים יותר כשהם מאורגנים, מבינים את הזכויות שלהם ומלווים על ידי מי שמכיר את השחקנים, את המספרים ואת התהליך, אבל מחויב קודם כל אליהם.״',
+      en: '“Owners are stronger when they are organised, understand their rights and are supported by someone who knows the players, the numbers and the process — but is committed, first and foremost, to them.”',
     },
-    items: [
-      { id: 'check-financial', icon: 'chart', label: { he: 'הנתונים הכלכליים', en: 'The financial data' } },
-      { id: 'check-consideration', icon: 'home', label: { he: 'התמורות לבעלי הדירות', en: 'The consideration for the owners' } },
-      { id: 'check-timelines', icon: 'calendar', label: { he: 'לוחות הזמנים', en: 'The timelines' } },
-      { id: 'check-guarantees', icon: 'shield', label: { he: 'הבטוחות', en: 'The guarantees' } },
-      { id: 'check-commitments', icon: 'document-check', label: { he: 'ההתחייבויות', en: 'The commitments' } },
-      { id: 'check-risks', icon: 'alert', label: { he: 'הסיכונים', en: 'The risks' } },
-    ],
-    note: {
-      he: 'המטרה פשוטה: שלא תצאו מהדירה, תחתמו על מסמך או תתקדמו בפרויקט בלי להבין בדיוק מה אתם מקבלים ולמה אתם מתחייבים.',
-      en: 'The aim is simple: that you do not move out, sign a document or move the project forward without understanding exactly what you are getting and what you are committing to.',
-    },
-  },
-  {
-    id: 'about-checking-offers',
-    type: 'CHAPTER',
-    order: 5,
-    hidden: false,
-    numeral: '01',
-    heading: { he: 'בדיקת ההצעה', en: 'Checking the offer' },
-    lead: {
-      he: 'אנחנו בודקים את ההצעה, משווים בין יזמים, מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם - ובעיקר מוודאים שהאינטרסים שלכם נשמרים לאורך כל הדרך.',
-      en: 'We check the offer, compare developers, explain the financial and legal implications in your language — and above all make sure your interests are protected all the way through.',
-    },
-    slotId: 'PROCESS_STAGE_6',
-  },
-  {
-    id: 'about-transparency',
-    type: 'CHAPTER',
-    order: 6,
-    hidden: false,
-    numeral: '02',
-    heading: { he: 'שקיפות בתהליך', en: 'Transparency in the process' },
     body: {
-      he: 'התחדשות עירונית היא תהליך מורכב. יש בו החלטות קשות, פשרות, עלויות, עיכובים, אינטרסים שונים, ולעיתים גם מחלוקות בין בעלי הדירות עצמם.\n\nאנחנו לא מטשטשים את זה. אנחנו מסבירים איפה נמצאים הסיכונים, מה המשמעות של כל בחירה ואילו אפשרויות עומדות בפניכם - כי רק כך אפשר לקבל החלטה אחראית ומבוססת.',
-      en: 'Urban renewal is a complex process. It involves hard decisions, compromises, costs, delays, competing interests and, at times, disagreements among the owners themselves.\n\nWe do not blur any of that. We explain where the risks lie, what each choice means and which options are open to you — because that is the only way to reach a responsible, well-founded decision.',
+      he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים והסביבה, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן. הוא בעל תואר במנהל עסקים עם התמחות במערכות מידע, ובעל רישיון תיווך. השילוב הזה מאפשר לו לקרוא הצעות ומסמכים בעין עסקית, להבין נתונים ומספרים, לבדוק שמה שמוצג בהצעה מעוגן בהתחייבויות, ולנהל את השיח בין בעלי הדירות, היזמים ואנשי המקצוע בצורה ברורה ומעשית.\n\nמיכאל יכול לעזור לכם להבין מה ההצעה כוללת, מה חסר בה, איפה נמצאים הסיכונים ומה הצעדים הבאים שכדאי לשקול, גם אם אתם כבר בתוך תהליך.',
+      en: 'Michael Rosenbach works in urban renewal in and around Jerusalem, supporting owners and their representations in their dealings with developers, professionals and real-estate companies. He holds a degree in business administration, specialising in information systems, and a real-estate broker’s licence. That combination lets him read offers and documents with a business eye, make sense of data and figures, check that what an offer presents is backed by commitments, and keep the conversation between owners, developers and professionals clear and practical.\n\nMichael can help you understand what an offer includes, what is missing from it, where the risks lie and which next steps are worth considering — even if you are already in a process.',
     },
-    slotId: 'PROCESS_STAGE_2',
+    slotId: 'ABOUT_MICHAEL_PORTRAIT',
   },
   {
-    id: 'about-role',
-    type: 'CHAPTER',
-    order: 7,
-    hidden: false,
-    numeral: '03',
-    heading: { he: 'תפקידנו', en: 'Our role' },
-    body: {
-      he: 'אנחנו לא יזמים ולא בונים. אנחנו מארגנים ומלווים בעלי דירות בתהליכי התחדשות עירונית, ונותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות.',
-      en: 'We are not developers, and we do not build. We organise and support apartment owners through urban renewal and give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners.',
-    },
-    emphasis: {
-      he: 'בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
-      en: 'In the end, you decide. We make sure you do so with all the information you need.',
-    },
-    slotId: 'PROCESS_STAGE_3',
-  },
-  {
-    // Who pays is stated here, in the facts, rather than again in the role
-    // chapter above: once per page, in the homepage's exact wording.
+    // The one place on the site where the three facts appear in full. The
+    // homepage cuts each to a line and links here.
     id: 'about-facts',
     type: 'VERIFIABLE_FACTS',
-    order: 8,
+    order: 5,
     hidden: false,
     tone: 'inverse',
     heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
@@ -175,7 +138,7 @@ const aboutBlocks: PageBlock[] = [
         icon: 'building',
         title: { he: 'מי אנחנו, רשמית', en: 'Who we are, officially' },
         body: {
-          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334. חברה רשומה - אפשר לבדוק אותנו ברשם החברות לפני שמדברים איתנו.',
+          he: 'קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334. חברה רשומה: אפשר לבדוק אותנו ברשם החברות לפני שמדברים איתנו.',
           en: 'Kvutsat OpenDoor Yazamut VeHithadshut Ltd., company number 515856334. A registered company — you can look us up before you speak to us.',
         },
       },
@@ -184,7 +147,7 @@ const aboutBlocks: PageBlock[] = [
         icon: 'receipt',
         title: { he: 'מי משלם לנו', en: 'Who pays us' },
         body: {
-          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר - וזה כתוב בהסכם שתקבלו לידיים.',
+          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר, וזה כתוב בהסכם שתקבלו לידיים.',
           en: 'The developer pays us. Apartment owners pay the company nothing directly — and that is written into the agreement you will hold.',
         },
       },
@@ -193,27 +156,11 @@ const aboutBlocks: PageBlock[] = [
         icon: 'scale',
         title: { he: 'מה אנחנו לא', en: 'What we are not' },
         body: {
-          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך - בעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
+          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך, ובעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
           en: 'Not the developer, not the construction company, not the contractor. We coordinate the process — the owners choose the professionals and the developer.',
         },
       },
     ],
-  },
-  {
-    id: 'about-michael',
-    type: 'CHAPTER',
-    order: 9,
-    hidden: false,
-    heading: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
-    quote: {
-      he: '״בעלי דירות חזקים יותר כשהם מאורגנים, מבינים את הזכויות שלהם ומלווים על ידי מי שמכיר את השחקנים, את המספרים ואת התהליך - אבל מחויב קודם כל אליהם.״',
-      en: '“Owners are stronger when they are organised, understand their rights and are supported by someone who knows the players, the numbers and the process — but is committed, first and foremost, to them.”',
-    },
-    body: {
-      he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים והסביבה, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן. הוא בעל תואר במנהל עסקים עם התמחות במערכות מידע, ובעל רישיון תיווך. השילוב הזה מאפשר לו לקרוא הצעות ומסמכים בעין עסקית, להבין נתונים ומספרים, לבדוק שמה שמוצג בהצעה מעוגן בהתחייבויות, ולנהל את השיח בין בעלי הדירות, היזמים ואנשי המקצוע בצורה ברורה ומעשית.\n\nמיכאל יכול לעזור לכם להבין מה ההצעה כוללת, מה חסר בה, איפה נמצאים הסיכונים ומה הצעדים הבאים שכדאי לשקול - גם אם אתם כבר בתוך תהליך.',
-      en: 'Michael Rosenbach works in urban renewal in and around Jerusalem, supporting owners and their representations in their dealings with developers, professionals and real-estate companies. He holds a degree in business administration, specialising in information systems, and a real-estate broker’s licence. That combination lets him read offers and documents with a business eye, make sense of data and figures, check that what an offer presents is backed by commitments, and keep the conversation between owners, developers and professionals clear and practical.\n\nMichael can help you understand what an offer includes, what is missing from it, where the risks lie and which next steps are worth considering — even if you are already in a process.',
-    },
-    slotId: 'ABOUT_MICHAEL_PORTRAIT',
   },
   {
     // A CTA pointing at /eligibility renders `links.enquiryIntro` in place of
@@ -221,7 +168,7 @@ const aboutBlocks: PageBlock[] = [
     // line appears. It repeats the message so this file shows what renders.
     id: 'about-cta',
     type: 'CTA',
-    order: 10,
+    order: 6,
     hidden: false,
     heading: {
       he: 'יזם הגיע לבניין שלכם?',
@@ -253,9 +200,21 @@ const whyOrganizerBlocks: PageBlock[] = [
     },
   },
   {
+    // Moved from the opening of /about: the worries owners have before
+    // anything else, named so the page can answer them.
+    id: 'why-risks',
+    type: 'PROSE',
+    order: 1,
+    hidden: false,
+    lead: {
+      he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים: פינוי מהדירה, אי־ודאות, בירוקרטיה, טרדה יומיומית, ומסמכים משפטיים וכלכליים שלא תמיד קל להבין.',
+      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first: having to move out, uncertainty, bureaucracy, everyday disruption, and legal and financial documents that are not always easy to follow.',
+    },
+  },
+  {
     id: 'why-comparison',
     type: 'COMPARISON',
-    order: 1,
+    order: 2,
     hidden: false,
     heading: { he: 'מה משתנה כשהתהליך מאורגן', en: 'What changes when the process is organised' },
     baseline: {
@@ -275,6 +234,15 @@ const whyOrganizerBlocks: PageBlock[] = [
           body: {
             he: 'בעל דירה בודד מנהל מולו גורמים שעוסקים בכך מקצועית, לצד עבודה ומשפחה.',
             en: 'A single owner negotiates with people who do this professionally, alongside a job and a family.',
+          },
+        },
+        {
+          // From the comparison that used to sit on /services.
+          id: 'cb-pace',
+          title: { he: 'כל שלב מחכה לזמינות של כולם', en: 'Every step waits for everyone' },
+          body: {
+            he: 'כל שלב תלוי בזמינות של בעלי הדירות עצמם.',
+            en: 'Each step depends on the owners’ own availability.',
           },
         },
         {
@@ -307,6 +275,14 @@ const whyOrganizerBlocks: PageBlock[] = [
           },
         },
         {
+          id: 'co-pace',
+          title: { he: 'תהליך מובנה עם לוחות זמנים', en: 'A structured process with timetables' },
+          body: {
+            he: 'השלבים ידועים מראש, ומישהו מנהל את התהליך ודואג שיתקדם.',
+            en: 'The stages are known in advance, and someone manages the process and keeps it moving.',
+          },
+        },
+        {
           id: 'co-compare',
           title: { he: 'השוואה במבנה אחיד', en: 'Comparison on common terms' },
           body: {
@@ -324,7 +300,7 @@ const whyOrganizerBlocks: PageBlock[] = [
   {
     id: 'why-role-map',
     type: 'ROLE_MAP',
-    order: 2,
+    order: 3,
     hidden: false,
     heading: { he: 'מי עושה מה, ומי בחר בו', en: 'Who does what, and who appointed them' },
     intro: {
@@ -404,9 +380,27 @@ const whyOrganizerBlocks: PageBlock[] = [
     },
   },
   {
+    // Moved from /about, in full, as the summary of this page. /about keeps
+    // its first sentence.
+    id: 'why-role',
+    type: 'CHAPTER',
+    order: 4,
+    hidden: false,
+    heading: { he: 'תפקידנו', en: 'Our role' },
+    body: {
+      he: 'אנחנו לא יזמים ולא בונים. אנחנו מארגנים ומלווים בעלי דירות בתהליכי התחדשות עירונית, ונותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות.',
+      en: 'We are not developers, and we do not build. We organise and support apartment owners through urban renewal and give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners.',
+    },
+    emphasis: {
+      he: 'בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
+      en: 'In the end, you decide. We make sure you do so with all the information you need.',
+    },
+    slotId: 'PROCESS_STAGE_3',
+  },
+  {
     id: 'why-cta',
     type: 'CTA',
-    order: 3,
+    order: 5,
     hidden: false,
     heading: { he: 'רוצים לראות איך זה עובד בפועל?', en: 'Want to see how this works in practice?' },
     ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
@@ -531,9 +525,51 @@ const howWeWorkBlocks: PageBlock[] = [
     ],
   },
   {
+    // Moved from the homepage: what following a project looks like in the
+    // personal area, beside the stages it follows.
+    id: 'how-status',
+    type: 'PROJECT_TRANSPARENCY',
+    order: 2,
+    hidden: false,
+    heading: {
+      he: 'לדעת איפה הפרויקט עומד, ומה השלב הבא',
+      en: 'Knowing where the project stands, and what comes next',
+    },
+    intro: {
+      he: 'באזור האישי בעלי הדירות עוקבים אחר התקדמות הפרויקט, המסמכים, העדכונים והפגישות, בלי לחכות לשיחת טלפון. התצוגה שלהלן היא הדגמה של המבנה, ואינה מתארת פרויקט קיים.',
+      en: 'In the personal area, owners follow the project\u2019s progress, documents, updates and meetings without waiting for a phone call. The view below demonstrates the structure and does not describe an existing project.',
+    },
+    items: [
+      {
+        id: 'tr-completed',
+        title: { he: 'הושלם', en: 'Completed' },
+        body: {
+          he: 'שלבים שהסתיימו, עם התיעוד שנוצר בהם.',
+          en: 'Stages that finished, with the documentation they produced.',
+        },
+      },
+      {
+        id: 'tr-current',
+        title: { he: 'השלב הנוכחי', en: 'Current stage' },
+        body: {
+          he: 'מה קורה עכשיו, ומה נדרש מבעלי הדירות בשלב הזה.',
+          en: 'What is happening now, and what is asked of owners at this stage.',
+        },
+      },
+      {
+        id: 'tr-next',
+        title: { he: 'הבא בתור', en: 'Next' },
+        body: {
+          he: 'נקודת ההחלטה הבאה, כדי שאף אחד לא מופתע.',
+          en: 'The next decision point, so nobody is taken by surprise.',
+        },
+      },
+    ],
+  },
+  {
     id: 'how-image',
     type: 'MEDIA',
-    order: 2,
+    order: 3,
     hidden: false,
     slotId: 'RESIDENT_MEETING',
     assets: [],
@@ -541,7 +577,7 @@ const howWeWorkBlocks: PageBlock[] = [
   {
     id: 'how-cta',
     type: 'CTA',
-    order: 3,
+    order: 4,
     hidden: false,
     heading: {
       he: 'השלב הראשון הוא בדיקה, והוא לא מחייב אתכם בכלום.',
@@ -572,9 +608,24 @@ const trustBlocks: PageBlock[] = [
     },
   },
   {
+    // Moved from /about, in full, as this page's opening paragraph. A CHAPTER
+    // rather than PROSE: PROSE straight after the opening STATEMENT would pair
+    // with it and take the statement off the inverse surface.
+    id: 'trust-in-process',
+    type: 'CHAPTER',
+    order: 1,
+    hidden: false,
+    heading: { he: 'שקיפות בתהליך', en: 'Transparency in the process' },
+    body: {
+      he: 'התחדשות עירונית היא תהליך מורכב. יש בו החלטות קשות, פשרות, עלויות, עיכובים, אינטרסים שונים, ולעיתים גם מחלוקות בין בעלי הדירות עצמם.\n\nאנחנו לא מטשטשים את זה. אנחנו מסבירים איפה נמצאים הסיכונים, מה המשמעות של כל בחירה ואילו אפשרויות עומדות בפניכם, כי רק כך אפשר לקבל החלטה אחראית ומבוססת.',
+      en: 'Urban renewal is a complex process. It involves hard decisions, compromises, costs, delays, competing interests and, at times, disagreements among the owners themselves.\n\nWe do not blur any of that. We explain where the risks lie, what each choice means and which options are open to you — because that is the only way to reach a responsible, well-founded decision.',
+    },
+    slotId: 'PROCESS_STAGE_2',
+  },
+  {
     id: 'trust-practice',
     type: 'TRUST',
-    order: 1,
+    order: 2,
     hidden: false,
     heading: { he: 'איך זה עובד אצלנו', en: 'How this works with us' },
     intro: {
@@ -643,7 +694,7 @@ const trustBlocks: PageBlock[] = [
   {
     id: 'trust-digital',
     type: 'PROSE',
-    order: 2,
+    order: 3,
     hidden: false,
     heading: { he: 'האזור האישי', en: 'The personal area' },
     lead: {
@@ -658,7 +709,7 @@ const trustBlocks: PageBlock[] = [
   {
     id: 'trust-resources',
     type: 'EXTERNAL_RESOURCES',
-    order: 3,
+    order: 4,
     hidden: false,
     heading: { he: 'מקורות מידע רשמיים', en: 'Official information sources' },
     intro: {
@@ -669,7 +720,7 @@ const trustBlocks: PageBlock[] = [
   {
     id: 'trust-cta',
     type: 'CTA',
-    order: 4,
+    order: 5,
     hidden: false,
     heading: { he: 'יש שאלה שלא נענתה כאן?', en: 'A question this page did not answer?' },
     ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
@@ -696,28 +747,30 @@ const servicesBlocks: PageBlock[] = [
     },
   },
   {
-    id: 'services-journey',
-    type: 'JOURNEY',
+    // The five services. Until 2026-10 this was a JOURNEY with its own
+    // disclaimer, which made it the site's third version of the process.
+    // The process lives on /how-we-work; this is what the support covers.
+    id: 'services-list',
+    type: 'FEATURE_GRID',
     order: 1,
     hidden: false,
-    variabilityNote: {
-      he: 'פרויקטים נבדלים זה מזה במסלול התכנוני, במבנה הבעלויות ובלוחות הזמנים. חלק מהשלבים מתרחשים במקביל וחלקם חוזרים על עצמם. התיאור שלהלן הוא המבנה הכללי ואינו סדר קבוע או התחייבות למועדים.',
-      en: 'Projects differ in planning route, ownership structure and timing. Some stages run in parallel and some repeat. What follows is the general shape, not a fixed sequence or a commitment to dates.',
-    },
-    stages: [
+    heading: { he: 'מה כולל הליווי', en: 'What the support covers' },
+    items: [
       {
         id: 'sv-1',
+        icon: 'search',
         title: {
           he: 'בדיקת היתכנות תכנונית וכלכלית',
           en: 'Planning and financial feasibility review',
         },
         body: {
-          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות כלכלית ראשונית - עבורכם ועבור היזמים.',
-          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment - for you and for the developers.',
+          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות כלכלית ראשונית, עבורכם ועבור היזמים.',
+          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment, for you and for the developers.',
         },
       },
       {
         id: 'sv-2',
+        icon: 'users',
         title: {
           he: 'התארגנות בעלי הדירות ובחירת נציגות',
           en: 'Organising the owners and electing a representation',
@@ -729,6 +782,7 @@ const servicesBlocks: PageBlock[] = [
       },
       {
         id: 'sv-3',
+        icon: 'scale',
         title: { he: 'מכרז יזמים תחרותי', en: 'A competitive developer tender' },
         body: {
           he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים, ניהול המשא ומתן והשוואת ההצעות על בסיס אחיד.',
@@ -737,6 +791,7 @@ const servicesBlocks: PageBlock[] = [
       },
       {
         id: 'sv-4',
+        icon: 'document-check',
         title: {
           he: 'ליווי תכנוני ומשפטי עד לחתימה',
           en: 'Planning and legal support up to signature',
@@ -748,67 +803,54 @@ const servicesBlocks: PageBlock[] = [
       },
       {
         id: 'sv-5',
+        icon: 'key',
         title: { he: 'ליווי בשלב הבנייה והאכלוס', en: 'Support through construction and occupancy' },
         body: {
-          he: 'תקשורת שוטפת מול היזם והרשויות, סיוע בשלבי הרישוי והבנייה - עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
-          en: 'Ongoing communication with the developer and the authorities, support through licensing and construction - up to the handover inspection and the key to the new apartment.',
+          he: 'תקשורת שוטפת מול היזם והרשויות, סיוע בשלבי הרישוי והבנייה, עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
+          en: 'Ongoing communication with the developer and the authorities, support through licensing and construction, up to the handover inspection and the key to the new apartment.',
         },
       },
     ],
   },
   {
-    id: 'services-comparison',
-    type: 'COMPARISON',
+    // Moved from /about, in full, with the six checks below it.
+    id: 'services-offer-check',
+    type: 'CHAPTER',
     order: 2,
     hidden: false,
-    baseline: {
-      label: { he: 'עצמאי', en: 'On your own' },
-      points: [
-        {
-          id: 'sc-b-time',
-          title: { he: 'זמן להסכם', en: 'Time to an agreement' },
-          body: { he: 'כל שלב תלוי בזמינות של בעלי הדירות עצמם.', en: 'Each step depends on the owners’ own availability.' },
-        },
-        {
-          id: 'sc-b-power',
-          title: { he: 'כוח מיקוח', en: 'Bargaining position' },
-          body: { he: 'כל בעל דירה מול היזם בנפרד.', en: 'Each owner faces the developer separately.' },
-        },
-        {
-          id: 'sc-b-clarity',
-          title: { he: 'שקיפות', en: 'Transparency' },
-          body: { he: 'מידע מגיע מכמה מקורות, בזמנים שונים.', en: 'Information arrives from several sources, at different times.' },
-        },
-      ],
+    heading: { he: 'בדיקת ההצעה', en: 'Checking the offer' },
+    lead: {
+      he: 'אנחנו בודקים את ההצעה, משווים בין יזמים, מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם, ובעיקר מוודאים שהאינטרסים שלכם נשמרים לאורך כל הדרך.',
+      en: 'We check the offer, compare developers, explain the financial and legal implications in your language — and above all make sure your interests are protected all the way through.',
     },
-    organised: {
-      label: { he: 'עם חברה מארגנת', en: 'With an organiser' },
-      points: [
-        {
-          id: 'sc-o-time',
-          title: { he: 'זמן להסכם', en: 'Time to an agreement' },
-          body: {
-            he: 'תהליך מובנה עם לוחות זמנים.',
-            en: 'A structured process with timetables.',
-          },
-        },
-        {
-          id: 'sc-o-power',
-          title: { he: 'כוח מיקוח', en: 'Bargaining position' },
-          body: { he: 'עמדה משותפת, עם אנשי מקצוע מטעם בעלי הדירות.', en: 'A shared position, with professionals acting for the owners.' },
-        },
-        {
-          id: 'sc-o-clarity',
-          title: { he: 'שקיפות', en: 'Transparency' },
-          body: { he: 'עדכונים שוטפים, כתובת אחת.', en: 'Regular updates, a single point of contact.' },
-        },
-      ],
+    slotId: 'PROCESS_STAGE_6',
+  },
+  {
+    id: 'services-checks',
+    type: 'CHECKLIST',
+    order: 3,
+    hidden: false,
+    heading: {
+      he: 'הצעה של יזם מגיעה עם מספרים, מצגות ותוכניות. אנחנו בודקים מה עומד מאחוריהם.',
+      en: 'A developer’s offer comes with figures, presentations and plans. We examine what stands behind them.',
+    },
+    items: [
+      { id: 'check-financial', icon: 'chart', label: { he: 'הנתונים הכלכליים', en: 'The financial data' } },
+      { id: 'check-consideration', icon: 'home', label: { he: 'התמורות לבעלי הדירות', en: 'The consideration for the owners' } },
+      { id: 'check-timelines', icon: 'calendar', label: { he: 'לוחות הזמנים', en: 'The timelines' } },
+      { id: 'check-guarantees', icon: 'shield', label: { he: 'הבטוחות', en: 'The guarantees' } },
+      { id: 'check-commitments', icon: 'document-check', label: { he: 'ההתחייבויות', en: 'The commitments' } },
+      { id: 'check-risks', icon: 'alert', label: { he: 'הסיכונים', en: 'The risks' } },
+    ],
+    note: {
+      he: 'המטרה פשוטה: שלא תצאו מהדירה, תחתמו על מסמך או תתקדמו בפרויקט בלי להבין בדיוק מה אתם מקבלים ולמה אתם מתחייבים.',
+      en: 'The aim is simple: that you do not move out, sign a document or move the project forward without understanding exactly what you are getting and what you are committing to.',
     },
   },
   {
     id: 'services-cta',
     type: 'CTA',
-    order: 3,
+    order: 4,
     hidden: false,
     heading: {
       he: 'רוצים לבדוק אם הבניין שלכם מתאים?',
@@ -844,7 +886,7 @@ export const CORE_PAGES: readonly CmsPage[] = [
           'A complete professional envelope for apartment owners in urban renewal: feasibility, organising and representation, a developer tender, support to signature, and oversight through construction and occupancy.',
       },
     },
-    updatedAt: '2026-09-14T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
   {
@@ -865,7 +907,7 @@ export const CORE_PAGES: readonly CmsPage[] = [
           'OpenDoor Group organises and supports apartment owners through urban renewal in and around Jerusalem, from the first review to the finished project.',
       },
     },
-    updatedAt: '2026-10-04T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
   {
@@ -886,7 +928,7 @@ export const CORE_PAGES: readonly CmsPage[] = [
           'Every party in an urban-renewal process has a role and an interest of its own. Who does what, and why owners benefit from an organised process.',
       },
     },
-    updatedAt: '2026-08-31T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
   {
@@ -907,7 +949,7 @@ export const CORE_PAGES: readonly CmsPage[] = [
           'The eight stages of an urban-renewal process, and what is asked of owners at each one.',
       },
     },
-    updatedAt: '2026-08-31T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
   {
@@ -928,7 +970,7 @@ export const CORE_PAGES: readonly CmsPage[] = [
           'How information is kept, reached and delivered to owners through an urban-renewal process.',
       },
     },
-    updatedAt: '2026-08-31T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
     updatedByName: 'Mock content',
   },
 ] as const

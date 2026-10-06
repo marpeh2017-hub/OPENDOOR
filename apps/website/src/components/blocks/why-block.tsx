@@ -1,92 +1,44 @@
 import type { FeatureGridBlock } from '@urban-renewal/api-contracts'
-import { Section } from './section'
+import { Section, SectionHeading } from './section'
 import type { Localizer } from '@/lib/localize'
-import { Reveal } from '@/components/brand/reveal'
-import { STROKE } from '@/components/brand/architecture'
+import { LineIcon, isLineIcon } from '@/components/brand/line-icon'
 
 /**
- * "אתם בעלי הדירות. אנחנו מנהלים את הדרך."
+ * A plain FEATURE_GRID: things the company does, each with a line icon.
  *
- * ── THE STRONGEST EDITORIAL MOMENT ON THE PAGE ─────────────────────────────
+ * ── A LIST, NOT A PATH ─────────────────────────────────────────────────────
  *
- * This sentence is the company's whole positioning in eight words, and V1 set
- * it at the same `text-3xl` as "שאלות שחוזרות". Here it is display scale,
- * sticky on desktop, and it holds one side of the section on its own while the
- * three principles move past it.
+ * Until 2026-10 this rendered the homepage's three principles as a stepped
+ * path: numerals, a connecting hairline, each item indented further than the
+ * last. That section has left the homepage, and the block's one remaining use
+ * is the list of services on /services, which must NOT look like a process:
+ * the process is told once, on /how-we-work, and a second numbered sequence
+ * beside it was the design review's "third version of the process".
  *
- * ── STAGGERED, NOT A THREE-CARD GRID ───────────────────────────────────────
- *
- * The brief rules out three equal cards under the headline, and it is right to:
- * three equal rectangles make three equal claims and flatten the reading order.
- * The principles are stepped instead — each indented further than the last,
- * connected by a hairline — so the eye descends through them in sequence. The
- * indent also doubles as the process motif: this is a path, not a list.
- *
- * ── STICKY, WITH A LIMIT ───────────────────────────────────────────────────
- *
- * `lg:sticky` only. On a phone a sticky column would pin the headline over the
- * content the visitor is trying to read, and the section is short enough that
- * the effect would be a bug rather than a feature.
+ * So: no numerals, no connecting line, no indent. Items sit in a two-column
+ * grid of equal weight, each with an icon from the shared set, and the order
+ * carries no claim.
  */
 export function WhyBlockView({ block, t }: { block: FeatureGridBlock; t: Localizer }) {
   return (
     <Section size="lg">
-      <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
-        {/* ── the statement ─────────────────────────────────────────────── */}
-        <div className="lg:sticky lg:top-28 lg:self-start">
-          <h2 className="max-w-[16ch] text-3xl font-bold leading-[1.15] tracking-tight text-gray-900 text-balance sm:text-4xl lg:text-display-sm">
-            {t(block.heading)}
-          </h2>
-          {block.intro && (
-            <p className="mt-6 max-w-md text-base leading-relaxed text-gray-600 sm:text-lg">
-              {t(block.intro)}
-            </p>
-          )}
-          <span aria-hidden="true" className="mt-8 block h-0.5 w-16 bg-teal-600" />
-        </div>
+      <SectionHeading heading={block.heading} intro={block.intro} t={t} size="lg" />
 
-        {/* ── the three principles ──────────────────────────────────────── */}
-        <ol className="relative">
-          {/* The spine the principles hang from. Positioned with `start-*` so it
-              follows text direction rather than sitting on the left in RTL. */}
-          <span
-            aria-hidden="true"
-            className="absolute bottom-6 start-0 top-2 w-px"
-            style={{
-              background: `linear-gradient(to bottom, ${STROKE.teal}, ${STROKE.faint})`,
-            }}
-          />
-
-          {block.items.map((item, index) => (
-            <Reveal
-              as="li"
-              key={item.id}
-              delay={index * 70}
-              className="relative ps-8 pb-12 last:pb-0 sm:ps-10"
-              // Progressive indent: each step sits further along the path.
-              // Inline because the value is derived from the index, and a
-              // Tailwind class cannot be composed from a runtime number.
-            >
-              <span
-                aria-hidden="true"
-                className="absolute start-0 top-2 h-2 w-2 -translate-x-1/2 rotate-45 rtl:translate-x-1/2"
-                style={{ background: index === 0 ? STROKE.teal : STROKE.line }}
-              />
-              <div style={{ marginInlineStart: `${index * 20}px` }}>
-                <span className="text-xs font-semibold tabular-nums tracking-[0.2em] text-teal-800">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <h3 className="mt-3 text-xl font-semibold text-gray-900 sm:text-2xl">
-                  {t(item.title)}
-                </h3>
-                <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-gray-600 sm:text-base">
-                  {t(item.body)}
-                </p>
-              </div>
-            </Reveal>
-          ))}
-        </ol>
-      </div>
+      <ul className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-2 lg:mt-14">
+        {block.items.map((item) => (
+          <li key={item.id} className="flex gap-5">
+            {isLineIcon(item.icon) && (
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-600">
+                <LineIcon name={item.icon} size={26} />
+              </span>
+            )}
+            <div className="min-w-0">
+              <h3 className="text-xl font-semibold leading-snug text-gray-900">{t(item.title)}</h3>
+              <p className="mt-2 text-base leading-relaxed text-gray-600">{t(item.body)}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </Section>
   )
 }

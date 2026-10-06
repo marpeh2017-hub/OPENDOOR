@@ -58,7 +58,9 @@ import { CtaBlockView } from '@/components/blocks/cta-block'
  *
  * Collection blocks reference content rather than duplicating it, so their rows
  * are fetched here in parallel. Three awaits sequentially would serialise three
- * round trips once these are real API calls.
+ * round trips once these are real API calls. A collection is fetched only when
+ * a visible block needs it: since the 2026-10 review the page carries none by
+ * default, and the projects block is hidden until a project is published.
  */
 async function pageMetadata({
   params,
@@ -81,7 +83,7 @@ async function pageMetadata({
  * Seams that get a connector, keyed by the block the connector follows.
  * Chosen where the page changes subject.
  */
-const CONNECT_AFTER = new Set(['home-hero', 'home-process', 'home-transparency'])
+const CONNECT_AFTER = new Set(['home-hero', 'home-process'])
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -90,18 +92,22 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const t = makeLocalizer(locale as Locale)
   const tLinks = await getTranslations('links')
 
-  const [page, projects, articles, faqItems] = await Promise.all([
-    getHomePage(),
-    getFeaturedProjects(3),
-    getKnowledgeArticles({ limit: 3, locale: locale as Locale }),
-    getFaqItems(undefined, locale as Locale),
-  ])
-
+  const page = await getHomePage()
   if (!page) notFound()
+
+  // Hidden blocks keep their content in the CMS and render nothing.
+  const blocks = page.blocks.filter((block) => !block.hidden)
+  const uses = (type: string) => blocks.some((block) => block.type === type)
+
+  const [projects, articles, faqItems] = await Promise.all([
+    uses('PROJECTS') ? getFeaturedProjects(3) : [],
+    uses('KNOWLEDGE') ? getKnowledgeArticles({ limit: 3, locale: locale as Locale }) : null,
+    uses('FAQ') ? getFaqItems(undefined, locale as Locale) : [],
+  ])
 
   return (
     <div className="relative">
-      {page.blocks.map((block) => {
+      {blocks.map((block) => {
         let rendered: React.ReactNode = null
 
         switch (block.type) {
@@ -136,7 +142,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             break
 
           case 'KNOWLEDGE':
-            rendered = <KnowledgeBlockView block={block} articles={articles.items} t={t} />
+            rendered = <KnowledgeBlockView block={block} articles={articles?.items ?? []} t={t} />
             break
 
           case 'FAQ':
@@ -163,46 +169,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         }
 
         if (!rendered) return null
-
-        // Keep detailed product explanations available without making every
-        // first-time visitor read them before reaching contact. PORTAL is no
-        // longer folded: the personal area is live from launch, and it is the
-        // part of this page a visitor cannot get from any other company.
-        //
-        // A folded section says what it holds and that it opens: the intro
-        // line under the heading, and a plus that turns as it does. A bare
-        // heading with the browser's small triangle read as a faint link, and
-        // visitors walked past what it was hiding.
-        if (block.type === 'PROJECT_TRANSPARENCY' || block.type === 'TRUST') {
-          return (
-            <details
-              key={block.id}
-              className="group mx-auto max-w-7xl border-b border-gray-200 px-4 lg:px-8"
-            >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-7 [&::-webkit-details-marker]:hidden">
-                <span className="min-w-0">
-                  <span className="block text-xl font-semibold text-teal-800 sm:text-2xl">
-                    {t(block.heading)}
-                  </span>
-                  {block.intro && (
-                    <span className="mt-2 block max-w-3xl text-[15px] leading-relaxed text-gray-600 group-open:hidden">
-                      {t(block.intro)}
-                    </span>
-                  )}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-600 text-teal-700 transition-transform duration-200 group-open:rotate-45"
-                >
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                    <path d="M9 3v12M3 9h12" />
-                  </svg>
-                </span>
-              </summary>
-              {rendered}
-            </details>
-          )
-        }
 
         return (
           <Fragment key={block.id}>
