@@ -1020,21 +1020,42 @@ const trustBlocks: PageBlock[] = [
 
 const servicesBlocks: PageBlock[] = [
   {
-    id: 'services-header',
-    type: 'PAGE_HEADER',
+    // The opening, approved 2026-10-06: the scope of the work in one line, the
+    // action and the phone, and a map of what is done around the owners'
+    // building. The header it replaced was a title and a sentence.
+    id: 'services-hero',
+    type: 'PAGE_HERO',
     order: 0,
     hidden: false,
-    eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
-    heading: { he: 'מעטפת מקצועית מלאה', en: 'A complete professional envelope' },
+    eyebrow: { he: 'השירותים שלנו', en: 'Our services' },
+    heading: { he: 'מהבדיקה הראשונה ועד המפתח.', en: 'From the first check to the keys.' },
     standfirst: {
-      he: 'מלווים את בעלי הדירות ממתחם ישן לבית חדש, עם מידע ברור בכל שלב.',
-      en: 'Guiding owners from an ageing complex to a new home, with clear information at every stage.',
+      he: 'יזמות, ארגון בעלי הדירות, בדיקת הצעות וחילוץ פרויקטים תקועים. אנחנו מביאים לשולחן את אנשי המקצוע הנכונים, ובעלי הדירות יודעים בכל שלב איפה הפרויקט עומד.',
+      en: 'Development, organising the owners, checking offers and rescuing stalled projects. We bring the right professionals to the table, and owners know at every stage where the project stands.',
     },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
+    ctaHref: '/eligibility',
+    showPhone: true,
+    visual: {
+      kind: 'service-map',
+      center: { he: 'הבניין שלכם', en: 'Your building' },
+      items: [
+        { id: 'map-dev', icon: 'building', label: { he: 'יזמות', en: 'Development' } },
+        { id: 'map-organise', icon: 'users', label: { he: 'ארגון בעלי הדירות', en: 'Organising the owners' } },
+        { id: 'map-offers', icon: 'search', label: { he: 'בדיקת הצעות', en: 'Checking offers' } },
+        { id: 'map-stalled', icon: 'restart', label: { he: 'חילוץ פרויקטים תקועים', en: 'Rescuing stalled projects' } },
+      ],
+    },
+    points: [
+      { id: 'services-pt-check', icon: 'check-circle', title: { he: 'בודקים כל הצעה לפני שחותמים', en: 'Every offer checked before signing' } },
+      { id: 'services-pt-role', icon: 'check-circle', title: { he: 'אומרים מראש: יזם או מארגנים', en: 'Developer or organiser, said up front' } },
+      { id: 'services-pt-stay', icon: 'check-circle', title: { he: 'לא נעלמים אחרי החתימות', en: 'Still here after the signatures' } },
+    ],
   },
   {
-    // The five services. Until 2026-10 this was a JOURNEY with its own
-    // disclaimer, which made it the site's third version of the process.
-    // The process lives on /how-we-work; this is what the support covers.
+    // The services as compact cards. The offer check and its six labels
+    // moved to /about, rewritten by the company as five checks; the last
+    // card links there.
     id: 'services-list',
     type: 'FEATURE_GRID',
     order: 1,
@@ -1046,8 +1067,8 @@ const servicesBlocks: PageBlock[] = [
         icon: 'building',
         title: { he: 'יזמות', en: 'Development' },
         body: {
-          he: 'בפרויקטים שבהם אנחנו היזם, אנחנו מובילים את הפרויקט ואחראים לקידומו, עם שותפים ואנשי מקצוע שאנחנו עובדים איתם. בעלי הדירות מיוצגים על ידי עורך דין ושמאי שהם בוחרים.',
-          en: 'In projects where we are the developer, we lead the project and are responsible for moving it forward, with partners and professionals we work with. The owners are represented by a lawyer and an appraiser they choose.',
+          he: 'בפרויקטים שבהם אנחנו היזם, אנחנו מובילים את הפרויקט ואחראים לקידומו. בעלי הדירות מיוצגים על ידי עורך דין ושמאי שהם בוחרים.',
+          en: 'In projects where we are the developer, we lead the project and are responsible for moving it forward. The owners are represented by a lawyer and an appraiser they choose.',
         },
       },
       {
@@ -1062,25 +1083,19 @@ const servicesBlocks: PageBlock[] = [
       {
         id: 'sv-1',
         icon: 'search',
-        title: {
-          he: 'בדיקת היתכנות תכנונית וכלכלית',
-          en: 'Planning and financial feasibility review',
-        },
+        title: { he: 'בדיקת היתכנות תכנונית וכלכלית', en: 'Planning and financial feasibility review' },
         body: {
-          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות כלכלית ראשונית, עבורכם ועבור היזמים.',
-          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment, for you and for the developers.',
+          he: 'ניתוח זכויות הבנייה במתחם, בדיקת מדיניות הרשות המקומית והערכת כדאיות ראשונית.',
+          en: 'Analysis of the building rights on the complex, a review of local authority policy, and an initial viability assessment.',
         },
       },
       {
         id: 'sv-2',
         icon: 'users',
-        title: {
-          he: 'התארגנות בעלי הדירות ובחירת נציגות',
-          en: 'Organising the owners and electing a representation',
-        },
+        title: { he: 'התארגנות בעלי הדירות ובחירת נציגות', en: 'Organising the owners and electing a representation' },
         body: {
-          he: 'ניהול אספות, הקמת נציגות בית מוסמכת, מינוי עורך דין ומפקח בנייה מטעמכם, ויצירת ערוצי תקשורת שקופים בין כלל בעלי הדירות.',
-          en: 'Running meetings, establishing an authorised building representation, appointing a lawyer and a construction supervisor on your behalf, and setting up transparent communication among all owners.',
+          he: 'ניהול אספות, הקמת נציגות בית מוסמכת, ויצירת ערוצי תקשורת שקופים בין כלל בעלי הדירות.',
+          en: 'Running meetings, establishing an authorised building representation, and setting up transparent communication among all owners.',
         },
       },
       {
@@ -1088,20 +1103,17 @@ const servicesBlocks: PageBlock[] = [
         icon: 'scale',
         title: { he: 'מכרז יזמים תחרותי', en: 'A competitive developer tender' },
         body: {
-          he: 'כתיבת מפרט טכני ודרישות חובה, פנייה ליזמים, ניהול המשא ומתן והשוואת ההצעות על בסיס אחיד.',
-          en: 'Writing a technical specification and mandatory requirements, approaching developers, running the negotiation and comparing the offers on common terms.',
+          he: 'מפרט ודרישות חובה, פנייה ליזמים, ניהול המשא ומתן והשוואת ההצעות על בסיס אחיד.',
+          en: 'A specification and mandatory requirements, approaching developers, running the negotiation and comparing the offers on common terms.',
         },
       },
       {
         id: 'sv-4',
         icon: 'document-check',
-        title: {
-          he: 'ליווי תכנוני ומשפטי עד לחתימה',
-          en: 'Planning and legal support up to signature',
-        },
+        title: { he: 'ליווי תכנוני ומשפטי עד לחתימה', en: 'Planning and legal support up to signature' },
         body: {
-          he: 'גיבוש הסכם מפורט מול עורכי הדין, הגדרת לוחות זמנים, מנגנוני פיצוי וערבויות בנקאיות לפי חוק המכר.',
-          en: 'Shaping a detailed agreement with the lawyers, setting timetables, compensation mechanisms and bank guarantees under the Sale Law.',
+          he: 'גיבוש הסכם מפורט מול עורכי הדין, לוחות זמנים, מנגנוני פיצוי וערבויות בנקאיות לפי חוק המכר.',
+          en: 'Shaping a detailed agreement with the lawyers, timetables, compensation mechanisms and bank guarantees under the Sale Law.',
         },
       },
       {
@@ -1109,51 +1121,26 @@ const servicesBlocks: PageBlock[] = [
         icon: 'key',
         title: { he: 'ליווי בשלב הבנייה והאכלוס', en: 'Support through construction and occupancy' },
         body: {
-          he: 'תקשורת שוטפת מול היזם והרשויות, סיוע בשלבי הרישוי והבנייה, עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
-          en: 'Ongoing communication with the developer and the authorities, support through licensing and construction, up to the handover inspection and the key to the new apartment.',
+          he: 'תקשורת שוטפת מול היזם והרשויות, עד לבדיקת המסירה וקבלת המפתח לדירה החדשה.',
+          en: 'Ongoing communication with the developer and the authorities, up to the handover inspection and the key to the new apartment.',
         },
+      },
+      {
+        id: 'sv-offer',
+        title: { he: 'בדיקת הצעת יזם', en: 'Checking a developer’s offer' },
+        body: {
+          he: 'חמשת הדברים שאנחנו בודקים בכל הצעה, בעמוד מי אנחנו.',
+          en: 'The five things we check in every offer, on our About page.',
+        },
+        href: '/about#about-checks',
+        linkLabel: { he: 'למה שאנחנו בודקים', en: 'What we check' },
       },
     ],
   },
   {
-    // Moved from /about, in full, with the six checks below it.
-    id: 'services-offer-check',
-    type: 'CHAPTER',
-    order: 2,
-    hidden: false,
-    heading: { he: 'בדיקת ההצעה', en: 'Checking the offer' },
-    lead: {
-      he: 'אנחנו בודקים את ההצעה, משווים בין יזמים, מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם, ובעיקר מוודאים שהאינטרסים שלכם נשמרים לאורך כל הדרך.',
-      en: 'We check the offer, compare developers, explain the financial and legal implications in your language — and above all make sure your interests are protected all the way through.',
-    },
-    slotId: 'PROCESS_STAGE_6',
-  },
-  {
-    id: 'services-checks',
-    type: 'CHECKLIST',
-    order: 3,
-    hidden: false,
-    heading: {
-      he: 'הצעה של יזם מגיעה עם מספרים, מצגות ותוכניות. אנחנו בודקים מה עומד מאחוריהם.',
-      en: 'A developer’s offer comes with figures, presentations and plans. We examine what stands behind them.',
-    },
-    items: [
-      { id: 'check-financial', icon: 'chart', label: { he: 'הנתונים הכלכליים', en: 'The financial data' } },
-      { id: 'check-consideration', icon: 'home', label: { he: 'התמורות לבעלי הדירות', en: 'The consideration for the owners' } },
-      { id: 'check-timelines', icon: 'calendar', label: { he: 'לוחות הזמנים', en: 'The timelines' } },
-      { id: 'check-guarantees', icon: 'shield', label: { he: 'הבטוחות', en: 'The guarantees' } },
-      { id: 'check-commitments', icon: 'document-check', label: { he: 'ההתחייבויות', en: 'The commitments' } },
-      { id: 'check-risks', icon: 'alert', label: { he: 'הסיכונים', en: 'The risks' } },
-    ],
-    note: {
-      he: 'המטרה פשוטה: שלא תצאו מהדירה, תחתמו על מסמך או תתקדמו בפרויקט בלי להבין בדיוק מה אתם מקבלים ולמה אתם מתחייבים.',
-      en: 'The aim is simple: that you do not move out, sign a document or move the project forward without understanding exactly what you are getting and what you are committing to.',
-    },
-  },
-  {
     id: 'services-cta',
     type: 'CTA',
-    order: 4,
+    order: 2,
     hidden: false,
     heading: {
       he: 'רוצים לבדוק אם הבניין שלכם מתאים?',

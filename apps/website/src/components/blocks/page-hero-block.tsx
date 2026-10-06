@@ -1,4 +1,6 @@
-import type { OrganiseVisual, PageHeroBlock, PageHeroVisual, PortraitVisual } from '@urban-renewal/api-contracts'
+import type {
+  OrganiseVisual, PageHeroBlock, PageHeroVisual, PortraitVisual, ServiceMapVisual,
+} from '@urban-renewal/api-contracts'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import type { Localizer } from '@/lib/localize'
@@ -27,6 +29,9 @@ import { getImageSlot, IMAGE_SLOTS } from '@/mock/fixtures/images'
  * the slot has no asset, nothing is drawn in its place. `organise` draws
  * /why-organizer's thesis in the brand's line style, mirrored on the English
  * site so it reads in the page's direction, with its captions as text.
+ * `service-map` puts the owners' building in the middle and what the company
+ * does on its four sides; under `sm` the sides become a grid of two under
+ * the centre, since four chips around a circle do not fit a phone.
  */
 export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t: Localizer }) {
   const visual = block.visual ? await renderVisual(block.visual, t) : null
@@ -101,9 +106,44 @@ async function renderVisual(visual: PageHeroVisual, t: Localizer): Promise<React
       return <Portrait visual={visual} t={t} />
     case 'organise':
       return <Organise visual={visual} t={t} />
+    case 'service-map':
+      return <ServiceMap visual={visual} t={t} />
     default:
       return null
   }
+}
+
+function ServiceMap({ visual, t }: { visual: ServiceMapVisual; t: Localizer }) {
+  const [top, start, end, bottom] = visual.items
+  const chip = (item: ServiceMapVisual['items'][number] | undefined, area: string) =>
+    item ? (
+      <li
+        key={item.id}
+        className={`flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-center type-small font-bold text-gray-900 sm:rounded-full sm:px-4 shadow-[0_6px_16px_-10px_rgba(20,49,47,0.5)] sm:whitespace-nowrap ${area}`}
+      >
+        <LineIcon name={item.icon} size={20} className="shrink-0 text-teal-600" />
+        {t(item.label)}
+      </li>
+    ) : null
+
+  return (
+    <div className="relative rounded-[1.25rem] bg-teal-50 p-5 sm:p-8">
+      <span aria-hidden="true" className="absolute inset-x-[18%] top-1/2 hidden h-0.5 bg-teal-200 sm:block" />
+      <span aria-hidden="true" className="absolute inset-y-[16%] start-1/2 hidden w-0.5 bg-teal-200 sm:block" />
+      <div className="relative flex flex-col items-center gap-5 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:grid-rows-[auto_auto_auto] sm:items-center sm:gap-x-3 sm:gap-y-7">
+        <div className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-full border-[3px] border-teal-500 bg-white text-teal-600 sm:col-start-2 sm:row-start-2 sm:h-32 sm:w-32">
+          <LineIcon name="home" size={40} strokeWidth={1.5} />
+          <span className="type-small font-bold text-gray-900">{t(visual.center)}</span>
+        </div>
+        <ul className="grid w-full grid-cols-2 gap-3 sm:contents">
+          {chip(top, 'sm:col-start-2 sm:row-start-1 sm:justify-self-center')}
+          {chip(start, 'sm:col-start-1 sm:row-start-2 sm:justify-self-start')}
+          {chip(end, 'sm:col-start-3 sm:row-start-2 sm:justify-self-end')}
+          {chip(bottom, 'sm:col-start-2 sm:row-start-3 sm:justify-self-center')}
+        </ul>
+      </div>
+    </div>
+  )
 }
 
 function Organise({ visual, t }: { visual: OrganiseVisual; t: Localizer }) {

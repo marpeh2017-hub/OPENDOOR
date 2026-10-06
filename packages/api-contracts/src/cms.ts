@@ -476,6 +476,10 @@ export interface NarrativeItem {
    * upload an icon per item produces a page with eight visual languages.
    */
   icon?: string
+  /** Makes the item a link to where it is covered in full, rendered as a
+   *  link card where the renderer supports one (the FEATURE_GRID list). */
+  href?: string
+  linkLabel?: LocalizedTextOptional
 }
 
 /**
@@ -745,7 +749,7 @@ export interface PageHeroBlock extends BlockBase {
   points?: PageHeroPoint[]
 }
 
-export type PageHeroVisual = PortraitVisual | OrganiseVisual
+export type PageHeroVisual = PortraitVisual | OrganiseVisual | ServiceMapVisual
 
 /** A real photograph of a named person, with a line in their words. */
 export interface PortraitVisual {
@@ -765,6 +769,17 @@ export interface OrganiseVisual {
   kind: 'organise'
   before: { title: LocalizedText; body: LocalizedText }
   after: { title: LocalizedText; body: LocalizedText }
+}
+
+/**
+ * /services' opening: the owners' building in the middle, and what the
+ * company does around it. Labels are text; the lines are decoration.
+ */
+export interface ServiceMapVisual {
+  kind: 'service-map'
+  center: LocalizedText
+  /** Four reads best: they sit on the four sides of the centre. */
+  items: { id: string; icon?: string; label: LocalizedText }[]
 }
 
 export interface PageHeroPoint {
