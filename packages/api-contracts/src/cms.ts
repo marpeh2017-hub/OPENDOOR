@@ -48,6 +48,9 @@ export type BlockType =
   | 'EXTERNAL_RESOURCES'
   | 'CTA'
   | 'MEDIA'
+  | 'DOORS'
+  | 'FACT_STRIP'
+  | 'PROFILE'
 
 /**
  * Ordered for the block picker. A closed list, deliberately: adding a block is
@@ -57,12 +60,14 @@ export type BlockType =
 export const BLOCK_TYPES: readonly BlockType[] = [
   // Openings
   'HERO', 'PAGE_HEADER',
+  // Wayfinding
+  'DOORS',
   // Editorial
-  'STATEMENT', 'PROSE', 'CHAPTER', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
+  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
   // Process
   'JOURNEY', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
-  'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'CHECKLIST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
+  'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'FACT_STRIP', 'CHECKLIST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
   // Other
   'PORTAL', 'MEDIA', 'CTA',
 ] as const
@@ -534,11 +539,81 @@ export interface PortalAudienceGroup {
   items: LocalizedText[]
 }
 
+/* ── Design-review blocks (2026-10) ─────────────────────────────────────── */
+
+/**
+ * Three ways into the site: a card each, with a drawing, one line and a link.
+ *
+ * The homepage's map. It states nothing in full; it says where each thing is
+ * stated, which is what let the homepage stop repeating the inner pages. A
+ * door's line is never the page's argument cut short, only what is behind it.
+ */
+export interface DoorsBlock extends BlockBase {
+  type: 'DOORS'
+  heading: LocalizedText
+  doors: DoorItem[]
+}
+
+export interface DoorItem {
+  id: string
+  title: LocalizedText
+  /** One line. */
+  body: LocalizedText
+  linkLabel: LocalizedText
+  href: string
+  /** Name of a drawing from the renderer's fixed set, for the same reason
+   *  icons are a closed set. Unknown names render the card without one. */
+  art?: string
+}
+
+/**
+ * The company facts, one line each, on one strip, with a link to the page
+ * where they are stated in full.
+ *
+ * The short form of VERIFIABLE_FACTS, for a page that should mention the facts
+ * without stating them twice. `heading` names the strip for screen readers;
+ * the items carry the visible titles.
+ */
+export interface FactStripBlock extends BlockBase {
+  type: 'FACT_STRIP'
+  heading: LocalizedText
+  items: NarrativeItem[]
+  linkLabel: LocalizedText
+  linkHref: string
+}
+
+/**
+ * A person: portrait, one line in their own words, one sentence about them,
+ * and the rest behind "read more".
+ *
+ * Built for Michael on /about. The full quotation and biography stay complete
+ * in `quote` and `body`; the visible part is cut from them, never rewritten,
+ * so the approved text is all still on the page.
+ */
+export interface ProfileBlock extends BlockBase {
+  type: 'PROFILE'
+  name: LocalizedText
+  /** A line from the person's own words, set large. Quote marks are part of
+   *  the text. */
+  pullQuote: LocalizedText
+  /** One or two sentences, always visible. */
+  summary: LocalizedText
+  /** The full quotation, revealed under "read more". */
+  quote?: LocalizedTextOptional
+  /** The rest of the biography, revealed with it. Plain text, blank lines
+   *  split paragraphs. */
+  body?: LocalizedTextOptional
+  /** Image-inventory slot for the portrait. Until it has an asset, nothing is
+   *  drawn in its place: a stand-in for a person's face is not neutral. */
+  slotId?: string
+}
+
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
   | PageHeaderBlock | StatementBlock | ProseBlock | ChapterBlock
   | ComparisonBlock | RoleMapBlock | JourneyBlock | ChecklistBlock
+  | DoorsBlock | FactStripBlock | ProfileBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 

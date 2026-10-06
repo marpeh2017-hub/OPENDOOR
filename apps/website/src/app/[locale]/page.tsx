@@ -6,7 +6,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { Locale } from '@urban-renewal/api-contracts'
 import { getHomePage, getFeaturedProjects, getKnowledgeArticles, getFaqItems } from '@/mock'
 import { makeLocalizer } from '@/lib/localize'
-import { SectionConnector } from '@/components/brand/architecture'
 import { CityBandBlockView } from '@/components/blocks/city-band-block'
 import { HeroBlockView } from '@/components/blocks/hero-block'
 import { FeatureGridBlockView } from '@/components/blocks/feature-grid-block'
@@ -16,6 +15,8 @@ import { PortalBlockView } from '@/components/blocks/portal-block'
 import { KnowledgeBlockView } from '@/components/blocks/knowledge-block'
 import { FaqBlockView } from '@/components/blocks/faq-block'
 import { CtaBlockView } from '@/components/blocks/cta-block'
+import { DoorsBlockView } from '@/components/blocks/doors-block'
+import { FactStripBlockView } from '@/components/blocks/fact-strip-block'
 
 /**
  * Homepage.
@@ -34,11 +35,11 @@ import { CtaBlockView } from '@/components/blocks/cta-block'
  * tidy, and it was the main reason the page read as eleven separate slides —
  * every section announced its own edge.
  *
- * V2 keeps one continuous surface. Three sections deviate, and each deviation
- * means something: the process sits on the sunken band as the page's first
- * change of ground, trust is the single dark moment, and knowledge returns to
- * sunken to close the editorial run. Because the exceptions are rare, they
- * register as emphasis rather than as a pattern.
+ * V2 keeps one continuous surface, and the 2026-10 page keeps the rule with
+ * fewer sections: the doors sit on the brand wash as the page's invitation,
+ * the process on the sunken band, and the facts strip is the single dark
+ * moment. Because the exceptions are rare, they register as emphasis rather
+ * than as a pattern.
  *
  * That decision now lives in each section's own component rather than in a
  * positional table here. A positional table was right while every section was
@@ -46,13 +47,12 @@ import { CtaBlockView } from '@/components/blocks/cta-block'
  * MEANS, because inserting one block in the CMS would silently restyle three
  * others.
  *
- * ── CONNECTORS ─────────────────────────────────────────────────────────────
+ * ── NO CONNECTORS SINCE 2026-10 ────────────────────────────────────────────
  *
- * A hairline with a marker straddles the seams where the page changes subject.
- * The eye follows a line through the boundary instead of stopping at it, which
- * is what turns eleven sections into one journey. Decorative, `aria-hidden`,
- * and used at three seams rather than at all ten — a device used everywhere is
- * just a divider, and dividers are what V2 removed.
+ * Hairlines once straddled the seams so eleven sections read as one journey.
+ * The page is now six short sections, two of them on their own grounds (the
+ * doors on the wash, the facts on the dark strip), and the change of ground
+ * is the seam.
  *
  * ── COLLECTION DATA ────────────────────────────────────────────────────────
  *
@@ -78,12 +78,6 @@ async function pageMetadata({
     description: seo.description,
   }
 }
-
-/**
- * Seams that get a connector, keyed by the block the connector follows.
- * Chosen where the page changes subject.
- */
-const CONNECT_AFTER = new Set(['home-hero', 'home-process'])
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -113,6 +107,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         switch (block.type) {
           case 'HERO':
             rendered = <HeroBlockView block={block} t={t} />
+            break
+
+          case 'DOORS':
+            rendered = <DoorsBlockView block={block} t={t} />
+            break
+
+          case 'FACT_STRIP':
+            rendered = <FactStripBlockView block={block} t={t} />
             break
 
           case 'FEATURE_GRID':
@@ -170,12 +172,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
         if (!rendered) return null
 
-        return (
-          <Fragment key={block.id}>
-            {rendered}
-            {CONNECT_AFTER.has(block.id) && <SectionConnector />}
-          </Fragment>
-        )
+        return <Fragment key={block.id}>{rendered}</Fragment>
       })}
     </div>
   )

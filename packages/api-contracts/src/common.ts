@@ -193,11 +193,17 @@ export interface SeoMetadata {
  *                            shows, so the reader is never left to assume.
  *   ARCHITECTURAL_PATTERN    A generated OpenDoor graphic. Claims nothing,
  *                            because it is visibly not a photograph.
+ *   PERSON_PORTRAIT          A photograph of a named person from the company,
+ *                            supplied by the company. Claims only that it
+ *                            shows the person named beside it. Never a
+ *                            project's image, never generated or retouched
+ *                            into a likeness.
  *
  * A missing `imageType` is not a default — it is a bug, and the renderer
  * refuses to present such an image as project-specific.
  */
-export type ImageClaim = 'VERIFIED_PROJECT_PHOTO' | 'EDITORIAL_CONTEXT' | 'ARCHITECTURAL_PATTERN'
+export type ImageClaim =
+  | 'VERIFIED_PROJECT_PHOTO' | 'EDITORIAL_CONTEXT' | 'ARCHITECTURAL_PATTERN' | 'PERSON_PORTRAIT'
 
 export interface MediaAsset {
   id: string

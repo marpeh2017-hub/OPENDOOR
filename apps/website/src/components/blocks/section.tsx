@@ -26,15 +26,19 @@ export function Section({
   grid = false,
   children,
   id,
+  labelledBy,
   className = '',
 }: {
-  tone?: 'page' | 'raised' | 'sunken' | 'inverse'
+  tone?: 'page' | 'raised' | 'sunken' | 'inverse' | 'wash'
   /** Vertical rhythm. Varying it is what gives a long page pace. */
   size?: 'sm' | 'md' | 'lg'
   /** Lays the faint planning grid behind the section. Used sparingly. */
   grid?: boolean
   children: React.ReactNode
   id?: string
+  /** Id of the element that names this section, for a section whose heading
+   *  is not its first visible text. */
+  labelledBy?: string
   className?: string
 }) {
   const surface = {
@@ -42,6 +46,9 @@ export function Section({
     raised: 'bg-white',
     sunken: 'bg-surface-sunken',
     inverse: 'bg-surface-inverse text-white',
+    // The brand wash, #E8F4F4. For a band that invites rather than informs:
+    // the homepage's doors.
+    wash: 'bg-teal-50',
   }[tone]
 
   const rhythm = {
@@ -51,7 +58,11 @@ export function Section({
   }[size]
 
   return (
-    <section id={id} className={`relative overflow-hidden ${surface} ${className}`}>
+    <section
+      id={id}
+      aria-labelledby={labelledBy}
+      className={`relative overflow-hidden ${surface} ${className}`}
+    >
       {grid && <ArchitecturalGrid opacity={0.55} />}
       <div className={`relative mx-auto max-w-7xl px-4 lg:px-8 ${rhythm}`}>{children}</div>
     </section>

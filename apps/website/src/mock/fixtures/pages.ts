@@ -66,11 +66,59 @@ const homepageBlocks: PageBlock[] = [
     // No `note`: who pays is stated once on this page, in the facts below.
   },
 
-  /* 2 ── HOW WE WORK, AT A GLANCE ─────────────────────────────────────── */
+  /* 2 ── THREE DOORS ─────────────────────────────────────────────────── */
+  /**
+   * Where each argument is stated in full. A door's line says what is behind
+   * it and nothing more: the page behind it makes the case.
+   */
+  {
+    id: 'home-doors',
+    type: 'DOORS',
+    order: 1,
+    hidden: false,
+    heading: { he: 'מאיפה להתחיל', en: 'Where to start' },
+    doors: [
+      {
+        id: 'door-about',
+        art: 'side',
+        title: { he: 'מי אנחנו', en: 'Who we are' },
+        body: {
+          he: 'החברה שנמצאת בצד של בעלי הדירות.',
+          en: 'The company on the owners’ side.',
+        },
+        linkLabel: { he: 'הכירו אותנו', en: 'Meet us' },
+        href: '/about',
+      },
+      {
+        id: 'door-why',
+        art: 'organise',
+        title: { he: 'למה חברה מארגנת', en: 'Why an organising company' },
+        body: {
+          he: 'מה משתנה כשבעלי הדירות מאורגנים.',
+          en: 'What changes when the owners are organised.',
+        },
+        linkLabel: { he: 'למה זה חשוב', en: 'Why it matters' },
+        href: '/why-organizer',
+      },
+      {
+        id: 'door-how',
+        art: 'route',
+        title: { he: 'כך אנחנו עובדים', en: 'How we work' },
+        body: {
+          he: 'שלב אחרי שלב, ומה נדרש מכם בכל אחד.',
+          en: 'Stage by stage, and what each one asks of you.',
+        },
+        linkLabel: { he: 'לכל השלבים', en: 'All the stages' },
+        href: '/how-we-work',
+      },
+    ],
+  },
+
+  /* 3 ── HOW WE WORK, AT A GLANCE ─────────────────────────────────────── */
   {
     id: 'home-process',
     type: 'PROCESS',
-    order: 1,
+    order: 2,
     hidden: false,
     heading: { he: 'כך אנחנו עובדים', en: 'How we work' },
     items: [
@@ -117,7 +165,7 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
-  /* 3 ── THE FACTS, ONE LINE EACH ─────────────────────────────────────── */
+  /* 4 ── THE FACTS, ONE LINE EACH ─────────────────────────────────────── */
   /**
    * The short form of /about's "מה שאפשר לבדוק עלינו", which is the one place
    * the facts appear in full. Each line here is that page's wording cut down,
@@ -129,11 +177,14 @@ const homepageBlocks: PageBlock[] = [
    * this is editorial text a person may reword in the CMS.
    */
   {
-    id: 'home-verifiable-facts',
-    type: 'VERIFIABLE_FACTS',
-    order: 2,
+    id: 'home-facts',
+    type: 'FACT_STRIP',
+    order: 3,
     hidden: false,
-    heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
+    // Read by screen readers as the strip's heading; the titles are visible.
+    heading: { he: 'עובדות על החברה', en: 'Facts about the company' },
+    linkLabel: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
+    linkHref: '/about#about-facts',
     items: [
       {
         id: 'vf-registered',
@@ -165,11 +216,11 @@ const homepageBlocks: PageBlock[] = [
     ],
   },
 
-  /* 4 ── THE PERSONAL AREA ────────────────────────────────────────────── */
+  /* 5 ── THE PERSONAL AREA ────────────────────────────────────────────── */
   {
     id: 'home-portal',
     type: 'PORTAL',
-    order: 3,
+    order: 4,
     hidden: false,
     heading: { he: 'האזור האישי', en: 'The personal area' },
     intro: {
@@ -235,7 +286,7 @@ const homepageBlocks: PageBlock[] = [
     groups: [],
   },
 
-  /* 5 ── PROJECTS: hidden until the first one is published ───────────── */
+  /* 6 ── PROJECTS: hidden until the first one is published ───────────── */
   {
     // Hidden, not deleted: the projects page is empty today, and a homepage
     // section that leads to an empty page is a promise it cannot keep. Unhide
@@ -243,7 +294,7 @@ const homepageBlocks: PageBlock[] = [
     // back in PRIMARY_NAV_KEYS (lib/navigation.ts) at the same time.
     id: 'home-projects',
     type: 'PROJECTS',
-    order: 4,
+    order: 5,
     hidden: true,
     heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
@@ -253,11 +304,11 @@ const homepageBlocks: PageBlock[] = [
     limit: 3,
   },
 
-  /* 6 ── FINAL CTA ────────────────────────────────────────────────────── */
+  /* 7 ── FINAL CTA ────────────────────────────────────────────────────── */
   {
     id: 'home-cta',
     type: 'CTA',
-    order: 5,
+    order: 6,
     hidden: false,
     heading: {
       he: 'רוצים לבדוק מה אפשרי אצלכם?',

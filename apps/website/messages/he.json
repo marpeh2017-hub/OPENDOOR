@@ -127,7 +127,9 @@
     "currentStage": "השלב הנוכחי",
     "transparencyEyebrow": "השקיפות בפועל",
     "menu": "תפריט",
-    "opensInNewTab": "נפתח בלשונית חדשה"
+    "opensInNewTab": "נפתח בלשונית חדשה",
+    "readMore": "לקריאה נוספת",
+    "readLess": "סגירה"
   },
   "projects": {
     "noFilterResults": "לא נמצאו פרויקטים המתאימים לסינון. נסו עיר או סוג פרויקט אחר.",

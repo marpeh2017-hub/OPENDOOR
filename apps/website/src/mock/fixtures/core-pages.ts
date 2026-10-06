@@ -104,18 +104,30 @@ const aboutBlocks: PageBlock[] = [
     },
   },
   {
+    // Michael's approved text, unchanged in meaning: the large line is the
+    // opening clause of his quotation (approved for this use on 2026-10-06),
+    // the visible sentence is the biography's first, and the full quotation
+    // and the rest of the biography open under "לקריאה נוספת".
     id: 'about-michael',
-    type: 'CHAPTER',
+    type: 'PROFILE',
     order: 4,
     hidden: false,
-    heading: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
+    name: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
+    pullQuote: {
+      he: '״בעלי דירות חזקים יותר כשהם מאורגנים.״',
+      en: '“Owners are stronger when they are organised.”',
+    },
+    summary: {
+      he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים והסביבה, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן.',
+      en: 'Michael Rosenbach works in urban renewal in and around Jerusalem, supporting owners and their representations in their dealings with developers, professionals and real-estate companies.',
+    },
     quote: {
       he: '״בעלי דירות חזקים יותר כשהם מאורגנים, מבינים את הזכויות שלהם ומלווים על ידי מי שמכיר את השחקנים, את המספרים ואת התהליך, אבל מחויב קודם כל אליהם.״',
       en: '“Owners are stronger when they are organised, understand their rights and are supported by someone who knows the players, the numbers and the process — but is committed, first and foremost, to them.”',
     },
     body: {
-      he: 'מיכאל רוזנבך עוסק בהתחדשות עירונית בירושלים והסביבה, ומלווה בעלי דירות ונציגויות מול יזמים, אנשי מקצוע וחברות נדל״ן. הוא בעל תואר במנהל עסקים עם התמחות במערכות מידע, ובעל רישיון תיווך. השילוב הזה מאפשר לו לקרוא הצעות ומסמכים בעין עסקית, להבין נתונים ומספרים, לבדוק שמה שמוצג בהצעה מעוגן בהתחייבויות, ולנהל את השיח בין בעלי הדירות, היזמים ואנשי המקצוע בצורה ברורה ומעשית.\n\nמיכאל יכול לעזור לכם להבין מה ההצעה כוללת, מה חסר בה, איפה נמצאים הסיכונים ומה הצעדים הבאים שכדאי לשקול, גם אם אתם כבר בתוך תהליך.',
-      en: 'Michael Rosenbach works in urban renewal in and around Jerusalem, supporting owners and their representations in their dealings with developers, professionals and real-estate companies. He holds a degree in business administration, specialising in information systems, and a real-estate broker’s licence. That combination lets him read offers and documents with a business eye, make sense of data and figures, check that what an offer presents is backed by commitments, and keep the conversation between owners, developers and professionals clear and practical.\n\nMichael can help you understand what an offer includes, what is missing from it, where the risks lie and which next steps are worth considering — even if you are already in a process.',
+      he: 'הוא בעל תואר במנהל עסקים עם התמחות במערכות מידע, ובעל רישיון תיווך. השילוב הזה מאפשר לו לקרוא הצעות ומסמכים בעין עסקית, להבין נתונים ומספרים, לבדוק שמה שמוצג בהצעה מעוגן בהתחייבויות, ולנהל את השיח בין בעלי הדירות, היזמים ואנשי המקצוע בצורה ברורה ומעשית.\n\nמיכאל יכול לעזור לכם להבין מה ההצעה כוללת, מה חסר בה, איפה נמצאים הסיכונים ומה הצעדים הבאים שכדאי לשקול, גם אם אתם כבר בתוך תהליך.',
+      en: 'He holds a degree in business administration, specialising in information systems, and a real-estate broker’s licence. That combination lets him read offers and documents with a business eye, make sense of data and figures, check that what an offer presents is backed by commitments, and keep the conversation between owners, developers and professionals clear and practical.\n\nMichael can help you understand what an offer includes, what is missing from it, where the risks lie and which next steps are worth considering — even if you are already in a process.',
     },
     slotId: 'ABOUT_MICHAEL_PORTRAIT',
   },

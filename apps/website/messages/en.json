@@ -127,7 +127,9 @@
     "currentStage": "Current stage",
     "transparencyEyebrow": "Transparency in practice",
     "menu": "Menu",
-    "opensInNewTab": "opens in a new tab"
+    "opensInNewTab": "opens in a new tab",
+    "readMore": "Read more",
+    "readLess": "Show less"
   },
   "projects": {
     "noFilterResults": "No projects match these filters. Try another city or project type.",

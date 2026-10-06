@@ -48,7 +48,7 @@ export interface ImageSlotSpec {
   /** What the alt text has to convey. The alt itself ships with the asset. */
   altIntent: string
   /** What the image is permitted to claim once supplied. */
-  claim: 'VERIFIED_PROJECT_PHOTO' | 'EDITORIAL_CONTEXT' | 'ARCHITECTURAL_PATTERN'
+  claim: 'VERIFIED_PROJECT_PHOTO' | 'EDITORIAL_CONTEXT' | 'ARCHITECTURAL_PATTERN' | 'PERSON_PORTRAIT'
   /** Direction for whoever sources it, including what to avoid. */
   direction: string
   /** The OpenDoor graphic drawn until an asset exists. */
@@ -154,19 +154,28 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     id: 'ABOUT_MICHAEL_PORTRAIT',
     purpose:
       'Puts a face to the person an owner will actually meet. Until the photograph exists the drawing holds the place: a generated likeness of a real person is a fabrication, not a placeholder.',
+    // Shown as a circle in the profile on /about, so the slot is square.
     orientation: 'portrait',
-    desktopRatio: '4 / 5',
-    mobileRatio: '4 / 5',
-    minResolution: '1200 × 1500',
-    altIntent: 'Michael Rosenbach, named, in the setting the photograph shows.',
-    // What renders today. When the photograph arrives its classification needs
-    // a decision: ImageClaim has no value for a photograph of the company's own
-    // people, and VERIFIED_PROJECT_PHOTO means a project's building.
-    claim: 'ARCHITECTURAL_PATTERN',
+    desktopRatio: '1 / 1',
+    mobileRatio: '1 / 1',
+    minResolution: '800 × 800',
+    altIntent: 'Michael Rosenbach, named.',
+    claim: 'PERSON_PORTRAIT',
     direction:
       'A real, recent photograph of Michael Rosenbach, supplied by the company. Natural light, at work or against Jerusalem stone. Must NOT be: an AI-generated or retouched likeness, a stock model, or a group shot cropped down.',
     fallback: 'pattern',
-    asset: null,
+    // Supplied by Michael on 2026-10-06: a head-and-shoulders portrait on
+    // white. Cropped to its circle with the corners made transparent; not
+    // retouched.
+    asset: {
+      id: 'team-michael-rosenbach',
+      kind: 'image',
+      url: '/images/team/michael-rosenbach.webp',
+      width: 960,
+      height: 960,
+      imageType: 'PERSON_PORTRAIT',
+      alt: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
+    },
   },
 
   /* ── 5 ── /how-we-work ───────────────────────────────────────────────── */

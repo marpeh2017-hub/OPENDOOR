@@ -15,6 +15,9 @@ import { CityBandBlockView } from './city-band-block'
 import { CtaBlockView } from './cta-block'
 import { ChapterBlockView } from './chapter-block'
 import { ChecklistBlockView } from './checklist-block'
+import { DoorsBlockView } from './doors-block'
+import { FactStripBlockView } from './fact-strip-block'
+import { ProfileBlockView } from './profile-block'
 
 /**
  * Renders a CMS page's blocks, in order.
@@ -56,7 +59,7 @@ const SELF_WRAPPING = new Set([
   'PAGE_HEADER', 'COMPARISON', 'ROLE_MAP', 'JOURNEY',
   'EXTERNAL_RESOURCES', 'MEDIA', 'CTA', 'FEATURE_GRID', 'PROCESS',
   'PROJECT_TRANSPARENCY', 'TRUST', 'VERIFIABLE_FACTS', 'TEXT_SECTION',
-  'CHAPTER', 'CHECKLIST',
+  'CHAPTER', 'CHECKLIST', 'DOORS', 'FACT_STRIP', 'PROFILE',
 ])
 
 export async function PageBlocks({
@@ -204,6 +207,15 @@ async function renderBlockBody(
 
     case 'CHECKLIST':
       return <ChecklistBlockView block={block} t={t} />
+
+    case 'DOORS':
+      return <DoorsBlockView block={block} t={t} />
+
+    case 'FACT_STRIP':
+      return <FactStripBlockView block={block} t={t} />
+
+    case 'PROFILE':
+      return <ProfileBlockView block={block} t={t} />
 
     case 'CHAPTER':
       // Normally rendered by the sequence rule above, which knows its position.

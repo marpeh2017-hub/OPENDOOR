@@ -57,7 +57,9 @@ export function VerifiableFactsBlockView({
   const inverse = block.tone === 'inverse'
 
   return (
-    <Section size="lg" tone={inverse ? 'inverse' : 'page'}>
+    // The id is the anchor the homepage's fact strip links to; the scroll
+    // margin keeps the heading clear of the sticky header when it lands.
+    <Section id={block.id} size="lg" tone={inverse ? 'inverse' : 'page'} className="scroll-mt-16">
       <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
         <div>
           <h2
