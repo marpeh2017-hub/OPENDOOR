@@ -922,6 +922,15 @@ const servicesBlocks: PageBlock[] = [
         },
       },
       {
+        id: 'sv-stalled',
+        icon: 'restart',
+        title: { he: 'חילוץ פרויקטים תקועים', en: 'Rescuing stalled projects' },
+        body: {
+          he: 'נכנסים לפרויקטים שנעצרו באמצע הדרך, מבינים מה עוצר אותם, ומחזירים אותם לתנועה.',
+          en: 'We step into projects that stopped halfway, find out what is holding them up, and get them moving again.',
+        },
+      },
+      {
         id: 'sv-1',
         icon: 'search',
         title: {
@@ -1030,6 +1039,96 @@ const servicesBlocks: PageBlock[] = [
   },
 ]
 
+/* ══════════════════════════════════════════════════════════════════════════
+ * /stalled-projects
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Projects others got stuck in, which the company says it knows how to move
+ * (its own claim, 2026-10-06). The page names the usual reasons, says what is
+ * done about each, and then says plainly that not every project can be
+ * rescued: that sentence is what makes the rest believable, and it stays.
+ */
+const stalledBlocks: PageBlock[] = [
+  {
+    id: 'stalled-header',
+    type: 'PAGE_HEADER',
+    order: 0,
+    hidden: false,
+    eyebrow: { he: 'פרויקטים תקועים', en: 'Stalled projects' },
+    heading: { he: 'פרויקט שנתקע? אפשר להזיז אותו.', en: 'A stalled project? It can be moved.' },
+    standfirst: {
+      he: 'הרבה פרויקטים של התחדשות עירונית נעצרים באמצע הדרך. לשם בדיוק אנחנו נכנסים: מבינים מה עוצר, ומחזירים את הפרויקט לתנועה.',
+      en: 'Many urban-renewal projects stop halfway. That is exactly where we come in: we find out what is holding the project up, and get it moving again.',
+    },
+  },
+  {
+    id: 'stalled-reasons',
+    type: 'RISKS',
+    order: 1,
+    hidden: false,
+    heading: { he: 'מה עוצר פרויקטים, ומה אנחנו עושים', en: 'What stalls projects, and what we do' },
+    rows: [
+      {
+        id: 'stall-developer',
+        icon: 'building',
+        risk: { he: 'היזם עזב או לא מתקדם', en: 'The developer left, or is not moving' },
+        answer: {
+          he: 'בודקים מה כבר נעשה ומה ההסכמים מאפשרים, ומביאים יזם שיכול להמשיך.',
+          en: 'We check what has been done and what the agreements allow, and bring a developer who can carry on.',
+        },
+      },
+      {
+        id: 'stall-owners',
+        icon: 'users',
+        risk: { he: 'חלק מבעלי הדירות מתנגדים', en: 'Some owners object' },
+        answer: {
+          he: 'יושבים עם כל אחד, מבינים מה מטריד אותו, ובונים הסכמה.',
+          en: 'We sit with each of them, understand what worries them, and build agreement.',
+        },
+      },
+      {
+        id: 'stall-economics',
+        icon: 'chart',
+        risk: { he: 'ההצעה כבר לא כלכלית', en: 'The offer no longer adds up' },
+        answer: {
+          he: 'בודקים את הכדאיות מחדש, ומתאימים את הפרויקט לתנאים של היום.',
+          en: 'We check the viability again, and fit the project to today’s conditions.',
+        },
+      },
+      {
+        id: 'stall-planning',
+        icon: 'clipboard',
+        risk: { he: 'התכנון נתקע ברשויות', en: 'Planning is stuck with the authorities' },
+        answer: {
+          he: 'עובדים עם אדריכלים ויועצים שמכירים את הוועדות, ומקדמים את התיק.',
+          en: 'We work with architects and consultants who know the committees, and move the file forward.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'stalled-honest',
+    type: 'STATEMENT',
+    order: 2,
+    hidden: false,
+    statement: { he: 'לא כל פרויקט אפשר לחלץ.', en: 'Not every project can be rescued.' },
+    support: {
+      he: 'אם זה המצב אצלכם, נגיד לכם את זה ביושר ומוקדם, לפני שתשקיעו עוד זמן.',
+      en: 'If that is the case with yours, we will tell you honestly and early, before you invest more time.',
+    },
+  },
+  {
+    id: 'stalled-cta',
+    type: 'CTA',
+    order: 3,
+    hidden: false,
+    heading: { he: 'הפרויקט שלכם נתקע?', en: 'Has your project stalled?' },
+    ctaLabel: { he: 'ספרו לנו איפה זה נתקע', en: 'Tell us where it is stuck' },
+    ctaHref: '/eligibility',
+  },
+]
+
 /* ══════════════════════════════════════════════════════════════════════════ */
 
 export const CORE_PAGES: readonly CmsPage[] = [
@@ -1133,6 +1232,27 @@ export const CORE_PAGES: readonly CmsPage[] = [
         title: 'Transparency and trust',
         description:
           'How information is kept, reached and delivered to owners through an urban-renewal process.',
+      },
+    },
+    updatedAt: '2026-10-06T00:00:00.000Z',
+    updatedByName: 'Mock content',
+  },
+  {
+    id: 'page-stalled-projects',
+    slug: 'stalled-projects',
+    title: { he: 'פרויקטים תקועים', en: 'Stalled projects' },
+    publishState: 'published',
+    blocks: stalledBlocks,
+    seo: {
+      he: {
+        title: 'פרויקטים תקועים',
+        description:
+          'פרויקט התחדשות עירונית שנתקע: יזם שעזב, בעלי דירות שמתנגדים, הצעה שכבר לא כלכלית או תכנון שנתקע ברשויות. מה עוצר פרויקטים, ואיך מחזירים אותם לתנועה.',
+      },
+      en: {
+        title: 'Stalled projects',
+        description:
+          'An urban-renewal project that has stalled: a developer who left, owners who object, an offer that no longer adds up, or planning stuck with the authorities. What stalls projects, and how to get them moving again.',
       },
     },
     updatedAt: '2026-10-06T00:00:00.000Z',

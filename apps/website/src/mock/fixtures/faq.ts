@@ -127,4 +127,17 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'Yes. As people in the field we know appraisers, lawyers and architects, and can recommend them. A recommendation is only that: you choose, and the professionals act for you.',
     },
   },
+  {
+    id: 'faq-stalled',
+    order: 8,
+    group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
+    question: {
+      he: 'הפרויקט שלנו נתקע. אתם יכולים לעזור?',
+      en: 'Our project has stalled. Can you help?',
+    },
+    answer: {
+      he: 'הרבה פעמים כן. אנחנו בודקים מה עוצר את הפרויקט: יזם שעזב, בעלי דירות שמתנגדים, הצעה שכבר לא כלכלית או תכנון שנתקע ברשויות, ובונים תוכנית להחזיר אותו לתנועה. לא כל פרויקט אפשר לחלץ, ואם זה המצב אצלכם נגיד לכם את זה ביושר ומוקדם.',
+      en: 'Often, yes. We look at what is holding the project up: a developer who left, owners who object, an offer that no longer adds up, or planning stuck with the authorities, and build a plan to get it moving again. Not every project can be rescued; if yours cannot, we will tell you honestly and early.',
+    },
+  },
 ]

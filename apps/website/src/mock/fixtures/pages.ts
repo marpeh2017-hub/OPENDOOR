@@ -90,6 +90,17 @@ const homepageBlocks: PageBlock[] = [
         href: '/about',
       },
       {
+        id: 'door-stalled',
+        art: 'unstuck',
+        title: { he: 'פרויקט שנתקע?', en: 'A stalled project?' },
+        body: {
+          he: 'מה עוצר פרויקטים, ואיך מחזירים אותם לתנועה.',
+          en: 'What stalls projects, and how to get them moving again.',
+        },
+        linkLabel: { he: 'איך אנחנו עוזרים', en: 'How we help' },
+        href: '/stalled-projects',
+      },
+      {
         id: 'door-why',
         art: 'organise',
         title: { he: 'למה חברה מארגנת', en: 'Why an organising company' },

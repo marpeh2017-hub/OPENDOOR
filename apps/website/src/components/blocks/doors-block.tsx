@@ -71,6 +71,20 @@ const ART: Record<string, { mirror: boolean; node: React.ReactNode }> = {
       </>
     ),
   },
+  // A stalled route that clears its obstacle and carries on.
+  unstuck: {
+    mirror: true,
+    node: (
+      <>
+        <path d="M112 58H98" fill="none" stroke={BRAND} strokeWidth="2" strokeDasharray="4 5" strokeLinecap="round" />
+        <rect x="64" y="46" width="24" height="8" rx="1.5" fill={WASH} stroke={STRUCTURE} strokeWidth="2" />
+        <path d="M71 46l-4 8M79 46l-4 8M87 46l-4 8" fill="none" stroke={STRUCTURE} strokeWidth="1.5" />
+        <path d="M68 54v14M84 54v14" fill="none" stroke={STRUCTURE} strokeWidth="2" strokeLinecap="round" />
+        <path d="M98 58C98 12 54 12 54 58" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" />
+        <path d="M54 58H12M20 51l-8 7 8 7" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ),
+  },
   // A route of stages ending at a door.
   route: {
     mirror: true,
@@ -91,7 +105,13 @@ export function DoorsBlockView({ block, t }: { block: DoorsBlock; t: Localizer }
     <Section tone="wash" size="md">
       <SectionHeading heading={block.heading} t={t} />
 
-      <ul className="mt-10 grid gap-5 md:grid-cols-3 lg:gap-6">
+      {/* Three doors sit in one row from md; four go two by two until xl,
+          where each still has room for its drawing and line. */}
+      <ul
+        className={`mt-10 grid gap-5 lg:gap-6 ${
+          block.doors.length === 4 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'
+        }`}
+      >
         {block.doors.map((door) => {
           const art = door.art ? ART[door.art] : undefined
           return (

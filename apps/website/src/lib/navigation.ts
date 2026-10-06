@@ -46,6 +46,9 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'whyOrganizer', href: '/why-organizer' },
   { key: 'howWeWork', href: '/how-we-work' },
   { key: 'services', href: '/services' },
+  // Menu and footer only: the bar holds five routes at 1024px, and the
+  // homepage's second door leads here.
+  { key: 'stalledProjects', href: '/stalled-projects' },
   { key: 'faq', href: '/faq' },
   { key: 'knowledge', href: '/knowledge' },
   { key: 'contact', href: '/contact' },
@@ -84,6 +87,7 @@ export const FOOTER_GROUPS: readonly { titleKey: string; items: readonly NavItem
     items: [
       { key: 'services', href: '/services' },
       { key: 'howWeWork', href: '/how-we-work' },
+      { key: 'stalledProjects', href: '/stalled-projects' },
       { key: 'projects', href: '/projects' },
     ],
   },

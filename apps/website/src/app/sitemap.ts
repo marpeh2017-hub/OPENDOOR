@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...(updatedAt ? { lastModified: updatedAt } : {}),
     })
   add('/')
-  for (const slug of ['about', 'why-organizer', 'how-we-work', 'trust']) {
+  for (const slug of ['about', 'why-organizer', 'how-we-work', 'trust', 'services', 'stalled-projects']) {
     const page = await getPageBySlug(slug)
     if (page && !page.seo?.he?.noIndex) add(`/${slug}`, page.updatedAt)
   }

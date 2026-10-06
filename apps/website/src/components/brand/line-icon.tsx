@@ -161,6 +161,13 @@ const PATHS = {
       <path d="M14 7l3 3" />
     </>
   ),
+  // Starting again: a project set moving.
+  restart: (
+    <>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+      <path d="M4.5 4v4h4" />
+    </>
+  ),
   // An architect's compass.
   drafting: (
     <>

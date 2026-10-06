@@ -36,7 +36,7 @@ export async function search(
 
   const results: SearchResult[] = []
 
-  const slugs = ['about', 'why-organizer', 'how-we-work', 'trust']
+  const slugs = ['about', 'why-organizer', 'how-we-work', 'trust', 'services', 'stalled-projects']
   const [pages, projects, articles, faq] = await Promise.all([
     Promise.all(slugs.map((slug) => getPageBySlug(slug))),
     getProjects({ limit: 100 }),
