@@ -745,7 +745,7 @@ export interface PageHeroBlock extends BlockBase {
   points?: PageHeroPoint[]
 }
 
-export type PageHeroVisual = PortraitVisual
+export type PageHeroVisual = PortraitVisual | OrganiseVisual
 
 /** A real photograph of a named person, with a line in their words. */
 export interface PortraitVisual {
@@ -754,6 +754,17 @@ export interface PortraitVisual {
   slotId: string
   quote?: LocalizedTextOptional
   quoteBy?: LocalizedTextOptional
+}
+
+/**
+ * /why-organizer's thesis, drawn: owners each on their own, then the same
+ * owners as one group around one table. The two captions are text under the
+ * drawing, so it never carries the point alone.
+ */
+export interface OrganiseVisual {
+  kind: 'organise'
+  before: { title: LocalizedText; body: LocalizedText }
+  after: { title: LocalizedText; body: LocalizedText }
 }
 
 export interface PageHeroPoint {

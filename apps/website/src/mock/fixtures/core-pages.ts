@@ -386,88 +386,39 @@ const aboutBlocks: PageBlock[] = [
 
 const whyOrganizerBlocks: PageBlock[] = [
   {
-    id: 'why-header',
-    type: 'PAGE_HEADER',
+    // The opening with the page's thesis drawn (approved 2026-10-06): the
+    // header said it in words only, and the page opened without a visual.
+    id: 'why-hero',
+    type: 'PAGE_HERO',
     order: 0,
     hidden: false,
+    eyebrow: { he: 'למה חברה מארגנת', en: 'Why an organising company' },
     heading: { he: 'למה בכלל צריך חברה מארגנת?', en: 'Why does an organising company matter?' },
     standfirst: {
       he: 'כי בתהליך התחדשות עירונית לכל צד יש תפקיד ואינטרס משלו, וזה טבעי. השאלה היא מי מארגן את הצד של בעלי הדירות.',
       en: 'Because every party in an urban-renewal process has a role and an interest of its own, which is entirely normal. The question is who organises the owners’ side.',
     },
-  },
-  {
-    // The worries /about used to open with, one per row, each beside what is
-    // done about it. The intro is that sentence's first clause. Every answer
-    // is wording the site already uses for the work it describes: the offer
-    // check (timelines, guarantees, the meaning in your language), the
-    // homepage's former "ניהול התהליך" item (the next step, coordinating the
-    // professionals and documents), and the services comparison (regular
-    // updates, one address). None is an outcome or a guarantee.
-    id: 'why-risks',
-    type: 'RISKS',
-    order: 1,
-    hidden: false,
-    heading: {
-      he: 'מה שבעלי הדירות רואים קודם, ומה עושים עם זה',
-      en: 'What owners see first, and what is done about it',
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
+    ctaHref: '/eligibility',
+    visual: {
+      kind: 'organise',
+      before: {
+        title: { he: 'בלי ארגון', en: 'Without organising' },
+        body: { he: 'כל בעל דירה לבד מול התהליך', en: 'Each owner facing the process alone' },
+      },
+      after: {
+        title: { he: 'עם ארגון', en: 'With organising' },
+        body: {
+          he: 'קבוצה אחת, עם נציגות, סביב שולחן אחד',
+          en: 'One group, with a representation, around one table',
+        },
+      },
     },
-    intro: {
-      he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים.',
-      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first.',
-    },
-    rows: [
-      {
-        id: 'risk-moving',
-        icon: 'home',
-        risk: { he: 'פינוי מהדירה', en: 'Having to move out' },
-        answer: {
-          he: 'בודקים את לוחות הזמנים ואת הבטוחות שבהצעה.',
-          en: 'We check the timelines and the guarantees in the offer.',
-        },
-      },
-      {
-        id: 'risk-uncertainty',
-        icon: 'question',
-        risk: { he: 'אי־ודאות', en: 'Uncertainty' },
-        answer: {
-          he: 'בכל שלב יודעים מה הצעד הבא, ומחליטים מתי לצאת אליו.',
-          en: 'At every stage you know the next step, and decide when to take it.',
-        },
-      },
-      {
-        id: 'risk-bureaucracy',
-        icon: 'files',
-        risk: { he: 'בירוקרטיה', en: 'Bureaucracy' },
-        answer: {
-          he: 'מרכזים את אנשי המקצוע, המסמכים והעדכונים.',
-          en: 'We coordinate the professionals, the documents and the updates.',
-        },
-      },
-      {
-        id: 'risk-disruption',
-        icon: 'cone',
-        risk: { he: 'טרדה יומיומית', en: 'Everyday disruption' },
-        answer: {
-          he: 'עדכונים שוטפים וכתובת אחת.',
-          en: 'Regular updates, and a single point of contact.',
-        },
-      },
-      {
-        id: 'risk-documents',
-        icon: 'document',
-        risk: { he: 'מסמכים משפטיים וכלכליים', en: 'Legal and financial documents' },
-        answer: {
-          he: 'מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם.',
-          en: 'We explain the financial and legal implications in your language.',
-        },
-      },
-    ],
   },
   {
     id: 'why-comparison',
     type: 'COMPARISON',
-    order: 2,
+    order: 1,
     hidden: false,
     heading: { he: 'מה משתנה כשהתהליך מאורגן', en: 'What changes when the process is organised' },
     baseline: {
@@ -549,6 +500,74 @@ const whyOrganizerBlocks: PageBlock[] = [
       he: 'הטור הראשון מתאר מבנה, לא אשמה. היזם הוא שותף הכרחי לפרויקט, והוא מייצג את עצמו ואת האינטרסים שלו, כפי שמצופה מכל צד מקצועי. תפקידנו הוא לוודא שגם לבעלי הדירות יש צד מאורגן.',
       en: 'The first column describes a structure, not a fault. The developer is an essential partner in the project, and represents its own interests as any professional party would. Our job is to make sure the owners have an organised side too.',
     },
+  },
+  {
+    // The worries /about used to open with, one per row, each beside what is
+    // done about it. The intro is that sentence's first clause. Every answer
+    // is wording the site already uses for the work it describes: the offer
+    // check (timelines, guarantees, the meaning in your language), the
+    // homepage's former "ניהול התהליך" item (the next step, coordinating the
+    // professionals and documents), and the services comparison (regular
+    // updates, one address). None is an outcome or a guarantee.
+    id: 'why-risks',
+    type: 'RISKS',
+    order: 2,
+    hidden: false,
+    heading: {
+      he: 'מה שבעלי הדירות רואים קודם, ומה עושים עם זה',
+      en: 'What owners see first, and what is done about it',
+    },
+    intro: {
+      he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים.',
+      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first.',
+    },
+    rows: [
+      {
+        id: 'risk-moving',
+        icon: 'home',
+        risk: { he: 'פינוי מהדירה', en: 'Having to move out' },
+        answer: {
+          he: 'בודקים את לוחות הזמנים ואת הבטוחות שבהצעה.',
+          en: 'We check the timelines and the guarantees in the offer.',
+        },
+      },
+      {
+        id: 'risk-uncertainty',
+        icon: 'question',
+        risk: { he: 'אי־ודאות', en: 'Uncertainty' },
+        answer: {
+          he: 'בכל שלב יודעים מה הצעד הבא, ומחליטים מתי לצאת אליו.',
+          en: 'At every stage you know the next step, and decide when to take it.',
+        },
+      },
+      {
+        id: 'risk-bureaucracy',
+        icon: 'files',
+        risk: { he: 'בירוקרטיה', en: 'Bureaucracy' },
+        answer: {
+          he: 'מרכזים את אנשי המקצוע, המסמכים והעדכונים.',
+          en: 'We coordinate the professionals, the documents and the updates.',
+        },
+      },
+      {
+        id: 'risk-disruption',
+        icon: 'cone',
+        risk: { he: 'טרדה יומיומית', en: 'Everyday disruption' },
+        answer: {
+          he: 'עדכונים שוטפים וכתובת אחת.',
+          en: 'Regular updates, and a single point of contact.',
+        },
+      },
+      {
+        id: 'risk-documents',
+        icon: 'document',
+        risk: { he: 'מסמכים משפטיים וכלכליים', en: 'Legal and financial documents' },
+        answer: {
+          he: 'מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם.',
+          en: 'We explain the financial and legal implications in your language.',
+        },
+      },
+    ],
   },
   {
     id: 'why-role-map',
@@ -633,32 +652,26 @@ const whyOrganizerBlocks: PageBlock[] = [
     },
   },
   {
-    // Moved from /about as the summary of this page, and rewritten on
-    // 2026-10-06 for the two roles: the organiser's work is the approved text
-    // unchanged, the developer sentence is new.
-    id: 'why-role',
-    type: 'CHAPTER',
-    order: 4,
-    hidden: false,
-    heading: { he: 'תפקידנו', en: 'Our role' },
-    body: {
-      he: 'כשאנחנו מארגנים את בעלי הדירות, אנחנו נותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות. כשאנחנו היזם, אנחנו אומרים את זה מראש, ובעלי הדירות מיוצגים על ידי עורך דין ושמאי שהם בוחרים.',
-      en: 'When we organise the owners, we give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners. When we are the developer, we say so up front, and the owners are represented by a lawyer and an appraiser they choose.',
-    },
-    emphasis: {
-      he: 'בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
-      en: 'In the end, you decide. We make sure you do so with all the information you need.',
-    },
-    slotId: 'PROCESS_STAGE_3',
-  },
-  {
+    // "תפקידנו" closes the page beside the call, in one band, as the approved
+    // design draws it. The text is the role text, unchanged.
     id: 'why-cta',
     type: 'CTA',
-    order: 5,
+    order: 4,
     hidden: false,
     heading: { he: 'רוצים לראות איך זה עובד בפועל?', en: 'Want to see how this works in practice?' },
     ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
     ctaHref: '/eligibility',
+    summary: {
+      heading: { he: 'תפקידנו', en: 'Our role' },
+      body: {
+        he: 'כשאנחנו מארגנים את בעלי הדירות, אנחנו נותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות. כשאנחנו היזם, אנחנו אומרים את זה מראש, ובעלי הדירות מיוצגים על ידי עורך דין ושמאי שהם בוחרים.',
+        en: 'When we organise the owners, we give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners. When we are the developer, we say so up front, and the owners are represented by a lawyer and an appraiser they choose.',
+      },
+      emphasis: {
+        he: 'בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
+        en: 'In the end, you decide. We make sure you do so with all the information you need.',
+      },
+    },
   },
 ]
 

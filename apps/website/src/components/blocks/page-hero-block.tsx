@@ -1,4 +1,4 @@
-import type { PageHeroBlock, PortraitVisual } from '@urban-renewal/api-contracts'
+import type { OrganiseVisual, PageHeroBlock, PageHeroVisual, PortraitVisual } from '@urban-renewal/api-contracts'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import type { Localizer } from '@/lib/localize'
@@ -24,7 +24,9 @@ import { getImageSlot, IMAGE_SLOTS } from '@/mock/fixtures/images'
  *
  * A closed set, chosen by `visual.kind`. `portrait` is a real photograph of
  * a named person (claim PERSON_PORTRAIT) with a line in their own words; if
- * the slot has no asset, nothing is drawn in its place.
+ * the slot has no asset, nothing is drawn in its place. `organise` draws
+ * /why-organizer's thesis in the brand's line style, mirrored on the English
+ * site so it reads in the page's direction, with its captions as text.
  */
 export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t: Localizer }) {
   const visual = block.visual ? await renderVisual(block.visual, t) : null
@@ -93,13 +95,60 @@ export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t:
   )
 }
 
-async function renderVisual(visual: PortraitVisual, t: Localizer): Promise<React.ReactNode> {
+async function renderVisual(visual: PageHeroVisual, t: Localizer): Promise<React.ReactNode> {
   switch (visual.kind) {
     case 'portrait':
       return <Portrait visual={visual} t={t} />
+    case 'organise':
+      return <Organise visual={visual} t={t} />
     default:
       return null
   }
+}
+
+function Organise({ visual, t }: { visual: OrganiseVisual; t: Localizer }) {
+  return (
+    <figure className="m-0 flex flex-col gap-4 rounded-[1.25rem] bg-teal-50 p-6 sm:p-7">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 520 260" className="block h-auto w-full ltr:-scale-x-100">
+        <g fill="none" stroke="#82878A" strokeWidth="2.5" strokeLinejoin="round">
+          <path d="M432 52l16-13 16 13v20h-32z" />
+          <path d="M478 118l14-11 14 11v17h-28z" />
+          <path d="M412 150l16-13 16 13v20h-32z" />
+          <path d="M470 200l14-11 14 11v17h-28z" />
+          <path d="M372 96l14-11 14 11v17h-28z" />
+          <path d="M380 214l12-10 12 10v15h-24z" />
+        </g>
+        <g fill="none" stroke="#0D8B8B" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M336 130H262" />
+          <path d="M278 114l-16 16 16 16" />
+        </g>
+        <rect x="66" y="96" width="132" height="68" rx="16" fill="#FFFFFF" stroke="#0D8B8B" strokeWidth="2.5" />
+        <g fill="#0D8B8B">
+          <circle cx="86" cy="76" r="11" />
+          <circle cx="118" cy="68" r="11" />
+          <circle cx="150" cy="68" r="11" />
+          <circle cx="180" cy="76" r="11" />
+          <circle cx="86" cy="184" r="11" />
+          <circle cx="118" cy="192" r="11" />
+          <circle cx="150" cy="192" r="11" />
+          <circle cx="180" cy="184" r="11" />
+          <circle cx="46" cy="130" r="11" />
+          <circle cx="218" cy="130" r="11" />
+        </g>
+        <path d="M120 116h24v32h-24z" fill="#E8F4F4" stroke="#0D8B8B" strokeWidth="2.5" />
+      </svg>
+      <figcaption className="grid grid-cols-2 gap-4">
+        <span>
+          <span className="block type-body font-bold text-gray-700">{t(visual.before.title)}</span>
+          <span className="block type-small text-gray-600">{t(visual.before.body)}</span>
+        </span>
+        <span>
+          <span className="block type-body font-bold text-teal-700">{t(visual.after.title)}</span>
+          <span className="block type-small text-teal-700">{t(visual.after.body)}</span>
+        </span>
+      </figcaption>
+    </figure>
+  )
 }
 
 async function Portrait({ visual, t }: { visual: PortraitVisual; t: Localizer }) {

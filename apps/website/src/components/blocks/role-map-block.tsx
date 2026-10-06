@@ -39,7 +39,7 @@ import { STROKE } from '@/components/brand/architecture'
  */
 export function RoleMapBlockView({ block, t }: { block: RoleMapBlock; t: Localizer }) {
   return (
-    <Section size="lg">
+    <Section size="md">
       {(block.heading || block.intro) && (
         <SectionHeading heading={block.heading} intro={block.intro} t={t} size="lg" />
       )}
