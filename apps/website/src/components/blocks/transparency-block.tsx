@@ -55,7 +55,7 @@ export async function TransparencyBlockView({
   const [tStages, tUi] = await Promise.all([getTranslations('stages'), getTranslations('ui')])
 
   return (
-    <Section tone="raised" size="lg">
+    <Section tone="raised" size="md">
       <div className="grid gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-20">
         <div className="lg:sticky lg:top-28">
           <SectionHeading
