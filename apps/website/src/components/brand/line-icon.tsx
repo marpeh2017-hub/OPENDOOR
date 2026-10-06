@@ -161,6 +161,15 @@ const PATHS = {
       <path d="M14 7l3 3" />
     </>
   ),
+  phone: (
+    <path d="M6.6 3.5h3l1.6 4.2-2 1.3a11 11 0 0 0 5.8 5.8l1.3-2 4.2 1.6v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z" />
+  ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3.5 6.5l8.5 6 8.5-6" />
+    </>
+  ),
   // Starting again: a project set moving.
   restart: (
     <>

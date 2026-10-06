@@ -433,6 +433,7 @@ export function EligibilityForm() {
               ? tForms('failureRejected')
               : tForms('failureBody')}
           retryLabel={tForms('retry')}
+          contactLabel={tForms('failureContact')}
           onRetry={() => {
             setFailureReason(null)
             setStatus('idle')

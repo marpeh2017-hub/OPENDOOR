@@ -171,7 +171,8 @@
       "contactConsentRequired": "צריך לאשר שנוכל לחזור אליכם בנוגע לפנייה.",
       "privacyConsentRequired": "צריך לאשר את מדיניות הפרטיות כדי לשלוח."
     },
-    "loadingLabel": "טוען"
+    "loadingLabel": "טוען",
+    "failureContact": "אפשר גם להתקשר או לכתוב לנו:"
   },
   "eligibility": {
     "title": "דברו איתנו על הבניין שלכם",
@@ -218,7 +219,8 @@
       "PINUY_BINUY": "פינוי־בינוי",
       "RIGHTS_CHECK": "בדיקת זכויות והיתכנות",
       "OWNER_ORGANIZING": "ארגון בעלי הדירות"
-    }
+    },
+    "directLabel": "מעדיפים לדבר? התקשרו או כתבו לנו:"
   },
   "contactPage": {
     "title": "יצירת קשר",

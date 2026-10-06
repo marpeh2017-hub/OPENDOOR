@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { STROKE } from '@/components/brand/architecture'
+import { ContactLine } from './contact-line'
 
 /**
  * Shared form parts.
@@ -119,11 +120,15 @@ export function SubmissionFailureNotice({
   body,
   retryLabel,
   onRetry,
+  contactLabel,
 }: {
   title: string
   body: string
   retryLabel: string
   onRetry: () => void
+  /** Lead-in for the phone and email shown under the retry button, so a
+   *  submission that cannot get through still leaves a way to reach us. */
+  contactLabel?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -147,6 +152,7 @@ export function SubmissionFailureNotice({
       >
         {retryLabel}
       </button>
+      {contactLabel && <ContactLine label={contactLabel} tone="alert" className="mt-4" />}
     </div>
   )
 }

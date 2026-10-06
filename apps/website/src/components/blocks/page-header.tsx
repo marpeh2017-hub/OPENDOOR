@@ -32,6 +32,7 @@ export function PageHeader({
   title,
   standfirst,
   children,
+  actions,
   tone = 'raised',
 }: {
   /** Short label above the title. Optional — most pages do not need one. */
@@ -41,6 +42,8 @@ export function PageHeader({
   standfirst?: string
   /** Breadcrumb or other chrome, rendered above the eyebrow. */
   children?: React.ReactNode
+  /** Rendered under the standfirst: a contact line or a pair of links. */
+  actions?: React.ReactNode
   /** `raised` for most pages; `page` where the header sits on a coloured
    *  section that follows immediately and two whites would read as a seam. */
   tone?: 'raised' | 'page'
@@ -81,6 +84,8 @@ export function PageHeader({
         {standfirst && (
           <p className="mt-5 max-w-2xl type-lead text-gray-600">{standfirst}</p>
         )}
+
+        {actions && <div className="mt-5">{actions}</div>}
       </div>
     </header>
   )

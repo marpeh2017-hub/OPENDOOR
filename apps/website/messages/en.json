@@ -171,7 +171,8 @@
       "contactConsentRequired": "Please agree that we may contact you about this enquiry.",
       "privacyConsentRequired": "Please accept the privacy policy to send this."
     },
-    "loadingLabel": "Loading"
+    "loadingLabel": "Loading",
+    "failureContact": "You can also call or email us:"
   },
   "eligibility": {
     "title": "Talk to us about your building",
@@ -218,7 +219,8 @@
       "PINUY_BINUY": "Pinuy-binuy",
       "RIGHTS_CHECK": "Rights and feasibility review",
       "OWNER_ORGANIZING": "Owners organising"
-    }
+    },
+    "directLabel": "Rather talk? Call or email us:"
   },
   "contactPage": {
     "title": "Contact us",

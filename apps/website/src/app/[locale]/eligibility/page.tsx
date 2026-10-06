@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/blocks/page-header'
 import { Section } from '@/components/blocks/section'
 import { EligibilityForm } from '@/components/forms/eligibility-form'
 import { STROKE } from '@/components/brand/architecture'
+import { ContactLine } from '@/components/forms/contact-line'
 
 /**
  * The eligibility check.
@@ -47,7 +48,13 @@ export default async function EligibilityPage({ params }: { params: Promise<{ lo
 
   return (
     <>
-      <PageHeader title={t('heading')} standfirst={t('standfirst')} />
+      {/* Phone and email under the heading: some owners would rather call,
+          and nobody should have to fill in a form to reach us. */}
+      <PageHeader
+        title={t('heading')}
+        standfirst={t('standfirst')}
+        actions={<ContactLine label={t('directLabel')} />}
+      />
 
       <Section size="md">
         <div className="grid gap-12 lg:grid-cols-[1.3fr_0.7fr] lg:items-start lg:gap-14">
