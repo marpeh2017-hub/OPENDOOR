@@ -116,51 +116,49 @@ const homepageBlocks: PageBlock[] = [
 
   /* 3 ── HOW WE WORK, AT A GLANCE ─────────────────────────────────────── */
   {
+    // The shape of the route, not its detail: a few words per stage, and a
+    // link to the eight stages on /how-we-work. Each line is cut from that
+    // page's text for the stage, or from the homepage's earlier wording.
     id: 'home-process',
     type: 'PROCESS',
     order: 2,
     hidden: false,
-    heading: { he: 'כך אנחנו עובדים', en: 'How we work' },
+    heading: {
+      he: 'מהרגע שיזם הגיע לבניין ועד המפתח',
+      en: 'From the day a developer comes to your building to the keys',
+    },
+    linkLabel: { he: 'לכל שמונת השלבים', en: 'All eight stages' },
+    linkHref: '/how-we-work',
     items: [
       {
         id: 'ph-1',
+        icon: 'search',
         title: { he: 'בדיקה', en: 'Review' },
-        body: {
-          he: 'בחינה ראשונית של המתחם ובדיקת ההיתכנות.',
-          en: 'An initial look at the complex, and a feasibility review.',
-        },
+        body: { he: 'בלי התחייבות מצדכם.', en: 'No commitment on your part.' },
       },
       {
         id: 'ph-2',
+        icon: 'users',
         title: { he: 'התארגנות', en: 'Organising' },
-        body: {
-          he: 'ארגון בעלי הדירות והקמת נציגות שתייצג אותם.',
-          en: 'Organising the owners and forming a representation to act for them.',
-        },
+        body: { he: 'נציגות מתוך בעלי הדירות.', en: 'A representation chosen from the owners.' },
       },
       {
         id: 'ph-3',
+        icon: 'scale',
         title: { he: 'בחירת אנשי מקצוע ויזם', en: 'Choosing professionals and a developer' },
-        body: {
-          he: 'מינוי אנשי המקצוע, בחינת חלופות ובחירת היזם.',
-          en: 'Appointing the professionals, reviewing alternatives, selecting the developer.',
-        },
+        body: { he: 'הבחירה של בעלי הדירות.', en: 'The owners’ choice.' },
       },
       {
         id: 'ph-4',
+        icon: 'clipboard',
         title: { he: 'תכנון וקידום', en: 'Planning and approvals' },
-        body: {
-          he: 'הסכמים, תכנון הפרויקט וקידומו מול הרשויות.',
-          en: 'Agreements, project design, and advancing it with the authorities.',
-        },
+        body: { he: 'הסכמים, תכנון ורשויות.', en: 'Agreements, design, the authorities.' },
       },
       {
         id: 'ph-5',
+        icon: 'key',
         title: { he: 'מימוש ואכלוס', en: 'Delivery' },
-        body: {
-          he: 'היתר, ביצוע, מסירה וחזרה לבתים החדשים.',
-          en: 'Permit, construction, handover and moving into the new homes.',
-        },
+        body: { he: 'מסירה וחזרה לבית החדש.', en: 'Handover, and home again.' },
       },
     ],
   },

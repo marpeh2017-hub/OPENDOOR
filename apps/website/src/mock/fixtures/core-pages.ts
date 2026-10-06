@@ -104,13 +104,59 @@ const aboutBlocks: PageBlock[] = [
     },
   },
   {
+    // The three chapters that used to sit here, one line each. Each line is
+    // cut from the approved text it links to, which is stated in full there:
+    // the offer check on /services, transparency on /trust, the role on
+    // /why-organizer.
+    id: 'about-principles',
+    type: 'PRINCIPLES',
+    order: 4,
+    hidden: false,
+    heading: { he: 'העמדה שלנו', en: 'Where we stand' },
+    items: [
+      {
+        id: 'pr-check',
+        icon: 'search',
+        title: { he: 'בודקים כל הצעה', en: 'We check every offer' },
+        body: {
+          he: 'משווים בין יזמים ומסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם.',
+          en: 'We compare developers and explain the financial and legal implications in your language.',
+        },
+        linkLabel: { he: 'בדיקת ההצעה', en: 'Checking the offer' },
+        href: '/services#services-offer-check',
+      },
+      {
+        id: 'pr-clear',
+        icon: 'eye',
+        title: { he: 'לא מטשטשים', en: 'We do not blur things' },
+        body: {
+          he: 'מסבירים איפה נמצאים הסיכונים ומה המשמעות של כל בחירה.',
+          en: 'We explain where the risks lie and what each choice means.',
+        },
+        linkLabel: { he: 'שקיפות בתהליך', en: 'Transparency in the process' },
+        href: '/trust#trust-in-process',
+      },
+      {
+        id: 'pr-decide',
+        icon: 'check-circle',
+        title: { he: 'אתם מחליטים', en: 'You decide' },
+        body: {
+          he: 'כל החלטה משמעותית עולה להכרעת בעלי הדירות.',
+          en: 'Every significant decision goes to the owners.',
+        },
+        linkLabel: { he: 'תפקידנו', en: 'Our role' },
+        href: '/why-organizer#why-role',
+      },
+    ],
+  },
+  {
     // Michael's approved text, unchanged in meaning: the large line is the
     // opening clause of his quotation (approved for this use on 2026-10-06),
     // the visible sentence is the biography's first, and the full quotation
     // and the rest of the biography open under "לקריאה נוספת".
     id: 'about-michael',
     type: 'PROFILE',
-    order: 4,
+    order: 5,
     hidden: false,
     name: { he: 'מיכאל רוזנבך', en: 'Michael Rosenbach' },
     pullQuote: {
@@ -136,7 +182,7 @@ const aboutBlocks: PageBlock[] = [
     // homepage cuts each to a line and links here.
     id: 'about-facts',
     type: 'VERIFIABLE_FACTS',
-    order: 5,
+    order: 6,
     hidden: false,
     tone: 'inverse',
     heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
@@ -180,7 +226,7 @@ const aboutBlocks: PageBlock[] = [
     // line appears. It repeats the message so this file shows what renders.
     id: 'about-cta',
     type: 'CTA',
-    order: 6,
+    order: 7,
     hidden: false,
     heading: {
       he: 'יזם הגיע לבניין שלכם?',
@@ -437,9 +483,19 @@ const howWeWorkBlocks: PageBlock[] = [
     },
   },
   {
+    // The eight stages at a glance, linking down to each. Reads the journey
+    // below rather than copying it.
+    id: 'how-index',
+    type: 'STAGE_INDEX',
+    order: 1,
+    hidden: false,
+    heading: { he: 'שמונת השלבים', en: 'The eight stages' },
+    journeyId: 'how-journey',
+  },
+  {
     id: 'how-journey',
     type: 'JOURNEY',
-    order: 1,
+    order: 2,
     hidden: false,
     variabilityNote: {
       he: 'פרויקטים נבדלים זה מזה במסלול התכנוני, במבנה הבעלויות, במורכבות המתחם ובלוחות הזמנים. חלק מהשלבים מתרחשים במקביל, וחלקם חוזרים על עצמם. התיאור שלהלן הוא המבנה הכללי ואינו סדר קבוע או התחייבות למועדים.',
@@ -448,6 +504,7 @@ const howWeWorkBlocks: PageBlock[] = [
     stages: [
       {
         id: 'st-1',
+        icon: 'search',
         title: { he: 'בדיקה ראשונית', en: 'First review' },
         body: {
           he: 'בחינה של המתחם ושל ההיתכנות הראשונית, לפני שנדרשת מבעלי הדירות התחייבות כלשהי.',
@@ -460,6 +517,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-2',
+        icon: 'chat',
         title: { he: 'היכרות עם בעלי הדירות', en: 'Meeting the owners' },
         body: {
           he: 'פגישה עם בעלי הדירות, הסבר על התהליך ומענה על שאלות. בשלב הזה אנחנו בעיקר מקשיבים: לכל בניין יש היסטוריה משלו, וכדאי להכיר אותה לפני שמתחילים.',
@@ -472,6 +530,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-3',
+        icon: 'users',
         title: { he: 'התארגנות ובניית נציגות', en: 'Organising and forming a representation' },
         body: {
           he: 'בחירת נציגות מתוך בעלי הדירות, שתרכז את התקשורת ותביא סוגיות להכרעה בפני כלל הבעלים.',
@@ -484,6 +543,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-4',
+        icon: 'files',
         title: { he: 'איסוף מידע ובדיקות מקצועיות', en: 'Gathering information and professional review' },
         body: {
           he: 'מינוי אנשי המקצוע מטעם בעלי הדירות ואיסוף המידע שנדרש כדי לקבל החלטות: מצב תכנוני, מצב הבעלויות והבדיקות הרלוונטיות למתחם.',
@@ -496,6 +556,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-5',
+        icon: 'clipboard',
         title: { he: 'גיבוש צרכים ועקרונות', en: 'Setting out needs and principles' },
         body: {
           he: 'מה חשוב לבעלי הדירות בפרויקט הזה. לא כל מתחם רוצה את אותו דבר, וכדאי שהעקרונות יהיו ברורים לפני שמדברים עם מישהו מבחוץ.',
@@ -508,6 +569,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-6',
+        icon: 'scale',
         title: { he: 'בחינת חלופות ויזמים', en: 'Examining alternatives and developers' },
         body: {
           he: 'פנייה לגורמים רלוונטיים, קבלת הצעות והשוואתן לפי אותם פרמטרים. ההשוואה מתועדת, כדי שאפשר יהיה לחזור אליה.',
@@ -520,6 +582,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-7',
+        icon: 'document-check',
         title: { he: 'קידום התהליך', en: 'Advancing the process' },
         body: {
           he: 'הסכמים, תכנון וקידום מול הרשות המקומית ומוסדות התכנון. זה בדרך כלל השלב הארוך ביותר, והוא תלוי בגורמים שאינם בשליטת אף אחד מהצדדים.',
@@ -528,6 +591,7 @@ const howWeWorkBlocks: PageBlock[] = [
       },
       {
         id: 'st-8',
+        icon: 'eye',
         title: { he: 'ליווי, עדכון ושקיפות לאורך הדרך', en: 'Support, updates and transparency throughout' },
         body: {
           he: 'התהליך לא נגמר בחתימה. עדכונים, תיעוד וגישה למידע ממשיכים עד המימוש, גם כשאין חדשות דרמטיות לדווח.',
@@ -541,7 +605,7 @@ const howWeWorkBlocks: PageBlock[] = [
     // personal area, beside the stages it follows.
     id: 'how-status',
     type: 'PROJECT_TRANSPARENCY',
-    order: 2,
+    order: 3,
     hidden: false,
     heading: {
       he: 'לדעת איפה הפרויקט עומד, ומה השלב הבא',
@@ -581,7 +645,7 @@ const howWeWorkBlocks: PageBlock[] = [
   {
     id: 'how-image',
     type: 'MEDIA',
-    order: 3,
+    order: 4,
     hidden: false,
     slotId: 'RESIDENT_MEETING',
     assets: [],
@@ -589,7 +653,7 @@ const howWeWorkBlocks: PageBlock[] = [
   {
     id: 'how-cta',
     type: 'CTA',
-    order: 4,
+    order: 5,
     hidden: false,
     heading: {
       he: 'השלב הראשון הוא בדיקה, והוא לא מחייב אתכם בכלום.',

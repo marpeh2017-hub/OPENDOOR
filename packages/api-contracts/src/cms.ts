@@ -51,6 +51,8 @@ export type BlockType =
   | 'DOORS'
   | 'FACT_STRIP'
   | 'PROFILE'
+  | 'PRINCIPLES'
+  | 'STAGE_INDEX'
 
 /**
  * Ordered for the block picker. A closed list, deliberately: adding a block is
@@ -63,9 +65,9 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   // Wayfinding
   'DOORS',
   // Editorial
-  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
+  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'PRINCIPLES', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
   // Process
-  'JOURNEY', 'PROCESS', 'PROJECT_TRANSPARENCY',
+  'JOURNEY', 'STAGE_INDEX', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
   'FEATURE_GRID', 'TRUST', 'VERIFIABLE_FACTS', 'FACT_STRIP', 'CHECKLIST', 'PROJECTS', 'KNOWLEDGE', 'FAQ', 'EXTERNAL_RESOURCES',
   // Other
@@ -374,6 +376,8 @@ export interface JourneyStage {
   asks?: LocalizedTextOptional
   /** Slot id for a per-stage graphic. Falls back to the architectural mark. */
   slotId?: string
+  /** Line-icon name for the stage index, from the renderer's fixed set. */
+  icon?: string
 }
 
 export interface MediaBlock extends BlockBase {
@@ -430,6 +434,13 @@ export interface FeatureGridBlock extends BlockBase {
   heading: LocalizedText
   intro?: LocalizedTextOptional
   items: NarrativeItem[]
+  /**
+   * Where the subject is stated in full, e.g. the homepage's five-stage
+   * process pointing at the eight stages on /how-we-work. Optional, and
+   * rendered only by the renderers that summarise: PROCESS today.
+   */
+  linkLabel?: LocalizedTextOptional
+  linkHref?: string
   /**
    * `inverse` puts VERIFIABLE_FACTS on the dark surface. Honoured by that
    * renderer only. The homepage keeps it light because the trust index is
@@ -608,12 +619,52 @@ export interface ProfileBlock extends BlockBase {
   slotId?: string
 }
 
+/**
+ * A short statement of position: a few principles, one line each, each linked
+ * to the page where it is stated in full.
+ *
+ * Built for "העמדה שלנו" on /about, which replaced three chapters whose full
+ * text now lives on /services, /trust and /why-organizer. A principle's line
+ * is cut from that text, never a new promise.
+ */
+export interface PrinciplesBlock extends BlockBase {
+  type: 'PRINCIPLES'
+  heading: LocalizedText
+  items: PrincipleItem[]
+}
+
+export interface PrincipleItem {
+  id: string
+  title: LocalizedText
+  body: LocalizedText
+  /** Line-icon name from the renderer's fixed set. */
+  icon?: string
+  /** Where the principle is stated in full, and what the link says. */
+  linkLabel?: LocalizedTextOptional
+  href?: string
+}
+
+/**
+ * The stages of a JOURNEY on the same page, at a glance: an icon and a title
+ * each, linking down to the stage.
+ *
+ * It REFERENCES the journey rather than copying it, so a stage renamed in the
+ * journey is renamed here too, and the two cannot disagree. A journeyId that
+ * matches no visible JOURNEY on the page renders nothing.
+ */
+export interface StageIndexBlock extends BlockBase {
+  type: 'STAGE_INDEX'
+  /** Names the index for assistive technology; it is a navigation landmark. */
+  heading: LocalizedText
+  journeyId: string
+}
+
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
   | PageHeaderBlock | StatementBlock | ProseBlock | ChapterBlock
   | ComparisonBlock | RoleMapBlock | JourneyBlock | ChecklistBlock
-  | DoorsBlock | FactStripBlock | ProfileBlock
+  | DoorsBlock | FactStripBlock | ProfileBlock | PrinciplesBlock | StageIndexBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 

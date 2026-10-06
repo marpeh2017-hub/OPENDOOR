@@ -18,6 +18,8 @@ import { ChecklistBlockView } from './checklist-block'
 import { DoorsBlockView } from './doors-block'
 import { FactStripBlockView } from './fact-strip-block'
 import { ProfileBlockView } from './profile-block'
+import { PrinciplesBlockView } from './principles-block'
+import { StageIndexBlockView } from './stage-index-block'
 
 /**
  * Renders a CMS page's blocks, in order.
@@ -59,7 +61,8 @@ const SELF_WRAPPING = new Set([
   'PAGE_HEADER', 'COMPARISON', 'ROLE_MAP', 'JOURNEY',
   'EXTERNAL_RESOURCES', 'MEDIA', 'CTA', 'FEATURE_GRID', 'PROCESS',
   'PROJECT_TRANSPARENCY', 'TRUST', 'VERIFIABLE_FACTS', 'TEXT_SECTION',
-  'CHAPTER', 'CHECKLIST', 'DOORS', 'FACT_STRIP', 'PROFILE',
+  'CHAPTER', 'CHECKLIST', 'DOORS', 'FACT_STRIP', 'PROFILE', 'PRINCIPLES',
+  'STAGE_INDEX',
 ])
 
 export async function PageBlocks({
@@ -127,6 +130,22 @@ export async function PageBlocks({
      * the image's side and the surface. Counted across the whole page rather
      * than per run, so a chapter after an interruption still alternates from
      * the last one a reader saw. */
+    /* ── REFERENCE RULE: a stage index reads its journey ──────────────────
+     * STAGE_INDEX copies nothing: it names the JOURNEY block whose stages it
+     * lists, and is resolved here, where the page's blocks are known. A name
+     * that matches no visible journey renders nothing. */
+    if (block.type === 'STAGE_INDEX') {
+      const journey = visible.find(
+        (candidate) => candidate.type === 'JOURNEY' && candidate.id === block.journeyId,
+      )
+      if (journey?.type === 'JOURNEY') {
+        rendered.push(
+          <StageIndexBlockView key={block.id} block={block} journey={journey} t={t} />,
+        )
+      }
+      continue
+    }
+
     if (block.type === 'CHAPTER') {
       rendered.push(
         <ChapterBlockView key={block.id} block={block} t={t} position={chapterPosition} />,
@@ -216,6 +235,9 @@ async function renderBlockBody(
 
     case 'PROFILE':
       return <ProfileBlockView block={block} t={t} />
+
+    case 'PRINCIPLES':
+      return <PrinciplesBlockView block={block} t={t} />
 
     case 'CHAPTER':
       // Normally rendered by the sequence rule above, which knows its position.

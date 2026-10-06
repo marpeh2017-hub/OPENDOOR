@@ -51,7 +51,9 @@ export async function ChapterBlockView({
     : []
 
   return (
-    <Section size="lg" tone={flipped ? 'sunken' : 'page'}>
+    // The id lets another page link to this chapter, as /about's principles
+    // do; the scroll margin keeps it clear of the sticky header.
+    <Section id={block.id} size="lg" tone={flipped ? 'sunken' : 'page'} className="scroll-mt-16">
       <div
         className={`flex flex-col gap-12 lg:items-center lg:gap-[4.5rem] ${
           flipped ? 'lg:flex-row-reverse' : 'lg:flex-row'

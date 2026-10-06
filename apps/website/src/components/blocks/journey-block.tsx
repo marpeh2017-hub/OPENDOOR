@@ -168,7 +168,9 @@ async function StageRow({
   )
 
   return (
-    <li className={`relative ${surface}`}>
+    // The id is the stage index's anchor (STAGE_INDEX); the scroll margin
+    // keeps the row clear of the sticky header when it lands.
+    <li id={stage.id} className={`relative scroll-mt-16 ${surface}`}>
       <Reveal>
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-12">
           {/* DOM order is always text first, so the reading and tab order stay
