@@ -169,10 +169,22 @@ export interface RoleNode {
 
 export interface CtaBlock extends BlockBase {
   type: 'CTA'
+  /** A short label above the heading, e.g. "השורה התחתונה". */
+  eyebrow?: LocalizedTextOptional
   heading: LocalizedText
   body?: LocalizedTextOptional
   ctaLabel: LocalizedText
   ctaHref: string
+  /**
+   * The page's argument in brief, set beside the call instead of above it:
+   * /why-organizer closes on "תפקידנו" and the call in one band. When present,
+   * `heading` is the call's own line and `summary.heading` is the section's.
+   */
+  summary?: {
+    heading: LocalizedText
+    body: LocalizedText
+    emphasis?: LocalizedTextOptional
+  }
 }
 
 /* ── Internal-page blocks (Pass 3A) ────────────────────────────────────── */

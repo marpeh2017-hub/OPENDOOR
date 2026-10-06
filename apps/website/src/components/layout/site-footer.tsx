@@ -19,7 +19,7 @@ export async function SiteFooter() {
   ])
 
   return (
-    <footer className="mt-24 border-t border-gray-200 bg-surface-sunken">
+    <footer className="border-t border-gray-200 bg-surface-sunken">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
