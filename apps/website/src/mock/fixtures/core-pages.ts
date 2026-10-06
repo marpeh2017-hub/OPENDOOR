@@ -41,14 +41,20 @@ import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
  *      launch (decided 2026-10-05), so /trust describes it in the present
  *      tense, limited to what the portal does. The representation workspace
  *      is not built and stays in the future tense, labelled.
- *   5. WHO PAYS IS SAID ONE WAY. Where a page states it (the homepage facts
- *      and the /about facts) it is the same two clauses: the developer alone
- *      pays the company, and owners pay it nothing directly. Flagged for
- *      legal review.
+ *   5. WHO PAYS IS SAID PER ROLE. As the owners' organiser, the company is
+ *      paid by the developer alone and owners pay it nothing directly (the
+ *      two clauses legal review flagged; keep both). As the developer, it
+ *      earns from the project itself. Stated in full on /about only. The
+ *      developer-role sentence needs the company's and legal confirmation.
  *   6. ONE PLACE PER IDEA. Since the 2026-10 design review each approved text
  *      is stated in full on one page: the offer check on /services, the
  *      transparency text on /trust, "תפקידנו" on /why-organizer, the facts on
  *      /about. Elsewhere it gets at most a line and a link.
+ *   7. TWO ROLES, SAID OPENLY (2026-10-06). The company is the developer in
+ *      some projects and the owners' organiser in others. Nothing on the site
+ *      says "we are not the developer"; every description of the company
+ *      says which role it plays where, and that the role is written into the
+ *      agreement. The owners' lawyer and appraiser are always theirs.
  */
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -63,8 +69,8 @@ const aboutBlocks: PageBlock[] = [
     hidden: false,
     eyebrow: { he: 'OpenDoor Group', en: 'OpenDoor Group' },
     heading: {
-      he: 'התחדשות עירונית שמתחילה בבעלי הדירות',
-      en: 'Urban renewal that starts with the apartment owners',
+      he: 'יזמות והתחדשות עירונית שמתחילה בבעלי הדירות',
+      en: 'Urban renewal and development that starts with the owners',
     },
   },
   {
@@ -80,23 +86,29 @@ const aboutBlocks: PageBlock[] = [
     type: 'STATEMENT',
     order: 2,
     hidden: false,
+    // Since 2026-10-06: the company is also a developer, so its opening line
+    // is what that gives owners rather than a claim to sit only on their side.
     statement: {
-      he: 'אתם צריכים מישהו שנמצא בצד שלכם.',
-      en: 'You need someone on your side.',
+      he: 'אנחנו מכירים את שני צדי השולחן.',
+      en: 'We know both sides of the table.',
     },
   },
   {
-    // The company in its own words. The lead is "תפקידנו" cut down to its first
-    // sentence; that text is stated in full on /why-organizer. How and why the
-    // company was founded has not been supplied, so it is a marked placeholder
-    // (`pending`) that renders outside production only.
+    // The company in its own words: both roles, and what being a developer
+    // gives the owners. How and why the company was founded has not been
+    // supplied, so it is a marked placeholder (`pending`) that renders outside
+    // production only.
     id: 'about-story',
     type: 'PROSE',
     order: 3,
     hidden: false,
     lead: {
-      he: 'אנחנו לא יזמים ולא בונים. אנחנו מארגנים ומלווים בעלי דירות בתהליכי התחדשות עירונית, ונותנים לכם שליטה בתהליך.',
-      en: 'We are not developers, and we do not build. We organise and support apartment owners through urban renewal, and give you control of the process.',
+      he: 'OpenDoor Group היא חברת יזמות והתחדשות עירונית. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים את בעלי הדירות ומלווים אותם מול יזם אחר. בשני המקרים נקודת המוצא זהה: פרויקט טוב מתחיל בבעלי דירות שמבינים מה הם מקבלים.',
+      en: 'OpenDoor Group is an urban renewal and development company. In some projects we are the developer; in others we organise the owners and support them in dealing with another developer. Either way we start from the same place: a good project starts with owners who understand what they are getting.',
+    },
+    body: {
+      he: 'כיוון שאנחנו מכירים את הצד של היזם מבפנים, אנחנו יודעים מה לבדוק בהצעה, איפה פרויקטים נתקעים, ואיך מחזירים אותם לתנועה.',
+      en: 'Because we know the developer’s side from the inside, we know what to check in an offer, where projects stall, and how to get them moving again.',
     },
     pending: {
       he: 'ממתין לנוסח מהחברה: שניים או שלושה משפטים על איך ולמה הוקמה OpenDoor.',
@@ -187,8 +199,8 @@ const aboutBlocks: PageBlock[] = [
     tone: 'inverse',
     heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
     intro: {
-      he: 'בלי ממוצעים ובלי הבטחות. שלוש עובדות שאפשר לאמת מול רשם החברות ומול ההסכם.',
-      en: 'No averages and no promises. Three facts you can verify at the registrar and in the agreement.',
+      he: 'בלי ממוצעים ובלי הבטחות. עובדות שאפשר לאמת מול רשם החברות ומול ההסכם.',
+      en: 'No averages and no promises. Facts you can verify at the registrar and in the agreement.',
     },
     items: [
       {
@@ -201,21 +213,32 @@ const aboutBlocks: PageBlock[] = [
         },
       },
       {
+        id: 'about-vf-role',
+        icon: 'document-check',
+        title: { he: 'התפקיד שלנו, בגלוי', en: 'Our role, in the open' },
+        body: {
+          he: 'בכל פרויקט אנחנו אומרים כבר בשיחה הראשונה אם אנחנו היזם או המארגנים מטעם בעלי הדירות, וזה כתוב בהסכם שתקבלו לידיים.',
+          en: 'In every project we say in the first conversation whether we are the developer or the organiser acting for the owners, and it is written into the agreement you will hold.',
+        },
+      },
+      {
+        // Positioning rule 5. The organiser sentence is the legally reviewed
+        // wording; the developer sentence awaits the company's confirmation.
         id: 'about-vf-who-pays',
         icon: 'receipt',
         title: { he: 'מי משלם לנו', en: 'Who pays us' },
         body: {
-          he: 'התשלום מגיע מהיזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר, וזה כתוב בהסכם שתקבלו לידיים.',
-          en: 'The developer pays us. Apartment owners pay the company nothing directly — and that is written into the agreement you will hold.',
+          he: 'כשאנחנו מארגנים את בעלי הדירות מול יזם, התשלום לחברה מגיע מהיזם בלבד, ובעלי הדירות אינם משלמים לחברה תשלום ישיר. כשאנחנו היזם, הרווח שלנו מגיע מהפרויקט עצמו, כמו של כל יזם. בשני המקרים זה כתוב בהסכם.',
+          en: 'When we organise the owners in dealing with a developer, the developer alone pays us, and owners pay the company nothing directly. When we are the developer, we earn from the project itself, as any developer does. Either way, it is written into the agreement.',
         },
       },
       {
-        id: 'about-vf-boundary',
-        icon: 'scale',
-        title: { he: 'מה אנחנו לא', en: 'What we are not' },
+        id: 'about-vf-professionals',
+        icon: 'users',
+        title: { he: 'אנשי מקצוע מטעמכם', en: 'Professionals on your side' },
         body: {
-          he: 'לא היזם, לא חברת הבנייה, לא הקבלן. אנחנו מרכזים את התהליך, ובעלי הדירות בוחרים את אנשי המקצוע ואת היזם.',
-          en: 'Not the developer, not the construction company, not the contractor. We coordinate the process — the owners choose the professionals and the developer.',
+          he: 'עורך הדין והשמאי של בעלי הדירות נבחרים על ידכם ופועלים רק בשבילכם. אנחנו יכולים להמליץ על אנשי מקצוע שאנחנו מכירים, והבחירה נשארת שלכם.',
+          en: 'The owners’ lawyer and appraiser are chosen by you and act only for you. We can recommend professionals we know; the choice stays yours.',
         },
       },
     ],
@@ -446,8 +469,8 @@ const whyOrganizerBlocks: PageBlock[] = [
       side: 'owners',
       label: { he: 'חברה מארגנת · OpenDoor Group', en: 'Organising company · OpenDoor Group' },
       detail: {
-        he: 'מארגנת את בעלי הדירות, מרכזת את העבודה מול שאר הגורמים ומנהלת את התהליך לאורך זמן. אינה יזם ואינה מבצעת בנייה.',
-        en: 'Organises the owners, coordinates the work with the other parties, and manages the process over time. Not the developer, and does not build.',
+        he: 'מארגנת את בעלי הדירות, מרכזת את העבודה מול שאר הגורמים ומנהלת את התהליך לאורך זמן. בפרויקט שבו OpenDoor היא גם היזם, זה נאמר מראש ונכתב בהסכם.',
+        en: 'Organises the owners, coordinates the work with the other parties, and manages the process over time. In a project where OpenDoor is also the developer, that is said up front and written into the agreement.',
       },
     },
     parties: [
@@ -494,16 +517,17 @@ const whyOrganizerBlocks: PageBlock[] = [
     },
   },
   {
-    // Moved from /about, in full, as the summary of this page. /about keeps
-    // its first sentence.
+    // Moved from /about as the summary of this page, and rewritten on
+    // 2026-10-06 for the two roles: the organiser's work is the approved text
+    // unchanged, the developer sentence is new.
     id: 'why-role',
     type: 'CHAPTER',
     order: 4,
     hidden: false,
     heading: { he: 'תפקידנו', en: 'Our role' },
     body: {
-      he: 'אנחנו לא יזמים ולא בונים. אנחנו מארגנים ומלווים בעלי דירות בתהליכי התחדשות עירונית, ונותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות.',
-      en: 'We are not developers, and we do not build. We organise and support apartment owners through urban renewal and give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners.',
+      he: 'כשאנחנו מארגנים את בעלי הדירות, אנחנו נותנים לכם שליטה בתהליך: מנגישים את המידע, בונים נציגות מסודרת, מביאים חלופות, מנהלים משא ומתן, ומעלים כל החלטה משמעותית להכרעת בעלי הדירות. כשאנחנו היזם, אנחנו אומרים את זה מראש, ובעלי הדירות מיוצגים על ידי עורך דין ושמאי שהם בוחרים.',
+      en: 'When we organise the owners, we give you control of the process: we make the information accessible, build an orderly representation, bring alternatives, lead negotiations, and put every significant decision to the owners. When we are the developer, we say so up front, and the owners are represented by a lawyer and an appraiser they choose.',
     },
     emphasis: {
       he: 'בסוף, אתם מחליטים. אנחנו דואגים שתעשו את זה עם כל המידע שצריך.',
@@ -886,8 +910,17 @@ const servicesBlocks: PageBlock[] = [
     type: 'FEATURE_GRID',
     order: 1,
     hidden: false,
-    heading: { he: 'מה כולל הליווי', en: 'What the support covers' },
+    heading: { he: 'מה אנחנו עושים', en: 'What we do' },
     items: [
+      {
+        id: 'sv-dev',
+        icon: 'building',
+        title: { he: 'יזמות', en: 'Development' },
+        body: {
+          he: 'בפרויקטים שבהם אנחנו היזם, אנחנו מובילים את הפרויקט ואחראים לקידומו, עם שותפים ואנשי מקצוע שאנחנו עובדים איתם. בעלי הדירות מיוצגים על ידי עורך דין ושמאי שהם בוחרים.',
+          en: 'In projects where we are the developer, we lead the project and are responsible for moving it forward, with partners and professionals we work with. The owners are represented by a lawyer and an appraiser they choose.',
+        },
+      },
       {
         id: 'sv-1',
         icon: 'search',
@@ -1010,12 +1043,12 @@ export const CORE_PAGES: readonly CmsPage[] = [
       he: {
         title: 'השירותים שלנו',
         description:
-          'מעטפת מקצועית מלאה לבעלי דירות בהתחדשות עירונית: בדיקת היתכנות, התארגנות ונציגות, מכרז יזמים, ליווי עד לחתימה וניהול הבנייה והאכלוס.',
+          'יזמות ומעטפת מקצועית מלאה לבעלי דירות בהתחדשות עירונית: בדיקת היתכנות, התארגנות ונציגות, מכרז יזמים, ליווי עד לחתימה וניהול הבנייה והאכלוס.',
       },
       en: {
         title: 'Our services',
         description:
-          'A complete professional envelope for apartment owners in urban renewal: feasibility, organising and representation, a developer tender, support to signature, and oversight through construction and occupancy.',
+          'Development, and a complete professional envelope for apartment owners in urban renewal: feasibility, organising and representation, a developer tender, support to signature, and oversight through construction and occupancy.',
       },
     },
     updatedAt: '2026-10-06T00:00:00.000Z',
@@ -1031,12 +1064,12 @@ export const CORE_PAGES: readonly CmsPage[] = [
       he: {
         title: 'מי אנחנו',
         description:
-          'OpenDoor Group מארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית בירושלים והסביבה, מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'OpenDoor Group היא חברת יזמות והתחדשות עירונית בירושלים והסביבה. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים ומלווים את בעלי הדירות.',
       },
       en: {
         title: 'About us',
         description:
-          'OpenDoor Group organises and supports apartment owners through urban renewal in and around Jerusalem, from the first review to the finished project.',
+          'OpenDoor Group is an urban renewal and development company in and around Jerusalem. In some projects we are the developer; in others we organise and support the owners.',
       },
     },
     updatedAt: '2026-10-06T00:00:00.000Z',

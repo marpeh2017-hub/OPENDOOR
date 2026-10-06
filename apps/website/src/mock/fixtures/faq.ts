@@ -35,8 +35,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
       en: 'What does it cost us, the apartment owners?',
     },
     answer: {
-      he: 'בפרויקטים של התחדשות עירונית מקובל שהיזם נושא בעלויות הפרויקט, ובדרך כלל גם בשכר אנשי המקצוע מטעם בעלי הדירות (עורך דין, שמאי ומפקח), בשכר הדירה בתקופת הבנייה ובהובלה. מה בדיוק משולם, ועל ידי מי, נקבע בהסכם של כל פרויקט. לחברה עצמה בעלי הדירות אינם משלמים תשלום ישיר: התשלום לחברה מגיע מהיזם בלבד, וזה כתוב בהסכם.',
-      en: 'In urban-renewal projects the developer customarily bears the project costs, and usually also the fees of the professionals acting for the owners (lawyer, appraiser and supervisor), rent during construction and moving costs. Exactly what is paid, and by whom, is set in each project agreement. Owners pay the company itself nothing directly: the company is paid by the developer only, and that is written into the agreement.',
+      he: 'בפרויקטים של התחדשות עירונית מקובל שהיזם נושא בעלויות הפרויקט, ובדרך כלל גם בשכר אנשי המקצוע מטעם בעלי הדירות (עורך דין, שמאי ומפקח), בשכר הדירה בתקופת הבנייה ובהובלה. מה בדיוק משולם, ועל ידי מי, נקבע בהסכם של כל פרויקט. כשאנחנו מארגנים את בעלי הדירות מול יזם, בעלי הדירות אינם משלמים לחברה תשלום ישיר: התשלום לחברה מגיע מהיזם בלבד, וזה כתוב בהסכם. כשאנחנו היזם, זה נאמר מראש וכתוב בהסכם.',
+      en: 'In urban-renewal projects the developer customarily bears the project costs, and usually also the fees of the professionals acting for the owners (lawyer, appraiser and supervisor), rent during construction and moving costs. Exactly what is paid, and by whom, is set in each project agreement. When we organise the owners in dealing with a developer, owners pay the company nothing directly: the company is paid by the developer only, and that is written into the agreement. When we are the developer, that is said up front and written into the agreement.',
     },
   },
   {
@@ -110,8 +110,8 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
     group: { he: 'מי אתם ומה התפקיד שלכם?', en: 'Who you are and what you do' },
     question: { he: 'מה בדיוק התפקיד שלכם?', en: 'What exactly is your role?' },
     answer: {
-      he: 'אנחנו מארגנים ומלווים את בעלי הדירות: מארגנים את המתחם, מביאים בעלי מקצוע מטעמכם, מנהלים את המכרז מול היזמים ומלווים אתכם עד לקבלת המפתח. התשלום לחברה מגיע מהיזם בלבד, וזה כתוב בהסכם שתקבלו לידיים.',
-      en: 'We organise and support the apartment owners: we organise the complex, bring in professionals on your behalf, run the tender with the developers and stay with you until you receive the key. The company is paid by the developer only, and that is written into the agreement you will hold.',
+      he: 'OpenDoor Group היא חברת יזמות והתחדשות עירונית. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים ומלווים את בעלי הדירות: מארגנים את המתחם, מביאים בעלי מקצוע מטעמכם, מנהלים את המכרז מול היזמים ומלווים אתכם עד לקבלת המפתח. התפקיד שלנו בכל פרויקט נאמר מראש וכתוב בהסכם שתקבלו לידיים.',
+      en: 'OpenDoor Group is an urban renewal and development company. In some projects we are the developer; in others we organise and support the owners: we organise the complex, bring in professionals on your behalf, run the tender with the developers and stay with you until you receive the key. Our role in each project is stated up front and written into the agreement you will hold.',
     },
   },
 ]

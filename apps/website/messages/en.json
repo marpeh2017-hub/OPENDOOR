@@ -1,7 +1,7 @@
 {
   "brand": {
     "name": "OpenDoor Group",
-    "tagline": "Organising and supporting apartment owners in urban renewal, in and around Jerusalem",
+    "tagline": "Urban renewal and development in and around Jerusalem",
     "wordmarkTagline": "Urban renewal"
   },
   "nav": {
@@ -137,7 +137,7 @@
     "emptyTitle": "Projects will be published here once the owners have approved.",
     "emptyBody": "Project information will appear here after review and approval for publication. Contact us directly about your building or a particular complex.",
     "eyebrow": "Urban renewal in Israel",
-    "standfirst": "Complexes where we organise and support the apartment owners. Each project shows the information verified as of its update date.",
+    "standfirst": "Projects where we are the developer, and complexes where we organise and support the owners. Each project shows the information verified as of its update date.",
     "verifiedOnly": "Each project shows verified information only. A missing figure does not mean nothing is happening; it means nobody has verified that figure for publication yet."
   },
   "forms": {
@@ -155,7 +155,7 @@
     "failureRateLimited": "There were too many attempts in a short time. Your details are still here; please try again in a few minutes.",
     "failureRejected": "Some details did not pass validation. Review the fields, fix what is needed and try again.",
     "retry": "Try again",
-    "noCost": "OpenDoor Group is paid only by the developer. Apartment owners do not pay the company directly.",
+    "noCost": "When we organise the owners in dealing with a developer, OpenDoor Group is paid by the developer only, and owners pay the company nothing directly.",
     "errors": {
       "addressRequired": "We need the building address to look at the complex.",
       "cityRequired": "Please tell us which city the building is in.",
@@ -281,7 +281,7 @@
     "eyebrow": "Our role in this project",
     "heading": "We organise the owners’ side of the table.",
     "body1": "We gather the information, coordinate the professionals the owners have appointed, and bring alternatives that can actually be compared. The decisions stay with the owners.",
-    "body2": "We are not the developer and we do not carry out construction. Nor do we replace independent legal, valuation or planning advice: that comes from professionals the owners appoint, and the responsibility stays with them."
+    "body2": "We do not replace independent legal, valuation or planning advice: that comes from professionals the owners appoint, and the responsibility stays with them. Our role in each project is stated up front and written into the agreement."
   },
   "projectSections": {
     "stageEyebrow": "Where the process stands",
@@ -311,7 +311,7 @@
     "approvals": "Approvals",
     "permits": "Permits",
     "developer": "Developer",
-    "developerNote": "The developer is a separate party in the process. OpenDoor Group is paid only by the developer; apartment owners do not pay the company directly.",
+    "developerNote": "OpenDoor Group’s role in the project, and who pays it, are stated up front and written into the agreement with the owners.",
     "dates": "Dates",
     "estimate": "estimate",
     "type": {

@@ -53,8 +53,8 @@ const homepageBlocks: PageBlock[] = [
       en: 'A new chapter for your building. Led by you.',
     },
     subheading: {
-      he: 'OpenDoor Group מארגנת בעלי דירות בהתחדשות עירונית בירושלים והסביבה. אנחנו מלווים. אתם מחליטים.',
-      en: 'OpenDoor Group organises apartment owners through urban renewal in and around Jerusalem. We guide. You decide.',
+      he: 'OpenDoor Group היא חברת יזמות והתחדשות עירונית בירושלים והסביבה. אנחנו מארגנים את בעלי הדירות, מביאים לשולחן את האנשים הנכונים, ומקדמים גם פרויקטים שנתקעו. אתם מחליטים.',
+      en: 'OpenDoor Group is an urban renewal and development company in and around Jerusalem. We organise the owners, bring the right people to the table, and move stalled projects forward too. You decide.',
     },
     primaryCtaLabel: {
       he: 'דברו איתנו על הבניין שלכם',
@@ -83,8 +83,8 @@ const homepageBlocks: PageBlock[] = [
         art: 'side',
         title: { he: 'מי אנחנו', en: 'Who we are' },
         body: {
-          he: 'החברה שנמצאת בצד של בעלי הדירות.',
-          en: 'The company on the owners’ side.',
+          he: 'יזמות והתחדשות עירונית, עם בעלי הדירות במרכז.',
+          en: 'Urban renewal and development, with the owners at the centre.',
         },
         linkLabel: { he: 'הכירו אותנו', en: 'Meet us' },
         href: '/about',
@@ -166,10 +166,12 @@ const homepageBlocks: PageBlock[] = [
   /* 4 ── THE FACTS, ONE LINE EACH ─────────────────────────────────────── */
   /**
    * The short form of /about's "מה שאפשר לבדוק עלינו", which is the one place
-   * the facts appear in full. Each line here is that page's wording cut down,
-   * never reworded: the payment line keeps both clauses (the developer alone
-   * pays; owners pay the company nothing DIRECTLY), because the second clause
-   * is the one legal review flagged.
+   * the facts appear in full. Each line here is that page's wording cut down.
+   *
+   * Since 2026-10-06 the company is the developer in some projects and the
+   * owners' organiser in others, so the strip no longer says "what we are
+   * not" or who pays: it says the role rule instead, and who pays is stated
+   * on /about, where it can be said for each role.
    *
    * The company number is literal copy rather than read from `site-config`:
    * this is editorial text a person may reword in the CMS.
@@ -194,21 +196,21 @@ const homepageBlocks: PageBlock[] = [
         },
       },
       {
-        id: 'vf-who-pays',
-        icon: 'receipt',
-        title: { he: 'מי משלם לנו', en: 'Who pays us' },
+        id: 'vf-role',
+        icon: 'document-check',
+        title: { he: 'התפקיד שלנו, בגלוי', en: 'Our role, in the open' },
         body: {
-          he: 'היזם בלבד. בעלי הדירות אינם משלמים לחברה תשלום ישיר.',
-          en: 'The developer alone. Apartment owners pay the company nothing directly.',
+          he: 'בכל פרויקט אומרים מראש אם אנחנו היזם או המארגנים, וזה כתוב בהסכם.',
+          en: 'In every project we say up front whether we are the developer or the organiser, and it is written into the agreement.',
         },
       },
       {
-        id: 'vf-boundary',
-        icon: 'scale',
-        title: { he: 'מה אנחנו לא', en: 'What we are not' },
+        id: 'vf-professionals',
+        icon: 'users',
+        title: { he: 'אנשי מקצוע מטעמכם', en: 'Professionals on your side' },
         body: {
-          he: 'לא היזם, לא חברת הבנייה, לא הקבלן.',
-          en: 'Not the developer, not the construction company, not the contractor.',
+          he: 'עורך הדין והשמאי של בעלי הדירות נבחרים על ידכם.',
+          en: 'The owners’ lawyer and appraiser are chosen by you.',
         },
       },
     ],
@@ -296,8 +298,8 @@ const homepageBlocks: PageBlock[] = [
     hidden: true,
     heading: { he: 'פרויקטים', en: 'Projects' },
     intro: {
-      he: 'מתחמים שOpenDoor Group מלווה ומארגנת.',
-      en: 'Complexes OpenDoor accompanies and organises.',
+      he: 'פרויקטים שבהם אנחנו היזם, ומתחמים שאנחנו מארגנים ומלווים.',
+      en: 'Projects where we are the developer, and complexes we organise and support.',
     },
     limit: 3,
   },
@@ -330,14 +332,14 @@ export const MOCK_PAGES: readonly CmsPage[] = [
     blocks: homepageBlocks,
     seo: {
       he: {
-        title: 'OpenDoor Group: ארגון וליווי בעלי דירות בהתחדשות עירונית בירושלים',
+        title: 'OpenDoor Group: יזמות והתחדשות עירונית בירושלים',
         description:
-          'OpenDoor Group מארגנת ומלווה בעלי דירות בתהליכי התחדשות עירונית בירושלים והסביבה, מהבדיקה הראשונית ועד למימוש הפרויקט.',
+          'OpenDoor Group היא חברת יזמות והתחדשות עירונית בירושלים והסביבה. מארגנים את בעלי הדירות, מביאים לשולחן יזמים ואנשי מקצוע, ומקדמים גם פרויקטים שנתקעו.',
       },
       en: {
-        title: 'OpenDoor Group: organising apartment owners in urban renewal in Jerusalem',
+        title: 'OpenDoor Group: urban renewal and development in Jerusalem',
         description:
-          'OpenDoor Group organises and supports apartment owners through urban-renewal processes in and around Jerusalem, from the initial review to realising the project.',
+          'OpenDoor Group is an urban renewal and development company in and around Jerusalem. We organise apartment owners, bring developers and professionals to the table, and move stalled projects forward.',
       },
     },
     updatedAt: '2026-10-06T00:00:00.000Z',
