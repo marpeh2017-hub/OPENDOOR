@@ -53,6 +53,7 @@ export type BlockType =
   | 'PROFILE'
   | 'PRINCIPLES'
   | 'STAGE_INDEX'
+  | 'RISKS'
 
 /**
  * Ordered for the block picker. A closed list, deliberately: adding a block is
@@ -65,7 +66,7 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   // Wayfinding
   'DOORS',
   // Editorial
-  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'PRINCIPLES', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
+  'STATEMENT', 'PROSE', 'CHAPTER', 'PROFILE', 'PRINCIPLES', 'RISKS', 'TEXT_SECTION', 'COMPARISON', 'ROLE_MAP',
   // Process
   'JOURNEY', 'STAGE_INDEX', 'PROCESS', 'PROJECT_TRANSPARENCY',
   // Lists and collections
@@ -659,12 +660,37 @@ export interface StageIndexBlock extends BlockBase {
   journeyId: string
 }
 
+/**
+ * The worries owners have first, each beside what is done about it.
+ *
+ * Positioning rule 3 (core-pages.ts): naming a worry owners already have is
+ * not a warning, provided the page answers it at once. This block makes that
+ * structural: a row cannot exist without its answer. Answers describe work
+ * the company does, in wording already approved elsewhere on the site; they
+ * are never an outcome or a guarantee.
+ */
+export interface RisksBlock extends BlockBase {
+  type: 'RISKS'
+  heading: LocalizedText
+  intro?: LocalizedTextOptional
+  rows: RiskRow[]
+}
+
+export interface RiskRow {
+  id: string
+  risk: LocalizedText
+  answer: LocalizedText
+  /** Line-icon name for the worry, from the renderer's fixed set. */
+  icon?: string
+}
+
 export type PageBlock =
   | HeroBlock | TextSectionBlock | CtaBlock | MediaBlock
   | CollectionBlock | FeatureGridBlock | PortalBlock
   | PageHeaderBlock | StatementBlock | ProseBlock | ChapterBlock
   | ComparisonBlock | RoleMapBlock | JourneyBlock | ChecklistBlock
   | DoorsBlock | FactStripBlock | ProfileBlock | PrinciplesBlock | StageIndexBlock
+  | RisksBlock
 
 /* ── Pages ─────────────────────────────────────────────────────────────── */
 

@@ -258,16 +258,72 @@ const whyOrganizerBlocks: PageBlock[] = [
     },
   },
   {
-    // Moved from the opening of /about: the worries owners have before
-    // anything else, named so the page can answer them.
+    // The worries /about used to open with, one per row, each beside what is
+    // done about it. The intro is that sentence's first clause. Every answer
+    // is wording the site already uses for the work it describes: the offer
+    // check (timelines, guarantees, the meaning in your language), the
+    // homepage's former "ניהול התהליך" item (the next step, coordinating the
+    // professionals and documents), and the services comparison (regular
+    // updates, one address). None is an outcome or a guarantee.
     id: 'why-risks',
-    type: 'PROSE',
+    type: 'RISKS',
     order: 1,
     hidden: false,
-    lead: {
-      he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים: פינוי מהדירה, אי־ודאות, בירוקרטיה, טרדה יומיומית, ומסמכים משפטיים וכלכליים שלא תמיד קל להבין.',
-      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first: having to move out, uncertainty, bureaucracy, everyday disruption, and legal and financial documents that are not always easy to follow.',
+    heading: {
+      he: 'מה שבעלי הדירות רואים קודם, ומה עושים עם זה',
+      en: 'What owners see first, and what is done about it',
     },
+    intro: {
+      he: 'גם כשיזם רציני מגיע לשכונה שלכם, בעלי דירות רואים קודם כל את הסיכונים.',
+      en: 'Even when a serious developer comes to your neighbourhood, owners see the risks first.',
+    },
+    rows: [
+      {
+        id: 'risk-moving',
+        icon: 'home',
+        risk: { he: 'פינוי מהדירה', en: 'Having to move out' },
+        answer: {
+          he: 'בודקים את לוחות הזמנים ואת הבטוחות שבהצעה.',
+          en: 'We check the timelines and the guarantees in the offer.',
+        },
+      },
+      {
+        id: 'risk-uncertainty',
+        icon: 'question',
+        risk: { he: 'אי־ודאות', en: 'Uncertainty' },
+        answer: {
+          he: 'בכל שלב יודעים מה הצעד הבא, ומחליטים מתי לצאת אליו.',
+          en: 'At every stage you know the next step, and decide when to take it.',
+        },
+      },
+      {
+        id: 'risk-bureaucracy',
+        icon: 'files',
+        risk: { he: 'בירוקרטיה', en: 'Bureaucracy' },
+        answer: {
+          he: 'מרכזים את אנשי המקצוע, המסמכים והעדכונים.',
+          en: 'We coordinate the professionals, the documents and the updates.',
+        },
+      },
+      {
+        id: 'risk-disruption',
+        icon: 'cone',
+        risk: { he: 'טרדה יומיומית', en: 'Everyday disruption' },
+        answer: {
+          he: 'עדכונים שוטפים וכתובת אחת.',
+          en: 'Regular updates, and a single point of contact.',
+        },
+      },
+      {
+        id: 'risk-documents',
+        icon: 'document',
+        risk: { he: 'מסמכים משפטיים וכלכליים', en: 'Legal and financial documents' },
+        answer: {
+          he: 'מסבירים את המשמעות הכלכלית והמשפטית בשפה שלכם.',
+          en: 'We explain the financial and legal implications in your language.',
+        },
+      },
+    ],
   },
   {
     id: 'why-comparison',

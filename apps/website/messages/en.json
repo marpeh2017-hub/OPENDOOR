@@ -129,7 +129,8 @@
     "menu": "Menu",
     "opensInNewTab": "opens in a new tab",
     "readMore": "Read more",
-    "readLess": "Show less"
+    "readLess": "Show less",
+    "expandRowHint": "Select a row to read the full explanation."
   },
   "projects": {
     "noFilterResults": "No projects match these filters. Try another city or project type.",
