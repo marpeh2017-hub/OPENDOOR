@@ -61,10 +61,10 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800">
                 {t('asideEyebrow')}
               </p>
-              <h2 className="mt-3 text-lg font-semibold leading-snug text-gray-900">
+              <h2 className="mt-3 type-h3 font-semibold text-gray-900">
                 {t('asideTitle')}
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-gray-600">{t('asideBody')}</p>
+              <p className="mt-3 type-body text-gray-600">{t('asideBody')}</p>
               <Link
                 href="/eligibility"
                 className="group mt-4 inline-flex items-center gap-2 text-[15px] font-semibold text-teal-700"

@@ -47,11 +47,11 @@ export async function ProcessBlockView({ block, t }: { block: FeatureGridBlock; 
           {block.items.map((item, index) => (
             <li key={item.id}>
               {slots[index].asset && <ContextFigure asset={slots[index].asset} t={t} uniform captionHidden />}
-              <h3 className="mt-4 flex min-h-14 items-baseline gap-3 text-xl font-semibold text-gray-900">
+              <h3 className="mt-4 flex min-h-14 items-baseline gap-3 type-h3 font-semibold text-gray-900">
                 <span className="shrink-0 text-sm tabular-nums text-teal-700">{String(index + 1).padStart(2, '0')}{' '}</span>
                 {t(item.title)}
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-gray-600">{t(item.body)}</p>
+              <p className="mt-2 type-body text-gray-600">{t(item.body)}</p>
             </li>
           ))}
         </ol>

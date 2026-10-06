@@ -101,7 +101,7 @@ export async function SiteHeader() {
               416px and wrapped onto two lines. */}
           <Link
             href="/eligibility"
-            className="inline-flex min-h-[44px] items-center rounded-md bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 lg:min-h-0 lg:px-4"
+            className="inline-flex min-h-[44px] items-center rounded-md bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:text-white transition-colors hover:bg-teal-700 lg:min-h-0 lg:px-4"
           >
             <span className="hidden md:inline lg:hidden xl:inline">{tCta('eligibility')}</span>
             <span className="md:hidden lg:inline xl:hidden">{tCta('eligibilityShort')}</span>

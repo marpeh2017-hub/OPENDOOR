@@ -15,9 +15,9 @@ export async function PageShell({ title }: { title: string }) {
   const t = await getTranslations('common')
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
-      <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">{title}</h1>
-      <p className="mt-4 max-w-prose text-base text-gray-600">{t('comingSoon')}</p>
-      <p className="mt-2 max-w-prose text-sm text-gray-500">{t('placeholderNotice')}</p>
+      <h1 className="type-h1 font-bold text-gray-900">{title}</h1>
+      <p className="mt-4 max-w-prose type-body text-gray-600">{t('comingSoon')}</p>
+      <p className="mt-2 max-w-prose type-small text-gray-500">{t('placeholderNotice')}</p>
     </div>
   )
 }

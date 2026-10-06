@@ -50,7 +50,7 @@ export default async function ResidentPortalPage({
             </p>
             <Link
               href={PERSONAL_AREA_HREF}
-              className="mb-12 inline-flex min-h-12 items-center justify-center rounded-md bg-teal-600 px-7 py-4 text-base font-semibold text-white hover:bg-teal-700"
+              className="mb-12 inline-flex min-h-12 items-center justify-center rounded-md bg-teal-600 px-7 py-4 text-base font-semibold text-white hover:text-white hover:bg-teal-700"
             >
               {he ? 'כניסה לאזור האישי' : 'Sign in to your personal area'}
             </Link>

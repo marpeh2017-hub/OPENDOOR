@@ -65,6 +65,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // One light design: browsers that darken pages on their own leave it alone.
+  // Matches `color-scheme` in globals.css.
+  colorScheme: 'only light',
 }
 
 export function generateStaticParams() {

@@ -20,7 +20,7 @@ import { LineIcon, isLineIcon } from '@/components/brand/line-icon'
 export function ChecklistBlockView({ block, t }: { block: ChecklistBlock; t: Localizer }) {
   return (
     <Section size="lg">
-      <h2 className="max-w-3xl text-balance text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-[2.375rem] sm:leading-[1.2]">
+      <h2 className="max-w-3xl text-balance type-h2 font-bold text-gray-900">
         {t(block.heading)}
       </h2>
 
@@ -40,7 +40,7 @@ export function ChecklistBlockView({ block, t }: { block: ChecklistBlock; t: Loc
                 <span aria-hidden="true" className="block text-[13px] tabular-nums text-gray-500">
                   {String(index + 1).padStart(2, '0')}
                 </span>
-                <span className="mt-0.5 block text-xl font-semibold text-gray-900">
+                <span className="mt-0.5 block type-h3 font-semibold text-gray-900">
                   {t(item.label)}
                 </span>
               </div>
@@ -50,7 +50,7 @@ export function ChecklistBlockView({ block, t }: { block: ChecklistBlock; t: Loc
       </ul>
 
       {block.note && (
-        <p className="mt-11 max-w-prose text-lg leading-[1.7] text-gray-700 sm:text-justify">
+        <p className="mt-11 max-w-prose type-lead text-gray-700">
           {t(block.note)}
         </p>
       )}

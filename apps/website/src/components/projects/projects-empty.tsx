@@ -69,7 +69,7 @@ export async function ProjectsEmpty() {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/eligibility"
-              className="group inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-md bg-teal-600 px-7 py-4 text-base font-semibold text-white transition-colors hover:bg-teal-700"
+              className="group inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-md bg-teal-600 px-7 py-4 text-base font-semibold text-white hover:text-white transition-colors hover:bg-teal-700"
             >
               {tCta('eligibility')}
               <span

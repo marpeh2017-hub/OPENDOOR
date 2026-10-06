@@ -96,15 +96,11 @@ export function SectionHeading({
   align?: 'start' | 'center'
   className?: string
 }) {
-  const scale = {
-    md: 'text-2xl sm:text-3xl',
-    lg: 'text-3xl sm:text-4xl',
-    // Editorial scale. Tight leading and negative tracking, because Heebo at
-    // this size set with body leading looks loose in both scripts.
-    xl: 'text-3xl leading-[1.12] tracking-tight sm:text-display-sm lg:text-display-md',
-  }[size]
-
-  const introScale = size === 'xl' ? 'text-lg sm:text-xl' : 'text-base sm:text-lg'
+  // Every section heading is the scale's h2 (globals.css). `size` now only
+  // sets the measure: since the 2026-10 review a section no longer chooses its
+  // own heading size, which is how the site came to have seven of them.
+  const scale = 'type-h2'
+  const introScale = size === 'xl' ? 'type-lead' : 'type-body'
   const alignment = align === 'center' ? 'text-center mx-auto' : 'text-start'
   const measure = size === 'xl' ? 'max-w-4xl' : 'max-w-2xl'
 
@@ -117,10 +113,10 @@ export function SectionHeading({
         </p>
       )}
       {t(heading) && (
-        <h2 className={`font-bold tracking-tight text-gray-900 ${scale}`}>{t(heading)}</h2>
+        <h2 className={`font-bold text-gray-900 text-balance ${scale}`}>{t(heading)}</h2>
       )}
       {intro && (
-        <p className={`mt-5 leading-relaxed text-gray-600 ${introScale}`}>{t(intro)}</p>
+        <p className={`mt-4 text-gray-600 ${introScale}`}>{t(intro)}</p>
       )}
     </div>
   )

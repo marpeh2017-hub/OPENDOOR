@@ -77,7 +77,7 @@ export function PortalBlockView({ block, t }: { block: PortalBlock; t: Localizer
           <SectionHeading heading={block.heading} intro={block.intro} t={t} size="lg" />
 
           {block.buildNotice && (
-            <p className="mt-6 max-w-xl border-s-2 border-teal-300 ps-4 text-sm leading-relaxed text-gray-600">
+            <p className="mt-6 max-w-xl border-s-2 border-teal-300 ps-4 type-small text-gray-600">
               {t(block.buildNotice)}
             </p>
           )}
@@ -89,13 +89,13 @@ export function PortalBlockView({ block, t }: { block: PortalBlock; t: Localizer
                   <span aria-hidden="true" className="h-px w-5 bg-teal-600" />
                   {t(group.audience)}
                 </p>
-                <h3 className="mt-3 text-xl font-semibold text-gray-900">{t(group.title)}</h3>
+                <h3 className="mt-3 type-h3 font-semibold text-gray-900">{t(group.title)}</h3>
 
                 {/* A plain divided list. Ticks against every line would read as
                     "shipped", and the build notice above says otherwise. */}
                 <ul className="mt-4 divide-y divide-gray-200 border-y border-gray-200">
                   {group.items.map((item, index) => (
-                    <li key={index} className="py-2.5 text-[15px] leading-relaxed text-gray-700">
+                    <li key={index} className="py-2.5 type-body text-gray-700">
                       {t(item)}
                     </li>
                   ))}
@@ -107,7 +107,7 @@ export function PortalBlockView({ block, t }: { block: PortalBlock; t: Localizer
           {block.ctaLabel && block.ctaHref && (
             <Link
               href={block.ctaHref}
-              className="group mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-teal-700"
+              className="group mt-8 inline-flex min-h-11 items-center gap-2 type-body font-semibold text-teal-600 hover:text-teal-700"
             >
               <span className="border-b border-transparent pb-0.5 transition-colors group-hover:border-teal-700">
                 {t(block.ctaLabel)}

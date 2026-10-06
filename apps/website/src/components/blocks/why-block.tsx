@@ -33,8 +33,8 @@ export function WhyBlockView({ block, t }: { block: FeatureGridBlock; t: Localiz
               </span>
             )}
             <div className="min-w-0">
-              <h3 className="text-xl font-semibold leading-snug text-gray-900">{t(item.title)}</h3>
-              <p className="mt-2 text-base leading-relaxed text-gray-600">{t(item.body)}</p>
+              <h3 className="type-h3 font-semibold text-gray-900">{t(item.title)}</h3>
+              <p className="mt-2 type-body text-gray-600">{t(item.body)}</p>
             </div>
           </li>
         ))}

@@ -71,7 +71,7 @@ export function PageHeader({
         {/* `text-balance` keeps a long Hebrew title from leaving one orphaned
             word on the last line, which is very visible at this size. */}
         <h1
-          className={`max-w-[20ch] text-[2rem] font-bold leading-[1.12] tracking-[-0.02em] text-gray-900 text-balance sm:text-4xl lg:text-display-sm ${
+          className={`max-w-[20ch] type-h1 font-bold text-gray-900 text-balance ${
             eyebrow ? 'mt-5' : ''
           }`}
         >
@@ -79,7 +79,7 @@ export function PageHeader({
         </h1>
 
         {standfirst && (
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-gray-600">{standfirst}</p>
+          <p className="mt-5 max-w-2xl type-lead text-gray-600">{standfirst}</p>
         )}
       </div>
     </header>

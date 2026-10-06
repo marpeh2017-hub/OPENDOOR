@@ -68,24 +68,20 @@ export async function ChapterBlockView({
             </span>
           )}
 
-          <h2
-            className={`text-3xl font-bold leading-[1.15] tracking-tight text-gray-900 sm:text-[2.5rem] ${
-              block.numeral ? 'mt-6' : ''
-            }`}
-          >
+          <h2 className={`type-h2 font-bold text-gray-900 ${block.numeral ? 'mt-6' : ''}`}>
             {t(block.heading)}
           </h2>
 
           {block.quote && (
             <blockquote className="m-0 mt-8">
-              <p className="text-2xl font-bold leading-[1.35] tracking-[-0.01em] text-teal-800 sm:text-justify sm:text-[2rem]">
+              <p className="type-h3 font-bold text-teal-700">
                 {t(block.quote)}
               </p>
             </blockquote>
           )}
 
           {block.lead && (
-            <p className="mt-6 text-lg leading-[1.7] text-gray-900 sm:text-justify sm:text-xl">
+            <p className="mt-6 type-lead text-gray-900">
               {t(block.lead)}
             </p>
           )}
@@ -93,10 +89,7 @@ export async function ChapterBlockView({
           {paragraphs.length > 0 && (
             <div className={`space-y-4 ${block.quote ? 'mt-8' : 'mt-5'}`}>
               {paragraphs.map((paragraph, index) => (
-                <p
-                  key={index}
-                  className="text-base leading-[1.75] text-gray-600 sm:text-justify sm:text-lg"
-                >
+                <p key={index} className="type-body text-gray-600">
                   {paragraph}
                 </p>
               ))}
@@ -104,7 +97,7 @@ export async function ChapterBlockView({
           )}
 
           {block.emphasis && (
-            <p className="mt-6 text-lg font-semibold leading-relaxed text-teal-600 sm:text-xl">
+            <p className="mt-6 type-lead font-semibold text-teal-600">
               {t(block.emphasis)}
             </p>
           )}

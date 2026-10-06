@@ -73,7 +73,7 @@ export async function JourneyBlockView({
       {/* The variability note, before anything numbered. */}
       <div className="border-y border-gray-200 bg-surface-sunken">
         <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-          <p className="max-w-4xl text-[15px] leading-relaxed text-gray-700">
+          <p className="max-w-4xl type-small text-gray-700">
             {t(block.variabilityNote)}
           </p>
         </div>
@@ -137,17 +137,17 @@ async function StageRow({
         >
           {String(index + 1).padStart(2, '0')}
         </span>
-        <Heading className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+        <Heading className="type-h3 font-bold text-gray-900">
           {t(stage.title)}
         </Heading>
       </div>
 
-      <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-gray-600 sm:text-base">
+      <p className="mt-4 max-w-xl type-body text-gray-600">
         {t(stage.body)}
       </p>
 
       {stage.asks && (
-        <p className="mt-5 max-w-xl border-s-2 border-teal-300 ps-4 text-sm leading-relaxed text-gray-700">
+        <p className="mt-5 max-w-xl border-s-2 border-teal-300 ps-4 type-small text-gray-700">
           <span className="font-semibold text-gray-900">{asksLabel}</span>{' '}
           {t(stage.asks)}
         </p>

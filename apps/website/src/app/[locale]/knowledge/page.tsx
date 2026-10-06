@@ -62,11 +62,11 @@ export default async function KnowledgePage({ params }: { params: Promise<{ loca
                       {loc.text(a.category)}
                     </span>
                   )}
-                  <h2 className="mt-2 text-[17px] font-semibold leading-snug text-gray-900">
+                  <h2 className="mt-2 type-h3 font-semibold text-gray-900">
                     {loc.text(a.title)}
                   </h2>
                   {a.summary && (
-                    <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                    <p className="mt-2 type-body text-gray-600">
                       {loc.text(a.summary)}
                     </p>
                   )}

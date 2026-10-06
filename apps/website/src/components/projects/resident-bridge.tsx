@@ -81,7 +81,7 @@ export async function ResidentBridge() {
             {available ? (
               <Link
                 href={PERSONAL_AREA_HREF}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-teal-600 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-teal-700"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-teal-600 px-6 py-3.5 text-[15px] font-semibold text-white hover:text-white transition-colors hover:bg-teal-700"
               >
                 {t('signIn')}
               </Link>

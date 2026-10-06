@@ -42,7 +42,7 @@ export function TextSectionBlockView({
       <div className="grid gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
         <div>
           {block.heading && (
-            <h2 className="max-w-[14ch] text-3xl font-bold leading-[1.15] tracking-tight text-gray-900 text-balance sm:text-4xl">
+            <h2 className="max-w-[14ch] type-h2 font-bold text-gray-900 text-balance">
               {t(block.heading)}
             </h2>
           )}
@@ -50,14 +50,14 @@ export function TextSectionBlockView({
           {/* The standfirst carries the definition, so it is set at reading
               scale rather than at footnote scale. */}
           {standfirst && (
-            <p className="mt-6 text-lg leading-relaxed text-gray-800 sm:text-xl sm:leading-relaxed">
+            <p className="mt-6 type-lead text-gray-800">
               {standfirst}
             </p>
           )}
 
           <div className="mt-5 max-w-prose space-y-4">
             {body.map((paragraph, index) => (
-              <p key={index} className="text-base leading-relaxed text-gray-600">
+              <p key={index} className="type-body text-gray-600">
                 {paragraph}
               </p>
             ))}

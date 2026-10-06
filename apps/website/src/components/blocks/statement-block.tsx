@@ -45,7 +45,7 @@ export function StatementBlockView({
   return (
     <div>
       <Heading
-        className={`max-w-[16ch] text-2xl font-bold leading-[1.18] tracking-[-0.015em] text-balance sm:text-3xl lg:text-[2rem] ${headingColor}`}
+        className={`max-w-[16ch] font-bold text-balance ${Heading === 'h1' ? 'type-h1' : 'type-h2'} ${headingColor}`}
       >
         {t(block.statement)}
       </Heading>
@@ -53,7 +53,7 @@ export function StatementBlockView({
       <span aria-hidden="true" className={`mt-6 block h-0.5 w-16 ${ruleColor}`} />
 
       {block.support && (
-        <p className={`mt-6 max-w-md text-base leading-relaxed sm:text-lg ${supportColor}`}>
+        <p className={`mt-6 max-w-md type-body ${supportColor}`}>
           {t(block.support)}
         </p>
       )}

@@ -63,11 +63,11 @@ export default async function EligibilityPage({ params }: { params: Promise<{ lo
                 className="absolute start-0 top-0 h-[2px] w-[40%]"
                 style={{ background: STROKE.teal }}
               />
-              <h2 className="text-[17px] font-semibold text-gray-900">{t('asideTitle')}</h2>
+              <h2 className="type-h3 font-semibold text-gray-900">{t('asideTitle')}</h2>
               <div className="mt-4 divide-y divide-gray-200">
-                <p className="pb-3.5 text-sm leading-relaxed text-gray-600">{t('aside1')}</p>
-                <p className="py-3.5 text-sm leading-relaxed text-gray-600">{t('aside2')}</p>
-                <p className="pt-3.5 text-sm leading-relaxed text-gray-600">{t('aside3')}</p>
+                <p className="pb-3.5 type-small text-gray-600">{t('aside1')}</p>
+                <p className="py-3.5 type-small text-gray-600">{t('aside2')}</p>
+                <p className="pt-3.5 type-small text-gray-600">{t('aside3')}</p>
               </div>
             </div>
 
@@ -75,7 +75,7 @@ export default async function EligibilityPage({ params }: { params: Promise<{ lo
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800">
                 {t('privacyTitle')}
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-gray-700">{t('privacyBody')}</p>
+              <p className="mt-3 type-small text-gray-700">{t('privacyBody')}</p>
             </div>
           </aside>
         </div>

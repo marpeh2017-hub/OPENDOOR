@@ -51,7 +51,7 @@ export async function FaqBlockView({
           <div className="divide-y divide-gray-200 border-y border-gray-200">
             {items.map((item) => (
               <details key={item.id} className="odg-faq group">
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-6 text-start text-lg font-medium text-gray-900 outline-none marker:content-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 group-open:text-teal-900 sm:text-xl">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-6 text-start type-h3 font-semibold text-gray-900 outline-none marker:content-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 group-open:text-teal-900 sm:text-xl">
                   {item.question}
                   {/* Two rules forming a plus; the vertical one collapses when
                       open. Direction-neutral, so nothing needs mirroring. */}
@@ -64,7 +64,7 @@ export async function FaqBlockView({
                   </span>
                 </summary>
                 <div className="odg-faq-body">
-                  <p className="overflow-hidden pb-6 pe-9 text-base leading-relaxed text-gray-600">
+                  <p className="overflow-hidden pb-6 pe-9 type-body text-gray-600">
                     {item.answer}
                   </p>
                 </div>
@@ -74,7 +74,7 @@ export async function FaqBlockView({
 
           <Link
             href="/faq"
-            className="group mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-teal-700"
+            className="group mt-8 inline-flex min-h-11 items-center gap-2 type-body font-semibold text-teal-600 hover:text-teal-700"
           >
             <span className="border-b border-transparent pb-0.5 transition-colors group-hover:border-teal-700">
               {tLinks('allQuestions')}

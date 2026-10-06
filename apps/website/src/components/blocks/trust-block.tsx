@@ -33,11 +33,11 @@ export function TrustBlockView({ block, t }: { block: FeatureGridBlock; t: Local
     <Section tone="inverse" size="lg">
       <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
         <div>
-          <h2 className="max-w-[15ch] text-3xl font-bold leading-[1.15] tracking-tight text-white text-balance sm:text-4xl lg:text-display-sm">
+          <h2 className="max-w-[15ch] type-h2 font-bold text-white text-balance">
             {t(block.heading)}
           </h2>
           {block.intro && (
-            <p className="mt-6 max-w-md text-base leading-relaxed text-gray-300 sm:text-lg">
+            <p className="mt-4 max-w-md type-body text-gray-300">
               {t(block.intro)}
             </p>
           )}
@@ -57,8 +57,8 @@ export function TrustBlockView({ block, t }: { block: FeatureGridBlock; t: Local
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div>
-                <h3 className="text-base font-semibold text-white">{t(item.title)}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-300">{t(item.body)}</p>
+                <h3 className="type-h3 font-semibold text-white">{t(item.title)}</h3>
+                <p className="mt-1.5 type-body text-gray-300">{t(item.body)}</p>
               </div>
             </li>
           ))}

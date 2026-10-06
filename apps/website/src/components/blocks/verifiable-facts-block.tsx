@@ -61,7 +61,7 @@ export function VerifiableFactsBlockView({
       <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
         <div>
           <h2
-            className={`max-w-[15ch] text-3xl font-bold leading-[1.15] tracking-tight text-balance sm:text-4xl ${
+            className={`max-w-[15ch] type-h2 font-bold text-balance ${
               inverse ? 'text-white' : 'text-gray-900'
             }`}
           >
@@ -69,7 +69,7 @@ export function VerifiableFactsBlockView({
           </h2>
           {block.intro && (
             <p
-              className={`mt-5 max-w-md text-base leading-relaxed sm:text-lg ${
+              className={`mt-4 max-w-md type-body ${
                 inverse ? 'text-gray-300' : 'text-gray-600'
               }`}
             >
@@ -101,11 +101,11 @@ export function VerifiableFactsBlockView({
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div>
-                <h3 className={`text-lg font-semibold ${inverse ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`type-h3 font-semibold ${inverse ? 'text-white' : 'text-gray-900'}`}>
                   {t(item.title)}
                 </h3>
                 <p
-                  className={`mt-2 text-[15px] leading-relaxed ${
+                  className={`mt-1.5 type-body ${
                     inverse ? 'text-gray-300' : 'text-gray-600'
                   }`}
                 >

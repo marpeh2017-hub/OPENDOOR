@@ -54,8 +54,8 @@ export function RoleMapBlockView({ block, t }: { block: RoleMapBlock; t: Localiz
                 className="absolute inset-x-0 top-0 h-0.5"
                 style={{ background: STROKE.tealDeep }}
               />
-              <h3 className="text-base font-semibold text-gray-900">{t(node.label)}</h3>
-              <p className="mt-2.5 text-sm leading-relaxed text-gray-600">{t(node.detail)}</p>
+              <h3 className="type-h3 font-semibold text-gray-900">{t(node.label)}</h3>
+              <p className="mt-2 type-body text-gray-600">{t(node.detail)}</p>
             </li>
           ))}
         </ul>
@@ -85,10 +85,10 @@ export function RoleMapBlockView({ block, t }: { block: RoleMapBlock; t: Localiz
             className="absolute inset-x-0 top-0 h-[3px]"
             style={{ background: STROKE.teal }}
           />
-          <h3 className="text-base font-semibold text-gray-900 sm:text-lg">
+          <h3 className="type-h3 font-semibold text-gray-900">
             {t(block.organiser.label)}
           </h3>
-          <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-gray-600 sm:text-[15px]">
+          <p className="mt-2 max-w-3xl type-body text-gray-600">
             {t(block.organiser.detail)}
           </p>
         </div>
@@ -101,7 +101,7 @@ export function RoleMapBlockView({ block, t }: { block: RoleMapBlock; t: Localiz
         </ul>
 
         {/* ── the correction, beside the diagram ────────────────────────── */}
-        <p className="mt-10 max-w-3xl border-s-2 border-teal-300 ps-5 text-[15px] leading-relaxed text-gray-700">
+        <p className="mt-10 max-w-3xl border-s-2 border-teal-300 ps-5 type-small text-gray-700">
           {t(block.independenceNote)}
         </p>
       </div>
@@ -120,8 +120,8 @@ function PartyEntry({ node, t }: { node: RoleNode; t: Localizer }) {
   return (
     <li>
       <span aria-hidden="true" className="block h-px w-full bg-gray-300" />
-      <h3 className="mt-4 text-[15px] font-semibold text-gray-900">{t(node.label)}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-gray-600">{t(node.detail)}</p>
+      <h3 className="mt-4 type-h3 font-semibold text-gray-900">{t(node.label)}</h3>
+      <p className="mt-2 type-body text-gray-600">{t(node.detail)}</p>
     </li>
   )
 }

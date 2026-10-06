@@ -91,7 +91,7 @@ export async function PageBlocks({
             <div className="lg:sticky lg:top-28 lg:self-start">
               <StatementBlockView block={block} t={t} />
             </div>
-            <ProseBlockView block={next} t={t} justify />
+            <ProseBlockView block={next} t={t} />
           </div>
         </Section>,
       )

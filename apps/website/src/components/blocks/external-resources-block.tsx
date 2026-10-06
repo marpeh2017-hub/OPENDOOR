@@ -64,7 +64,7 @@ export async function ExternalResourcesBlockView({
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group inline-flex min-h-[44px] items-start gap-2 text-[15px] font-semibold text-teal-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+              className="group inline-flex min-h-[44px] items-start gap-2 type-body font-semibold text-teal-600 underline-offset-4 hover:text-teal-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
             >
               <span>{t(resource.label)}</span>
               {/* Decorative: the meaning is carried by the sr-only phrase. */}
@@ -86,7 +86,7 @@ export async function ExternalResourcesBlockView({
             </a>
 
             {resource.description && (
-              <p className="mt-2.5 text-sm leading-relaxed text-gray-600">
+              <p className="mt-2 type-body text-gray-600">
                 {t(resource.description)}
               </p>
             )}

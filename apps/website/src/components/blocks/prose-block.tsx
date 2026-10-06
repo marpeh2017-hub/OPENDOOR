@@ -25,36 +25,22 @@ import { PendingNote } from '@/components/brand/pending-note'
  * characters a line, and a full-width paragraph on a 1440px screen is exactly
  * that mistake.
  */
-export function ProseBlockView({
-  block,
-  t,
-  justify = false,
-}: {
-  block: ProseBlock
-  t: Localizer
-  /** Justified from the small breakpoint up, as the STATEMENT pairing on
-   *  /about sets it. Never on a phone, where a narrow justified column opens
-   *  wide gaps between words. */
-  justify?: boolean
-}) {
+export function ProseBlockView({ block, t }: { block: ProseBlock; t: Localizer }) {
   const paragraphs = t(block.body)
     .split('\n')
     .filter((paragraph) => paragraph.trim().length > 0)
-  const align = justify ? 'sm:text-justify' : ''
 
   return (
     <div className="max-w-prose">
       {block.heading && (
-        <h2 className="text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
+        <h2 className="type-h2 font-bold text-gray-900">
           {t(block.heading)}
         </h2>
       )}
 
       {block.lead && (
         <p
-          className={`text-lg leading-[1.7] text-gray-800 sm:text-xl sm:leading-[1.7] ${align} ${
-            block.heading ? 'mt-5' : ''
-          }`}
+          className={`type-lead text-gray-800 ${block.heading ? 'mt-5' : ''}`}
         >
           {t(block.lead)}
         </p>
@@ -63,7 +49,7 @@ export function ProseBlockView({
       {paragraphs.length > 0 && (
         <div className={`space-y-5 ${block.lead || block.heading ? 'mt-5' : ''}`}>
           {paragraphs.map((paragraph, index) => (
-            <p key={index} className={`text-base leading-[1.75] text-gray-600 ${align}`}>
+            <p key={index} className="type-body text-gray-600">
               {paragraph}
             </p>
           ))}

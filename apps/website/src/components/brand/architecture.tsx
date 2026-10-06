@@ -33,10 +33,12 @@
  * library. Every element here is decorative and therefore `aria-hidden`.
  */
 
-/** Brand strokes. Literal hex: an SVG stroke is not a Tailwind text colour. */
+/** Brand strokes. Literal hex: an SVG stroke is not a Tailwind text colour.
+ *  `teal` is the brand colour and `tealDeep` the action colour, matching
+ *  teal-500 and teal-600 in this app's Tailwind config. */
 export const STROKE = {
-  teal: '#2F9DA0',
-  tealDeep: '#22797D',
+  teal: '#0D8B8B',
+  tealDeep: '#0B7A7A',
   structure: '#6D7378',
   line: '#b8bdc2',
   faint: '#d5d8db',

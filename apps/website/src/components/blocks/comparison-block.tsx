@@ -46,7 +46,7 @@ export function ComparisonBlockView({ block, t }: { block: ComparisonBlock; t: L
       </div>
 
       {block.note && (
-        <p className="mt-6 max-w-3xl text-[15px] leading-relaxed text-gray-600">
+        <p className="mt-6 max-w-3xl type-body text-gray-600">
           {t(block.note)}
         </p>
       )}
@@ -81,7 +81,7 @@ function Column({
       )}
 
       <p
-        className={`text-xs font-bold uppercase tracking-[0.14em] ${
+        className={`type-small font-bold uppercase tracking-[0.14em] ${
           emphasis ? 'text-teal-800' : 'text-gray-600'
         }`}
       >
@@ -92,13 +92,13 @@ function Column({
         {column.points.map((point, index) => (
           <div key={point.id} className={index === 0 ? 'pb-5' : 'py-5 last:pb-0'}>
             <h3
-              className={`text-[15px] font-semibold ${
+              className={`type-h3 font-semibold ${
                 emphasis ? 'text-gray-900' : 'text-gray-700'
               }`}
             >
               {t(point.title)}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-gray-600">{t(point.body)}</p>
+            <p className="mt-1.5 type-body text-gray-600">{t(point.body)}</p>
           </div>
         ))}
       </div>

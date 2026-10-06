@@ -11,36 +11,51 @@
  */
 
 /* ══════════════════════════════════════════════════════════════════════════
- * 1 · LINK CONTRAST CORRECTION
+ * 1 · LINKS
  * ══════════════════════════════════════════════════════════════════════════
  *
- * `packages/design-system/src/globals.css` sets every anchor to `teal-500`.
- * Measured, that is 3.26:1 on white — it FAILS the WCAG 2.1 AA minimum of
- * 4.5:1 for body text. It is a real defect, and it affects the CRM and the
- * Portal as much as this site.
+ * `packages/design-system/src/globals.css` colours every anchor teal-500 at
+ * `a`, and every hovered anchor teal-600 at `a:hover`. On this site that
+ * produced two defects, both found in the 2026-10 design review:
  *
- * Corrected HERE rather than upstream because changing a global link colour
- * would restyle every link in two shipped applications, and that visual change
- * has not been reviewed. The upstream fix is flagged for its own decision.
+ *   1. This file corrected the colour at `:where(body) a`, which has the same
+ *      specificity as the shared `a`. Whichever stylesheet a route happened to
+ *      load last won, and on /eligibility the shared one did: the privacy link
+ *      rendered #2F9DA0, 3.2:1 on the page, failing AA.
+ *   2. `a:hover` outranks a single colour utility, so a link styled as a
+ *      button (`text-white` on a teal fill) turned teal on teal when hovered,
+ *      about 1.4:1. Every filled link button now states `hover:text-white`.
  *
- * Measured: teal-700 is 7.34:1 on white, 7.15:1 on the page surface.
- * Keep specificity at one element: these defaults must not override CTA
- * utilities such as text-white, including during hover.
+ * So the rules below are `body a`: one element more specific than the shared
+ * rule, which they beat in any load order, and still below any single utility
+ * class, so `text-white`, `text-gray-700` and the rest keep winning. The
+ * colours are the action teal and its hover (5.2:1 and 7.5:1 on white). The
+ * dark surface inverts the ground, so it gets the light tints (6.6:1 and
+ * 8.7:1 on #14312F); `:where()` keeps those at the same specificity, and
+ * their place later in this file is what lets them win.
+ *
+ * Not fixed upstream: the CRM and the Portal use the shared rule too, and
+ * changing it there is a visual change in two shipped applications.
  */
-:where(body) a {
-  color: #1b5f62;
+body a {
+  color: #0b7a7a;
 }
-:where(body) a:where(:hover) {
-  color: #164a4c;
+body a:hover {
+  color: #095f5f;
+}
+body :where(.bg-surface-inverse) a {
+  color: #7abfbf;
+}
+body :where(.bg-surface-inverse) a:hover {
+  color: #a8d5d5;
 }
 
-/* The dark trust section inverts the ground, so the corrected link colour would
-   be unreadable inside it. Scoped to that surface only. */
-:where(.bg-surface-inverse) a {
-  color: #7dd0d2;
-}
-:where(.bg-surface-inverse) a:where(:hover) {
-  color: #aee4e5;
+/* The action teal also drives packages/ui's semantic colours (`bg-primary`,
+   focus rings), which the shared globals set to the old teal. `html:root`
+   outranks the shared `:root`, whichever stylesheet loads last. */
+html:root {
+  --primary: 180 83% 26%; /* #0B7A7A */
+  --ring: 180 83% 30%; /* #0D8B8B */
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -53,6 +68,71 @@
  */
 .text-balance {
   text-wrap: balance;
+}
+
+/* ── ONE TYPE SCALE ──────────────────────────────────────────────────────────
+ *
+ * The design review found seven sizes of section heading, body text anywhere
+ * from 14px to 20px, and a closing call set larger than the page's own h1. So
+ * the site has one scale, phone / from 768px:
+ *
+ *   .type-h1     34 / 44   the page's one h1
+ *   .type-h2     26 / 32   every section heading, the closing call included
+ *   .type-h3     19 / 22   item headings
+ *   .type-lead   18 / 20   the first paragraph of an explanation
+ *   .type-body   17 / 18   body copy
+ *   .type-small  15        notes and labels: nothing smaller carries meaning
+ *
+ * Size, leading and tracking only. Weight and colour stay utilities. Never put
+ * a `text-*` size or `leading-*` utility on the same element: this file and
+ * the utilities share a specificity, and their load order differs by route
+ * (see section 1), so the result would differ by page.
+ */
+.type-h1 {
+  font-size: 2.125rem;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+}
+.type-h2 {
+  font-size: 1.625rem;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+.type-h3 {
+  font-size: 1.1875rem;
+  line-height: 1.4;
+}
+.type-lead {
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+.type-body {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+.type-small {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+@media (min-width: 768px) {
+  .type-h1 {
+    font-size: 2.75rem;
+    line-height: 1.14;
+  }
+  .type-h2 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+  .type-h3 {
+    font-size: 1.375rem;
+    line-height: 1.35;
+  }
+  .type-lead {
+    font-size: 1.25rem;
+  }
+  .type-body {
+    font-size: 1.125rem;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -133,7 +213,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 2px solid #0f766e;
+  outline: 2px solid #0b7a7a;
   outline-offset: 4px;
 }
 
@@ -180,7 +260,21 @@ summary:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
- * 4 · REDUCED MOTION
+ * 4 · COLOUR SCHEME
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * The site has one, light, design. Declaring it light-only stops browsers that
+ * darken pages on their own (Chrome's Auto Dark Mode on Android honours this)
+ * from inverting the brand colours and the photographs' surroundings, and
+ * keeps form controls and scrollbars light. The layout's viewport sets the
+ * matching meta tag. A real dark theme is not planned before launch.
+ */
+html:root {
+  color-scheme: only light;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 5 · REDUCED MOTION
  * ══════════════════════════════════════════════════════════════════════════
  *
  * Everything above is removed, not merely shortened. `.odg-reveal-out` is

@@ -78,11 +78,11 @@ export async function CtaBlockView({ block, t }: { block: CtaBlock; t: Localizer
         />
       </span>
 
-      <div className="relative mx-auto max-w-4xl px-4 py-20 text-center lg:px-8 lg:py-28">
+      <div className="relative mx-auto max-w-4xl px-4 py-16 text-center lg:px-8 lg:py-20">
         {/* The threshold, at its largest. Head interrupted, sill in teal — the
             visitor is standing in the opening rather than looking through it,
             which is why the head gap here is wider than the hero's. */}
-        <div className="relative px-6 py-14 sm:px-14 sm:py-16">
+        <div className="relative px-6 py-10 sm:px-14 sm:py-12">
           <span aria-hidden="true" className="pointer-events-none absolute inset-0">
             <span
               className="absolute start-0 top-0 h-px w-[22%]"
@@ -106,20 +106,20 @@ export async function CtaBlockView({ block, t }: { block: CtaBlock; t: Localizer
             />
           </span>
 
-          <h2 className="mx-auto max-w-[17ch] text-balance text-3xl font-bold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:text-display-sm lg:text-display-md">
+          <h2 className="mx-auto max-w-[22ch] text-balance type-h2 font-bold text-gray-900">
             {t(block.heading)}
           </h2>
 
           {block.body && (
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-gray-700">
+            <p className="mx-auto mt-4 max-w-xl type-lead text-gray-700">
               {block.ctaHref === '/eligibility' ? tLinks('enquiryIntro') : t(block.body)}
             </p>
           )}
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href={block.ctaHref}
-              className="group inline-flex items-center justify-center gap-2.5 rounded-md bg-teal-600 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-teal-700"
+              className="group inline-flex items-center justify-center gap-2.5 rounded-md bg-teal-600 px-8 py-4 text-base font-semibold text-white hover:text-white transition-colors hover:bg-teal-700"
             >
               {t(block.ctaLabel)}
               <span

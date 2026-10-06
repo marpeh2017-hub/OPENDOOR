@@ -72,8 +72,8 @@ export async function TransparencyBlockView({
           <dl className="mt-10 divide-y divide-gray-200 border-t border-gray-200">
             {block.items.map((item) => (
               <div key={item.id} className="py-5">
-                <dt className="text-sm font-semibold text-gray-900">{t(item.title)}</dt>
-                <dd className="mt-1.5 text-sm leading-relaxed text-gray-600">{t(item.body)}</dd>
+                <dt className="type-body font-semibold text-gray-900">{t(item.title)}</dt>
+                <dd className="mt-1 type-small text-gray-600">{t(item.body)}</dd>
               </div>
             ))}
           </dl>
