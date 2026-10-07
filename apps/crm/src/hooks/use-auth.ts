@@ -48,6 +48,21 @@ export function useLogout() {
   })
 }
 
+/**
+ * Change the signed-in user's own password.
+ *
+ * The API signs the user out everywhere on success, this session included,
+ * so afterwards nothing authenticated works: the caller clears the cookies
+ * through the logout route and sends the user to sign in again
+ * (`/he/login?changed=1`, which says why).
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (dto: { currentPassword: string; newPassword: string }) =>
+      api.post<{ passwordChanged: true }>('/auth/change-password', dto),
+  })
+}
+
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER']
 const ADMIN_ROLES   = ['SUPER_ADMIN', 'COMPANY_ADMIN']
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,16 @@ export function LoginForm() {
   const [showPass, setShowPass]   = useState(false)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
+  const [notice, setNotice]       = useState<string | null>(null)
+
+  // After a password change the CRM signs the user out everywhere and lands
+  // here with ?changed=1 (AccountCard). Read on the client once: useSearchParams
+  // would need a Suspense boundary around the whole form.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('changed') === '1') {
+      setNotice('הסיסמה שונתה. היכנסו עם הסיסמה החדשה.')
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -45,6 +55,12 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" dir="rtl">
+      {notice && (
+        <div role="status" className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3">
+          <p className="text-sm font-medium text-teal-800">{notice}</p>
+        </div>
+      )}
+
       <div>
         <Label className="form-label">אימייל</Label>
         <Input

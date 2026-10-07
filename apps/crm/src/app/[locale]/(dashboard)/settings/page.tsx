@@ -1,3 +1,4 @@
+import { AccountCard } from '@/components/settings/account-card'
 import { TenantProfileCard } from '@/components/settings/tenant-profile-card'
 import { UsersPanel } from '@/components/settings/users-panel'
 
@@ -10,11 +11,12 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">הגדרות</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            פרטי הארגון וניהול המשתמשים
+            החשבון שלך, פרטי הארגון וניהול המשתמשים
           </p>
         </div>
       </div>
 
+      <AccountCard />
       <TenantProfileCard />
       <UsersPanel />
     </div>

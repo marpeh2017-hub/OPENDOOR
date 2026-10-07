@@ -9,8 +9,11 @@ import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from
 import { PrismaService } from '../prisma.service'
 import { REDIS } from '../redis/redis.module'
 import { LoginDto } from './dto/login.dto'
+import { ChangePasswordDto } from './dto/change-password.dto'
 import { PortalAuthService } from './portal-auth.service'
-import { REVOCATION_TTL_SECONDS, issuedBeforeRevocation } from './session-revocation'
+import { passwordProblem } from './password-policy'
+import { REVOCATION_TTL_SECONDS, issuedBeforeRevocation, revokeAllSessionsOf } from './session-revocation'
+import { AuditService, type AuditActor } from '../common/audit/audit.service'
 
 /*
  * The resident OTP constants and flow moved to `PortalAuthService`.
@@ -62,6 +65,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly portal: PortalAuthService,
     @Inject(REDIS) private readonly redis: any,
+    private readonly audit: AuditService,
   ) {}
 
   /* ─── Email / password login (CRM staff) ───────────────────────── */
@@ -169,6 +173,45 @@ export class AuthService {
       if (err instanceof UnauthorizedException) throw err
       throw new UnauthorizedException('Refresh token לא תקין')
     }
+  }
+
+  /* ─── Change own password (CRM staff) ──────────────────────────── */
+  /**
+   * The signed-in user replaces their own password.
+   *
+   * The current password is required although the request is authenticated:
+   * a session left open on a shared screen must not be enough to take the
+   * account. A wrong one answers 400, not 401, because the CRM treats any 401
+   * as an expired session and signs the user out.
+   *
+   * Success signs the user out everywhere, this session included
+   * (session-revocation.ts), so a stolen session cannot outlive the change;
+   * the CRM then asks them to sign in with the new password.
+   */
+  async changePassword(actor: AuditActor, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: actor.userId } })
+    if (!user || !user.isActive || user.tenantId !== actor.tenantId) {
+      throw new UnauthorizedException('משתמש לא נמצא')
+    }
+    if (!user.passwordHash || !checkPassword(dto.currentPassword, user.passwordHash)) {
+      throw new BadRequestException('הסיסמה הנוכחית שגויה.')
+    }
+    const problem = passwordProblem(dto.newPassword)
+    if (problem) throw new BadRequestException(problem)
+    if (checkPassword(dto.newPassword, user.passwordHash)) {
+      throw new BadRequestException('הסיסמה החדשה זהה לנוכחית. בחרו סיסמה אחרת.')
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: user.id }, data: { passwordHash: hashPassword(dto.newPassword) } })
+      await this.audit.record(actor, {
+        action: 'UPDATE', entity: 'User', entityId: user.id,
+        // No before/after: there is nothing about a credential worth recording.
+        metadata: { reason: 'PASSWORD_CHANGED_BY_USER', sessionsRevoked: true },
+      }, tx)
+    })
+    await revokeAllSessionsOf(this.redis, user.id)
+    return { passwordChanged: true }
   }
 
   /* ─── Logout — revoke session in Redis ─────────────────────────── */

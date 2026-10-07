@@ -1,5 +1,5 @@
 import {
-  Controller, Post, Body, Get, Req, HttpCode, HttpStatus,
+  Controller, Post, Body, Get, Req, HttpCode, HttpStatus, ForbiddenException,
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
@@ -8,6 +8,8 @@ import { PortalAuthService } from './portal-auth.service'
 import { PortalSendOtpDto, PortalVerifyOtpDto } from './dto/portal-login.dto'
 import { LoginDto } from './dto/login.dto'
 import { RefreshTokenDto } from './dto/refresh-token.dto'
+import { ChangePasswordDto } from './dto/change-password.dto'
+import { actorFrom } from '../common/actor'
 import { Public } from './decorators/public.decorator'
 
 @ApiTags('auth')
@@ -141,5 +143,24 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current authenticated user' })
   me(@Req() req: { user: unknown }) {
     return req.user
+  }
+
+  /**
+   * Staff only: a resident has no password, and `actorFrom` refuses a portal
+   * session. Throttled like login, because the current password is checked
+   * here and a session must not become a way to guess it.
+   */
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short:  { limit: 3, ttl: 10_000 },
+    medium: { limit: 5, ttl: 60_000 },
+    long:   { limit: 20, ttl: 3_600_000 },
+  })
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change your own password (CRM staff). Signs you out everywhere.' })
+  changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
+    if (req?.user?.role === 'RESIDENT') throw new ForbiddenException('אין סיסמה לחשבון דייר.')
+    return this.authService.changePassword(actorFrom(req), dto)
   }
 }

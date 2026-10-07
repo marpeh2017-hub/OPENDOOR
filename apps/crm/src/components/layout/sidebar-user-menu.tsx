@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, LogOut, Settings as SettingsIcon, Loader2 } from 'lucide-react'
+import { ChevronDown, KeyRound, LogOut, Settings as SettingsIcon, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import {
   DropdownMenu,
@@ -61,6 +61,12 @@ export function SidebarUserMenu() {
           <Link href="/settings" className="flex items-center gap-2">
             <SettingsIcon size={14} />
             הגדרות
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings#password" className="flex items-center gap-2">
+            <KeyRound size={14} />
+            שינוי סיסמה
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
