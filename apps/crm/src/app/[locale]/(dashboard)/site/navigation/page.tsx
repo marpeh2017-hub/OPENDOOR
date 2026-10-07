@@ -1,10 +1,17 @@
 import Link from 'next/link'
+
+/**
+ * Read only. The website's menus are code (apps/website/src/lib/navigation.ts:
+ * PRIMARY_NAV_KEYS, NAV_ITEMS and FOOTER_GROUPS); this screen says what they
+ * hold, so an editor does not have to ask. When those menus change, change
+ * this list with them.
+ */
 const items = [
   ['מי אנחנו', 'about'],
   ['למה חברה מארגנת', 'why-organizer'],
   ['כך אנחנו עובדים', 'how-we-work'],
-  ['פרויקטים', 'projects'],
-  ['מרכז ידע', 'knowledge'],
+  ['השירותים שלנו', 'services'],
+  ['שאלות ותשובות', 'faq'],
 ]
 export default function SiteNavigationPage() {
   return (
@@ -24,7 +31,14 @@ export default function SiteNavigationPage() {
           </li>
         ))}
       </ol>
-      <p>יצירת קשר, שאלות ותשובות וחיפוש זמינים גם בתחתית האתר ובתפריט הנייד.</p>
+      <p>
+        בתפריט הנייד מופיעים גם פרויקטים תקועים, מרכז ידע, יצירת קשר וחיפוש. בתחתית האתר מופיעים גם
+        שקיפות ואמון, פרויקטים ועמודי המידע המשפטי.
+      </p>
+      <p className="text-gray-700">
+        פרויקט שמתפרסם מופיע בעמוד הפרויקטים, שמקושר מתחתית האתר. הוספת הפרויקטים לתפריט הראשי ולדף
+        הבית נעשית בתחזוקת האתר.
+      </p>
       <Link href="/site/pages" className="inline-block py-2 text-teal-800 underline">
         לניהול תוכן העמודים
       </Link>

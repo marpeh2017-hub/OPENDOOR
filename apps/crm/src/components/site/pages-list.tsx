@@ -12,28 +12,42 @@ import { ExposureBanner } from './exposure'
  * ── WHY THE UNMIGRATED PAGES ARE LISTED AT ALL ─────────────────────────────
  *
  * They could be hidden, and the screen would look tidier and more finished.
- * It would also be lying by omission: the site has eight pages, an editor who
- * cannot find /about here will conclude the CMS is broken rather than that
- * /about has not been migrated, and the person who has to answer that question
- * is not in the room.
+ * It would also be lying by omission: the site has thirteen fixed pages, an
+ * editor who cannot find /services here will conclude the CMS is broken
+ * rather than that /services has not been migrated, and the person who has
+ * to answer that question is not in the room.
  *
  * So both groups are shown, and the second says plainly what it is: still in
  * code, editable by a developer, migrating in a later pass. That is the same
  * honesty the public site applies to a project with no verified figures.
+ *
+ * A page with a screen of its own (`editHref`, today only the FAQ) is never
+ * in the second group: it is editable before its first save, so it is listed
+ * with the managed pages from the start.
  */
 
-/** The eight fixed pages, so the second group can name what is missing. */
-const SITE_PAGES: { slug: string; label: string }[] = [
+/**
+ * The site's fixed pages in menu order, named as the site names them, so the
+ * second group can say what is missing. Projects and the knowledge centre
+ * have their own screens and are not pages here.
+ */
+const SITE_PAGES: { slug: string; label: string; editHref?: string; firstSaveNote?: string }[] = [
   { slug: 'home', label: 'עמוד הבית' },
+  { slug: 'about', label: 'מי אנחנו' },
+  { slug: 'why-organizer', label: 'למה חברה מארגנת' },
+  { slug: 'how-we-work', label: 'כך אנחנו עובדים' },
+  { slug: 'services', label: 'השירותים שלנו' },
+  { slug: 'stalled-projects', label: 'פרויקטים תקועים' },
+  { slug: 'trust', label: 'שקיפות ואמון' },
+  {
+    slug: 'faq', label: 'שאלות ותשובות', editHref: '/site/faq',
+    firstSaveNote: 'האתר מציג את השאלות המאושרות עד שיתפרסמו שאלות מכאן',
+  },
+  { slug: 'eligibility', label: 'דברו איתנו על הבניין שלכם' },
+  { slug: 'contact', label: 'יצירת קשר' },
   { slug: 'privacy', label: 'מדיניות פרטיות' },
   { slug: 'terms', label: 'תנאי שימוש' },
-  { slug: 'about', label: 'אודות' },
-  { slug: 'why-organizer', label: 'למה מארגן' },
-  { slug: 'how-we-work', label: 'איך אנחנו עובדים' },
-  { slug: 'trust', label: 'שקיפות ואמון' },
-  { slug: 'eligibility', label: 'בדיקת התאמה' },
-  { slug: 'faq', label: 'שאלות ותשובות' },
-  { slug: 'contact', label: 'יצירת קשר' },
+  { slug: 'accessibility', label: 'הצהרת נגישות' },
 ]
 
 export function PagesList() {
@@ -48,7 +62,9 @@ export function PagesList() {
   }, [])
 
   const managedSlugs = new Set((items ?? []).map((i) => i.slug))
-  const unmigrated = SITE_PAGES.filter((p) => !managedSlugs.has(p.slug))
+  const unmigrated = SITE_PAGES.filter((p) => !managedSlugs.has(p.slug) && !p.editHref)
+  // Pages with a screen of their own that have not been saved yet.
+  const notYetSaved = SITE_PAGES.filter((p) => p.editHref && !managedSlugs.has(p.slug))
 
   return (
     <div className="space-y-5">
@@ -82,7 +98,7 @@ export function PagesList() {
         </div>
       )}
 
-      {items && items.length > 0 && (
+      {items && (items.length > 0 || notYetSaved.length > 0) && (
         <section className="rounded-xl border border-border bg-white">
           <h2 className="border-b border-border px-5 py-3 text-[15px] font-bold text-gray-900">
             מנוהל במערכת
@@ -90,11 +106,12 @@ export function PagesList() {
           <ul className="divide-y divide-border">
             {items.map((item) => {
               const live = item.state === 'PUBLISHED' && item.livePublicationId
-              const label = SITE_PAGES.find((p) => p.slug === item.slug)?.label ?? item.slug
+              const page = SITE_PAGES.find((p) => p.slug === item.slug)
+              const label = page?.label ?? item.slug
               return (
                 <li key={item.id}>
                   <Link
-                    href={item.slug === 'faq' ? '/site/faq' : `/site/pages/${item.slug}`}
+                    href={page?.editHref ?? `/site/pages/${item.slug}`}
                     className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-gray-50"
                   >
                     <span className="flex items-center gap-3">
@@ -131,6 +148,29 @@ export function PagesList() {
                 </li>
               )
             })}
+            {notYetSaved.map((page) => (
+              <li key={page.slug}>
+                <Link
+                  href={page.editHref!}
+                  className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-gray-50"
+                >
+                  <span className="flex items-center gap-3">
+                    <FileText size={18} className="flex-shrink-0 text-teal-500" aria-hidden="true" />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">{page.label}</span>
+                      <span className="block text-[12.5px] text-gray-600">
+                        /{page.slug}
+                        {page.firstSaveNote && ` · ${page.firstSaveNote}`}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-2.5 py-0.5 text-[12px] font-semibold text-gray-600">
+                    <EyeOff size={12} aria-hidden="true" />
+                    טרם נערך
+                  </span>
+                </Link>
+              </li>
+            ))}
           </ul>
         </section>
       )}
