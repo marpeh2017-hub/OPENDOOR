@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Plus, ShieldAlert, MoreHorizontal, Pencil, UserCog } from 'lucide-react'
+import { Check, Copy, KeyRound, Loader2, Plus, ShieldAlert, MoreHorizontal, Pencil, UserCog, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,20 +22,26 @@ import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-stat
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ApiError } from '@/lib/api-client'
 import {
-  useUsers, useCreateUser, useUpdateUser, useChangeUserRole, useSetUserActive,
+  useUsers, useCreateUser, useUpdateUser, useChangeUserRole, useSetUserActive, useResetUserPassword,
   type User,
 } from '@/hooks/use-users'
+import { PASSWORD_RULE_TEXT, generateTemporaryPassword, passwordProblem } from '@/lib/password-rule'
 import { useIsAdmin, useCurrentUser } from '@/hooks/use-auth'
 
 /**
  * User administration.
  *
  * SECURITY NOTES
- *  - No credential ever passes through this screen. `passwordHash`, tokens and
- *    `mfaSecret` are not in the API's response shape at all, and the CRM does
- *    not offer a password field: a new user signs in via a one-time code. The
- *    API's `POST /users/:id/password` endpoint exists for an out-of-band admin
- *    flow and is deliberately NOT wired here.
+ *  - No stored credential ever reaches this screen: `passwordHash`, tokens and
+ *    `mfaSecret` are not in the API's response shape at all.
+ *  - A new user is created without a password. Staff have no one-time-code
+ *    sign-in (that is the residents' portal), so an admin gives them a
+ *    temporary password from the row's menu (`POST /users/:id/password`). It
+ *    must pass the password rule, can be generated here, and is shown only in
+ *    that dialog, to be handed over and then replaced by the user under
+ *    הגדרות › החשבון שלי. Setting it signs that user out everywhere. Not offered
+ *    for the admin's own row: their own password is changed with the current
+ *    one, in the same card.
  *  - Role change and deactivation are separate, separately-audited endpoints,
  *    and both confirm before firing.
  *  - Hiding these controls from non-admins is convenience only. Every /users
@@ -132,10 +138,10 @@ function NewUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
             </Select>
           </div>
 
-          {/* No password field on purpose: the CRM never handles credentials.
-              The user is created without one and signs in via OTP / a reset. */}
+          {/* Created without a password; the temporary one is set from the
+              row's menu (see SECURITY NOTES). */}
           <p className="text-xs text-muted-foreground">
-            המשתמש נוצר ללא סיסמה ויתחבר באמצעות קוד חד־פעמי.
+            המשתמש נוצר ללא סיסמה. כדי שיוכל להיכנס, קבעו לו סיסמה זמנית מתפריט הפעולות שבשורה שלו.
           </p>
 
           {create.isError && (
@@ -315,11 +321,128 @@ function RoleDialog({
   )
 }
 
+/**
+ * A temporary password for someone else (see SECURITY NOTES). Shown in this
+ * dialog only, with a copy button, because the admin has to hand it over;
+ * after it is set, the dialog says so and keeps it on screen until closed.
+ */
+function PasswordDialog({
+  open, onOpenChange, user,
+}: { open: boolean; onOpenChange: (o: boolean) => void; user: User | null }) {
+  const [password, setPassword] = useState('')
+  const [show, setShow] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [done, setDone] = useState(false)
+  const reset = useResetUserPassword()
+
+  useEffect(() => {
+    if (!open) return
+    setPassword(''); setShow(false); setCopied(false); setDone(false)
+    reset.reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.id])
+
+  const problem = password ? passwordProblem(password) : null
+  const name = user ? `${user.firstName} ${user.lastName}` : ''
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(password)
+      setCopied(true)
+    } catch {
+      setShow(true)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(n) => { if (!reset.isPending) onOpenChange(n) }}>
+      <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-right">קביעת סיסמה זמנית</DialogTitle>
+          <DialogDescription className="text-right">
+            {name} יתנתק מכל המכשירים ויוכל להיכנס עם הסיסמה הזאת. מסרו לו אותה בשיחה או בהודעה
+            פרטית, ובקשו שיחליף אותה בהגדרות › החשבון שלי.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="temp-password">סיסמה זמנית</Label>
+          <div className="flex gap-2">
+            <Input
+              id="temp-password" type={show ? 'text' : 'password'} dir="ltr" autoComplete="new-password"
+              className="font-mono" readOnly={done}
+              aria-describedby="temp-password-rule" aria-invalid={Boolean(problem) || undefined}
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setCopied(false) }}
+            />
+            <Button
+              type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0"
+              disabled={!password} onClick={copy} aria-label="העתקת הסיסמה"
+            >
+              {copied ? <Check size={15} /> : <Copy size={15} />}
+            </Button>
+          </div>
+          <p id="temp-password-rule" className={`text-xs ${problem ? 'text-red-600' : 'text-muted-foreground'}`}>
+            {problem ?? PASSWORD_RULE_TEXT}
+          </p>
+        </div>
+
+        {!done && (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button" variant="outline" size="sm" className="gap-1.5"
+              onClick={() => { setPassword(generateTemporaryPassword()); setShow(true); setCopied(false) }}
+            >
+              <Wand2 size={14} />
+              יצירת סיסמה
+            </Button>
+            <label className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
+              <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} />
+              הצגת הסיסמה
+            </label>
+          </div>
+        )}
+
+        {reset.isError && (
+          <p className="text-sm text-red-600" role="alert">
+            {reset.error instanceof Error ? reset.error.message : 'קביעת הסיסמה נכשלה'}
+          </p>
+        )}
+        {done && (
+          <p className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800" role="status">
+            הסיסמה נקבעה, ו{name} נותק מכל המכשירים. העתיקו אותה עכשיו: אחרי הסגירה אי אפשר לראות אותה שוב.
+          </p>
+        )}
+
+        <DialogFooter className="gap-2 sm:justify-start">
+          {done ? (
+            <Button type="button" onClick={() => onOpenChange(false)}>סגירה</Button>
+          ) : (
+            <>
+              <Button
+                type="button" className="gap-1.5"
+                disabled={!password || Boolean(problem) || reset.isPending}
+                onClick={() => user && reset.mutate({ id: user.id, password }, { onSuccess: () => { setDone(true); setShow(true) } })}
+              >
+                {reset.isPending ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />}
+                קביעת סיסמה
+              </Button>
+              <Button type="button" variant="outline" disabled={reset.isPending}
+                onClick={() => onOpenChange(false)}>ביטול</Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function UsersPanel() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editUser,   setEditUser]   = useState<User | null>(null)
   const [roleUser,   setRoleUser]   = useState<User | null>(null)
   const [activeUser, setActiveUser] = useState<User | null>(null)
+  const [passwordUser, setPasswordUser] = useState<User | null>(null)
 
   const { data, isLoading, isError, error, refetch } = useUsers()
   const setActive = useSetUserActive()
@@ -423,6 +546,9 @@ export function UsersPanel() {
                           <DropdownMenuItem disabled={isSelf} onSelect={() => setRoleUser(u)}>
                             <UserCog size={14} className="ml-2" /> שינוי תפקיד
                           </DropdownMenuItem>
+                          <DropdownMenuItem disabled={isSelf} onSelect={() => setPasswordUser(u)}>
+                            <KeyRound size={14} className="ml-2" /> קביעת סיסמה זמנית
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             disabled={isSelf}
                             className={u.isActive ? 'text-red-600' : undefined}
@@ -445,6 +571,7 @@ export function UsersPanel() {
       <NewUserDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <EditUserDialog open={Boolean(editUser)} onOpenChange={(o) => { if (!o) setEditUser(null) }} user={editUser} />
       <RoleDialog     open={Boolean(roleUser)} onOpenChange={(o) => { if (!o) setRoleUser(null) }} user={roleUser} />
+      <PasswordDialog open={Boolean(passwordUser)} onOpenChange={(o) => { if (!o) setPasswordUser(null) }} user={passwordUser} />
 
       <ConfirmDialog
         open={Boolean(activeUser)}

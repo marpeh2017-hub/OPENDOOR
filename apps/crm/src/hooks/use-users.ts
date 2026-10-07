@@ -91,6 +91,17 @@ export function useChangeUserRole() {
 }
 
 /** PATCH /users/:id/active — sensitive; the UI confirms before calling. */
+/**
+ * An admin sets another user's password (POST /users/:id/password). The API
+ * applies the password rule and signs that user out everywhere.
+ */
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      api.post<{ id: string; passwordReset: true }>(`/users/${id}/password`, { password }),
+  })
+}
+
 export function useSetUserActive() {
   const qc = useQueryClient()
   return useMutation({

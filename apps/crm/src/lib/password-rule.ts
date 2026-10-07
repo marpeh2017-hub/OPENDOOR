@@ -17,6 +17,27 @@ const COMMON_PASSWORDS = new Set([
   'administrator', 'opendoor123', '123456789012',
 ])
 
+/**
+ * A temporary password that passes the rule: sixteen characters, at least one
+ * of each kind, from the browser's cryptographic generator. Letters and digits
+ * that are easy to confuse when read out (0/O, 1/l/I) are left out, since it
+ * is handed over in a call or a message.
+ */
+export function generateTemporaryPassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const lower = 'abcdefghijkmnopqrstuvwxyz'
+  const digits = '23456789'
+  const random = (n: number) => crypto.getRandomValues(new Uint32Array(1))[0]! % n
+  const pick = (set: string) => set[random(set.length)]!
+  const chars = [pick(upper), pick(lower), pick(digits)]
+  while (chars.length < 16) chars.push(pick(upper + lower + digits))
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = random(i + 1)
+    ;[chars[i], chars[j]] = [chars[j]!, chars[i]!]
+  }
+  return chars.join('')
+}
+
 /** What is wrong with the password, in Hebrew, or null when it passes. */
 export function passwordProblem(password: string): string | null {
   if (COMMON_PASSWORDS.has(password.toLowerCase())) {
