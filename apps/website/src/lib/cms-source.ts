@@ -1,5 +1,5 @@
-import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
-import { slotImages, type SiteSlotAssignment } from '@urban-renewal/api-contracts'
+import type { CmsPage, FaqEntry, PageBlock } from '@urban-renewal/api-contracts'
+import { isFaqTopicId, slotImages, type SiteSlotAssignment } from '@urban-renewal/api-contracts'
 import { cache } from 'react'
 
 /** Migrated pages are served only from an active CMS publication.
@@ -87,13 +87,6 @@ export async function getCmsPage(slug: string): Promise<CmsPage | null> {
 //  FAQ — Pass 4G
 // ══════════════════════════════════════════════════════════════════════════
 
-export interface CmsFaqEntry {
-  id: string
-  question: { he: string; en?: string }
-  answer: { he: string; en?: string }
-  order: number
-}
-
 /**
  * Published FAQ items, or an empty array.
  *
@@ -102,8 +95,12 @@ export interface CmsFaqEntry {
  * than one per question. An empty array is not an error: it is the correct
  * result before anyone has published a question, or if the gateway cannot be
  * reached, and the caller renders an honest empty state either way.
+ *
+ * Each item keeps its topic (`FAQ_TOPICS`) when it names one the site knows.
+ * An unknown topic is dropped, leaving the question without one rather than
+ * under a card that does not exist.
  */
-export async function getCmsFaqItems(): Promise<CmsFaqEntry[]> {
+export async function getCmsFaqItems(): Promise<FaqEntry[]> {
   const base = gatewayBase()
   if (!base) return []
 
@@ -121,17 +118,19 @@ export async function getCmsFaqItems(): Promise<CmsFaqEntry[]> {
     // Shape-checked rather than trusted, same discipline as `getCmsPage`.
     return items
       .filter(
-        (it): it is CmsFaqEntry =>
+        (it): it is FaqEntry =>
           Boolean(it) &&
           typeof it === 'object' &&
-          !(it as CmsFaqEntry & { hidden?: boolean }).hidden &&
-          typeof (it as CmsFaqEntry).id === 'string' &&
-          typeof (it as CmsFaqEntry).question?.he === 'string' &&
-          typeof (it as CmsFaqEntry).answer?.he === 'string' &&
-          (it as CmsFaqEntry).question.he.trim() !== '' &&
-          (it as CmsFaqEntry).answer.he.trim() !== '',
+          !(it as FaqEntry & { hidden?: boolean }).hidden &&
+          typeof (it as FaqEntry).id === 'string' &&
+          typeof (it as FaqEntry).question?.he === 'string' &&
+          typeof (it as FaqEntry).answer?.he === 'string' &&
+          (it as FaqEntry).question.he.trim() !== '' &&
+          (it as FaqEntry).answer.he.trim() !== '',
       )
-      .slice()
+      .map(({ id, order, topic, question, answer }): FaqEntry => ({
+        id, order, question, answer, ...(isFaqTopicId(topic) ? { topic } : {}),
+      }))
       .sort((a, b) => a.order - b.order)
   } catch {
     return []

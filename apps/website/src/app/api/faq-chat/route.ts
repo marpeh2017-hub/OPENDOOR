@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
-import { FAQ_SEED } from '@/mock/fixtures/faq'
+import { FAQ_SEED } from '@urban-renewal/api-contracts'
 
 /**
  * Server-side FAQ chat endpoint.
@@ -47,7 +47,7 @@ const LEAD_CAPTURE_INSTRUCTIONS = `
 
 /**
  * The system prompt is rebuilt from FAQ_SEED on every request rather than
- * cached as a module constant, so an edit to the fixture is live on the next
+ * cached as a module constant, so an edit to the seed is live on the next
  * request with no redeploy of this route needed.
  */
 function buildSystemPrompt(userMessageCount: number): string {

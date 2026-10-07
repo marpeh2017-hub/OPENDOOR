@@ -2,11 +2,12 @@ import { localeAlternates } from '@/lib/seo'
 import { Link } from '@/i18n/navigation'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import type { Locale } from '@urban-renewal/api-contracts'
+import {
+  FAQ_SEED, FAQ_TOPICS, type FaqEntry, type FaqTopic, type Locale,
+} from '@urban-renewal/api-contracts'
 import { LineIcon } from '@/components/brand/line-icon'
 import { Section } from '@/components/blocks/section'
-import { getCmsFaqItems, type CmsFaqEntry } from '@/lib/cms-source'
-import { FAQ_SEED, type FaqSeedEntry, type FaqTopic } from '@/mock/fixtures/faq'
+import { getCmsFaqItems } from '@/lib/cms-source'
 import { CONTACT } from '@/lib/site-config'
 import { makeLocalizer } from '@/lib/localize'
 
@@ -21,19 +22,15 @@ import { makeLocalizer } from '@/lib/localize'
  * never the placeholder, and never a blank page indistinguishable from a
  * broken one.
  *
- * The homepage's own FAQ teaser block is untouched and still reads its five
- * questions from the code fixture (`MOCK_FAQ`) — that fixture is explicitly
- * marked as mock data pending real review, so Pass 4G did not promote it into
- * the live CMS as if it were approved copy. This page and that block will say
- * different things until an editor either publishes real questions here or
- * the fixture is reviewed and migrated; noted in the pass report.
- *
  * ── SEED CONTENT BEHIND THE CMS ─────────────────────────────────────────────
  *
- * When the CMS has nothing published, the page now falls back to the approved
- * questions in `FAQ_SEED` rather than the empty state, and groups them under
- * the topics the copy was written with. CMS items carry no topic and render
- * as one list. The empty state stays for the case where both are empty.
+ * When the CMS has nothing published, the page falls back to the approved
+ * questions in `FAQ_SEED` rather than the empty state. Seed and CMS questions
+ * alike carry a topic from `FAQ_TOPICS`, shared with the CRM's FAQ editor
+ * (which also starts a new FAQ from `FAQ_SEED`), so a question published from
+ * the CRM keeps its card. A CMS question with no topic goes into one untitled
+ * list, and the cards are then not shown. The empty state stays for the case
+ * where both are empty.
  *
  * ── TOPICS FIRST, ANSWERS FOLDED ───────────────────────────────────────────
  *
@@ -72,14 +69,15 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
   const loc = makeLocalizer(locale as Locale)
 
   const cmsItems = await getCmsFaqItems()
-  const items: readonly CmsFaqEntry[] = cmsItems.length > 0 ? cmsItems : FAQ_SEED
+  const items: readonly FaqEntry[] = cmsItems.length > 0 ? cmsItems : FAQ_SEED
 
-  // One list per topic, in the order the questions come.
-  const groups: { topic: FaqTopic | null; items: CmsFaqEntry[] }[] = []
+  // One list per topic. A topic comes where its first question comes and its
+  // questions keep their order, so the order set in the CRM is the page's.
+  const groups: { topic: FaqTopic | null; items: FaqEntry[] }[] = []
   for (const item of items) {
-    const topic = 'group' in item ? (item as FaqSeedEntry).group : null
-    const last = groups.at(-1)
-    if (last && last.topic?.id === topic?.id) last.items.push(item)
+    const topic = FAQ_TOPICS.find((candidate) => candidate.id === item.topic) ?? null
+    const group = groups.find((existing) => existing.topic === topic)
+    if (group) group.items.push(item)
     else groups.push({ topic, items: [item] })
   }
   // The cards only when every question has a topic: a card per topic must

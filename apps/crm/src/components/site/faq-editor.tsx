@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { FAQ_SEED, FAQ_TOPICS, isFaqTopicId, type FaqTopicId } from '@urban-renewal/api-contracts'
 import { cmsApi } from '@/lib/cms-api'
 import { ContentEditorShell } from './content-editor-shell'
 import { Section } from './project/fields'
@@ -20,12 +21,26 @@ import { Section } from './project/fields'
  * publish action. Reordering, adding and hiding are all edits to that one
  * array; only actually publishing a NEW independent question would need the
  * heavier shape, and nothing here does yet.
+ *
+ * ── TOPICS, AND WHERE THE FIRST DRAFT COMES FROM ───────────────────────────
+ *
+ * The website's /faq opens on one card per topic and groups the questions
+ * under them, so every question here carries a `topic` from the shared
+ * `FAQ_TOPICS`. A question without one still publishes, but the site then
+ * drops the cards, which is why it is flagged on screen.
+ *
+ * Until something is published, the site shows `FAQ_SEED`. A new FAQ row
+ * starts as a draft of exactly those questions, not an empty list: an editor
+ * who publishes without touching anything changes nothing on the site, and
+ * one who fixes a word does not first have to retype the other eight. A row
+ * created empty before this existed gets a button that loads them.
  */
 interface FaqDocEntry {
   id: string
   question: { he: string; en?: string }
   answer: { he: string; en?: string }
   order: number
+  topic?: FaqTopicId
   hidden?: boolean
 }
 interface FaqDoc {
@@ -34,6 +49,12 @@ interface FaqDoc {
 }
 
 const SLUG = 'faq'
+
+/** The questions the site shows today, as editor entries. */
+const seedItems = (): FaqDocEntry[] =>
+  FAQ_SEED.map(({ id, topic, question, answer }, i) => ({
+    id, topic, question: { ...question }, answer: { ...answer }, order: i + 1,
+  }))
 
 export function FaqEditor() {
   const [contentId, setContentId] = useState<string | null>(null)
@@ -50,7 +71,7 @@ export function FaqEditor() {
         // viewer who reaches this screen still cannot bootstrap it.
         const created = await cmsApi.create({
           kind: 'PAGE', slug: SLUG,
-          draft: { title: { he: 'שאלות ותשובות' }, items: [] } satisfies FaqDoc,
+          draft: { title: { he: 'שאלות ותשובות' }, items: seedItems() } satisfies FaqDoc,
         })
         if (!cancelled) setContentId(created.id)
       })
@@ -98,7 +119,7 @@ export function FaqEditor() {
         return (
           <Section
             title="שאלות"
-            description="הסדר כאן הוא הסדר באתר. שאלה מוסתרת נשארת בעריכה אך אינה מוצגת."
+            description="באתר השאלות מקובצות לפי נושא, בסדר שבו הן מופיעות כאן. לכל שאלה צריך נושא: בלי נושא, כרטיסי הנושאים לא יוצגו באתר. שאלה מוסתרת נשארת בעריכה אך אינה מוצגת."
           >
             <button
               type="button"
@@ -110,7 +131,19 @@ export function FaqEditor() {
             </button>
 
             {items.length === 0 ? (
-              <p className="text-[13px] text-gray-600">אין עדיין שאלות. הוספת שאלה תתחיל את הרשימה.</p>
+              <div className="space-y-2">
+                <p className="text-[13px] text-gray-600">
+                  אין עדיין שאלות. אפשר לטעון את השאלות שמופיעות היום באתר, או להוסיף שאלה חדשה.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => write(seedItems())}
+                  className="inline-flex items-center gap-2 rounded-lg border border-teal-600 px-3 py-1.5 text-[12.5px] font-semibold text-teal-700 transition-colors hover:bg-teal-50"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  טעינת השאלות שמופיעות היום באתר
+                </button>
+              </div>
             ) : (
               <div className="space-y-3">
                 {items.map((it, i) => {
@@ -127,6 +160,11 @@ export function FaqEditor() {
                         {missing && (
                           <span className="rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[11.5px] font-semibold text-red-800">
                             חסרה שאלה או תשובה
+                          </span>
+                        )}
+                        {!it.topic && (
+                          <span className="rounded-full border border-[#d8cdb8] bg-[#f4f1ec] px-2 py-0.5 text-[11.5px] font-semibold text-[#7d6234]">
+                            חסר נושא
                           </span>
                         )}
                         <div className="ms-auto flex items-center gap-1">
@@ -157,6 +195,19 @@ export function FaqEditor() {
                       </div>
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                          <label htmlFor={`topic-${it.id}`} className="block text-[12px] font-semibold text-gray-800">נושא</label>
+                          <select
+                            id={`topic-${it.id}`} value={it.topic ?? ''}
+                            onChange={(e) => patch(it.id, { topic: isFaqTopicId(e.target.value) ? e.target.value : undefined })}
+                            className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-3 py-1.5 text-[13px] text-gray-900 focus:border-teal-600"
+                          >
+                            <option value="" disabled>בחרו נושא</option>
+                            {FAQ_TOPICS.map((topic) => (
+                              <option key={topic.id} value={topic.id}>{topic.label.he}</option>
+                            ))}
+                          </select>
+                        </div>
                         <div>
                           <label htmlFor={`q-he-${it.id}`} className="block text-[12px] font-semibold text-gray-800">שאלה (עברית)</label>
                           <input

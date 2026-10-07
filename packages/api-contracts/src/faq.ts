@@ -1,68 +1,57 @@
-import type { CmsFaqEntry } from '@/lib/cms-source'
-import type { LineIconName } from '@/components/brand/line-icon'
-
 /**
- * FAQ seed content.
+ * The FAQ's topics, and the questions the site opens with.
  *
- * ── WHY THIS EXISTS ────────────────────────────────────────────────────────
+ * ── WHY THIS LIVES IN THE CONTRACTS ────────────────────────────────────────
  *
- * /faq reads published questions from the CMS. Until an editor publishes
- * there, the page rendered an empty state, so this file supplies the approved
- * questions as a code fallback — the same "CMS first, code behind it" shape
- * `getPageBySlug` uses for the core pages.
+ * Three places read it and have to agree. The website's /faq groups its
+ * questions under these topics, and shows FAQ_SEED until the CMS holds a
+ * published FAQ. The CRM's FAQ editor offers the topics as a choice, and
+ * starts a new FAQ from FAQ_SEED rather than from an empty list, so its first
+ * draft is exactly what the site shows. The website's chat assistant answers
+ * from FAQ_SEED. Kept in one place, a question published from the CRM keeps
+ * its topic card on the site, and none of the three can drift from the others.
  *
- * It differs from `getPageBySlug` in one way, deliberately: that function
- * fails closed in production, because a CMS page that was published and then
- * withdrawn must not be resurrected by a gateway outage. Nothing has ever been
- * published to the FAQ, so there is nothing to resurrect and the fallback
- * applies in every environment. Once an editor publishes real questions, the
- * CMS wins everywhere and this file stops being read.
+ * ── TOPIC IDS ARE ADDRESSES ────────────────────────────────────────────────
  *
- * `group` is not part of `CmsFaqEntry`; it exists only here, so the seed can
- * carry the topics the copy was written under. Items that arrive from the CMS
- * have no group and render as one list, without the topic cards.
+ * A topic's id is also its anchor on /faq (/faq#costs), so it is part of the
+ * site's addresses: a label can be reworded freely, an id cannot. `icon` names
+ * one of the website's line icons; the website's type-check fails if it does
+ * not.
  */
-export interface FaqSeedEntry extends CmsFaqEntry {
-  group: FaqTopic
+
+export const FAQ_TOPICS = [
+  { id: 'costs', icon: 'receipt', label: { he: 'עלויות ופיננסים', en: 'Cost and finance' } },
+  { id: 'rights', icon: 'home', label: { he: 'התמורה והזכויות שלכם', en: 'Your consideration and rights' } },
+  { id: 'security', icon: 'shield', label: { he: 'ביטחון וערבויות', en: 'Security and guarantees' } },
+  { id: 'about', icon: 'users', label: { he: 'מי אתם ומה התפקיד שלכם', en: 'Who you are and what you do' } },
+] as const
+
+export type FaqTopic = (typeof FAQ_TOPICS)[number]
+export type FaqTopicId = FaqTopic['id']
+
+export function isFaqTopicId(value: unknown): value is FaqTopicId {
+  return FAQ_TOPICS.some((topic) => topic.id === value)
 }
 
 /**
- * A topic of the FAQ. `id` is the anchor the page's topic cards link to, so
- * it is part of the page's addresses: /faq#costs. `icon` is drawn on the card
- * and beside the topic's heading.
+ * One question. `topic` is optional because a question saved in the CMS
+ * before topics existed has none; the site shows the topic cards only when
+ * every question has one.
  */
-export interface FaqTopic {
+export interface FaqEntry {
   id: string
-  icon: LineIconName
-  label: { he: string; en: string }
+  order: number
+  topic?: FaqTopicId
+  question: { he: string; en?: string }
+  answer: { he: string; en?: string }
 }
 
-const COSTS: FaqTopic = {
-  id: 'costs',
-  icon: 'receipt',
-  label: { he: 'עלויות ופיננסים', en: 'Cost and finance' },
-}
-const RIGHTS: FaqTopic = {
-  id: 'rights',
-  icon: 'home',
-  label: { he: 'התמורה והזכויות שלכם', en: 'Your consideration and rights' },
-}
-const SECURITY: FaqTopic = {
-  id: 'security',
-  icon: 'shield',
-  label: { he: 'ביטחון וערבויות', en: 'Security and guarantees' },
-}
-const ABOUT_US: FaqTopic = {
-  id: 'about',
-  icon: 'users',
-  label: { he: 'מי אתם ומה התפקיד שלכם', en: 'Who you are and what you do' },
-}
-
-export const FAQ_SEED: readonly FaqSeedEntry[] = [
+/** The approved questions, each under its topic, in the site's order. */
+export const FAQ_SEED: readonly (FaqEntry & { topic: FaqTopicId })[] = [
   {
     id: 'faq-cost',
     order: 0,
-    group: COSTS,
+    topic: 'costs',
     question: {
       he: 'כמה זה עולה לנו, בעלי הדירות?',
       en: 'What does it cost us, the apartment owners?',
@@ -75,7 +64,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-running-costs',
     order: 1,
-    group: COSTS,
+    topic: 'costs',
     question: {
       he: 'מה קורה עם ארנונה וועד בית בבניין החדש?',
       en: 'What happens with municipal tax and building fees in the new building?',
@@ -88,7 +77,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-consideration',
     order: 2,
-    group: RIGHTS,
+    topic: 'rights',
     question: {
       he: 'מה אנחנו מקבלים בתמורה לדירה הקיימת?',
       en: 'What do we receive in exchange for our existing apartment?',
@@ -101,7 +90,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-where-live',
     order: 3,
-    group: RIGHTS,
+    topic: 'rights',
     question: {
       he: 'איפה גרים בזמן שהבניין נהרס?',
       en: 'Where do we live while the building is demolished?',
@@ -114,7 +103,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-guarantees',
     order: 4,
-    group: SECURITY,
+    topic: 'security',
     question: {
       he: 'מה קורה אם היזם נקלע לקשיים?',
       en: 'What happens if the developer runs into difficulty?',
@@ -127,7 +116,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-refusal',
     order: 5,
-    group: SECURITY,
+    topic: 'security',
     question: {
       he: 'מה עושים אם שכן מסרב לחתום?',
       en: 'What if a neighbour refuses to sign?',
@@ -140,7 +129,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-role',
     order: 6,
-    group: ABOUT_US,
+    topic: 'about',
     question: { he: 'מה בדיוק התפקיד שלכם?', en: 'What exactly is your role?' },
     answer: {
       he: 'OpenDoor Group היא חברת יזמות והתחדשות עירונית. בחלק מהפרויקטים אנחנו היזם, ובאחרים אנחנו מארגנים ומלווים את בעלי הדירות: מארגנים את המתחם, מביאים בעלי מקצוע מטעמכם, מנהלים את המכרז מול היזמים ומלווים אתכם עד לקבלת המפתח. התפקיד שלנו בכל פרויקט נאמר מראש וכתוב בהסכם שתקבלו לידיים.',
@@ -150,7 +139,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-recommend',
     order: 7,
-    group: ABOUT_US,
+    topic: 'about',
     question: {
       he: 'אתם יכולים להמליץ על עורך דין, שמאי או אדריכל?',
       en: 'Can you recommend a lawyer, an appraiser or an architect?',
@@ -163,7 +152,7 @@ export const FAQ_SEED: readonly FaqSeedEntry[] = [
   {
     id: 'faq-stalled',
     order: 8,
-    group: ABOUT_US,
+    topic: 'about',
     question: {
       he: 'הפרויקט שלנו נתקע. אתם יכולים לעזור?',
       en: 'Our project has stalled. Can you help?',

@@ -29,3 +29,6 @@ export * from './localization'
 export * from './cms.verification'
 export * from './cms-admin'
 export * from './media-slots'
+/* The FAQ's topics and its opening questions: runtime values, shared by the
+   website's /faq and chat assistant and the CRM's FAQ editor. */
+export * from './faq'
