@@ -118,12 +118,17 @@ export function LoginForm() {
         }
       </Button>
 
-      {/* Demo credentials hint */}
-      <div className="bg-muted/40 rounded-lg px-4 py-3 text-xs text-muted-foreground space-y-1">
-        <p className="font-semibold text-foreground/60">דמו:</p>
-        <p>אימייל: <span className="font-mono">admin@opendoor.co.il</span></p>
-        <p>סיסמה: <span className="font-mono">demo1234</span></p>
-      </div>
+      {/* Demo credentials hint: development only. A live system has no demo
+          account (the seed refuses to run in production), and its sign-in page
+          must not advertise an admin email beside a password. NODE_ENV is
+          inlined at build time, so a production build drops this block. */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="bg-muted/40 rounded-lg px-4 py-3 text-xs text-muted-foreground space-y-1">
+          <p className="font-semibold text-foreground/60">דמו:</p>
+          <p>אימייל: <span className="font-mono">admin@opendoor.co.il</span></p>
+          <p>סיסמה: <span className="font-mono">demo1234</span></p>
+        </div>
+      )}
     </form>
   )
 }
