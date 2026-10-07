@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma.service'
 import { REDIS } from '../redis/redis.module'
 import { LoginDto } from './dto/login.dto'
 import { PortalAuthService } from './portal-auth.service'
+import { REVOCATION_TTL_SECONDS, issuedBeforeRevocation } from './session-revocation'
 
 /*
  * The resident OTP constants and flow moved to `PortalAuthService`.
@@ -23,10 +24,10 @@ import { PortalAuthService } from './portal-auth.service'
 // A revoked session must stay revoked for at least as long as the longest-lived
 // token that carries its sessionId. The refresh token lives 30 days, so a 24h
 // revocation window would let a stolen refresh token resurrect the session on
-// day 2. Keep these two constants in lockstep.
+// day 2. Keep REFRESH_TOKEN_TTL and REVOCATION_TTL_SECONDS (session-revocation.ts,
+// 30 days) in lockstep.
 const ACCESS_TOKEN_TTL   = '24h'
 const REFRESH_TOKEN_TTL  = '30d'
-const REVOCATION_TTL_SECONDS = 30 * 24 * 60 * 60  // 30 days — matches REFRESH_TOKEN_TTL
 
 // scrypt parameters: N=2^15, r=8, p=1, 32-byte key — OWASP-acceptable for interactive login
 const SCRYPT_N  = 32768
@@ -117,7 +118,7 @@ export class AuthService {
   /* ─── Refresh tokens ────────────────────────────────────────────── */
   async refreshTokens(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify<{ sub: string; sessionId: string; role?: string }>(refreshToken)
+      const payload = this.jwtService.verify<{ sub: string; sessionId: string; role?: string; iat?: number }>(refreshToken)
 
       // A refresh token must carry a sessionId, otherwise it can never be
       // revoked. Reject legacy/forged tokens that omit it.
@@ -127,6 +128,11 @@ export class AuthService {
       // to mint a fresh access token for a session that was already revoked.
       const revoked = await this.redis.exists(`jwt:revoked:${payload.sessionId}`)
       if (revoked) throw new UnauthorizedException('הסשן בוטל — יש להתחבר מחדש')
+      // Nor for any session of a user signed out everywhere since it was
+      // issued: the new access token would carry a fresh `iat` and pass.
+      if (await issuedBeforeRevocation(this.redis, payload.sub, payload.iat)) {
+        throw new UnauthorizedException('הסשן בוטל — יש להתחבר מחדש')
+      }
 
       /*
        * A resident refresh token's `sub` is a residentId, not a userId, so the

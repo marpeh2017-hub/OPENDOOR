@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, Inject } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { REDIS } from '../../redis/redis.module'
+import { issuedBeforeRevocation } from '../session-revocation'
 
 export interface JwtPayload {
   sub: string          // userId, or residentId on a portal session
@@ -36,6 +37,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Session revocation — logout writes jwt:revoked:{sessionId} in Redis.
     const revoked = await this.redis.exists(`jwt:revoked:${payload.sessionId}`)
     if (revoked) throw new UnauthorizedException('Session has been revoked')
+    // Every session of the user at once: a password reset or change, or a
+    // deactivation (see session-revocation.ts).
+    if (await issuedBeforeRevocation(this.redis, payload.sub, payload.iat)) {
+      throw new UnauthorizedException('Session has been revoked')
+    }
 
     /*
      * ── A RESIDENT SESSION MUST CARRY ITS FULL SCOPE ────────────────────────

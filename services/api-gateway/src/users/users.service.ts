@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
+import { REDIS } from '../redis/redis.module'
 import { hashPassword } from '../auth/auth.service'
+import { passwordProblem } from '../auth/password-policy'
+import { revokeAllSessionsOf, type RevocationStore } from '../auth/session-revocation'
 import { AuditService, type AuditActor } from '../common/audit/audit.service'
 import { TenantScopeService } from '../common/tenant/tenant-scope.service'
 import { DomainError } from '../common/errors/domain-error'
@@ -27,6 +30,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly scope: TenantScopeService,
     private readonly audit: AuditService,
+    @Inject(REDIS) private readonly redis: RevocationStore,
   ) {}
 
   // ── Reads ────────────────────────────────────────────────────────────────
@@ -198,12 +202,12 @@ export class UsersService {
     }
     if (before.isActive === dto.isActive) return this.findOne(id, actor.tenantId)
 
-    return this.prisma.$transaction(async (tx) => {
-      const after = await tx.user.update({
+    const after = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
         where: { id }, data: { isActive: dto.isActive }, select: USER_PUBLIC_SELECT,
       })
-      // Sessions of a deactivated user are revoked in the same transaction —
-      // otherwise an existing refresh token keeps the account alive.
+      // `Session` rows go too, but staff sign-in does not write them: what
+      // actually ends the user's tokens is the revocation after the commit.
       if (!dto.isActive) {
         await tx.session.deleteMany({ where: { userId: id } })
       }
@@ -213,15 +217,22 @@ export class UsersService {
         changes: { before: { isActive: before.isActive }, after: { isActive: dto.isActive } },
         metadata: { reason: dto.isActive ? 'ACTIVATE' : 'DEACTIVATE', sessionsRevoked: !dto.isActive },
       }, tx)
-      return after
+      return updated
     })
+    // Login and refresh already refuse an inactive user; this ends the access
+    // tokens already issued (session-revocation.ts).
+    if (!dto.isActive) await revokeAllSessionsOf(this.redis, id)
+    return after
   }
 
   async resetPassword(id: string, dto: ResetUserPasswordDto, actor: AuditActor) {
     await this.scope.assertUser(id, actor.tenantId)
-    return this.prisma.$transaction(async (tx) => {
+    const problem = passwordProblem(dto.password)
+    if (problem) throw DomainError.validation('PASSWORD_TOO_WEAK', problem, 'password')
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.user.update({ where: { id }, data: { passwordHash: hashPassword(dto.password) } })
-      // Force re-authentication everywhere with the old credential.
+      // As in setActive: the row deletion is kept, the revocation below is
+      // what signs the user out.
       await tx.session.deleteMany({ where: { userId: id } })
       await this.audit.record(actor, {
         action: 'UPDATE', entity: 'User', entityId: id,
@@ -230,6 +241,9 @@ export class UsersService {
       }, tx)
       return { id, passwordReset: true }
     })
+    // Force re-authentication everywhere with the old credential.
+    await revokeAllSessionsOf(this.redis, id)
+    return result
   }
 
   /**

@@ -80,6 +80,8 @@ export class SetUserActiveDto {
 }
 
 export class ResetUserPasswordDto {
-  @ApiProperty({ minLength: 8 }) @IsString() @MinLength(8) @MaxLength(200)
+  /** Checked in full by `passwordProblem` (auth/password-policy.ts). */
+  @ApiProperty({ minLength: 12 }) @IsString()
+  @MinLength(12, { message: 'הסיסמה צריכה לכלול לפחות 12 תווים.' }) @MaxLength(200)
   password!: string
 }
