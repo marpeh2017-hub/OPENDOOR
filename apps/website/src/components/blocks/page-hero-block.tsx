@@ -205,11 +205,14 @@ async function Portrait({ visual, t }: { visual: PortraitVisual; t: Localizer })
           aria-hidden="true"
           className="absolute inset-0 -translate-x-3 translate-y-3 rounded-full border-2 border-teal-500 ltr:translate-x-3"
         />
+        {/* A photograph chosen in the CRM comes from storage, a host the image
+            optimiser is not configured for, so it is shown as served. */}
         <Image
           src={asset.url}
           alt={t.text(asset.alt)}
           width={asset.width ?? 960}
           height={asset.height ?? 960}
+          unoptimized={!asset.url.startsWith('/')}
           priority
           sizes="(min-width: 1024px) 21rem, (min-width: 640px) 16rem, 14rem"
           className="relative aspect-square w-full rounded-full bg-white object-cover shadow-[0_18px_40px_-22px_rgba(20,49,47,0.55)] ring-1 ring-gray-200"

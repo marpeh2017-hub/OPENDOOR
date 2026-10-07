@@ -13,16 +13,21 @@ export interface SiteSlotAssignment extends Partial<SiteSlotImage> {
 }
 
 export const MAX_SLOT_IMAGES = 8
+
+/**
+ * The places on the website whose picture the CRM can change, in page order.
+ *
+ * Only places the site draws today. Six earlier entries pointed at pictures
+ * the site no longer shows and were removed in 2026-10; Michael's photograph
+ * was added, which /about shows twice, in its opening and beside his profile.
+ * An assignment saved for a removed place stays in the stored document, and
+ * nothing on the site reads it.
+ */
 export const SITE_IMAGE_SLOTS = [
-  { id: 'HERO_JERUSALEM_ARCHITECTURE', label: 'פתיחת דף הבית — תמונות מתחלפות', multiple: true },
-  { id: 'RESIDENT_MEETING', label: 'כנס דיירים — כך אנחנו עובדים', multiple: false },
-  { id: 'JERUSALEM_LIGHT_RAIL', label: 'רצועת עיר בעמודי תוכן', multiple: false },
-  { id: 'JERUSALEM_CHORDS_BRIDGE', label: 'קריאה לפעולה בסיום הדף', multiple: false },
-  { id: 'ABOUT_ISRAELI_RESIDENTIAL', label: 'עמוד מי אנחנו', multiple: false },
-  { id: 'RENEWED_ALONGSIDE_EXISTING', label: 'סיום עמוד כך אנחנו עובדים', multiple: false },
-  { id: 'JERUSALEM_URBAN_FABRIC', label: 'מרקם עירוני', multiple: false },
-  { id: 'ARCHITECTURAL_DETAIL', label: 'פרט אדריכלי', multiple: false },
-  ...Array.from({ length: 8 }, (_, i) => ({ id: `PROCESS_STAGE_${i + 1}`, label: `תמונת שלב ${i + 1} — כך אנחנו עובדים`, multiple: false })),
+  { id: 'HERO_JERUSALEM_ARCHITECTURE', label: 'דף הבית: גלריית הפתיחה, תמונות מתחלפות', multiple: true },
+  { id: 'ABOUT_MICHAEL_PORTRAIT', label: 'מי אנחנו: התמונה של מיכאל רוזנבך', multiple: false },
+  ...Array.from({ length: 8 }, (_, i) => ({ id: `PROCESS_STAGE_${i + 1}`, label: `כך אנחנו עובדים: תמונת שלב ${i + 1}`, multiple: false })),
+  { id: 'RESIDENT_MEETING', label: 'כך אנחנו עובדים: כנס דיירים', multiple: false },
 ] as const
 
 /** Read untrusted publications and old single-image documents alike. */

@@ -40,12 +40,15 @@ export async function ProfileBlockView({ block, t }: { block: ProfileBlock; t: L
     <Section id={block.id} size="sm" className="scroll-mt-16">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-5 sm:gap-7">
+          {/* Shown as served when it comes from storage (a photograph chosen
+              in the CRM): the image optimiser is not configured for it. */}
           {portrait && (
             <Image
               src={portrait.url}
               alt=""
               width={portrait.width ?? 960}
               height={portrait.height ?? 960}
+              unoptimized={!portrait.url.startsWith('/')}
               sizes="6rem"
               className="h-20 w-20 shrink-0 rounded-full bg-white object-cover ring-1 ring-gray-200 sm:h-24 sm:w-24"
             />
