@@ -51,7 +51,7 @@ export default async function LoginPage({
           <div className="mb-6 text-center">
             <h2 className="text-xl font-bold text-gray-800">כניסה לפורטל</h2>
             <p className="text-sm text-gray-600 mt-1">
-              הזן את מספר הטלפון שלך לקבלת קוד אימות
+              הזן את מספר הטלפון או כתובת האימייל שלך לקבלת קוד אימות
             </p>
           </div>
           <OtpLoginForm locale={locale} />
