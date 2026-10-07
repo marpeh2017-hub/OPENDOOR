@@ -6,6 +6,7 @@ import { AuthService }    from './auth.service'
 import { AuthController } from './auth.controller'
 import { PortalAuthController }   from './portal-auth.controller'
 import { PortalAuthService }      from './portal-auth.service'
+import { EmailOtpSender }         from './email-otp.sender'
 import { ResidentIdentityService } from './resident-identity.service'
 import { PortalSessionProbe }      from './portal-session-probe.service'
 import { JwtStrategy }    from './strategies/jwt.strategy'
@@ -31,6 +32,8 @@ import { RedisModule }    from '../redis/redis.module'
     // could this be", `PortalAuthService` decides whether a session is issued.
     ResidentIdentityService,
     PortalAuthService,
+    // Emails the portal sign-in code: the email door of PortalAuthService.
+    EmailOtpSender,
     // Lets a PUBLIC token route notice that the caller is also signed in.
     PortalSessionProbe,
     JwtStrategy,

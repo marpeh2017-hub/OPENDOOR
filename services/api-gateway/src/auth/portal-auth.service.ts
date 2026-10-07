@@ -5,6 +5,7 @@ import { REDIS } from '../redis/redis.module'
 import { SmsService } from '../sms/sms.service'
 import { generateOtp, hashOtp, otpMatches } from '../common/otp/otp'
 import { ResidentIdentityService, type ResidentContext } from './resident-identity.service'
+import { EmailOtpSender, maskEmail } from './email-otp.sender'
 
 /**
  * Resident portal sign-in.
@@ -30,6 +31,18 @@ import { ResidentIdentityService, type ResidentContext } from './resident-identi
  * or found in a shared inbox. On its own it is a bearer token for somebody
  * else's file. Requiring the OTP on the invitation's OWN number means a leaked
  * link is useless without the handset it was addressed to.
+ *
+ * ── EMAIL: THE SAME THREE STEPS ─────────────────────────────────────────────
+ *
+ * A resident may prove an inbox instead of a handset (`sendEmailOtp`,
+ * `verifyEmailOtp`). Nothing else changes: the code proves the inbox and
+ * nothing more, the file is decided exactly as for a phone, and the session
+ * carries the same fixed scope. Two differences, both deliberate. A code goes
+ * only to an address that is on a resident's file, under the same answer
+ * either way, so the endpoint can neither mail strangers nor say which
+ * addresses are registered (its response time still differs: hiding that
+ * would mean not knowing whether the email went out). And invitations stay
+ * with the phone: an invitation names a number, and its code goes there.
  */
 
 const OTP_TTL_SECONDS = 300
@@ -50,6 +63,11 @@ const RATE_MAX = 3
 const otpKey = (phone: string) => `otp:${phone}`
 const attemptsKey = (phone: string) => `otp:attempts:${phone}`
 const rateKey = (phone: string) => `otp:rate:${phone}`
+
+/** The email door's own budget: one per address, as the phone's is one per number. */
+const emailOtpKey = (email: string) => `otp:email:${email}`
+const emailAttemptsKey = (email: string) => `otp:email:attempts:${email}`
+const emailRateKey = (email: string) => `otp:email:rate:${email}`
 
 /** The selection challenge is genuinely new, so it gets its own namespace. */
 const selectionKey = (token: string) => `portal:select:${hashOtp(token)}`
@@ -75,7 +93,9 @@ export interface ResidentJwtPayload {
 }
 
 type SelectionState = {
-  phone: string
+  /** What the code proved, a handset or an inbox. For the log line only. */
+  phone?: string
+  email?: string
   contexts: { residentId: string }[]
 }
 
@@ -88,6 +108,7 @@ export class PortalAuthService {
     private readonly jwt: JwtService,
     private readonly sms: SmsService,
     @Inject(REDIS) private readonly redis: any,
+    private readonly emailOtp: EmailOtpSender,
   ) {}
 
   // ── Step 0: what does this invitation say, before anyone types a code ─────
@@ -143,38 +164,41 @@ export class PortalAuthService {
       }
     }
 
-    const rate = rateKey(target)
-    const count = await this.redis.incr(rate)
-    if (count === 1) await this.redis.expire(rate, RATE_TTL_SECONDS)
+    await this.takeSendBudget(rateKey(target))
+    const code = await this.issueCode(otpKey(target), attemptsKey(target))
+    await this.sms.sendOtp(target, code)
+
+    return { message: 'קוד נשלח', expiresIn: OTP_TTL_SECONDS }
+  }
+
+  // ── The two doors share these, so their limits cannot drift apart ─────────
+
+  /** Three sends per hour per handset or address, whatever the outcome. */
+  private async takeSendBudget(key: string): Promise<void> {
+    const count = await this.redis.incr(key)
+    if (count === 1) await this.redis.expire(key, RATE_TTL_SECONDS)
     if (count > RATE_MAX) {
       throw new BadRequestException({
         code: 'OTP_RATE_LIMITED',
         message: 'יותר מדי בקשות OTP — נסה שוב בעוד שעה',
       })
     }
-
-    const code = generateOtp()
-    await this.redis.setex(otpKey(target), OTP_TTL_SECONDS, hashOtp(code))
-    await this.redis.del(attemptsKey(target))
-    await this.sms.sendOtp(target, code)
-
-    return { message: 'קוד נשלח', expiresIn: OTP_TTL_SECONDS }
   }
 
-  // ── Step 2: prove the handset, then decide whose file ─────────────────────
+  /** A fresh code: only its hash is stored, and the attempt count restarts. */
+  private async issueCode(codeKey: string, attempts: string): Promise<string> {
+    const code = generateOtp()
+    await this.redis.setex(codeKey, OTP_TTL_SECONDS, hashOtp(code))
+    await this.redis.del(attempts)
+    return code
+  }
 
-  async verifyOtp(input: {
-    phone: string
-    code: string
-    tenantSlug?: string | null
-    invitationToken?: string | null
-  }) {
-    const codeKey = otpKey(input.phone)
-    const attempts = attemptsKey(input.phone)
+  /** Checks a code and spends it: five guesses, then the code is gone. */
+  private async consumeCode(codeKey: string, attempts: string, code: string): Promise<void> {
     const stored = await this.redis.get(codeKey)
     if (!stored) throw new UnauthorizedException({ code: 'OTP_INVALID', message: 'קוד שגוי או פג תוקף' })
 
-    if (!otpMatches(stored, input.code)) {
+    if (!otpMatches(stored, code)) {
       const used = await this.redis.incr(attempts)
       if (used === 1) await this.redis.expire(attempts, OTP_TTL_SECONDS)
       if (used >= OTP_MAX_ATTEMPTS) {
@@ -190,6 +214,17 @@ export class PortalAuthService {
     // Single use, whatever happens next. A code that opened a selection screen
     // must not also open a second one.
     await this.redis.del(codeKey, attempts)
+  }
+
+  // ── Step 2: prove the handset, then decide whose file ─────────────────────
+
+  async verifyOtp(input: {
+    phone: string
+    code: string
+    tenantSlug?: string | null
+    invitationToken?: string | null
+  }) {
+    await this.consumeCode(otpKey(input.phone), attemptsKey(input.phone), input.code)
 
     // ── Narrowest path first: an invitation names exactly one file ──────────
     if (input.invitationToken) {
@@ -219,12 +254,53 @@ export class PortalAuthService {
     // recognise your own home — and no other person's details. The caller
     // already controls this handset, so learning which of THEIR OWN files exist
     // is not a disclosure about anyone else.
-    return this.beginSelection(input.phone, contexts)
+    return this.beginSelection({ phone: input.phone }, contexts)
   }
 
-  private async beginSelection(phone: string, contexts: ResidentContext[]) {
+  // ── The email door ────────────────────────────────────────────────────────
+
+  /** Trimmed and lower-cased: one budget and one code per address, however typed. */
+  private static normaliseEmail(email: string): string {
+    return email.trim().toLowerCase()
+  }
+
+  async sendEmailOtp(rawEmail: string) {
+    const email = PortalAuthService.normaliseEmail(rawEmail)
+    const answer = { message: 'אם הכתובת רשומה אצלנו, שלחנו אליה קוד.', expiresIn: OTP_TTL_SECONDS }
+
+    // Both before the lookup, so neither a missing provider nor a spent budget
+    // can tell a registered address from an unknown one.
+    this.emailOtp.assertReady()
+    await this.takeSendBudget(emailRateKey(email))
+
+    const { contexts } = await this.identity.resolveByEmail(email)
+    if (contexts.length === 0) {
+      this.logger.log(`Portal email code requested for ${maskEmail(email)}, which no resident file holds: nothing sent`)
+      return answer
+    }
+
+    const code = await this.issueCode(emailOtpKey(email), emailAttemptsKey(email))
+    await this.emailOtp.send(email, code)
+    return answer
+  }
+
+  async verifyEmailOtp(input: { email: string; code: string; tenantSlug?: string | null }) {
+    const email = PortalAuthService.normaliseEmail(input.email)
+    await this.consumeCode(emailOtpKey(email), emailAttemptsKey(email), input.code)
+
+    const { contexts } = await this.identity.resolveByEmail(email, input.tenantSlug)
+    if (contexts.length === 0) {
+      throw new UnauthorizedException({ code: 'RESIDENT_NOT_FOUND', message: 'הכתובת אינה רשומה במערכת.' })
+    }
+    if (contexts.length === 1) {
+      return this.issueSession(contexts[0]!, input.tenantSlug ? 'TENANT_CONTEXT' : 'EMAIL_ONLY')
+    }
+    return this.beginSelection({ email }, contexts)
+  }
+
+  private async beginSelection(subject: { phone?: string; email?: string }, contexts: ResidentContext[]) {
     const selectionToken = randomBytes(32).toString('base64url')
-    const state: SelectionState = { phone, contexts: contexts.map((c) => ({ residentId: c.residentId })) }
+    const state: SelectionState = { ...subject, contexts: contexts.map((c) => ({ residentId: c.residentId })) }
     await this.redis.setex(selectionKey(selectionToken), SELECTION_TTL_SECONDS, JSON.stringify(state))
 
     return {
@@ -263,7 +339,7 @@ export class PortalAuthService {
       // the handset is what identifies the attempt — not what should be logged
       // in full for it.
       this.logger.warn(
-        `Portal selection from ${maskPhone(state.phone)} named resident ${residentId}, ` +
+        `Portal selection from ${state.phone ? maskPhone(state.phone) : maskEmail(state.email)} named resident ${residentId}, ` +
         'which this challenge did not offer — refused.',
       )
       throw new UnauthorizedException({ code: 'SELECTION_INVALID', message: 'בחירה לא תקפה.' })

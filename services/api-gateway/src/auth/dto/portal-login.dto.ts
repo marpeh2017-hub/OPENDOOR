@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Length, Matches, Max, Min } from 'class-validator'
+import { IsEmail, IsInt, IsOptional, IsString, Length, Matches, Max, MaxLength, Min } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 /**
@@ -57,6 +57,34 @@ export class PortalVerifyOtpDto {
       'Tenant slug, from the subdomain the portal was opened on. Narrows the ' +
       'candidate residents; never widens them, and never becomes the session tenant on its own.',
   })
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Matches(/^[a-z0-9-]+$/, { message: 'Invalid tenant slug' })
+  tenantSlug?: string
+}
+
+/** The email door (PortalAuthService, "EMAIL: THE SAME THREE STEPS"). No invitation: those go by phone. */
+export class PortalSendEmailOtpDto {
+  @ApiProperty({ example: 'name@example.com' })
+  @IsEmail({}, { message: 'כתובת אימייל לא תקינה' })
+  @MaxLength(254)
+  email!: string
+}
+
+export class PortalVerifyEmailOtpDto {
+  @ApiProperty({ example: 'name@example.com' })
+  @IsEmail({}, { message: 'כתובת אימייל לא תקינה' })
+  @MaxLength(254)
+  email!: string
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @Length(6, 6)
+  @Matches(/^\d{6}$/, { message: 'OTP must be 6 digits' })
+  code!: string
+
+  @ApiPropertyOptional({ description: 'Tenant slug, as on the phone verify step: narrows, never widens.' })
   @IsOptional()
   @IsString()
   @Length(1, 100)

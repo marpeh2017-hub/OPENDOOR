@@ -5,7 +5,9 @@ import { Throttle } from '@nestjs/throttler'
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { AuthService } from './auth.service'
 import { PortalAuthService } from './portal-auth.service'
-import { PortalSendOtpDto, PortalVerifyOtpDto } from './dto/portal-login.dto'
+import {
+  PortalSendEmailOtpDto, PortalSendOtpDto, PortalVerifyEmailOtpDto, PortalVerifyOtpDto,
+} from './dto/portal-login.dto'
 import { LoginDto } from './dto/login.dto'
 import { RefreshTokenDto } from './dto/refresh-token.dto'
 import { ChangePasswordDto } from './dto/change-password.dto'
@@ -104,6 +106,38 @@ export class AuthController {
       tenantSlug: dto.tenantSlug,
       invitationToken: dto.invitationToken,
     })
+  }
+
+  /*
+   * The email door (PortalAuthService, "EMAIL: THE SAME THREE STEPS"), with the
+   * phone door's per-IP limits: the service's per-address budget caps one
+   * inbox, these cap one source working through many addresses.
+   */
+
+  @Public()
+  @Post('otp/email/send')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 2, ttl: 10_000 },
+    medium: { limit: 5, ttl: 60_000 },
+    long: { limit: 20, ttl: 3_600_000 },
+  })
+  @ApiOperation({ summary: 'Email a sign-in code (resident login). Same answer for any address.' })
+  sendEmailOtp(@Body() dto: PortalSendEmailOtpDto) {
+    return this.portal.sendEmailOtp(dto.email)
+  }
+
+  @Public()
+  @Post('otp/email/verify')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 3, ttl: 10_000 },
+    medium: { limit: 10, ttl: 60_000 },
+    long: { limit: 40, ttl: 3_600_000 },
+  })
+  @ApiOperation({ summary: 'Verify an emailed code and open a resident session, or a selection challenge' })
+  verifyEmailOtp(@Body() dto: PortalVerifyEmailOtpDto) {
+    return this.portal.verifyEmailOtp({ email: dto.email, code: dto.code, tenantSlug: dto.tenantSlug })
   }
 
   /**

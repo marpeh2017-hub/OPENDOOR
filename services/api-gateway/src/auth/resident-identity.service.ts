@@ -48,7 +48,7 @@ export interface ResidentContext {
  */
 const DEFAULT_INVITATION_TTL_HOURS = 24 * 7
 
-export type NarrowedBy = 'INVITATION' | 'TENANT_CONTEXT' | 'PHONE_ONLY'
+export type NarrowedBy = 'INVITATION' | 'TENANT_CONTEXT' | 'PHONE_ONLY' | 'EMAIL_ONLY'
 
 export interface Resolution {
   contexts: ResidentContext[]
@@ -157,6 +157,33 @@ export class ResidentIdentityService {
     return {
       contexts: rows.map((r) => this.toContext(r)),
       narrowedBy: tenantSlug ? 'TENANT_CONTEXT' : 'PHONE_ONLY',
+    }
+  }
+
+  /**
+   * Every resident file the given email could open, optionally narrowed.
+   *
+   * The same rule as `resolveByPhone`: an email is not an identity either.
+   * Couples share an inbox and one address can sit on several files, so all
+   * of them are returned and nothing is picked. Matched without regard to
+   * case, because people type addresses the way they type them; the caller
+   * passes it trimmed. Marketing consent (`emailOptIn`) does not apply: a
+   * sign-in code is sent because the resident asked for it.
+   */
+  async resolveByEmail(email: string, tenantSlug?: string | null): Promise<Resolution> {
+    const rows = await this.prisma.resident.findMany({
+      where: {
+        email: { equals: email, mode: 'insensitive' },
+        isActive: true,
+        ...(tenantSlug
+          ? { apartment: { building: { complex: { project: { tenant: { slug: tenantSlug } } } } } }
+          : {}),
+      },
+      select: ResidentIdentityService.RESIDENT_SCOPE,
+    })
+    return {
+      contexts: rows.map((r) => this.toContext(r)),
+      narrowedBy: tenantSlug ? 'TENANT_CONTEXT' : 'EMAIL_ONLY',
     }
   }
 
