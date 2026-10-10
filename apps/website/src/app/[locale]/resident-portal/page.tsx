@@ -45,8 +45,8 @@ export default async function ResidentPortalPage({
           <>
             <p className="mb-8 max-w-prose text-lg leading-relaxed text-gray-700">
               {he
-                ? 'הכניסה לאזור האישי נעשית בקוד חד־פעמי שנשלח לטלפון הנייד הרשום אצלנו. אם אינכם מצליחים להיכנס, או שהמספר שלכם אינו רשום, פנו אלינו ונסדיר את הגישה. מידע אישי של בעלי דירות אינו מוצג באתר הציבורי.'
-                : 'You sign in to your personal area with a one-time code sent to the mobile number we hold for you. If you cannot sign in, or your number is not on record, contact us and we will set up access. Personal owner information is not displayed on the public website.'}
+                ? 'הכניסה לאזור האישי נעשית בקוד חד־פעמי שנשלח לטלפון הנייד או לאימייל הרשומים אצלנו. אם אינכם מצליחים להיכנס, או שהפרטים שלכם אינם רשומים, פנו אלינו ונסדיר את הגישה. מידע אישי של בעלי דירות אינו מוצג באתר הציבורי.'
+                : 'You sign in to your personal area with a one-time code sent to the mobile number or email address we hold for you. If you cannot sign in, or your details are not on record, contact us and we will set up access. Personal owner information is not displayed on the public website.'}
             </p>
             <Link
               href={PERSONAL_AREA_HREF}

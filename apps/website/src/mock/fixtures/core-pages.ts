@@ -987,8 +987,8 @@ const trustBlocks: PageBlock[] = [
       en: 'In the personal area every owner sees in one place which stage the project has reached, the updates, the documents relevant to their apartment, and the meetings coming up.',
     },
     body: {
-      he: 'משם אפשר גם לשלוח הודעות ופניות, ולחתום על מסמכים כשנדרש. הכניסה נעשית בקוד חד־פעמי שנשלח לטלפון הנייד הרשום אצלנו. סביבה לחברי הנציגות, לניהול ההחלטות והמשימות, עדיין בבנייה.\n\nלצד האזור האישי, הנהלים שלמעלה ממשיכים להתקיים גם בערוצים הרגילים: פגישות, סיכומים כתובים ותקשורת ישירה מול הנציגות.',
-      en: 'From there owners can also send messages and requests, and sign documents when needed. Sign-in is by a one-time code sent to the mobile number we hold. A workspace for representation members, for managing decisions and tasks, is still being built.\n\nAlongside the personal area, the practices above continue through the ordinary channels too: meetings, written summaries, and direct communication with the representation.',
+      he: 'משם אפשר גם לשלוח הודעות ופניות, ולחתום על מסמכים כשנדרש. הכניסה נעשית בקוד חד־פעמי שנשלח לטלפון הנייד או לאימייל הרשומים אצלנו. סביבה לחברי הנציגות, לניהול ההחלטות והמשימות, עדיין בבנייה.\n\nלצד האזור האישי, הנהלים שלמעלה ממשיכים להתקיים גם בערוצים הרגילים: פגישות, סיכומים כתובים ותקשורת ישירה מול הנציגות.',
+      en: 'From there owners can also send messages and requests, and sign documents when needed. Sign-in is by a one-time code sent to the mobile number or email address we hold. A workspace for representation members, for managing decisions and tasks, is still being built.\n\nAlongside the personal area, the practices above continue through the ordinary channels too: meetings, written summaries, and direct communication with the representation.',
     },
   },
   {
