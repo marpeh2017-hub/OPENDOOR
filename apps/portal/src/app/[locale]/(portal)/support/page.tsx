@@ -61,7 +61,7 @@ export default async function SupportPage({
           cls="text-teal-600" bg="bg-teal-50"
         />
         <ContactTile
-          href="https://wa.me/9720548018613"
+          href="https://wa.me/972548018613"
           icon={MessageCircle} label="WhatsApp" sub="054-8018613"
           cls="text-green-600" bg="bg-green-50" external
         />

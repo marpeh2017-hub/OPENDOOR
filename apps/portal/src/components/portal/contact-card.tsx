@@ -40,7 +40,7 @@ export function ContactCard({ contact }: { contact: Dashboard['contact'] }) {
           <span className="text-xs font-medium">שיחה</span>
         </a>
         <a
-          href="https://wa.me/9720548018613"
+          href="https://wa.me/972548018613"
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center gap-1.5 rounded-xl bg-green-50 p-3 text-green-600 hover:bg-green-100 transition-colors"
