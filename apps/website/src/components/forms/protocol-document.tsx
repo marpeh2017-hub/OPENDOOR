@@ -131,7 +131,7 @@ export function ProtocolDocument() {
       </section>
 
       <p className="mt-10 border-t border-gray-300 pt-3 text-center text-[0.8em] leading-normal text-gray-700 print:mt-6 print:text-black">
-        {protocolPreparedBy()}
+        {protocolPreparedBy(PROTOCOL)}
       </p>
     </article>
   )

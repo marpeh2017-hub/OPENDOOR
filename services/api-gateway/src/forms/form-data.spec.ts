@@ -20,6 +20,7 @@ const snapshot = () => ({
   version: '2026-10-07',
   title: 'פרוטוקול מינוי נציגות בעלי דירות לקידום פרויקט פינוי-בינוי',
   parts: [{ letter: 'א', title: 'רקע', clauses: [{ number: 1, blocks: [{ kind: 'paragraph', text: 'x' }] }] }],
+  preparedBy: { name: 'מכין', line: 'מכין המסמך {preparer}.' },
 })
 
 const form = (overrides: Partial<FormData> = {}): FormData => ({
@@ -116,6 +117,7 @@ describe('validateSnapshot', () => {
       validateSnapshot({ ...snapshot(), parts: [{ clauses: [{ blocks: [] }] }] }, 'representation-protocol'),
     ).toThrow()
     expect(() => validateSnapshot('text', 'representation-protocol')).toThrow()
+    expect(() => validateSnapshot({ ...snapshot(), preparedBy: undefined }, 'representation-protocol')).toThrow()
   })
 
   it('refuses a snapshot too large to be the protocol', () => {

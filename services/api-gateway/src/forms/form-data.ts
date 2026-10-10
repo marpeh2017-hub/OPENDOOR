@@ -106,6 +106,10 @@ export function validateSnapshot(text: unknown, templateId: string): ProtocolSna
       if (typeof c.number !== 'number' || !Array.isArray(c.blocks)) throw bad('clause')
     }
   }
+  const preparedBy = t.preparedBy as { name?: unknown; line?: unknown } | undefined
+  if (typeof preparedBy?.name !== 'string' || typeof preparedBy.line !== 'string' || !preparedBy.line.includes('{preparer}')) {
+    throw bad('preparedBy')
+  }
   if (Buffer.byteLength(JSON.stringify(t), 'utf8') > MAX_SNAPSHOT_BYTES) throw bad('too large')
   return t as ProtocolSnapshot
 }

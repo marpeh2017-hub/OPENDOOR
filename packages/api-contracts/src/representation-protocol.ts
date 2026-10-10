@@ -114,14 +114,18 @@ export interface ProtocolTableColumn {
 }
 
 /**
- * The document's closing line. The signed copy, and only the signed copy,
- * gives the preparer's ID number after the name: the number is deliberately
- * not in this package, which ships to browsers, and the signed copy gets it
- * from the server that assembles it.
+ * The document's closing line, from the protocol's own data (a form's
+ * snapshot carries it too). The signed copy, and only the signed copy, gives
+ * the preparer's ID number after the name: the number is deliberately not in
+ * this package, which ships to browsers; the server that assembles a signed
+ * copy supplies it.
  */
-export function protocolPreparedBy(idNumber?: string): string {
-  const preparer = idNumber ? `מיכאל רוזנבך ${idNumber}` : 'מיכאל רוזנבך'
-  return `מכין המסמך ${preparer} באמצעות חברת קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334.`
+export function protocolPreparedBy(
+  protocol: Pick<RepresentationProtocol, 'preparedBy'>,
+  idNumber?: string,
+): string {
+  const { name, line } = protocol.preparedBy
+  return line.replace('{preparer}', idNumber ? `${name} ${idNumber}` : name)
 }
 
 export interface RepresentationProtocol {
@@ -137,6 +141,9 @@ export interface RepresentationProtocol {
   parts: readonly ProtocolPart[]
   representationTable: { columns: readonly ProtocolTableColumn[]; blankRows: number }
   ownersTable: { heading: ProtocolText; columns: readonly ProtocolTableColumn[]; blankRows: number }
+  /** The first page's footer: who prepared the document. `{preparer}` in
+   *  `line` is replaced by the name (and, on a signed copy, the ID number). */
+  preparedBy: { name: string; line: string }
 }
 
 export const REPRESENTATION_PROTOCOL: RepresentationProtocol = {
@@ -338,6 +345,11 @@ export const REPRESENTATION_PROTOCOL: RepresentationProtocol = {
     ],
     /** Empty rows on the printed form, as in the source. */
     blankRows: 20,
+  },
+
+  preparedBy: {
+    name: 'מיכאל רוזנבך',
+    line: 'מכין המסמך {preparer} באמצעות חברת קבוצת אופן דור יזמות והתחדשות בע״מ, ח.פ. 515856334.',
   },
 }
 
