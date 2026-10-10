@@ -24,7 +24,7 @@ import {
   Bell,
   CalendarDays,
   Menu,
-  X, FileText } from 'lucide-react'
+  X, FileText, FileCheck2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SidebarUserMenu } from './sidebar-user-menu'
 
@@ -54,6 +54,7 @@ const navItems = [
     group: 'תפעול',
     items: [
       { href: '/signatures',    icon: FileSignature, label: 'חתימות' },
+      { href: '/forms',         icon: FileCheck2,    label: 'טפסים' },
       { href: '/documents',     icon: ClipboardList, label: 'מסמכים' },
       { href: '/communications',icon: MessageSquare, label: 'תקשורת' },
       { href: '/tasks',         icon: ClipboardList, label: 'משימות' },
