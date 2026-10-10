@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { Locale } from '@urban-renewal/api-contracts'
-import { getHomePage, getFeaturedProjects, getKnowledgeArticles, getFaqItems } from '@/mock'
+import { getHomePage, getFeaturedProjects, getFaqItems } from '@/mock'
 import { makeLocalizer } from '@/lib/localize'
 import { CityBandBlockView } from '@/components/blocks/city-band-block'
 import { HeroBlockView } from '@/components/blocks/hero-block'
@@ -12,7 +12,6 @@ import { FeatureGridBlockView } from '@/components/blocks/feature-grid-block'
 import { TextSectionBlockView } from '@/components/blocks/text-section-block'
 import { ProjectsBlockView } from '@/components/blocks/projects-block'
 import { PortalBlockView } from '@/components/blocks/portal-block'
-import { KnowledgeBlockView } from '@/components/blocks/knowledge-block'
 import { FaqBlockView } from '@/components/blocks/faq-block'
 import { CtaBlockView } from '@/components/blocks/cta-block'
 import { DoorsBlockView } from '@/components/blocks/doors-block'
@@ -94,9 +93,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const blocks = page.blocks.filter((block) => !block.hidden)
   const uses = (type: string) => blocks.some((block) => block.type === type)
 
-  const [projects, articles, faqItems] = await Promise.all([
+  const [projects, faqItems] = await Promise.all([
     uses('PROJECTS') ? getFeaturedProjects(3) : [],
-    uses('KNOWLEDGE') ? getKnowledgeArticles({ limit: 3, locale: locale as Locale }) : null,
     uses('FAQ') ? getFaqItems(undefined, locale as Locale) : [],
   ])
 
@@ -149,7 +147,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             break
 
           case 'KNOWLEDGE':
-            rendered = <KnowledgeBlockView block={block} articles={articles?.items ?? []} t={t} />
+            // The knowledge centre was removed on 2026-10-07 (the forms page
+            // took its place), so a knowledge block left on the page in the
+            // CMS renders nothing.
+            rendered = null
             break
 
           case 'FAQ':

@@ -16,7 +16,14 @@ import { FaqChatWidget } from './faq-chat-widget'
  * so `pathname` is `/privacy`, never `/he/privacy` — one check works for
  * every locale without a prefix strip of its own.
  */
-const EXCLUDED_PATHS = ['/privacy', '/terms', '/accessibility']
+const EXCLUDED_PATHS = [
+  '/privacy',
+  '/terms',
+  '/accessibility',
+  // A document page: the bubble would sit over the protocol's text, and it
+  // does not belong on the printed form either.
+  '/forms/representation-protocol',
+]
 
 export function SiteChatWidget() {
   const locale = useLocale()

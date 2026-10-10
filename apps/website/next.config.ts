@@ -43,6 +43,15 @@ const config: NextConfig = {
     return [{ source: '/:path*', headers: securityHeaders }]
   },
 
+  // The knowledge centre was removed on 2026-10-07 and the forms page took its
+  // place, so its addresses, and any link or bookmark to them, lead there.
+  async redirects() {
+    return [
+      { source: '/:locale(he|en)/knowledge/:path*', destination: '/:locale/forms', permanent: true },
+      { source: '/knowledge/:path*', destination: '/he/forms', permanent: true },
+    ]
+  },
+
   // Workspace packages ship TypeScript source rather than build output, so Next
   // must compile them. `api-contracts` is types-only and erases, but it is
   // listed anyway: it exports one runtime constant (PROJECT_STAGE_ORDER).

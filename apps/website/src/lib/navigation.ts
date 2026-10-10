@@ -30,9 +30,9 @@ export const PRIMARY_NAV_KEYS = [
   // then. Put 'projects' back here when the homepage's projects block is
   // unhidden.
   'services',
-  // FAQ rather than the knowledge centre: the FAQ has content today, and a
-  // top-level link to an empty page is a promise the bar cannot keep. The
-  // knowledge centre stays in the footer and the mobile menu.
+  // FAQ: it has content, where the knowledge centre that once competed for
+  // this place had none. Since 2026-10-07 there is no knowledge centre; the
+  // forms page took its place in the mobile menu and the footer.
   'faq',
 ] as const
 
@@ -50,10 +50,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
   // homepage's second door leads here.
   { key: 'stalledProjects', href: '/stalled-projects' },
   { key: 'faq', href: '/faq' },
-  { key: 'knowledge', href: '/knowledge' },
+  { key: 'forms', href: '/forms' },
   { key: 'contact', href: '/contact' },
   { key: 'search', href: '/search' },
 ] as const
+
+/** The representation-appointment protocol's full text, under /forms. */
+export const REPRESENTATION_PROTOCOL_HREF = '/forms/representation-protocol'
 
 /**
  * The page that EXPLAINS the residents' personal area: how access works, and
@@ -92,9 +95,11 @@ export const FOOTER_GROUPS: readonly { titleKey: string; items: readonly NavItem
     ],
   },
   {
-    titleKey: 'knowledge',
+    // What an owner comes back for: the forms to read and print, the
+    // questions, and search. It was "ידע", around the knowledge centre.
+    titleKey: 'forOwners',
     items: [
-      { key: 'knowledge', href: '/knowledge' },
+      { key: 'forms', href: '/forms' },
       { key: 'faq', href: '/faq' },
       { key: 'search', href: '/search' },
     ],

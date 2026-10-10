@@ -54,6 +54,14 @@ const PATHS = {
       <path d="M9 17h4" />
     </>
   ),
+  // Printing a form, or saving it as a PDF.
+  printer: (
+    <>
+      <path d="M7 8V3h10v5" />
+      <path d="M7 17H4V8h16v9h-3" />
+      <path d="M7 13h10v8H7z" />
+    </>
+  ),
   alert: (
     <>
       <path d="M12 4l9 16H3z" />

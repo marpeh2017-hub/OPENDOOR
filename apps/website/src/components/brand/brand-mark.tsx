@@ -24,6 +24,8 @@ const LOGO = { src: '/brand/opendoor-logo.svg', width: 984, height: 366 }
 const VARIANTS = {
   header: { className: 'h-10 w-auto sm:h-11', priority: true },
   footer: { className: 'h-12 w-auto', priority: false },
+  // A printed form's letterhead: the Word file's logo is 4.4cm wide.
+  document: { className: 'h-[58px] w-auto', priority: false },
 } as const
 
 export function BrandMark({

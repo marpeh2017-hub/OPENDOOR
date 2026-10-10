@@ -12,7 +12,7 @@
     "howWeWork": "How we work",
     "stalledProjects": "Stalled projects",
     "projects": "Projects",
-    "knowledge": "Knowledge",
+    "forms": "Forms",
     "faq": "FAQ",
     "contact": "Contact",
     "trust": "Trust",
@@ -32,7 +32,7 @@
   "footer": {
     "company": "Company",
     "urbanRenewal": "Urban renewal",
-    "knowledge": "Knowledge",
+    "forOwners": "For owners",
     "contact": "Contact",
     "legal": "Legal",
     "privacy": "Privacy policy",
@@ -67,9 +67,30 @@
     "trust": {
       "title": "Trust"
     },
-    "knowledge": {
-      "title": "Knowledge centre",
-      "empty": "Looking for an explanation of the process? Start with How we work, or contact us with a question."
+    "forms": {
+      "title": "Forms",
+      "heading": "Forms for apartment owners",
+      "standfirst": "The full text of each form, to read and print. You sign through the personal link we send you, or in your personal area.",
+      "protocolTitle": "Protocol appointing an owners’ representation to advance a pinui-binui project",
+      "protocolSummary": "The protocol in which the apartment owners appoint a representation on their behalf to advance the project’s organisation and review stages. The text is in Hebrew.",
+      "clauses": "{count} clauses",
+      "signsSeparately": "Each owner signs separately",
+      "notBinding": "Not a binding pinui-binui agreement",
+      "read": "Read the full text (Hebrew)",
+      "print": "Print or save as PDF",
+      "howHeading": "How signing works",
+      "step1Title": "You receive a personal link",
+      "step1Body": "By text message or email, or sign in to your personal area.",
+      "step2Title": "Read and fill in your details",
+      "step2Body": "The full text, then your own row in the signature table.",
+      "step3Title": "Sign",
+      "step3Body": "A copy of what you signed is kept in your personal area.",
+      "helpHeading": "A question about a form?",
+      "helpBody": "Didn’t receive a link, or is something in the text unclear? Talk to us.",
+      "personalArea": "Personal area",
+      "allForms": "All forms",
+      "signNote": "You sign the protocol through the personal link we send you, or in your personal area. The protocol is in Hebrew.",
+      "documentDescription": "The full text of the protocol, to read and print."
     },
     "faq": {
       "title": "FAQ",
@@ -109,7 +130,6 @@
   },
   "links": {
     "allProjects": "All projects",
-    "knowledgeCentre": "Knowledge centre",
     "allQuestions": "All questions",
     "contact": "Contact us",
     "whyOrganizer": "Why work with an organising company?",

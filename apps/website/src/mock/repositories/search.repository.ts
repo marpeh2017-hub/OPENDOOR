@@ -1,6 +1,12 @@
 import type { Locale, SearchResult, SearchResults } from '@urban-renewal/api-contracts'
-import { resolveContent } from '@urban-renewal/api-contracts'
-import { getKnowledgeArticles, getFaqItems } from './knowledge.repository'
+import {
+  REPRESENTATION_PROTOCOL,
+  protocolPlainText,
+  resolveContent,
+} from '@urban-renewal/api-contracts'
+import { getTranslations } from 'next-intl/server'
+import { REPRESENTATION_PROTOCOL_HREF } from '@/lib/navigation'
+import { getFaqItems } from './knowledge.repository'
 import { getProjects } from './projects.repository'
 import { getPageBySlug } from './content.repository'
 
@@ -37,11 +43,11 @@ export async function search(
   const results: SearchResult[] = []
 
   const slugs = ['about', 'why-organizer', 'how-we-work', 'trust', 'services', 'stalled-projects']
-  const [pages, projects, articles, faq] = await Promise.all([
+  const [pages, projects, faq, tForms] = await Promise.all([
     Promise.all(slugs.map((slug) => getPageBySlug(slug))),
     getProjects({ limit: 100 }),
-    getKnowledgeArticles({ limit: 200, locale }),
     getFaqItems(undefined, locale),
+    getTranslations({ locale, namespace: 'pages.forms' }),
   ])
   for (const [index, page] of pages.entries()) {
     const slug = slugs[index]
@@ -51,6 +57,33 @@ export async function search(
     if (`${title} ${excerpt}`.toLowerCase().includes(q))
       results.push({ kind: 'page', title, excerpt, href: `/${slug}` })
   }
+  // The forms are code pages, titled from the site's messages. The protocol
+  // also matches on its own Hebrew text, so a search for a phrase in it
+  // ("ניגוד עניינים") finds the document.
+  const protocolText = REPRESENTATION_PROTOCOL.parts
+    .flatMap((part) => part.clauses)
+    .flatMap((clause) => [
+      clause.heading ?? '',
+      ...clause.blocks.flatMap((block) =>
+        block.kind === 'paragraph' ? [block.text] : block.kind === 'items' ? [...block.items] : [],
+      ),
+    ])
+    .map(protocolPlainText)
+    .join(' ')
+  const forms = [
+    { title: tForms('heading'), excerpt: tForms('standfirst'), href: '/forms', extra: '' },
+    {
+      title: tForms('protocolTitle'),
+      excerpt: tForms('protocolSummary'),
+      href: REPRESENTATION_PROTOCOL_HREF,
+      extra: `${REPRESENTATION_PROTOCOL.title} ${protocolText}`,
+    },
+  ]
+  for (const { extra, ...form } of forms) {
+    if (`${form.title} ${form.excerpt} ${extra}`.toLowerCase().includes(q))
+      results.push({ kind: 'page', ...form })
+  }
+
   for (const p of projects.items) {
     // Matches against every language a value has, so an English query finds a
     // project whose English name exists and a Hebrew one always works. The
@@ -65,17 +98,6 @@ export async function search(
         title: resolveContent(p.name, locale, 'SOURCE') ?? '',
         excerpt: resolveContent(p.summary, locale, 'SOURCE') ?? '',
         href: `/projects/${p.slug}`,
-      })
-    }
-  }
-
-  for (const a of articles.items) {
-    if ([a.title, a.summary].join(' ').toLowerCase().includes(q)) {
-      results.push({
-        kind: 'article',
-        title: a.title,
-        excerpt: a.summary,
-        href: `/knowledge/${a.slug}`,
       })
     }
   }

@@ -37,7 +37,7 @@ export function HeaderShell({ children }: { children: React.ReactNode }) {
 
   return (
     <header
-      className={`sticky top-0 z-header transition-[background-color,border-color,box-shadow] duration-200 ${
+      className={`sticky top-0 z-header transition-[background-color,border-color,box-shadow] duration-200 print:hidden ${
         scrolled
           ? 'border-b border-gray-200 bg-white/95 shadow-[0_1px_3px_rgb(20_49_47/0.05)] backdrop-blur'
           : 'border-b border-transparent bg-white/70 backdrop-blur'

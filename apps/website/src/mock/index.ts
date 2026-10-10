@@ -33,7 +33,6 @@ export {
 } from './repositories/projects.repository'
 
 export {
-  getKnowledgeArticles,
   getFaqItems,
   getExternalResources,
 } from './repositories/knowledge.repository'
