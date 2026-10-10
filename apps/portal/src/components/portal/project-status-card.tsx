@@ -53,7 +53,7 @@ export function ProjectStatusCard({
             <div className="flex flex-col items-center gap-1">
               <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                 stage.done
-                  ? 'bg-teal-500 text-white'
+                  ? 'bg-teal-600 text-white'
                   : stage.current
                   ? 'bg-teal-100 text-teal-600 ring-2 ring-teal-500'
                   : 'bg-gray-100 text-gray-400'

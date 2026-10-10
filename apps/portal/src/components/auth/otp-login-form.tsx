@@ -207,7 +207,7 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
         <button
           type="submit"
           disabled={isLoading || !canSend}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-teal transition hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-teal transition hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <>שלח קוד אימות</>}
         </button>
@@ -295,7 +295,7 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
       <button
         type="submit"
         disabled={isLoading || otp.length < 6}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-teal transition hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-teal transition hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isLoading ? <RefreshCw size={16} className="animate-spin" /> : 'כניסה'}
       </button>
@@ -303,7 +303,7 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
       <button
         type="button"
         disabled={isLoading}
-        className="w-full text-center text-sm text-gray-400 hover:text-teal-500 transition-colors"
+        className="w-full text-center text-sm text-gray-400 hover:text-teal-600 transition-colors"
         onClick={() => handleSendOtp()}
       >
         לא קיבלת קוד? שלח שוב

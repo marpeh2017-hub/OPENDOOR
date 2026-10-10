@@ -61,7 +61,7 @@ export function TicketReplyForm({ ticketId }: { ticketId: string }) {
         type="button"
         disabled={busy || body.trim().length === 0}
         onClick={submit}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {busy ? <RefreshCw size={15} className="animate-spin" /> : <><Send size={14} /> שליחת תגובה</>}
       </button>

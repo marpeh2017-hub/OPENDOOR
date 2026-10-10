@@ -163,7 +163,7 @@ function ContactTile({
         <Icon size={20} className={cls} />
       </div>
       <p className="text-sm font-semibold text-gray-700">{label}</p>
-      <p className="text-xs text-gray-400" dir="ltr">{sub}</p>
+      <p className="text-xs text-gray-600" dir="ltr">{sub}</p>
     </a>
   )
 }

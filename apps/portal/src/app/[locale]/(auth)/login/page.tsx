@@ -1,4 +1,4 @@
-import { Shield } from 'lucide-react'
+import Image from 'next/image'
 import { OtpLoginForm } from '@/components/auth/otp-login-form'
 
 /**
@@ -28,37 +28,39 @@ export default async function LoginPage({
     // The whole screen is the login task, so it is one <main> rather than a
     // <main> nested inside a bare wrapper div — nothing on this page sits
     // outside a landmark.
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white px-4">
-      {/* Logo */}
-      <div className="mb-8 flex flex-col items-center gap-3">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-500 shadow-teal">
-          <Shield size={32} className="text-white" />
-        </div>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800">OpenDoor</h1>
-          <p className="text-sm text-gray-600">התחדשות עירונית</p>
-        </div>
-      </div>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-[#FCFCFB] px-4 py-10">
+      {/* The company's own logo, the website's (2026-10-07). It carries the
+          name, so the page's heading is the task: signing in. */}
+      <Image
+        src="/brand/opendoor-logo.svg"
+        alt="OpenDoor התחדשות עירונית"
+        width={167}
+        height={62}
+        priority
+        unoptimized
+        className="mb-7 h-[62px] w-auto"
+      />
 
-      {/* Login Card */}
+      {/* Login Card: white on the off-white page, as on the CRM's sign-in.
+          The shared card-surface is grey, made for cards on a white page. */}
       <div className="w-full max-w-sm">
-        <div className="card-surface p-8">
+        <div className="rounded-2xl border border-border bg-white p-8">
           {notice && (
             <p role="status" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
               {notice}
             </p>
           )}
           <div className="mb-6 text-center">
-            <h2 className="text-xl font-bold text-gray-800">כניסה לפורטל</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              הזן את מספר הטלפון או כתובת האימייל שלך לקבלת קוד אימות
+            <h1 className="text-2xl font-extrabold text-gray-800">כניסה לאזור האישי</h1>
+            <p className="text-sm text-gray-600 mt-1.5">
+              נשלח קוד חד-פעמי לטלפון או לאימייל שרשומים בתיק שלכם.
             </p>
           </div>
           <OtpLoginForm locale={locale} />
         </div>
 
         <p className="mt-4 text-center text-xs text-gray-600">
-          בכניסה לפורטל אתה מאשר את{' '}
+          בכניסה אתם מאשרים את{' '}
           <a href={`/${locale}/terms`} className="text-teal-700 underline">תנאי השימוש</a>
           {' '}ואת{' '}
           <a href={`/${locale}/privacy`} className="text-teal-700 underline">מדיניות הפרטיות</a>

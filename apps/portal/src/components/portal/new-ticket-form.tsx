@@ -54,7 +54,7 @@ export function NewTicketForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-teal transition hover:bg-teal-600"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-teal transition hover:bg-teal-700"
       >
         <Plus size={16} />
         פנייה חדשה
@@ -116,7 +116,7 @@ export function NewTicketForm() {
           type="button"
           disabled={busy || !valid}
           onClick={submit}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? <RefreshCw size={15} className="animate-spin" /> : <><Send size={14} /> שליחה</>}
         </button>

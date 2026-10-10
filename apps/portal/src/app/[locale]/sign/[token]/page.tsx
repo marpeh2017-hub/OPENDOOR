@@ -21,6 +21,7 @@
  *   POST /api/v1/signatures/portal/:token/decline  — decline
  */
 
+import Image from 'next/image'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import {
@@ -226,10 +227,15 @@ export default function SignPage() {
     >
       {/* Logo / brand */}
       <div className="mb-8 flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg bg-teal-500 flex items-center justify-center">
-          <span className="text-white text-xs font-bold">OD</span>
-        </div>
-        <span className="font-bold text-gray-800">OpenDoor</span>
+        {/* The first thing a resident sees from a link: the company's logo. */}
+        <Image
+          src="/brand/opendoor-logo.svg"
+          alt="OpenDoor התחדשות עירונית"
+          width={118}
+          height={44}
+          unoptimized
+          className="h-11 w-auto"
+        />
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -305,7 +311,7 @@ export default function SignPage() {
             <button
               onClick={requestOtp}
               disabled={busy}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               {busy
                 ? <RefreshCw size={16} className="animate-spin" />
@@ -364,7 +370,7 @@ export default function SignPage() {
             <button
               onClick={verifyOtp}
               disabled={otp.length !== 6 || busy || otpExpired}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               {busy ? <RefreshCw size={16} className="animate-spin" /> : 'אמת קוד'}
             </button>
@@ -425,7 +431,7 @@ export default function SignPage() {
 
             <button
               onClick={() => setStep('signing')}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
             >
               אני מאשר/ת לחתום
             </button>
@@ -469,7 +475,7 @@ export default function SignPage() {
             <button
               onClick={executeSign}
               disabled={busy}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-4 py-4 text-base font-bold text-white hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-4 text-base font-bold text-white hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
               {busy
                 ? <RefreshCw size={18} className="animate-spin" />

@@ -43,7 +43,7 @@ export function ContactCard({ contact }: { contact: Dashboard['contact'] }) {
           href="https://wa.me/972548018613"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 rounded-xl bg-green-50 p-3 text-green-600 hover:bg-green-100 transition-colors"
+          className="flex flex-col items-center gap-1.5 rounded-xl bg-green-50 p-3 text-green-700 hover:bg-green-100 transition-colors"
         >
           <MessageCircle size={20} />
           <span className="text-xs font-medium">WhatsApp</span>
@@ -56,7 +56,7 @@ export function ContactCard({ contact }: { contact: Dashboard['contact'] }) {
           <span className="text-xs font-medium">מייל</span>
         </a>
       </div>
-      <p className="text-xs text-gray-400 text-center mt-3">
+      <p className="text-xs text-gray-600 text-center mt-3">
         ירושלים: 054-8018613 | מרכז: 03-5098264
       </p>
     </div>

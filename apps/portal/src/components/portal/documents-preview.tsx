@@ -14,7 +14,7 @@ export function DocumentsPreview({ documents }: { documents: Dashboard['document
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-800">מסמכים</h3>
         {documents.length > 0 && (
-          <a href="/documents" className="flex items-center gap-1 text-xs text-teal-500 hover:text-teal-600">
+          <a href="/documents" className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700">
             הכל <ChevronLeft size={12} />
           </a>
         )}

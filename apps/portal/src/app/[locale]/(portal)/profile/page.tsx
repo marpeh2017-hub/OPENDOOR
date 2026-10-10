@@ -48,7 +48,7 @@ export default async function ProfilePage({
   return (
     <div className="space-y-5 pb-10">
       <div className="card-surface flex items-center gap-4 p-5">
-        <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-xl font-bold text-white">
+        <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-teal-600 text-xl font-bold text-white">
           {initials}
         </div>
         <div className="min-w-0">

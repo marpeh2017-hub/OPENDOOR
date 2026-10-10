@@ -17,7 +17,7 @@ export function AnnouncementsList({ messages }: { messages: Dashboard['messages'
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-800">הודעות</h3>
         {messages.length > 0 && (
-          <a href="/messages" className="flex items-center gap-1 text-xs text-teal-500 hover:text-teal-600">
+          <a href="/messages" className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700">
             הכל <ChevronLeft size={12} />
           </a>
         )}
