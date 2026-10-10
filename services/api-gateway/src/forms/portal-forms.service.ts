@@ -35,10 +35,16 @@ export class PortalFormsService {
   /** Pending forms carry the path to sign them; signed ones, to their copy. */
   async list(scope: PortalScope) {
     const records = await this.ownRecords(scope)
-    const apartments = await this.prisma.apartment.findMany({
-      where: { id: { in: [...new Set(records.map((r) => r.apartmentId))] } },
-      select: { id: true, apartmentNumber: true },
-    })
+    const [apartments, sentEvents] = await Promise.all([
+      this.prisma.apartment.findMany({
+        where: { id: { in: [...new Set(records.map((r) => r.apartmentId))] } },
+        select: { id: true, apartmentNumber: true },
+      }),
+      this.prisma.signatureEvent.findMany({
+        where: { packageId: { in: [...new Set(records.map((r) => r.package.id))] }, type: 'SENT' },
+        select: { packageId: true, createdAt: true },
+      }),
+    ])
     const result = []
     for (const record of records) {
       const form = parseFormData(record.package.formData)
@@ -50,6 +56,7 @@ export class PortalFormsService {
         apartmentNumber: apartments.find((a) => a.id === record.apartmentId)?.apartmentNumber ?? '',
         status: record.status === 'SIGNED' ? 'SIGNED' : open ? 'PENDING' : 'CLOSED',
         signedAt: record.signedAt,
+        sentAt: sentEvents.find((e) => e.packageId === record.package.id)?.createdAt ?? null,
         // The live link, never a reissued one: reissuing would kill the link
         // already sitting in the owner's SMS.
         signPath: open ? `/sign/${await this.sessions.currentToken(record.id, FORM_SESSION_TTL_DAYS)}` : null,

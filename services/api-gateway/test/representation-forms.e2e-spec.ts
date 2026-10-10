@@ -325,6 +325,14 @@ describe('Representation protocol forms (e2e)', () => {
     expect(stored.idNumber).toMatch(/^enc:v1:/)
     expect(JSON.stringify(stored)).not.toContain(ID_NUMBER)
     expect((await prisma.signaturePackage.findUniqueOrThrow({ where: { id: formId } })).status).toBe('PARTIALLY_SIGNED')
+
+    // The link again: it shows the form as signed, ID number masked, and
+    // signing again is refused.
+    const again = await api().get(`/api/v1/signatures/portal/${token}`)
+    expect(again.status).toBe(200)
+    expect(again.body.form.signed).toMatchObject({ fullName: 'ישראל ישראלי', idNumber: '•••••6782' })
+    const twice = await api().post(`/api/v1/signatures/portal/${token}/sign`).send(row())
+    expect(twice.status).toBe(401)
   })
 
   it('has no refusal on a form', async () => {

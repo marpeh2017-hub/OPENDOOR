@@ -97,7 +97,7 @@ export class SigningSessionService {
 
   /** Owner opens the signing link — log OPENED and track openedAt */
   async openSession(token: string, ip?: string, userAgent?: string) {
-    const session = await this.resolveSession(token)
+    const session = await this.resolveSession(token, { viewSignedForm: true })
     const record  = await this.prisma.signatureRecord.findUniqueOrThrow({
       where:   { id: session.recordId },
       include: { package: { include: { records: true } }, owner: true },
@@ -615,10 +615,23 @@ export class SigningSessionService {
     }
   }
 
-  private async resolveSession(token: string) {
+  /**
+   * `viewSignedForm`: signing closes the session, so an owner who opens their
+   * SMS link again would be told the link was cancelled. For a FORM they
+   * signed, opening (and only opening: the code and sign steps never pass
+   * this option) shows the form as signed instead.
+   */
+  private async resolveSession(token: string, opts: { viewSignedForm?: boolean } = {}) {
     const session = await this.prisma.signingSession.findUnique({ where: { token } })
     if (!session) throw new NotFoundException('קישור חתימה לא נמצא')
-    if (session.revokedAt) throw new UnauthorizedException('קישור חתימה בוטל')
+    if (session.revokedAt) {
+      const signedForm =
+        opts.viewSignedForm &&
+        (await this.prisma.signatureRecord.count({
+          where: { id: session.recordId, status: 'SIGNED', package: { formType: { not: null } } },
+        })) > 0
+      if (!signedForm) throw new UnauthorizedException('קישור חתימה בוטל')
+    }
     if (new Date() > session.expiresAt) throw new GoneException('קישור חתימה פג תוקף')
     return session
   }
