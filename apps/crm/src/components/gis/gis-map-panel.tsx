@@ -90,14 +90,14 @@ function NoGeoDataState({
         </p>
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2">
-            <span className="text-teal-500">1.</span>
+            <span className="text-teal-600">1.</span>
             <span>
               מילוי קואורדינטות לישויות. כרגע {geocodable} ישויות כוללות כתובת ללא
               קואורדינטות — ניתן להפיק מהן מיקום באמצעות גיאוקודינג של הכתובת הקיימת.
             </span>
           </li>
           <li className="flex gap-2">
-            <span className="text-teal-500">2.</span>
+            <span className="text-teal-600">2.</span>
             <span>
               הגדרת ספק מפות דרך משתני סביבה
               (<code className="text-xs">NEXT_PUBLIC_MAP_PROVIDER</code>,{' '}
@@ -106,7 +106,7 @@ function NoGeoDataState({
             </span>
           </li>
           <li className="flex gap-2">
-            <span className="text-teal-500">3.</span>
+            <span className="text-teal-600">3.</span>
             <span>
               בהמשך: שכבות גוש/חלקה ותוכניות בנייה, שיתווספו כשכבות פוליגון נפרדות.
             </span>

@@ -37,7 +37,7 @@ export function NotificationBell() {
           <Bell size={18} />
           {count > 0 && (
             <span
-              className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-500 px-1 text-[10px] font-semibold leading-none text-white"
+              className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-600 px-1 text-[10px] font-semibold leading-none text-white"
               // The count is decorative here — the accessible name on the
               // button above already announces it, so this must not be read
               // twice by a screen reader.

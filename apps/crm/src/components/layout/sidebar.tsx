@@ -112,15 +112,20 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full w-64 flex-col border-l border-border bg-white shadow-sm">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-border px-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500">
-          <span className="text-lg font-bold text-white">OD</span>
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-gray-800">OpenDoor</p>
-          <p className="truncate text-xs text-gray-500">התחדשות עירונית</p>
-        </div>
+      {/* The company's own logo, the website's, rather than a stand-in: it
+          carries the name and "התחדשות עירונית" itself, so nothing is
+          written beside it but which system this is. */}
+      <div className="flex h-16 items-center justify-between gap-3 border-b border-border px-4">
+        <Image
+          src="/brand/opendoor-logo.svg"
+          alt="OpenDoor התחדשות עירונית"
+          width={118}
+          height={44}
+          priority
+          unoptimized
+          className="h-11 w-auto"
+        />
+        <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-700">CRM</span>
       </div>
 
       {/* Navigation */}
@@ -130,7 +135,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             <div key={group.group} className="mb-4">
               {/* gray-600, not gray-400: a 12px semibold label needs 4.5:1 and
                   gray-400 gives 2.80:1 on white. */}
-              <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-600">
+              <p className="px-4 pb-1 text-xs font-semibold text-gray-600">
                 {group.group}
               </p>
               <ul className="space-y-0.5 px-2">
@@ -143,9 +148,11 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         href={href}
                         onClick={onNavigate}
                         className={cn(
-                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                          // 44px rows, the touch-target minimum: the CRM
+                          // is used on tablets on site visits too.
+                          'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
                           isActive
-                            ? 'bg-teal-50 text-teal-600'
+                            ? 'bg-teal-50 font-semibold text-teal-700'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                         )}
                       >

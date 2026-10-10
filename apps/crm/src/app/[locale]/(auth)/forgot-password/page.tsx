@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export const metadata: Metadata = { title: 'שכחת סיסמה' }
@@ -14,18 +15,20 @@ export const metadata: Metadata = { title: 'שכחת סיסמה' }
  */
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-white to-slate-50 px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg mb-4">
-            <span className="text-white text-2xl font-black">OD</span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">OpenDoor CRM</h1>
-          <p className="text-sm text-muted-foreground mt-1">מערכת ניהול התחדשות עירונית</p>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-[#FCFCFB] px-4 py-12">
+      <div className="flex w-full max-w-[400px] flex-col items-center gap-7">
+        <Image
+          src="/brand/opendoor-logo.svg"
+          alt="OpenDoor התחדשות עירונית"
+          width={194}
+          height={72}
+          priority
+          unoptimized
+          className="h-[72px] w-auto"
+        />
 
-        <div className="card-surface p-8 space-y-4" dir="rtl">
-          <h2 className="text-xl font-bold text-foreground">שכחתם את הסיסמה?</h2>
+        <div className="w-full space-y-4 rounded-2xl border border-border bg-white p-8" dir="rtl">
+          <h1 className="text-2xl font-extrabold text-foreground">שכחתם את הסיסמה?</h1>
           <p className="text-sm leading-relaxed text-foreground">
             מנהל המערכת בחברה יכול לקבוע לכם סיסמה זמנית, בהגדרות, ברשימת המשתמשים. אחרי הכניסה,
             החליפו אותה בהגדרות › החשבון שלי.
@@ -42,7 +45,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} OpenDoor התחדשות עירונית · כל הזכויות שמורות
+          © {new Date().getFullYear()} OpenDoor Group · קבוצת אופן דור יזמות והתחדשות בע״מ
         </p>
       </div>
     </div>
