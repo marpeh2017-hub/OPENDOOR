@@ -6,7 +6,8 @@
  *
  * Copied word for word from the owner's Word file (2026-10-07), with its bold
  * and underlining. Change a word here only when the owner has approved it.
- * The changes they approved on 2026-10-07, and nothing else:
+ * The changes they approved (2026-10-07, clause 10 on 2026-10-10), and
+ * nothing else:
  *
  *   - 5.1: "קבלת מידע ונתונים מיזמים, מיועצים ומרשויות;" (was "מטעם החברה,
  *     יועצים ורשויות"; the protocol never defines "החברה").
@@ -14,9 +15,9 @@
  *     the verb follows ("מתחייבת").
  *   - The agenda line: "לקידום", as in the title, not "לביצוע".
  *   - 10: a member's resignation ends that member's term only, not the
- *     representation's. THE WORDING BELOW IS A PROPOSAL AWAITING THE OWNER'S
- *     APPROVAL (2026-10-07); the original listed the resignation of any one
- *     member as ending the whole representation's term.
+ *     representation's (the original listed the resignation of any one
+ *     member among the events ending the whole representation's term). The
+ *     owner asked for this and approved the wording on 2026-10-10.
  *   - The preparer's ID number is not in the public text (protocolPreparedBy).
  *
  * Numbering follows the file's own settings: the two parts are lettered (א,
@@ -298,7 +299,7 @@ export const REPRESENTATION_PROTOCOL: RepresentationProtocol = {
         {
           number: 10,
           heading: '__**תקופת כהונת הנציגות**__',
-          // PROPOSED WORDING, AWAITING THE OWNER'S APPROVAL (2026-10-07).
+          // Approved by the owner on 2026-10-10.
           blocks: [
             { kind: 'paragraph', text: '**כהונת הנציגות תהיה עד להחלטת רוב בעלי הדירות על החלפת הנציגות.**' },
             {
