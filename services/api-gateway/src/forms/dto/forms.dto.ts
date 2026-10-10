@@ -57,6 +57,12 @@ export class UpdateFormDto {
   representatives?: FormRepresentativeDto[]
 }
 
+export class ShareLinkDto {
+  @ApiProperty({ enum: ['WHATSAPP', 'COPY'] })
+  @IsIn(['WHATSAPP', 'COPY'])
+  via!: 'WHATSAPP' | 'COPY'
+}
+
 export class PaperSignatureDto {
   @ApiProperty({ description: 'The name as written on the paper form' })
   @IsString() @MaxLength(120)

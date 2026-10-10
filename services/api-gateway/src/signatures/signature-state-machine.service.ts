@@ -18,6 +18,8 @@ export type SignatureEventType =
   | 'OTP_REQUESTED' | 'OTP_VERIFIED' | 'OTP_FAILED'
   | 'SIGNED' | 'DECLINED' | 'REMINDER_SENT'
   | 'EXPIRED' | 'CANCELLED' | 'COMPLETED' | 'RESENT'
+  /** Staff copied a form's personal link, or opened WhatsApp with it. */
+  | 'LINK_SHARED'
 
 const VALID_TRANSITIONS: Record<PackageStatus, PackageStatus[]> = {
   DRAFT:            ['INTERNAL_REVIEW', 'CANCELLED'],

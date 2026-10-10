@@ -3,14 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { BellRing, FileText, Upload, XCircle } from 'lucide-react'
+import { BellRing, Copy, FileText, MessageCircle, MoreHorizontal, Upload, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Progress } from '@/components/ui/progress'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
+  isMobile,
   useCancelForm,
   useRemind,
   useRemindAll,
+  useShareLink,
   type FormDetail,
   type FormRecordRow,
 } from '@/hooks/use-forms'
@@ -22,6 +27,8 @@ type Filter = 'all' | 'signed' | 'unsigned'
 const DELIVERED: Record<string, string> = {
   SMS: 'SMS',
   EMAIL: 'אימייל',
+  WHATSAPP: 'ווטסאפ',
+  UNSENT: 'טרם נשלח',
   NONE: 'אין טלפון ואימייל',
   FAILED: 'השליחה נכשלה',
 }
@@ -40,6 +47,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
   const router = useRouter()
   const remind = useRemind(form.id)
   const remindAll = useRemindAll(form.id)
+  const share = useShareLink(form.id)
   const cancel = useCancelForm(form.id)
   const [filter, setFilter] = useState<Filter>('all')
   const [paperFor, setPaperFor] = useState<FormRecordRow | null>(null)
@@ -58,6 +66,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
     const result = await remindAll.mutateAsync()
     const parts = [`נשלחו ${result.sent} תזכורות`]
     if (result.skippedRecent) parts.push(`${result.skippedRecent} קיבלו תזכורת ב-24 השעות האחרונות`)
+    if (result.whatsApp) parts.push(`${result.whatsApp} לשליחה בווטסאפ, מהשורות שלהם`)
     if (result.noChannel) parts.push(`${result.noChannel} בלי טלפון ואימייל`)
     if (result.failed) parts.push(`${result.failed} נכשלו`)
     setNotice(parts.join(' · '))
@@ -67,6 +76,35 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
     setNotice(null)
     const result = await remind.mutateAsync(row.recordId)
     setNotice(`נשלחה תזכורת ל${row.ownerName} ב-${DELIVERED[result.channel] ?? result.channel}`)
+  }
+
+  /**
+   * WhatsApp opens in a new tab with the owner's number and the message
+   * written in; staff press send. The tab is opened at the click, before the
+   * request, or the browser would block it as a pop-up.
+   */
+  async function sendWhatsApp(row: FormRecordRow) {
+    setNotice(null)
+    const tab = window.open('', '_blank')
+    try {
+      const link = await share.mutateAsync({ recordId: row.recordId, via: 'WHATSAPP' })
+      if (tab && link.whatsappUrl) tab.location.href = link.whatsappUrl
+      else tab?.close()
+      setNotice(`ווטסאפ נפתח עם ההודעה ל${row.ownerName}. אחרי השליחה שם, השורה תסומן כנשלחה בווטסאפ.`)
+    } catch {
+      tab?.close()
+    }
+  }
+
+  async function copyLink(row: FormRecordRow) {
+    setNotice(null)
+    const link = await share.mutateAsync({ recordId: row.recordId, via: 'COPY' })
+    try {
+      await navigator.clipboard.writeText(link.text)
+      setNotice(`ההודעה עם הקישור האישי של ${row.ownerName} הועתקה. אפשר להדביק אותה בכל אפליקציה.`)
+    } catch {
+      window.prompt('העתיקו את ההודעה:', link.text)
+    }
   }
 
   async function cancelForm() {
@@ -117,16 +155,25 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
         </div>
       </div>
 
-      {(notice || remind.error || remindAll.error) && (
+      {!form.channels.sms && open && (
+        <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
+          אין כרגע ספק SMS. למי שרשום עם טלפון בלבד, שולחים את הקישור בכפתור ״ווטסאפ״ בשורה שלו: ווטסאפ נפתח עם
+          ההודעה מוכנה, ונשאר רק ללחוץ שליחה.
+        </p>
+      )}
+
+      {(notice || remind.error || remindAll.error || share.error) && (
         <p
           role="status"
-          className={`rounded-md px-3 py-2 text-sm ${remind.error || remindAll.error ? 'bg-red-50 text-red-700' : 'bg-teal-50 text-teal-900'}`}
+          className={`rounded-md px-3 py-2 text-sm ${remind.error || remindAll.error || share.error ? 'bg-red-50 text-red-700' : 'bg-teal-50 text-teal-900'}`}
         >
           {remind.error instanceof Error
             ? remind.error.message
             : remindAll.error instanceof Error
               ? remindAll.error.message
-              : notice}
+              : share.error instanceof Error
+                ? share.error.message
+                : notice}
         </p>
       )}
 
@@ -226,8 +273,11 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
                     <RowActions
                       row={row}
                       open={open}
+                      smsAvailable={form.channels.sms}
                       reminding={remind.isPending && remind.variables === row.recordId}
                       onRemind={() => remindOne(row)}
+                      onWhatsApp={() => sendWhatsApp(row)}
+                      onCopy={() => copyLink(row)}
                       onPaper={() => setPaperFor(row)}
                     />
                   </td>
@@ -284,38 +334,69 @@ function statusOf(row: FormRecordRow): string {
     const how = row.method === 'WET' ? 'נחתם ידנית' : 'חתם/ה'
     return row.isRepresentative ? `${how} · גם כנציגות` : how
   }
-  if (row.deliveredVia === 'NONE') return 'להחתמה ידנית'
   if (row.openedAt) return 'פתח/ה, טרם חתם/ה'
+  if (row.deliveredVia === 'NONE') return 'להחתמה ידנית'
+  if (row.deliveredVia === 'UNSENT') return 'לשליחה בווטסאפ'
+  if (row.deliveredVia === 'FAILED') return 'לא נשלח'
   return 'נשלח'
 }
 
+/**
+ * An unsigned row's ways forward: WhatsApp for a mobile (no provider needed),
+ * a reminder by SMS or email when the system can send one, and, in the menu,
+ * copying the link and recording a signature on paper.
+ */
 function RowActions({
   row,
   open,
+  smsAvailable,
   reminding,
   onRemind,
+  onWhatsApp,
+  onCopy,
   onPaper,
 }: {
   row: FormRecordRow
   open: boolean
+  smsAvailable: boolean
   reminding: boolean
   onRemind: () => void
+  onWhatsApp: () => void
+  onCopy: () => void
   onPaper: () => void
 }) {
   if (row.status === 'SIGNED' || !open) return null
   const remindedRecently = row.lastReminderAt && Date.now() - new Date(row.lastReminderAt).getTime() < REMINDER_GAP_MS
-  const canRemind = row.deliveredVia !== 'NONE' && (row.phone || row.email)
+  const mobile = isMobile(row.phone)
+  const canRemind = (mobile && smsAvailable) || Boolean(row.email)
   return (
-    <div className="flex flex-wrap justify-end gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {mobile && (
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={onWhatsApp}>
+          <MessageCircle size={14} aria-hidden="true" />
+          ווטסאפ
+        </Button>
+      )}
       {canRemind && (
         <Button variant="outline" size="sm" onClick={onRemind} disabled={Boolean(remindedRecently) || reminding}>
           {remindedRecently ? 'נשלחה תזכורת היום' : reminding ? 'שולח…' : 'תזכורת'}
         </Button>
       )}
-      <Button variant={canRemind ? 'ghost' : 'outline'} size="sm" className="gap-1.5" onClick={onPaper}>
-        <Upload size={14} aria-hidden="true" />
-        העלאת טופס חתום
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`פעולות נוספות: ${row.ownerName}`}>
+            <MoreHorizontal size={16} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[12rem]">
+          <DropdownMenuItem onSelect={onCopy}>
+            <Copy size={14} className="ml-2" /> העתקת הודעה עם הקישור
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onPaper}>
+            <Upload size={14} className="ml-2" /> העלאת טופס חתום
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

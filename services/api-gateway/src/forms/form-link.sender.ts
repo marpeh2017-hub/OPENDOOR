@@ -4,8 +4,16 @@ import { normaliseIsraeliPhone } from '../messaging/phone'
 import { SigningEmailSender } from '../signatures/signing-email.sender'
 import { maskEmail } from '../auth/email-otp.sender'
 
-/** How a personal link went out. NONE: no mobile and no email, so paper. */
-export type DeliveryChannel = 'SMS' | 'EMAIL' | 'NONE' | 'FAILED'
+/**
+ * How a personal link went out.
+ *   SMS / EMAIL  sent by the system.
+ *   WHATSAPP     staff sent it from the CRM on WhatsApp.
+ *   UNSENT       the owner has a mobile, but there is no SMS provider and no
+ *                email: waiting for staff to send it on WhatsApp.
+ *   NONE         no mobile and no email: signing on paper.
+ *   FAILED       a transport existed and failed.
+ */
+export type DeliveryChannel = 'SMS' | 'EMAIL' | 'WHATSAPP' | 'UNSENT' | 'NONE' | 'FAILED'
 
 export interface LinkTarget {
   fullName: string
@@ -21,10 +29,12 @@ export function signingUrl(token: string): string {
 
 /**
  * Sends an owner the personal link to sign a form: by SMS to a mobile
- * number, else by email, else not at all (NONE), which the tracking screen
- * shows as "להחתמה ידנית". A transport that fails falls through to the next
- * channel; an owner whose every channel failed is FAILED, not NONE, so the
- * difference between "has no phone" and "the SMS did not go" stays visible.
+ * number when an SMS provider is configured, else by email, else not at
+ * all. Without a provider an owner with a mobile is UNSENT, for staff to
+ * send on WhatsApp from the CRM (no provider needed for that), and one with
+ * no contact at all is NONE, "להחתמה ידנית". A transport that fails falls
+ * through to the next channel; an owner whose every channel failed is
+ * FAILED, so "has no phone" and "the SMS did not go" stay different.
  *
  * Both transports honour MESSAGING_SIMULATE. The texts are short on
  * purpose: a Hebrew SMS is billed per 70 characters.
@@ -45,7 +55,8 @@ export class FormLinkSender {
     let attempted = false
 
     const phone = normaliseIsraeliPhone(target.phone)
-    if (target.phone && phone.e164 && phone.isMobile) {
+    const mobile = Boolean(target.phone && phone.e164 && phone.isMobile)
+    if (target.phone && mobile && this.sms.isConfigured) {
       attempted = true
       try {
         await this.sms.sendText(target.phone, smsText(link))
@@ -65,7 +76,24 @@ export class FormLinkSender {
       }
     }
 
-    return attempted ? 'FAILED' : 'NONE'
+    if (attempted) return 'FAILED'
+    return mobile ? 'UNSENT' : 'NONE'
+  }
+
+  /**
+   * The same invitation as a WhatsApp message, for staff to send from their
+   * own phone: the text, and a wa.me address that opens WhatsApp on the
+   * owner's number with it written in. No provider and no cost; staff press
+   * send. Null address when the owner has no mobile (the text can still be
+   * copied).
+   */
+  whatsApp(target: LinkTarget, link: { url: string; compoundName: string }): { text: string; url: string | null } {
+    const text = `שלום ${target.fullName}, פרוטוקול מינוי הנציגות של ${link.compoundName} ממתין לחתימתכם. לקריאה ולחתימה: ${link.url}`
+    const phone = normaliseIsraeliPhone(target.phone)
+    const url = phone.e164 && phone.isMobile
+      ? `https://wa.me/${phone.e164.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`
+      : null
+    return { text, url }
   }
 }
 

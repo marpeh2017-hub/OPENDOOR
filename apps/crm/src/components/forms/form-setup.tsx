@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Lock, Mail, MessageSquare, PenLine, Trash2, UserPlus, X } from 'lucide-react'
+import { Lock, Mail, MessageCircle, MessageSquare, PenLine, Trash2, UserPlus, X } from 'lucide-react'
 import { protocolPreparedBy, protocolPlainText } from '@urban-renewal/api-contracts'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -48,10 +48,10 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
   const candidates = form.records.filter((r) => !members.some((m) => rowKey(m) === rowKey(r)))
 
   const delivery = useMemo(() => {
-    const counts = { SMS: 0, EMAIL: 0, NONE: 0 }
-    for (const record of form.records) counts[deliveryOf(record)]++
+    const counts = { SMS: 0, EMAIL: 0, WHATSAPP: 0, NONE: 0 }
+    for (const record of form.records) counts[deliveryOf(record, form.channels)]++
     return counts
-  }, [form.records])
+  }, [form.records, form.channels])
 
   const dirty =
     JSON.stringify(meeting) !== JSON.stringify(form.meeting) ||
@@ -246,15 +246,25 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
             <p className="text-sm text-foreground">
               הטופס יישלח ל-<strong>{form.records.length} בעלי דירות</strong> במתחם, כל אחד בקישור אישי.
             </p>
-            <ul className="grid gap-2 sm:grid-cols-3">
-              <li className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm">
-                <MessageSquare size={16} className="text-teal-600" aria-hidden="true" />
-                <strong>{delivery.SMS}</strong> ב-SMS
-              </li>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {form.channels.sms && (
+                <li className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm">
+                  <MessageSquare size={16} className="text-teal-600" aria-hidden="true" />
+                  <strong>{delivery.SMS}</strong> ב-SMS
+                </li>
+              )}
               <li className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm">
                 <Mail size={16} className="text-teal-600" aria-hidden="true" />
                 <strong>{delivery.EMAIL}</strong> באימייל
               </li>
+              {delivery.WHATSAPP > 0 && (
+                <li className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm">
+                  <MessageCircle size={16} className="text-teal-600" aria-hidden="true" />
+                  <span>
+                    <strong>{delivery.WHATSAPP}</strong> בווטסאפ, ממסך המעקב
+                  </span>
+                </li>
+              )}
               <li className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm">
                 <PenLine size={16} className="text-teal-600" aria-hidden="true" />
                 <span>
@@ -262,6 +272,11 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
                 </span>
               </li>
             </ul>
+            {!form.channels.sms && (
+              <p className="text-xs text-muted-foreground">
+                אין כרגע ספק SMS: למי שיש רק טלפון, שולחים את הקישור בווטסאפ ממסך המעקב, בלחיצה לכל דייר.
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">מי שמחובר לאזור האישי יראה את הטופס גם שם.</p>
           </section>
 

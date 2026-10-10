@@ -57,7 +57,7 @@ export interface FormRecordRow {
   openedAt: string | null
   signedAt: string | null
   signedVia: 'LINK' | 'PORTAL' | 'MANUAL' | null
-  deliveredVia: 'SMS' | 'EMAIL' | 'NONE' | 'FAILED' | null
+  deliveredVia: 'SMS' | 'EMAIL' | 'WHATSAPP' | 'UNSENT' | 'NONE' | 'FAILED' | null
   deliveredAt: string | null
   lastReminderAt: string | null
   hasPaperCopy: boolean
@@ -83,6 +83,8 @@ export interface FormDetail {
   sentAt: string | null
   createdAt: string
   completedAt: string | null
+  /** What the system sends by itself. WhatsApp from the CRM needs neither. */
+  channels: { sms: boolean; email: boolean }
 }
 
 export interface FormDocumentRow {
@@ -199,8 +201,29 @@ export function useRemindAll(id: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () =>
-      api.post<{ sent: number; skippedRecent: number; noChannel: number; failed: number }>(`/forms/${id}/remind`),
+      api.post<{ sent: number; skippedRecent: number; noChannel: number; whatsApp: number; failed: number }>(
+        `/forms/${id}/remind`,
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: formKeys.detail(id) }),
+  })
+}
+
+/**
+ * An owner's personal link, to copy or to send on WhatsApp from the staff
+ * member's own phone. Each call is logged; a WhatsApp send also counts as
+ * the link going out.
+ */
+export function useShareLink(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { recordId: string; via: 'WHATSAPP' | 'COPY' }) =>
+      api.post<{ url: string; text: string; whatsappUrl: string | null }>(
+        `/forms/${id}/records/${input.recordId}/link`,
+        { via: input.via },
+      ),
+    onSuccess: (_data, input) => {
+      if (input.via === 'WHATSAPP') qc.invalidateQueries({ queryKey: formKeys.detail(id) })
+    },
   })
 }
 
@@ -219,12 +242,25 @@ export function useCancelForm(id: string) {
   })
 }
 
-/** How a link will go, judged as the gateway judges it: a mobile, else email. */
-export function deliveryOf(row: { phone: string | null; email: string | null }): 'SMS' | 'EMAIL' | 'NONE' {
-  const digits = (row.phone ?? '').replace(/\D/g, '')
-  const mobile = /^05\d{8}$/.test(digits) || /^9725\d{8}$/.test(digits)
-  if (mobile) return 'SMS'
+/** An Israeli mobile number, the kind that can take an SMS or a WhatsApp. */
+export function isMobile(phone: string | null | undefined): boolean {
+  const digits = (phone ?? '').replace(/\D/g, '')
+  return /^05\d{8}$/.test(digits) || /^9725\d{8}$/.test(digits)
+}
+
+/**
+ * How a link will go, judged as the gateway judges it: SMS to a mobile when
+ * there is an SMS provider, else email, else WhatsApp by hand from the CRM
+ * for a mobile, else paper.
+ */
+export function deliveryOf(
+  row: { phone: string | null; email: string | null },
+  channels: { sms: boolean },
+): 'SMS' | 'EMAIL' | 'WHATSAPP' | 'NONE' {
+  const mobile = isMobile(row.phone)
+  if (mobile && channels.sms) return 'SMS'
   if (row.email) return 'EMAIL'
+  if (mobile) return 'WHATSAPP'
   return 'NONE'
 }
 

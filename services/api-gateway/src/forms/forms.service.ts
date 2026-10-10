@@ -4,6 +4,8 @@ import { FieldEncryptionService } from '../crypto/field-encryption.service'
 import { SignatureStateMachineService } from '../signatures/signature-state-machine.service'
 import { SigningSessionService } from '../signatures/signing-session.service'
 import { EvidencePackageService } from '../signatures/evidence-package.service'
+import { SigningEmailSender } from '../signatures/signing-email.sender'
+import { SmsService } from '../sms/sms.service'
 import { FormLinkSender, signingUrl, type DeliveryChannel } from './form-link.sender'
 import {
   FORM_SESSION_TTL_DAYS,
@@ -72,6 +74,8 @@ export class FormsService {
     private readonly sessions: SigningSessionService,
     private readonly evidence: EvidencePackageService,
     private readonly links: FormLinkSender,
+    private readonly sms: SmsService,
+    private readonly email: SigningEmailSender,
   ) {}
 
   /* ─── What a form can be made for ─────────────────────────────── */
@@ -232,7 +236,7 @@ export class FormsService {
       where: { packageId: pkg.id },
       include: { owner: { select: { fullName: true, phone: true, email: true } } },
     })
-    const delivery: Record<DeliveryChannel, number> = { SMS: 0, EMAIL: 0, NONE: 0, FAILED: 0 }
+    const delivery: Record<DeliveryChannel, number> = { SMS: 0, EMAIL: 0, WHATSAPP: 0, UNSENT: 0, NONE: 0, FAILED: 0 }
     for (const record of records) {
       const { token } = await this.sessions.issueSession(record.id, FORM_SESSION_TTL_DAYS)
       const channel = await this.links.send(record.owner, {
@@ -364,6 +368,8 @@ export class FormsService {
       sentAt: sentEvent?.createdAt ?? null,
       createdAt: pkg.createdAt,
       completedAt: pkg.completedAt,
+      // What the system can send by itself; WhatsApp from the CRM always works.
+      channels: { sms: this.sms.isConfigured, email: this.email.isConfigured },
     }
   }
 
@@ -449,6 +455,7 @@ export class FormsService {
     if (!record) throw new NotFoundException('השורה לא נמצאה')
     if (record.status === 'SIGNED') throw new BadRequestException('בעל הדירה כבר חתם')
     const channel = await this.deliverReminder(pkg.id, record, form.meeting.compoundName)
+    if (channel === 'UNSENT') throw new BadRequestException('אין ספק SMS ואין אימייל בתיק. שלחו את התזכורת בווטסאפ.')
     if (channel === 'NONE') throw new BadRequestException('אין בתיק טלפון נייד או אימייל. אפשר להחתים ידנית.')
     if (channel === 'FAILED') throw new BadRequestException('שליחת התזכורת נכשלה. נסו שוב מאוחר יותר.')
     return { sent: true, channel }
@@ -467,7 +474,7 @@ export class FormsService {
       where: { packageId: pkg.id, type: 'REMINDER_SENT', createdAt: { gt: new Date(Date.now() - REMINDER_GAP_MS) } },
       select: { recordId: true },
     })
-    const result = { sent: 0, skippedRecent: 0, noChannel: 0, failed: 0 }
+    const result = { sent: 0, skippedRecent: 0, noChannel: 0, whatsApp: 0, failed: 0 }
     for (const record of records) {
       if (recent.some((e) => e.recordId === record.id)) {
         result.skippedRecent++
@@ -475,6 +482,7 @@ export class FormsService {
       }
       const channel = await this.deliverReminder(pkg.id, record, form.meeting.compoundName)
       if (channel === 'SMS' || channel === 'EMAIL') result.sent++
+      else if (channel === 'UNSENT') result.whatsApp++
       else if (channel === 'NONE') result.noChannel++
       else result.failed++
     }
@@ -498,6 +506,45 @@ export class FormsService {
       await this.sm.logEvent(packageId, 'REMINDER_SENT', { recordId: record.id, actorType: 'SYSTEM', metadata: { channel } })
     }
     return channel
+  }
+
+  /* ─── Sharing a link by hand ──────────────────────────────────── */
+
+  /**
+   * An owner's personal link, for staff to send themselves: copied, or on
+   * WhatsApp from their own phone (no provider needed). The live link is
+   * reused, so the one already in an SMS keeps working. Every share is
+   * logged; a WhatsApp share also counts as the link going out.
+   */
+  async shareLink(id: string, recordId: string, via: 'WHATSAPP' | 'COPY', userId: string, tenantId: string) {
+    const pkg = await this.loadPackage(id, tenantId)
+    if (!OPEN_STATUSES.includes(pkg.status)) throw new BadRequestException('הטופס אינו פתוח לחתימה')
+    const form = this.formOf(pkg)
+    const record = await this.prisma.signatureRecord.findFirst({
+      where: { id: recordId, packageId: pkg.id },
+      include: { owner: { select: { fullName: true, phone: true, email: true } } },
+    })
+    if (!record) throw new NotFoundException('השורה לא נמצאה')
+    if (record.status === 'SIGNED') throw new BadRequestException('בעל הדירה כבר חתם')
+
+    const token = await this.sessions.currentToken(record.id, FORM_SESSION_TTL_DAYS)
+    const url = signingUrl(token)
+    const whatsApp = this.links.whatsApp(record.owner, { url, compoundName: form.meeting.compoundName })
+    if (via === 'WHATSAPP' && !whatsApp.url) throw new BadRequestException('אין בתיק מספר נייד לשליחה בווטסאפ')
+
+    if (via === 'WHATSAPP') {
+      await this.prisma.signatureRecord.update({
+        where: { id: record.id },
+        data: { deliveredVia: 'WHATSAPP', deliveredAt: new Date() },
+      })
+    }
+    await this.sm.logEvent(pkg.id, 'LINK_SHARED', {
+      recordId: record.id,
+      actorType: 'USER',
+      actorId: userId,
+      metadata: { via },
+    })
+    return { url, text: whatsApp.text, whatsappUrl: whatsApp.url }
   }
 
   /* ─── Signing on paper ────────────────────────────────────────── */

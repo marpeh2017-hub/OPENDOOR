@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { STAFF_ROLES } from '../auth/roles.constants'
 import { FormsService } from './forms.service'
-import { CreateFormDto, PaperSignatureDto, UpdateFormDto } from './dto/forms.dto'
+import { CreateFormDto, PaperSignatureDto, ShareLinkDto, UpdateFormDto } from './dto/forms.dto'
 
 /** The roles that may create, send and sign for forms: those of signature packages. */
 const FORM_MANAGERS = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'LAWYER'] as const
@@ -81,6 +81,18 @@ export class FormsController {
   @ApiOperation({ summary: 'Remind one owner' })
   remind(@Param('id') id: string, @Param('recordId') recordId: string, @Request() req: any) {
     return this.forms.remind(id, recordId, req.user.tenantId)
+  }
+
+  @Post(':id/records/:recordId/link')
+  @Roles(...FORM_MANAGERS)
+  @ApiOperation({ summary: 'An owner’s personal link, to copy or send on WhatsApp (logged)' })
+  shareLink(
+    @Param('id') id: string,
+    @Param('recordId') recordId: string,
+    @Body() dto: ShareLinkDto,
+    @Request() req: any,
+  ) {
+    return this.forms.shareLink(id, recordId, dto.via, req.user.userId, req.user.tenantId)
   }
 
   @Post(':id/records/:recordId/paper')

@@ -12,8 +12,9 @@
  * 2026-10-10); a document package still needs the one-time code, and the
  * suite checks both.
  *
- * Nothing is sent: test/setup.ts removes every SMS provider key and forces
- * MESSAGING_SIMULATE, and no email provider is configured in tests.
+ * Nothing is sent: SmsService is replaced by a recording fake that reports
+ * itself configured (so sending behaves as it does with a provider), and no
+ * email provider is configured in tests.
  */
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
@@ -24,6 +25,7 @@ import request from 'supertest'
 import { AppModule } from '../src/app.module'
 import { PrismaService } from '../src/prisma.service'
 import { FieldEncryptionService } from '../src/crypto/field-encryption.service'
+import { SmsService } from '../src/sms/sms.service'
 // The real wording, as the CRM sends it.
 import { REPRESENTATION_PROTOCOL } from '../../../packages/api-contracts/src/representation-protocol'
 
@@ -35,6 +37,14 @@ const SLUG = `forms-${STAMP}`
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 /** A valid Israeli ID number (check digit 2). */
 const ID_NUMBER = '123456782'
+
+/** An SMS transport that records instead of sending. */
+const fakeSms = {
+  providerName: 'fake',
+  isConfigured: true,
+  sendOtp: jest.fn(async () => undefined),
+  sendText: jest.fn(async () => undefined),
+}
 
 describe('Representation protocol forms (e2e)', () => {
   let app: INestApplication
@@ -112,6 +122,8 @@ describe('Representation protocol forms (e2e)', () => {
       .useValue({
         increment: async () => ({ totalHits: 0, timeToExpire: 60, isBlocked: false, timeToBlockExpire: 0 }),
       })
+      .overrideProvider(SmsService)
+      .useValue(fakeSms)
       .compile()
     app = mod.createNestApplication()
     app.setGlobalPrefix('api')
@@ -252,7 +264,8 @@ describe('Representation protocol forms (e2e)', () => {
   it('sends: SMS to mobiles, email to the email-only owner, paper for the one with neither', async () => {
     const res = await api().post(`/api/v1/forms/${formId}/send`).set(staff())
     expect(res.status).toBe(201)
-    expect(res.body.delivery).toEqual({ SMS: 2, EMAIL: 1, NONE: 1, FAILED: 0 })
+    expect(res.body.delivery).toEqual({ SMS: 2, EMAIL: 1, WHATSAPP: 0, UNSENT: 0, NONE: 1, FAILED: 0 })
+    expect(fakeSms.sendText).toHaveBeenCalledWith('0509912101', expect.stringContaining('/he/sign/'))
 
     const pkg = await prisma.signaturePackage.findUniqueOrThrow({ where: { id: formId } })
     expect(pkg.status).toBe('SENT')
@@ -429,6 +442,37 @@ describe('Representation protocol forms (e2e)', () => {
     expect(res.status).toBe(404)
   })
 
+  it('gives staff an owner’s link to send on WhatsApp, and logs it', async () => {
+    const coOwner = await recordOf(owners.coOwner)
+    const res = await api()
+      .post(`/api/v1/forms/${formId}/records/${coOwner.id}/link`)
+      .set(staff())
+      .send({ via: 'WHATSAPP' })
+    expect(res.status).toBe(201)
+    const session = await prisma.signingSession.findUniqueOrThrow({ where: { recordId: coOwner.id } })
+    expect(res.body.url).toContain(session.token)
+    expect(res.body.whatsappUrl).toMatch(/^https:\/\/wa\.me\/972509912104\?text=/)
+    expect(decodeURIComponent(res.body.whatsappUrl.split('text=')[1])).toBe(res.body.text)
+    expect((await recordOf(owners.coOwner)).deliveredVia).toBe('WHATSAPP')
+    expect(
+      await prisma.signatureEvent.count({ where: { packageId: formId, type: 'LINK_SHARED', recordId: coOwner.id } }),
+    ).toBe(1)
+
+    // No mobile on file: the link can be copied, not sent on WhatsApp.
+    const emailOwner = await recordOf(owners.email)
+    const noPhone = await api()
+      .post(`/api/v1/forms/${formId}/records/${emailOwner.id}/link`)
+      .set(staff())
+      .send({ via: 'WHATSAPP' })
+    expect(noPhone.status).toBe(400)
+    const copied = await api()
+      .post(`/api/v1/forms/${formId}/records/${emailOwner.id}/link`)
+      .set(staff())
+      .send({ via: 'COPY' })
+    expect(copied.status).toBe(201)
+    expect(copied.body.whatsappUrl).toBeNull()
+  })
+
   it('reminds once a day at most, keeping the link already sent', async () => {
     const coOwner = await recordOf(owners.coOwner)
     const before = await prisma.signingSession.findUniqueOrThrow({ where: { recordId: coOwner.id } })
@@ -441,7 +485,7 @@ describe('Representation protocol forms (e2e)', () => {
     const all = await api().post(`/api/v1/forms/${formId}/remind`).set(staff())
     expect(all.status).toBe(201)
     // The co-owner was just reminded; the email-only owner is the one sent.
-    expect(all.body).toEqual({ sent: 1, skippedRecent: 1, noChannel: 0, failed: 0 })
+    expect(all.body).toEqual({ sent: 1, skippedRecent: 1, noChannel: 0, whatsApp: 0, failed: 0 })
   })
 
   it('completes when the last owner signs, flagging an ID number unlike the file', async () => {
