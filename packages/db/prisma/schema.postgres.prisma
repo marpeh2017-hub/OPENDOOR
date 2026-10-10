@@ -1098,12 +1098,24 @@ model SignaturePackage {
   providerName       String   @default("NATIVE")
   providerEnvelopeId String?
 
+  // A FORM package signs one of the company's own digital forms rather than
+  // an uploaded document: `formType` names it (REPRESENTATION_PROTOCOL),
+  // `formVersion` the wording, and `formData` (JSON) holds the snapshot of
+  // that wording plus what was filled in for this meeting. The snapshot is
+  // what every signer reads and every signed copy prints, so a later change
+  // to the wording never alters what was signed; `documentHash` is its hash.
+  // All three are null for a package that signs uploaded documents.
+  formType    String?
+  formVersion String?
+  formData    String?
+
   records  SignatureRecord[]
   events   SignatureEvent[]
   evidence SignatureEvidence?
 
   @@index([projectId])
   @@index([tenantId, status])
+  @@index([tenantId, formType])
   @@map("signature_packages")
 }
 
@@ -1166,6 +1178,15 @@ model SignatureRecord {
   geoLng        Float?
   validatedById String?
   notes         String?
+
+  // Form packages only. `signerData` (JSON) is the signer's own row as they
+  // filled it in, with the ID number encrypted; `signatureImage` the signature
+  // they drew, as a PNG data URL. `deliveredVia` records how the personal
+  // link went out (SMS | EMAIL | NONE, the last meaning a signature on paper).
+  signerData     String?
+  signatureImage String?
+  deliveredVia   String?
+  deliveredAt    DateTime?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
