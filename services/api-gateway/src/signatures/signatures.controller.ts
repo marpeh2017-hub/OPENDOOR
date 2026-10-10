@@ -200,12 +200,16 @@ export class SignaturesController {
   @Throttle({ short: { limit: 6, ttl: 60_000 } })
   @Get('portal/:token')
   @ApiOperation({ summary: 'Owner opens signing link' })
-  openPortal(
+  async openPortal(
     @Param('token') token: string,
     @Ip() ip: string,
     @Headers('user-agent') ua: string,
+    @Headers('authorization') authorization?: string,
   ) {
-    return this.sessions.openSession(token, ip, ua)
+    // Optional, never required: a resident signed in to the portal gets
+    // their form's row prefilled; anyone else holding the link does not.
+    const portalSession = await this.portalSessions.probe(authorization)
+    return this.sessions.openSession(token, ip, ua, portalSession)
   }
 
   @Public()

@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle2, Phone, RefreshCw, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Phone, RefreshCw } from 'lucide-react'
 import { PROTOCOL_CLAUSE_COUNT } from '@urban-renewal/api-contracts'
 import { formatFormDate, type SigningFormView } from '@/lib/forms'
 import { ProtocolView } from './protocol-view'
 import { SignaturePad } from './signature-pad'
 
-type Step = 'read' | 'verify' | 'details' | 'done'
+type Step = 'read' | 'details' | 'done'
 type Call = (path: string, method?: string, body?: unknown) => Promise<any>
 
 /** The Israeli ID number's check digit, as the gateway checks it. */
@@ -27,25 +27,29 @@ function isValidIsraeliId(raw: string): boolean {
 
 /**
  * Signing a form from the personal link: the representation-appointment
- * protocol, in three steps.
+ * protocol, in two steps and no code (the owner's decision, 2026-10-10: a
+ * code to confirm the reading made it cumbersome, and owners sign a scanned
+ * paper today).
  *
  *   1. The full text, as it was sent, with this meeting's details and the
  *      representation members. The way on is at its end.
- *   2. A one-time code, by SMS or email, proving it is the owner.
- *   3. The owner's own row of the signatures table, prefilled from their file
- *      once the code is verified, the ID number added, and a signature drawn.
- *
- * Nothing on the page can sign for anyone else: the link is the owner's, the
- * code goes to the owner's phone or email, and the gateway checks the row.
+ *   2. The owner's own row of the signatures table: the name, the ID number
+ *      (checked against the file by the gateway), phone and email if they
+ *      wish, and a signature drawn. Phone and email come prefilled only for
+ *      the owner signed in to the personal area: a forwarded link shows
+ *      nobody's contact details.
  */
 export function ProtocolSigning({ initial, call }: { initial: SigningFormView; call: Call }) {
-  const [form, setForm] = useState(initial)
+  const form = initial
   const [step, setStep] = useState<Step>(initial.signed ? 'done' : 'read')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [codeSent, setCodeSent] = useState(false)
-  const [code, setCode] = useState('')
-  const [row, setRow] = useState({ fullName: initial.signer.fullName, idNumber: '', phone: '', email: '' })
+  const [row, setRow] = useState({
+    fullName: initial.signer.fullName,
+    idNumber: '',
+    phone: initial.signer.phone ?? '',
+    email: initial.signer.email ?? '',
+  })
   const [signature, setSignature] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [signedAt, setSignedAt] = useState<string | null>(initial.signed?.signedAt ?? null)
@@ -65,24 +69,6 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
     }
   }
 
-  const sendCode = () =>
-    run(async () => {
-      await call('/otp', 'POST')
-      setCodeSent(true)
-      setCode('')
-    })
-
-  const verify = () =>
-    run(async () => {
-      await call('/verify', 'POST', { code })
-      // Verified: the form view now carries the phone and email on file.
-      const fresh = await call('')
-      const view = fresh.form as SigningFormView
-      setForm(view)
-      setRow((r) => ({ ...r, phone: view.signer.phone ?? '', email: view.signer.email ?? '' }))
-      setStep('details')
-    })
-
   const sign = () =>
     run(async () => {
       await call('/sign', 'POST', {
@@ -97,7 +83,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
       setStep('done')
     })
 
-  const stepLabel = step === 'read' ? 1 : step === 'verify' ? 2 : 3
+  const stepLabel = step === 'read' ? 1 : 2
   const inputClass =
     'w-full min-h-11 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600'
 
@@ -108,7 +94,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
           <Image src="/brand/opendoor-logo.svg" alt="OpenDoor התחדשות עירונית" width={118} height={44} unoptimized priority className="h-11 w-auto" />
           {step !== 'done' && (
             <p className="text-sm font-semibold text-gray-700">
-              חתימה על מסמך · שלב {stepLabel} מתוך 3
+              חתימה על מסמך · שלב {stepLabel} מתוך 2
             </p>
           )}
         </header>
@@ -136,108 +122,21 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
             />
             <div className="rounded-xl bg-white p-4 ring-1 ring-border">
               <p className="text-sm text-gray-700">
-                סוף הנוסח. בשלב הבא נשלח לכם קוד אימות, ואחריו תמלאו את השורה שלכם בטבלת החתימות ותחתמו.
+                סוף הנוסח. בשלב הבא תמלאו את השורה שלכם בטבלת החתימות ותחתמו.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setError(null)
-                  setStep('verify')
+                  setStep('details')
                   window.scrollTo({ top: 0 })
                 }}
                 className="mt-3 flex min-h-12 w-full items-center justify-center rounded-lg bg-teal-600 px-4 text-sm font-bold text-white hover:bg-teal-700"
               >
-                המשך לאימות ולמילוי הפרטים
+                המשך למילוי הפרטים
               </button>
             </div>
           </>
-        )}
-
-        {step === 'verify' && (
-          <section aria-labelledby="verify-heading" className="space-y-5 rounded-2xl bg-white p-6 ring-1 ring-border">
-            <div className="flex items-start gap-3">
-              <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-600">
-                <ShieldCheck size={22} />
-              </span>
-              <div>
-                <h1 id="verify-heading" className="text-lg font-bold text-gray-900">
-                  נוודא שזה אתם
-                </h1>
-                {form.otp ? (
-                  <p className="mt-1 text-sm text-gray-600">
-                    נשלח קוד חד-פעמי {form.otp.channel === 'SMS' ? 'בהודעת SMS ל-' : 'באימייל ל-'}
-                    <span dir="ltr" className="font-semibold text-gray-800">
-                      {form.otp.to}
-                    </span>
-                    .
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-gray-600">
-                    אין בתיק שלכם טלפון נייד או אימייל, ולכן אי אפשר לחתום כאן. פנו אלינו, ונחתים אתכם על הטופס המודפס.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {form.otp && !codeSent && (
-              <button
-                type="button"
-                onClick={sendCode}
-                disabled={busy}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60"
-              >
-                {busy ? <RefreshCw size={16} className="animate-spin" aria-hidden="true" /> : null}
-                שליחת קוד
-              </button>
-            )}
-
-            {form.otp && codeSent && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (code.length === 6) verify()
-                }}
-                className="space-y-3"
-              >
-                <label htmlFor="otp-code" className="block text-sm font-semibold text-gray-800">
-                  קוד אימות
-                </label>
-                <input
-                  id="otp-code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  dir="ltr"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full min-h-12 rounded-lg border border-border bg-white px-3 text-center text-xl font-bold tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-teal-600"
-                />
-                <button
-                  type="submit"
-                  disabled={busy || code.length !== 6}
-                  className="flex min-h-12 w-full items-center justify-center rounded-lg bg-teal-600 px-4 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60"
-                >
-                  אימות
-                </button>
-                <button
-                  type="button"
-                  onClick={sendCode}
-                  disabled={busy}
-                  className="min-h-11 w-full text-center text-sm font-medium text-teal-700 hover:underline disabled:opacity-60"
-                >
-                  לא הגיע קוד? שליחה חוזרת
-                </button>
-              </form>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setStep('read')}
-              className="min-h-11 text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              חזרה לנוסח
-            </button>
-          </section>
         )}
 
         {step === 'details' && (
@@ -247,7 +146,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
                 השורה שלך בטבלת החתימות
               </h1>
               <p className="mt-1 text-sm text-gray-600">
-                מילאנו מה שיש בתיק. בדקו, השלימו את מספר תעודת הזהות, וחתמו.
+                מילאנו את מה שאפשר. בדקו, השלימו את מספר תעודת הזהות, וחתמו.
               </p>
             </div>
 
@@ -291,7 +190,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
                 </p>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="row-phone" className="text-sm font-semibold text-gray-800">טלפון</label>
+                <label htmlFor="row-phone" className="text-sm font-semibold text-gray-800">טלפון <span className="font-normal text-gray-500">(לא חובה)</span></label>
                 <input
                   id="row-phone"
                   value={row.phone}
@@ -304,7 +203,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="row-email" className="text-sm font-semibold text-gray-800">אימייל</label>
+                <label htmlFor="row-email" className="text-sm font-semibold text-gray-800">אימייל <span className="font-normal text-gray-500">(לא חובה)</span></label>
                 <input
                   id="row-email"
                   value={row.email}

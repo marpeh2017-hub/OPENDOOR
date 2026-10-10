@@ -332,6 +332,8 @@ export class FormsService {
           lastReminderAt: reminders.find((r) => r.recordId === record.id)?._max.createdAt ?? null,
           hasPaperCopy: Boolean(record.evidenceDocId),
           isRepresentative: isRepresentative(record),
+          // Signed with an ID number other than the one on file: for staff to check.
+          idMismatch: signer?.idMatchesFile === false,
         }
       })
       .sort(byApartment)

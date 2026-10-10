@@ -75,6 +75,8 @@ export interface StoredSignerData {
   /** LINK: the personal link. PORTAL: signed in to the portal. MANUAL: on paper. */
   channel: 'LINK' | 'PORTAL' | 'MANUAL'
   confirmedRead?: boolean
+  /** The typed ID number against the owner's file; null when the file has none. */
+  idMatchesFile?: boolean | null
 }
 
 export const MEETING_LIMITS = { compoundName: 120, address: 200, meetingPlace: 160 } as const

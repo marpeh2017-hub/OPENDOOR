@@ -62,6 +62,8 @@ export interface FormRecordRow {
   lastReminderAt: string | null
   hasPaperCopy: boolean
   isRepresentative: boolean
+  /** Signed with an ID number other than the one on the owner's file. */
+  idMismatch: boolean
 }
 
 export interface FormDetail {

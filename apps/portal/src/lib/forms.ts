@@ -26,11 +26,10 @@ export interface SigningFormView {
     fullName: string
     apartmentNumber: string
     isRepresentative: boolean
-    /** Present only once the one-time code is verified. */
+    /** Present only for the owner signed in to the personal area. */
     phone?: string
     email?: string
   }
-  otp: { channel: 'SMS' | 'EMAIL'; to: string } | null
   /** Today in Israel, yyyy-mm-dd: the date on the signer's row. */
   today: string
   signed: { signedAt: string; fullName: string; idNumber: string | null; signedDate: string | null } | null

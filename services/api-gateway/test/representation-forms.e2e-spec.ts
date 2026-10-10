@@ -8,10 +8,12 @@
  * completion through the HTTP API and checks, at each step, what is stored
  * and who may see it.
  *
+ * A form is signed with the personal link alone (the owner's decision,
+ * 2026-10-10); a document package still needs the one-time code, and the
+ * suite checks both.
+ *
  * Nothing is sent: test/setup.ts removes every SMS provider key and forces
- * MESSAGING_SIMULATE, and no email provider is configured in tests. One-time
- * codes are set with the service's own hashing, as the other signing suites
- * do.
+ * MESSAGING_SIMULATE, and no email provider is configured in tests.
  */
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
@@ -21,7 +23,7 @@ import { randomUUID } from 'crypto'
 import request from 'supertest'
 import { AppModule } from '../src/app.module'
 import { PrismaService } from '../src/prisma.service'
-import { hashOtp } from '../src/common/otp/otp'
+import { FieldEncryptionService } from '../src/crypto/field-encryption.service'
 // The real wording, as the CRM sends it.
 import { REPRESENTATION_PROTOCOL } from '../../../packages/api-contracts/src/representation-protocol'
 
@@ -69,17 +71,10 @@ describe('Representation protocol forms (e2e)', () => {
   const recordOf = (ownerId: string) =>
     prisma.signatureRecord.findFirstOrThrow({ where: { packageId: formId, ownerId } })
 
-  /** The live link for an owner's row, verified as the code step would. */
-  const verifiedToken = async (ownerId: string) => {
+  /** The live link for an owner's row: all a form needs to be signed. */
+  const tokenOf = async (ownerId: string) => {
     const record = await recordOf(ownerId)
-    const session = await prisma.signingSession.findUniqueOrThrow({ where: { recordId: record.id } })
-    await prisma.signingSession.update({
-      where: { id: session.id },
-      data: { otpHash: hashOtp('123456'), otpExpiresAt: new Date(Date.now() + 300_000), otpAttempts: 0 },
-    })
-    const verified = await api().post(`/api/v1/signatures/portal/${session.token}/verify`).send({ code: '123456' })
-    expect(verified.status).toBe(201)
-    return session.token
+    return (await prisma.signingSession.findUniqueOrThrow({ where: { recordId: record.id } })).token
   }
 
   const row = (overrides: Record<string, unknown> = {}) => ({
@@ -169,7 +164,14 @@ describe('Representation protocol forms (e2e)', () => {
     owners.sms = (await owner({ fullName: 'אבי בדיקה', phone: '0509912101', residentId: residents.sms })).id
     owners.email = (await owner({ fullName: 'בתיה בדיקה', email: 'owner2@example.com' })).id
     owners.paper = (await owner({ fullName: 'גיל בדיקה', residentId: residents.paper })).id
-    owners.coOwner = (await owner({ fullName: 'דנה בדיקה', phone: '0509912104' })).id
+    // An ID number on file, to check a signature against it.
+    const encryption = app.get(FieldEncryptionService)
+    owners.coOwner = (
+      await prisma.owner.create({
+        data: { tenantId, fullName: 'דנה בדיקה', phone: '0509912104', nationalId: encryption.encrypt('000000018') },
+        select: { id: true },
+      })
+    ).id
 
     const hold = (ownerId: string, apartmentId: string, shareNumerator = 1, shareDenominator = 1) =>
       prisma.ownerApartment.create({ data: { ownerId, apartmentId, shareNumerator, shareDenominator } })
@@ -271,9 +273,8 @@ describe('Representation protocol forms (e2e)', () => {
     expect(res.body[0].signPath).toBe(`/sign/${session.token}`)
   })
 
-  it('shows a link holder the text and the members, but no contact details before the code', async () => {
-    const record = await recordOf(owners.sms)
-    const { token } = await prisma.signingSession.findUniqueOrThrow({ where: { recordId: record.id } })
+  it('shows a link holder the text and the members, but not the owner’s contact details', async () => {
+    const token = await tokenOf(owners.sms)
     const res = await api().get(`/api/v1/signatures/portal/${token}`)
     expect(res.status).toBe(200)
     expect(res.body.form.text.title).toBe(REPRESENTATION_PROTOCOL.title)
@@ -283,11 +284,16 @@ describe('Representation protocol forms (e2e)', () => {
       { fullName: 'בתיה בדיקה', apartmentNumber: '2' },
     ])
     expect(res.body.form.signer).toEqual({ fullName: 'אבי בדיקה', apartmentNumber: '1', isRepresentative: true })
-    expect(res.body.form.otp.channel).toBe('SMS')
-    expect(res.body.form.otp.to).not.toContain('9912101')
+    expect(JSON.stringify(res.body)).not.toContain('9912101')
+  })
 
-    const early = await api().post(`/api/v1/signatures/portal/${token}/sign`).send(row())
-    expect(early.status).toBe(401)
+  it('fills in the contact details for the owner signed in to the personal area', async () => {
+    const token = await tokenOf(owners.sms)
+    const mine = await api().get(`/api/v1/signatures/portal/${token}`).set(residentAuth(residents.sms))
+    expect(mine.body.form.signer.phone).toBe('0509912101')
+    // Somebody else signed in (a resident of another apartment) gets nothing.
+    const other = await api().get(`/api/v1/signatures/portal/${token}`).set(residentAuth(residents.paper))
+    expect(other.body.form.signer.phone).toBeUndefined()
   })
 
   it('sends the code to the email-only owner by email', async () => {
@@ -299,18 +305,15 @@ describe('Representation protocol forms (e2e)', () => {
   })
 
   it('refuses a row with a wrong ID number, and stores nothing', async () => {
-    const token = await verifiedToken(owners.sms)
-    const opened = await api().get(`/api/v1/signatures/portal/${token}`)
-    expect(opened.body.form.signer.phone).toBe('0509912101')
-
+    const token = await tokenOf(owners.sms)
     const res = await api().post(`/api/v1/signatures/portal/${token}/sign`).send(row({ idNumber: '123456789' }))
     expect(res.status).toBe(400)
     expect(res.body.fields).toEqual(['מספר תעודת זהות'])
     expect((await recordOf(owners.sms)).status).toBe('PENDING')
   })
 
-  it('signs with the row and the drawn signature; the ID number is stored encrypted', async () => {
-    const token = await verifiedToken(owners.sms)
+  it('signs with the link alone, the row and the drawn signature; the ID number is stored encrypted', async () => {
+    const token = await tokenOf(owners.sms)
     const res = await api()
       .post(`/api/v1/signatures/portal/${token}/sign`)
       .set(residentAuth(residents.sms))
@@ -321,7 +324,8 @@ describe('Representation protocol forms (e2e)', () => {
     expect(record.status).toBe('SIGNED')
     expect(record.signatureImage).toBe(PNG)
     const stored = JSON.parse(record.signerData as string)
-    expect(stored).toMatchObject({ fullName: 'ישראל ישראלי', channel: 'PORTAL', confirmedRead: true })
+    // No ID number on this owner's file: nothing to compare.
+    expect(stored).toMatchObject({ fullName: 'ישראל ישראלי', channel: 'PORTAL', confirmedRead: true, idMatchesFile: null })
     expect(stored.idNumber).toMatch(/^enc:v1:/)
     expect(JSON.stringify(stored)).not.toContain(ID_NUMBER)
     expect((await prisma.signaturePackage.findUniqueOrThrow({ where: { id: formId } })).status).toBe('PARTIALLY_SIGNED')
@@ -336,7 +340,7 @@ describe('Representation protocol forms (e2e)', () => {
   })
 
   it('has no refusal on a form', async () => {
-    const token = await verifiedToken(owners.email)
+    const token = await tokenOf(owners.email)
     const res = await api().post(`/api/v1/signatures/portal/${token}/decline`).send({ reason: 'לא' })
     expect(res.status).toBe(400)
     expect((await recordOf(owners.email)).status).toBe('PENDING')
@@ -440,16 +444,40 @@ describe('Representation protocol forms (e2e)', () => {
     expect(all.body).toEqual({ sent: 1, skippedRecent: 1, noChannel: 0, failed: 0 })
   })
 
-  it('completes when the last owner signs', async () => {
+  it('completes when the last owner signs, flagging an ID number unlike the file', async () => {
     for (const ownerId of [owners.email, owners.coOwner]) {
-      const token = await verifiedToken(ownerId)
+      const token = await tokenOf(ownerId)
       const res = await api().post(`/api/v1/signatures/portal/${token}/sign`).send(row({ phone: '', email: '' }))
       expect(res.status).toBe(201)
     }
     const pkg = await prisma.signaturePackage.findUniqueOrThrow({ where: { id: formId } })
     expect(pkg.status).toBe('COMPLETED')
+
+    // The co-owner's file says 000000018, the row says 123456782: signed,
+    // and shown to staff. The email-only owner has no number on file.
+    const detail = await api().get(`/api/v1/forms/${formId}`).set(staff())
+    const flag = (ownerId: string) =>
+      detail.body.records.find((r: { ownerId: string }) => r.ownerId === ownerId).idMismatch
+    expect(flag(owners.coOwner)).toBe(true)
+    expect(flag(owners.email)).toBe(false)
     const list = await api().get('/api/v1/forms').set(staff())
     expect(list.body.find((f: { id: string }) => f.id === formId).progress.sharePercent).toBe(100)
+  })
+
+  it('still requires the one-time code for a package that signs a document', async () => {
+    const pkg = await prisma.signaturePackage.create({
+      data: { tenantId, projectId, title: `${SLUG} document`, status: 'SENT', createdById: managerId },
+    })
+    const record = await prisma.signatureRecord.create({
+      data: { tenantId, packageId: pkg.id, ownerId: owners.paper, apartmentId: apartments.a3, status: 'PENDING' },
+    })
+    const token = `doc-${STAMP}-${'x'.repeat(40)}`
+    await prisma.signingSession.create({
+      data: { recordId: record.id, token, expiresAt: new Date(Date.now() + 3_600_000) },
+    })
+    const res = await api().post(`/api/v1/signatures/portal/${token}/sign`).send({})
+    expect(res.status).toBe(401)
+    expect((await prisma.signatureRecord.findUniqueOrThrow({ where: { id: record.id } })).status).toBe('PENDING')
   })
 
   it('cancels a draft, and its links stop working', async () => {

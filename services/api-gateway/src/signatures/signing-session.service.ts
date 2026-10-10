@@ -95,8 +95,19 @@ export class SigningSessionService {
     return (await this.issueSession(recordId, ttlDays)).token
   }
 
-  /** Owner opens the signing link — log OPENED and track openedAt */
-  async openSession(token: string, ip?: string, userAgent?: string) {
+  /**
+   * Owner opens the signing link — log OPENED and track openedAt.
+   *
+   * `portalSession` is the resident signed in to the portal, when there is
+   * one (the token-flow proxy forwards it). For a form it decides whether the
+   * owner's phone and email on file prefill their row.
+   */
+  async openSession(
+    token: string,
+    ip?: string,
+    userAgent?: string,
+    portalSession?: { residentId: string; tenantId: string; sessionId: string } | null,
+  ) {
     const session = await this.resolveSession(token, { viewSignedForm: true })
     const record  = await this.prisma.signatureRecord.findUniqueOrThrow({
       where:   { id: session.recordId },
@@ -134,7 +145,9 @@ export class SigningSessionService {
       packageTitle: record.package.title,
       expiresAt:    record.package.expiresAt,
       orderBlocked,
-      ...(record.package.formType ? { form: await this.formView(record, Boolean(session.verifiedAt)) } : {}),
+      ...(record.package.formType
+        ? { form: await this.formView(record, await this.isOwnersSession(record, portalSession)) }
+        : {}),
     }
   }
 
@@ -143,10 +156,12 @@ export class SigningSessionService {
    * details, the representation members (names and apartments, as printed
    * in the protocol's table), and the signer's own row.
    *
-   * The owner's phone and email on file prefill the row only once the
-   * one-time code is verified. Before that, whoever holds the link sees the
-   * text, the owner's name and apartment, and where the code will go, masked:
-   * a forwarded link must not hand out an owner's contact details.
+   * A form is signed with the personal link alone, no one-time code: the
+   * owner asked for it (2026-10-10), as owners sign a scanned paper today.
+   * So the owner's phone and email on file prefill the row only when the
+   * owner is signed in to the portal: whoever else holds the link sees the
+   * text, the owner's name and apartment, and fills in contact details
+   * themselves. A forwarded link must not hand out an owner's details.
    */
   private async formView(
     record: {
@@ -159,7 +174,7 @@ export class SigningSessionService {
       owner: { fullName: string; phone: string | null; email: string | null }
       package: { formType: string | null; formVersion: string | null; formData: string | null }
     },
-    verified: boolean,
+    prefill: boolean,
   ) {
     const form = parseFormData(record.package.formData)
     if (!form) return null
@@ -176,7 +191,6 @@ export class SigningSessionService {
     ])
     const apartmentNumber = (id: string) => apartments.find((a) => a.id === id)?.apartmentNumber ?? ''
     const signed = parseSignerData(record.signerData)
-    const channel = this.otpChannel(record.owner)
 
     return {
       type: record.package.formType,
@@ -193,9 +207,8 @@ export class SigningSessionService {
         isRepresentative: form.representatives.some(
           (r) => r.ownerId === record.ownerId && r.apartmentId === record.apartmentId,
         ),
-        ...(verified ? { phone: record.owner.phone ?? '', email: record.owner.email ?? '' } : {}),
+        ...(prefill ? { phone: record.owner.phone ?? '', email: record.owner.email ?? '' } : {}),
       },
-      otp: channel ? { channel: channel.kind, to: channel.masked } : null,
       today: israelToday(),
       signed:
         record.status === 'SIGNED'
@@ -207,6 +220,38 @@ export class SigningSessionService {
             }
           : null,
     }
+  }
+
+  /** Whether the portal session belongs to the resident linked to this record's owner. */
+  private async isOwnersSession(
+    record: { ownerId: string; tenantId: string },
+    portalSession?: { residentId: string; tenantId: string } | null,
+  ): Promise<boolean> {
+    if (!portalSession || portalSession.tenantId !== record.tenantId) return false
+    const owner = await this.prisma.owner.findFirst({
+      where: { id: record.ownerId, tenantId: record.tenantId },
+      select: { residentId: true },
+    })
+    return Boolean(owner?.residentId) && owner?.residentId === portalSession.residentId
+  }
+
+  /**
+   * The typed ID number against the one on the owner's file. A mismatch is
+   * recorded and shown to staff, not refused: the file can be wrong, and an
+   * owner must never be locked out of signing by a typo in it. Null when the
+   * file has no number.
+   */
+  private idMatchesFile(typed: string, stored: string | null): boolean | null {
+    if (!stored) return null
+    let onFile: string | null
+    try {
+      onFile = this.encryption.decrypt(stored)
+    } catch {
+      return null
+    }
+    const digits = (onFile ?? '').replace(/\D/g, '')
+    if (!digits) return null
+    return digits.padStart(9, '0') === typed.padStart(9, '0')
   }
 
   /** Where a one-time code can go: a mobile phone, else an email address. */
@@ -371,12 +416,16 @@ export class SigningSessionService {
     input?: SignerInput,
   ) {
     const session = await this.resolveSession(token)
-    if (!session.verifiedAt) throw new UnauthorizedException('OTP לא אומת — בקש קוד תחילה')
-
     const record = await this.prisma.signatureRecord.findUniqueOrThrow({
       where:   { id: session.recordId },
-      include: { package: { include: { records: true } } },
+      include: { package: { include: { records: true } }, owner: { select: { nationalId: true } } },
     })
+    // A document is signed after the one-time code. A form is signed with the
+    // personal link alone (see formView), the ID number checked against the
+    // file instead.
+    if (!record.package.formType && !session.verifiedAt) {
+      throw new UnauthorizedException('OTP לא אומת — בקש קוד תחילה')
+    }
 
     // Enforce sequential signing order at sign step too — prevent API bypass
     await this.assertSigningOrderAllowed(record)
@@ -401,6 +450,7 @@ export class SigningSessionService {
         signedDate: israelToday(),
         channel: formChannel,
         confirmedRead: true,
+        idMatchesFile: this.idMatchesFile(row.idNumber, record.owner?.nationalId ?? null),
       }
       formRow = { signerData: JSON.stringify(signerData), signatureImage: row.signatureImage }
     }
@@ -428,7 +478,14 @@ export class SigningSessionService {
       ip,
       userAgent,
       metadata: record.package.formType
-        ? { ...(attribution ?? {}), form: { version: record.package.formVersion, channel: formChannel } }
+        ? {
+            ...(attribution ?? {}),
+            form: {
+              version: record.package.formVersion,
+              channel: formChannel,
+              idMatchesFile: formRow ? (JSON.parse(formRow.signerData) as StoredSignerData).idMatchesFile : null,
+            },
+          }
         : attribution,
     })
 
@@ -460,8 +517,6 @@ export class SigningSessionService {
   /** Decline signing */
   async decline(token: string, reason: string, ip?: string) {
     const session = await this.resolveSession(token)
-    if (!session.verifiedAt) throw new UnauthorizedException('OTP לא אומת')
-
     const record = await this.prisma.signatureRecord.findUniqueOrThrow({
       where: { id: session.recordId },
       include: { package: { select: { formType: true } } },
@@ -473,6 +528,7 @@ export class SigningSessionService {
     if (record.package.formType) {
       throw new BadRequestException('בטופס הזה אין סירוב: מי שלא מעוניין לחתום פשוט לא חותם.')
     }
+    if (!session.verifiedAt) throw new UnauthorizedException('OTP לא אומת')
 
     await this.prisma.signatureRecord.update({
       where: { id: record.id },

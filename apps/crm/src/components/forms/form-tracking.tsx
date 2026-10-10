@@ -211,7 +211,14 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
                     </p>
                   </td>
                   <td className="px-4 py-3">{row.deliveredVia ? DELIVERED[row.deliveredVia] : '—'}</td>
-                  <td className="px-4 py-3">{statusOf(row)}</td>
+                  <td className="px-4 py-3">
+                    {statusOf(row)}
+                    {row.idMismatch && (
+                      <span className="ms-2 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        ת.ז שונה מהתיק
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {row.signedAt ? new Date(row.signedAt).toLocaleDateString('he-IL') : '—'}
                   </td>
