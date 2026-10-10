@@ -180,7 +180,7 @@ function LibraryGrid({
     <div className="space-y-4">
       <p className="max-w-prose text-[13.5px] leading-relaxed text-gray-600">
         כל התמונות הזמינות לשימוש באתר. תמונה נעשית זמינה לציבור רק לאחר פרסום הספרייה, ורק דרך מקום
-        שמפנה אליה בפועל — כתבת ידע או תמונת פתיחה מוגדרת.
+        שמפנה אליה בפועל, כמו תמונת פתיחה מוגדרת.
       </p>
 
       {uploadError && (

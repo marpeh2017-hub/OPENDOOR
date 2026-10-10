@@ -1,5 +1,5 @@
 import {
-  LayoutGrid, FileText, FolderOpen, BookOpen, HelpCircle,
+  LayoutGrid, FileText, FolderOpen, HelpCircle,
   Image as ImageIcon, Link2, Settings, ClipboardCheck,
 } from 'lucide-react'
 
@@ -70,13 +70,11 @@ export const SITE_NAV: SiteNavGroup[] = [
   },
   {
     group: 'תוכן',
+    // No "מרכז ידע": the website's knowledge centre was removed on 2026-10-07
+    // and its forms page took the place. The article screens under
+    // /site/knowledge are kept, unlinked, until it is decided whether articles
+    // come back.
     items: [
-      {
-        href: '/site/knowledge',
-        label: 'מרכז ידע',
-        icon: BookOpen,
-        description: 'כתבות מרכז הידע, הקטגוריות שלהן והקישור שלהן לפרויקטים.',
-      },
       {
         href: '/site/faq',
         label: 'שאלות ותשובות',
