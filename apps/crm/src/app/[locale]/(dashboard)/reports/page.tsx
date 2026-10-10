@@ -47,7 +47,7 @@ const STAGE_LABELS: Record<string, string> = {
 }
 
 const STAGE_COLORS = [
-  '#94a3b8', '#a78bfa', '#60a5fa', '#2F9DA0', '#34d399',
+  '#94a3b8', '#a78bfa', '#60a5fa', '#0D8B8B', '#34d399',
   '#fbbf24', '#fb923c', '#f87171', '#c084fc', '#818cf8',
   '#4ade80', '#38bdf8',
 ]
@@ -60,7 +60,7 @@ const LEAD_STATUS_CONFIG: { status: string; label: string; fill: string }[] = [
   { status: 'INTERESTED',        label: 'מתעניין',     fill: '#c084fc' },
   { status: 'PROPOSAL',          label: 'הצעה',        fill: '#fb923c' },
   { status: 'NEGOTIATION',       label: 'משא ומתן',    fill: '#f97316' },
-  { status: 'WON',               label: 'זכה',         fill: '#2F9DA0' },
+  { status: 'WON',               label: 'זכה',         fill: '#0D8B8B' },
   { status: 'LOST',              label: 'אבד',         fill: '#f87171' },
 ]
 
@@ -220,8 +220,8 @@ export default function ReportsPage() {
             <AreaChart data={signatureTrend} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <defs>
                 <linearGradient id="sigGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#2F9DA0" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#2F9DA0" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="#0D8B8B" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#0D8B8B" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -233,9 +233,9 @@ export default function ReportsPage() {
               />
               <Area type="monotone" dataKey="target" stroke="#e2e8f0" strokeWidth={2} strokeDasharray="4 2" fill="none" name="יעד" />
               <Area
-                type="monotone" dataKey="signatures" stroke="#2F9DA0" strokeWidth={2.5}
+                type="monotone" dataKey="signatures" stroke="#0D8B8B" strokeWidth={2.5}
                 fill="url(#sigGrad)" name="ממוצע בפועל"
-                dot={{ fill: '#2F9DA0', r: 4 }} activeDot={{ r: 6 }}
+                dot={{ fill: '#0D8B8B', r: 4 }} activeDot={{ r: 6 }}
               />
             </AreaChart>
           </ResponsiveContainer>

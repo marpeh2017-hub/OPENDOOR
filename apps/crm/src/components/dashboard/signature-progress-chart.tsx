@@ -46,8 +46,8 @@ export function SignatureProgressChart() {
         <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
           <defs>
             <linearGradient id="signaturesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="#2F9DA0" stopOpacity={0.15} />
-              <stop offset="95%" stopColor="#2F9DA0" stopOpacity={0} />
+              <stop offset="5%"  stopColor="#0D8B8B" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#0D8B8B" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -69,11 +69,11 @@ export function SignatureProgressChart() {
           <Area
             type="monotone"
             dataKey="signatures"
-            stroke="#2F9DA0"
+            stroke="#0D8B8B"
             strokeWidth={2.5}
             fill="url(#signaturesGradient)"
             name="חתימות"
-            dot={{ fill: '#2F9DA0', r: 4 }}
+            dot={{ fill: '#0D8B8B', r: 4 }}
             activeDot={{ r: 6 }}
           />
         </AreaChart>

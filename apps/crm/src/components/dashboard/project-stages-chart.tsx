@@ -9,7 +9,7 @@ const STAGE_GROUPS: { name: string; color: string; stages: string[] }[] = [
   { name: 'גילוי / היתכנות', color: '#94a3b8', stages: ['DISCOVERY', 'FEASIBILITY', 'RESIDENT_ORGANIZATION'] },
   { name: 'חתימות',          color: '#a78bfa', stages: ['SIGNATURES', 'DEVELOPER_SELECTION'] },
   { name: 'תכנון / אישורים', color: '#60a5fa', stages: ['PLANNING', 'MUNICIPAL_APPROVAL', 'PERMIT'] },
-  { name: 'פינוי / בנייה',   color: '#2F9DA0', stages: ['EVACUATION', 'CONSTRUCTION'] },
+  { name: 'פינוי / בנייה',   color: '#0D8B8B', stages: ['EVACUATION', 'CONSTRUCTION'] },
   { name: 'מסירה',           color: '#34d399', stages: ['DELIVERY', 'POST_DELIVERY'] },
 ]
 

@@ -5,18 +5,39 @@
 
 export const colors = {
   // ── Primary Teal (main brand color) ──────────────────────────────
+  /*
+   * One ramp of one hue, anchored on the brand colour #0d8b8b: the website's
+   * since the 2026-10 design review, and since 2026-10-07 the CRM's and the
+   * Portal's too, so all three read as one company. (It used to be the
+   * website's own override, apps/website/tailwind.config.ts; the shared scale
+   * was #2F9DA0 at 500.)
+   *
+   * Four roles, and the contrast that decides each (WCAG 2.1, on white unless
+   * stated):
+   *
+   *   500  BRAND   #0D8B8B  graphics, icons, rules, focus rings, display
+   *                         headings. 4.1:1: never small text, never a fill
+   *                         under white text.
+   *   600  ACTION  #0B7A7A  text, links, buttons. 5.2:1; 4.6:1 on the wash.
+   *   950  DEPTH   #14312F  the dark surface.
+   *   50   WASH    #E8F4F4  tinted bands, icon grounds, the active nav item.
+   *
+   * The other steps are tints and shades of the same hue. 300 and 400 exist for
+   * text on the dark surface (6.6:1 and 4.7:1 on #14312F); 700 is the action
+   * colour's hover. The logo keeps its own colours: it is artwork, not a token.
+   */
   teal: {
-    50:  '#eef9f9',
-    100: '#d5f1f2',
-    200: '#aee4e5',
-    300: '#7dd0d2',
-    400: '#4ab6b9',
-    500: '#2F9DA0', // PRIMARY – buttons, links, highlights
-    600: '#22797D', // DARK TEAL – hover, active, nav accents
-    700: '#1b5f62',
-    800: '#164a4c',
-    900: '#103839',
-    950: '#091f20',
+    50:  '#E8F4F4', // WASH
+    100: '#D3EAEA',
+    200: '#A8D5D5',
+    300: '#7ABFBF',
+    400: '#42A5A5',
+    500: '#0D8B8B', // BRAND
+    600: '#0B7A7A', // ACTION
+    700: '#095F5F',
+    800: '#0D4F4E',
+    900: '#113F3D',
+    950: '#14312F', // DEPTH
   },
 
   // ── Gray Scale ───────────────────────────────────────────────────
@@ -79,8 +100,8 @@ export const colors = {
     signatures:       '#8b5cf6',
     developerSelect:  '#f59e0b',
     planning:         '#06b6d4',
-    municipal:        '#22797D',
-    permit:           '#2F9DA0',
+    municipal:        '#0B7A7A',
+    permit:           '#0D8B8B',
     evacuation:       '#f97316',
     construction:     '#84cc16',
     delivery:         '#22c55e',
@@ -135,8 +156,8 @@ export const shadows = {
   md:  '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
   lg:  '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04)',
   xl:  '0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04)',
-  card: '0 2px 8px 0 rgb(47 157 160 / 0.08)',
-  teal: '0 4px 14px 0 rgb(47 157 160 / 0.25)',
+  card: '0 2px 8px 0 rgb(13 139 139 / 0.08)',
+  teal: '0 4px 14px 0 rgb(13 139 139 / 0.25)',
 } as const
 
 export const animation = {
@@ -225,14 +246,13 @@ export const zIndex = {
  * rather than a box-shadow so it survives `overflow: hidden` ancestors — the
  * common way focus rings silently disappear.
  *
- * `teal.600` rather than `teal.500`: at 5.12:1 on white it clears the 3:1
- * non-text contrast minimum with margin, where teal.500 (3.26:1) only just
- * scrapes it.
+ * `teal.600` rather than `teal.500`: at 5.2:1 on white it clears the 3:1
+ * non-text contrast minimum with a wide margin (teal.500 gives 4.1:1).
  */
 export const focusRing = {
   width:  '2px',
   style:  'solid',
-  color:  '#22797D',
+  color:  '#0B7A7A',
   offset: '2px',
 } as const
 

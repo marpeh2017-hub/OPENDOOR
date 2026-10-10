@@ -37,19 +37,15 @@
     --popover-foreground: 0 0% 23%;
 
     /*
-     * teal-600, not teal-500. WHITE on teal-500 measures 3.26:1 and fails the
-     * AA minimum of 4.5:1 for normal text, so EVERY primary button in the CRM
-     * and the Portal was failing — not one button, the token.
-     *
-     * teal-600 is 5.12:1 with white and sits in the same hue family (183 vs
-     * 182), so the brand direction is unchanged; the swatch is one step
-     * darker.
+     * teal-600, the ACTION colour, not teal-500. WHITE on teal-500 (#0D8B8B)
+     * measures 4.1:1 and fails the AA minimum of 4.5:1 for normal text; on
+     * teal-600 (#0B7A7A) it is 5.2:1. The brand ramp itself is in tokens.ts.
      *
      * `--ring` deliberately stays teal-500: a focus ring is a non-text
-     * indicator, judged against WCAG 1.4.11's 3:1, and 3.26:1 already passes.
+     * indicator, judged against WCAG 1.4.11's 3:1, and 4.1:1 passes.
      * Darkening it would dull the brand accent where it is legitimate.
      */
-    --primary:      183 57% 31%;        /* #22797D teal-600 */
+    --primary:      180 83% 26%;        /* #0B7A7A teal-600 */
     --primary-foreground: 0 0% 100%;
 
     --secondary:    210 12% 96%;
@@ -58,7 +54,7 @@
     --muted:        210 12% 93%;
     --muted-foreground: 207 8% 44%;     /* steel-gray */
 
-    --accent:       183 57% 31%;
+    --accent:       180 83% 26%;
     --accent-foreground: 0 0% 100%;
 
     --destructive:  0 84% 60%;
@@ -66,13 +62,13 @@
 
     --border:       210 14% 89%;
     --input:        210 14% 89%;
-    --ring:         182 54% 41%;
+    --ring:         180 83% 30%;        /* #0D8B8B teal-500 */
 
     --radius:       0.5rem;
 
     /* Brand tokens as CSS vars */
-    --color-teal-500: #2F9DA0;
-    --color-teal-600: #22797D;
+    --color-teal-500: #0D8B8B;
+    --color-teal-600: #0B7A7A;
     --color-gray-500: #6D7378;
     --color-gray-800: #3A3A3A;
     --color-gray-50:  #F5F7F8;
@@ -88,7 +84,7 @@
     --popover:      220 13% 13%;
     --popover-foreground: 210 20% 90%;
 
-    --primary:      183 57% 31%;
+    --primary:      180 83% 26%;
     --primary-foreground: 0 0% 100%;
 
     --secondary:    220 13% 17%;
@@ -105,7 +101,7 @@
 
     --border:       220 13% 20%;
     --input:        220 13% 20%;
-    --ring:         182 54% 41%;
+    --ring:         180 83% 30%;        /* #0D8B8B teal-500 */
   }
 }
 
@@ -167,8 +163,16 @@
 
   p  { @apply text-base leading-relaxed text-gray-600; }
 
-  a  {
-    @apply text-teal-500 hover:text-teal-600 transition-colors duration-200;
+  /* Links are text, so they take the action teal (5.2:1 on white, its hover
+     7.5:1), not the brand 500 (4.1:1, below AA for text). :where() keeps the
+     rule at zero specificity: any colour utility on a link wins, so a link
+     styled as a filled button keeps its white text when hovered, instead of
+     turning teal on teal as it did when a:hover outranked .text-white. */
+  :where(a) {
+    @apply text-teal-600 transition-colors duration-200;
+  }
+  :where(a):hover {
+    @apply text-teal-700;
   }
 }
 
@@ -223,7 +227,7 @@
  * focus ring silently disappears inside cards and scroll containers.
  */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid #22797D;
+  outline: 2px solid #0B7A7A;
   outline-offset: 2px;
   border-radius: 2px;
 }

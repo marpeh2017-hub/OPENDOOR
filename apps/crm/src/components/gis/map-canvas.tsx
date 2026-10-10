@@ -33,7 +33,7 @@ export interface MapCanvasProps {
 }
 
 const KIND_COLOR: Record<string, string> = {
-  PROJECT: '#2F9DA0',
+  PROJECT: '#0D8B8B',
   COMPLEX: '#7C3AED',
   BUILDING: '#F59E0B',
 }
@@ -114,7 +114,7 @@ export function MapCanvas({ markers, selectedId, onMarkerClick, className }: Map
       el.style.cssText = [
         'width:18px', 'height:18px', 'border-radius:9999px', 'cursor:pointer',
         'border:2px solid #fff', 'box-shadow:0 1px 4px rgba(0,0,0,.35)', 'padding:0',
-        `background:${KIND_COLOR[marker.kind] ?? '#2F9DA0'}`,
+        `background:${KIND_COLOR[marker.kind] ?? '#0D8B8B'}`,
       ].join(';')
       el.addEventListener('click', (e) => {
         e.stopPropagation()

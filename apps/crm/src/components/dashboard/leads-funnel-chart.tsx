@@ -22,7 +22,7 @@ const STATUS_CONFIG: { status: string; label: string; fill: string }[] = [
   { status: 'INTERESTED',        label: 'מתעניין',   fill: '#c084fc' },
   { status: 'PROPOSAL',          label: 'הצעה',      fill: '#fb923c' },
   { status: 'NEGOTIATION',       label: 'משא ומתן',  fill: '#f97316' },
-  { status: 'WON',               label: 'זכה',       fill: '#2F9DA0' },
+  { status: 'WON',               label: 'זכה',       fill: '#0D8B8B' },
   { status: 'LOST',              label: 'אבד',       fill: '#f87171' },
 ]
 

@@ -34,8 +34,10 @@
  * 8.7:1 on #14312F); `:where()` keeps those at the same specificity, and
  * their place later in this file is what lets them win.
  *
- * Not fixed upstream: the CRM and the Portal use the shared rule too, and
- * changing it there is a visual change in two shipped applications.
+ * Since 2026-10-07 the shared rule is fixed as well (action teal, and at zero
+ * specificity, so utilities always win), for the Portal's sake. These rules
+ * stay: they are this site's own statement of its link colours, and the dark
+ * surface below needs them.
  */
 body a {
   color: #0b7a7a;
