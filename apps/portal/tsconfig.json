@@ -25,6 +25,9 @@
       "@/*": [
         "./src/*"
       ],
+      "@urban-renewal/api-contracts": [
+        "../../packages/api-contracts/src/index.ts"
+      ],
       "@urban-renewal/design-system": [
         "../../packages/design-system/src/index.ts"
       ],

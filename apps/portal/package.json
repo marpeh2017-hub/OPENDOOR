@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@urban-renewal/api-contracts": "workspace:*",
     "@urban-renewal/design-system": "workspace:*",
     "next": "^15.5.24",
     "react": "^19.0.0",

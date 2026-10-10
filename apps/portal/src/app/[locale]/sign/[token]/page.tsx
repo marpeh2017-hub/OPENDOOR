@@ -13,6 +13,10 @@
  *   7. DECLINED  — confirmation of decline
  *   8. ERROR     — invalid/expired token or terminal error
  *
+ * A FORM package (the representation-appointment protocol) leaves this flow
+ * after LOADING for ProtocolSigning: the text, the code, then the signer's
+ * own row and a drawn signature.
+ *
  * API (public, no auth header):
  *   GET  /api/v1/signatures/portal/:token          — open session
  *   POST /api/v1/signatures/portal/:token/otp      — request OTP
@@ -23,6 +27,7 @@
 
 import Image from 'next/image'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { ProtocolSigning } from '@/components/forms/protocol-signing'
 import { useParams } from 'next/navigation'
 import {
   CheckCircle2, XCircle, RefreshCw, Phone, Shield,
@@ -219,6 +224,11 @@ export default function SignPage() {
   }
 
   /* ── Render ─────────────────────────────────────────────────── */
+
+  // A form (the representation protocol) is signed with the signer's own row
+  // and a drawn signature, in its own three steps. Documents keep the flow
+  // below.
+  if (sessionInfo?.form) return <ProtocolSigning initial={sessionInfo.form} call={call} />
 
   return (
     <div

@@ -5,8 +5,10 @@ import { DocumentsPreview } from '@/components/portal/documents-preview'
 import { AnnouncementsList } from '@/components/portal/announcements-list'
 import { MeetingsCard } from '@/components/portal/meetings-card'
 import { ContactCard } from '@/components/portal/contact-card'
+import { FormsCard } from '@/components/portal/forms-card'
 import { apiGet, NotAuthenticated } from '@/lib/api'
 import type { Dashboard } from '@/lib/dashboard'
+import type { PortalFormItem } from '@/lib/forms'
 
 /**
  * The resident dashboard.
@@ -28,8 +30,17 @@ export default async function ResidentDashboard({
   const { locale } = await params
 
   let data: Dashboard
+  let forms: PortalFormItem[] = []
   try {
-    data = await apiGet<Dashboard>('portal/dashboard')
+    // The forms are a card on this page, not the page: if they fail to load,
+    // the dashboard still shows, without the card.
+    ;[data, forms] = await Promise.all([
+      apiGet<Dashboard>('portal/dashboard'),
+      apiGet<PortalFormItem[]>('portal/forms').catch((err) => {
+        if (err instanceof NotAuthenticated) throw err
+        return []
+      }),
+    ])
   } catch (err) {
     if (err instanceof NotAuthenticated) {
       // Includes the case where the resident was archived or moved since
@@ -48,6 +59,8 @@ export default async function ResidentDashboard({
           {data.project.name} · דירה {data.resident.apartmentNumber}
         </p>
       </div>
+
+      <FormsCard forms={forms} locale={locale} />
 
       <ProjectStatusCard project={data.project} buildingAddress={data.resident.buildingAddress} />
 

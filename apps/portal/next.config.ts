@@ -25,7 +25,7 @@ const config: NextConfig = {
     return [{ source: '/:path*', headers: securityHeaders }]
   },
 
-  transpilePackages: ['@urban-renewal/design-system'],
+  transpilePackages: ['@urban-renewal/design-system', '@urban-renewal/api-contracts'],
 }
 
 export default withNextIntl(config)

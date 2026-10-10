@@ -193,6 +193,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.16
         version: 5.101.0(react@19.2.7)
+      '@urban-renewal/api-contracts':
+        specifier: workspace:*
+        version: link:../../packages/api-contracts
       '@urban-renewal/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
