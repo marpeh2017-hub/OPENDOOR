@@ -23,6 +23,7 @@ import { TenantsModule }        from './tenants/tenants.module'
 import { UsersModule }          from './users/users.module'
 import { DashboardModule }      from './dashboard/dashboard.module'
 import { SignaturesModule }     from './signatures/signatures.module'
+import { FormsModule }          from './forms/forms.module'
 import { DataQualityModule }    from './data-quality/data-quality.module'
 import { ProjectHealthModule }  from './health/health.module'
 import { GisModule }            from './gis/gis.module'
@@ -59,6 +60,7 @@ import { AutomationsModule }    from './automations/automations.module'
     BuildingsModule,
     GisModule,
     SignaturesModule,
+    FormsModule,
     DataQualityModule,
     ProjectHealthModule,
     DocumentsModule,

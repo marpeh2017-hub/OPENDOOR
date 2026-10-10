@@ -17,6 +17,20 @@ import { SignatureStateMachineService } from './signature-state-machine.service'
 import { SmsService } from '../sms/sms.service'
 import { REDIS } from '../redis/redis.module'
 import { EvidencePackageService } from './evidence-package.service'
+import { FieldEncryptionService } from '../crypto/field-encryption.service'
+import { normaliseIsraeliPhone } from '../messaging/phone'
+import { SigningEmailSender } from './signing-email.sender'
+import { maskEmail } from '../auth/email-otp.sender'
+import { maskPhone } from '../sms/sms.service'
+import {
+  israelToday,
+  maskIdNumber,
+  parseFormData,
+  parseSignerData,
+  validateSignerInput,
+  type SignerInput,
+  type StoredSignerData,
+} from '../forms/form-data'
 
 const OTP_TTL_MS       = 5 * 60 * 1000   // 5 minutes
 const OTP_MAX_ATTEMPTS = 5
@@ -38,11 +52,13 @@ export class SigningSessionService {
     private readonly sm: SignatureStateMachineService,
     private readonly sms: SmsService,
     private readonly evidenceSvc: EvidencePackageService,
+    private readonly encryption: FieldEncryptionService,
+    private readonly email: SigningEmailSender,
     @Inject(REDIS) private readonly redis: any,
   ) {}
 
   /** Issue (or reissue) a signing session for a SignatureRecord */
-  async issueSession(recordId: string): Promise<{ token: string }> {
+  async issueSession(recordId: string, ttlDays = SESSION_TTL_DAYS): Promise<{ token: string }> {
     const record = await this.prisma.signatureRecord.findUniqueOrThrow({
       where: { id: recordId },
       include: { package: true },
@@ -53,7 +69,7 @@ export class SigningSessionService {
     }
 
     const token    = randomBytes(48).toString('base64url')
-    const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86400_000)
+    const expiresAt = new Date(Date.now() + ttlDays * 86400_000)
 
     // Upsert — one session per record
     await this.prisma.signingSession.upsert({
@@ -67,12 +83,24 @@ export class SigningSessionService {
     return { token }
   }
 
+  /**
+   * The record's live signing token, issued only when there is none. Issuing
+   * replaces the token, which would kill a link the owner already holds in an
+   * SMS, so a caller that only needs A link (the portal's "ממתין לחתימה")
+   * asks here rather than reissuing.
+   */
+  async currentToken(recordId: string, ttlDays = SESSION_TTL_DAYS): Promise<string> {
+    const session = await this.prisma.signingSession.findUnique({ where: { recordId } })
+    if (session && !session.revokedAt && session.expiresAt > new Date()) return session.token
+    return (await this.issueSession(recordId, ttlDays)).token
+  }
+
   /** Owner opens the signing link — log OPENED and track openedAt */
   async openSession(token: string, ip?: string, userAgent?: string) {
     const session = await this.resolveSession(token)
     const record  = await this.prisma.signatureRecord.findUniqueOrThrow({
       where:   { id: session.recordId },
-      include: { package: { include: { records: true } } },
+      include: { package: { include: { records: true } }, owner: true },
     })
 
     // Track first open time
@@ -106,11 +134,99 @@ export class SigningSessionService {
       packageTitle: record.package.title,
       expiresAt:    record.package.expiresAt,
       orderBlocked,
+      ...(record.package.formType ? { form: await this.formView(record, Boolean(session.verifiedAt)) } : {}),
     }
   }
 
-  /** Send OTP to the owner's phone */
-  async requestOtp(token: string, ip?: string): Promise<{ message: string; expiresIn: number }> {
+  /**
+   * What a form's signing screen needs: the wording snapshot, this meeting's
+   * details, the representation members (names and apartments, as printed
+   * in the protocol's table), and the signer's own row.
+   *
+   * The owner's phone and email on file prefill the row only once the
+   * one-time code is verified. Before that, whoever holds the link sees the
+   * text, the owner's name and apartment, and where the code will go, masked:
+   * a forwarded link must not hand out an owner's contact details.
+   */
+  private async formView(
+    record: {
+      tenantId: string
+      ownerId: string
+      apartmentId: string
+      status: string
+      signedAt: Date | null
+      signerData: string | null
+      owner: { fullName: string; phone: string | null; email: string | null }
+      package: { formType: string | null; formVersion: string | null; formData: string | null }
+    },
+    verified: boolean,
+  ) {
+    const form = parseFormData(record.package.formData)
+    if (!form) return null
+    const apartmentIds = [record.apartmentId, ...form.representatives.map((r) => r.apartmentId)]
+    const [apartments, members] = await Promise.all([
+      this.prisma.apartment.findMany({
+        where: { id: { in: apartmentIds } },
+        select: { id: true, apartmentNumber: true },
+      }),
+      this.prisma.owner.findMany({
+        where: { id: { in: form.representatives.map((r) => r.ownerId) }, tenantId: record.tenantId },
+        select: { id: true, fullName: true },
+      }),
+    ])
+    const apartmentNumber = (id: string) => apartments.find((a) => a.id === id)?.apartmentNumber ?? ''
+    const signed = parseSignerData(record.signerData)
+    const channel = this.otpChannel(record.owner)
+
+    return {
+      type: record.package.formType,
+      version: record.package.formVersion,
+      text: form.text,
+      meeting: form.meeting,
+      representatives: form.representatives.map((r) => ({
+        fullName: members.find((m) => m.id === r.ownerId)?.fullName ?? '',
+        apartmentNumber: apartmentNumber(r.apartmentId),
+      })),
+      signer: {
+        fullName: record.owner.fullName,
+        apartmentNumber: apartmentNumber(record.apartmentId),
+        isRepresentative: form.representatives.some(
+          (r) => r.ownerId === record.ownerId && r.apartmentId === record.apartmentId,
+        ),
+        ...(verified ? { phone: record.owner.phone ?? '', email: record.owner.email ?? '' } : {}),
+      },
+      otp: channel ? { channel: channel.kind, to: channel.masked } : null,
+      today: israelToday(),
+      signed:
+        record.status === 'SIGNED'
+          ? {
+              signedAt: record.signedAt,
+              fullName: signed?.fullName ?? record.owner.fullName,
+              idNumber: maskIdNumber(this.encryption.decrypt(signed?.idNumber ?? null)),
+              signedDate: signed?.signedDate ?? null,
+            }
+          : null,
+    }
+  }
+
+  /** Where a one-time code can go: a mobile phone, else an email address. */
+  private otpChannel(owner: { phone: string | null; email: string | null } | null | undefined):
+    | { kind: 'SMS' | 'EMAIL'; to: string; masked: string }
+    | null {
+    if (!owner) return null
+    const phone = normaliseIsraeliPhone(owner.phone)
+    if (owner.phone && phone.e164 && phone.isMobile) {
+      return { kind: 'SMS', to: owner.phone, masked: maskPhone(owner.phone) }
+    }
+    if (owner.email) return { kind: 'EMAIL', to: owner.email, masked: maskEmail(owner.email) }
+    return null
+  }
+
+  /** Send the one-time code: to the owner's mobile phone, else to their email */
+  async requestOtp(
+    token: string,
+    ip?: string,
+  ): Promise<{ message: string; expiresIn: number; channel: 'SMS' | 'EMAIL'; to: string }> {
     const session = await this.resolveSession(token)
     const record  = await this.prisma.signatureRecord.findUniqueOrThrow({
       where:   { id: session.recordId },
@@ -120,8 +236,10 @@ export class SigningSessionService {
     // Enforce sequential signing order
     await this.assertSigningOrderAllowed(record)
 
-    const phone = record.owner?.phone
-    if (!phone) throw new BadRequestException('Owner has no phone number on file')
+    const channel = this.otpChannel(record.owner)
+    if (!channel) {
+      throw new BadRequestException('אין בתיק טלפון נייד או אימייל לשליחת קוד. פנו אלינו בטלפון 054-8018613.')
+    }
 
     // Cap OTP resends per signing session — otherwise the 5-attempt verify
     // lockout can be reset indefinitely and brute-forced.
@@ -156,13 +274,17 @@ export class SigningSessionService {
       actorType: 'OWNER',
       actorId:   record.ownerId,
       ip,
-      metadata: { phone: phone.slice(-4).padStart(phone.length, '*') },
+      metadata:
+        channel.kind === 'SMS'
+          ? { phone: channel.to.slice(-4).padStart(channel.to.length, '*') }
+          : { email: channel.masked },
     })
 
-    // Send OTP via configured SMS provider — never logs the OTP value
-    await this.sms.sendOtp(phone, otp)
+    // Through the configured transport. Neither path logs the code.
+    if (channel.kind === 'SMS') await this.sms.sendOtp(channel.to, otp)
+    else await this.email.sendCode(channel.to, otp)
 
-    return { message: 'קוד OTP נשלח', expiresIn: 300 }
+    return { message: 'קוד OTP נשלח', expiresIn: 300, channel: channel.kind, to: channel.masked }
   }
 
   /** Verify OTP — returns verified session */
@@ -246,6 +368,7 @@ export class SigningSessionService {
     ip?: string,
     userAgent?: string,
     portalSession?: { residentId: string; tenantId: string; sessionId: string } | null,
+    input?: SignerInput,
   ) {
     const session = await this.resolveSession(token)
     if (!session.verifiedAt) throw new UnauthorizedException('OTP לא אומת — בקש קוד תחילה')
@@ -263,11 +386,31 @@ export class SigningSessionService {
       throw new BadRequestException('חבילת החתימות אינה פתוחה לחתימה')
     }
 
+    // A form is signed with the signer's own row: name, ID number, contact
+    // details and the signature they drew. Checked before anything is
+    // written, and the ID number is stored encrypted.
+    const formChannel: StoredSignerData['channel'] = portalSession ? 'PORTAL' : 'LINK'
+    let formRow: { signerData: string; signatureImage: string } | null = null
+    if (record.package.formType) {
+      const row = validateSignerInput(input ?? {})
+      const signerData: StoredSignerData = {
+        fullName: row.fullName,
+        idNumber: this.encryption.encrypt(row.idNumber),
+        phone: row.phone,
+        email: row.email,
+        signedDate: israelToday(),
+        channel: formChannel,
+        confirmedRead: true,
+      }
+      formRow = { signerData: JSON.stringify(signerData), signatureImage: row.signatureImage }
+    }
+
     await this.prisma.signatureRecord.update({
       where: { id: record.id },
       data: {
         status:   'SIGNED',
         signedAt: new Date(),
+        ...(formRow ?? {}),
       },
     })
 
@@ -277,13 +420,16 @@ export class SigningSessionService {
       data:  { revokedAt: new Date() },
     })
 
+    const attribution = await this.attribution(record.ownerId, record.tenantId, portalSession)
     await this.sm.logEvent(record.packageId, 'SIGNED', {
       recordId: session.recordId,
       actorType: 'OWNER',
       actorId:   record.ownerId,
       ip,
       userAgent,
-      metadata: await this.attribution(record.ownerId, record.tenantId, portalSession),
+      metadata: record.package.formType
+        ? { ...(attribution ?? {}), form: { version: record.package.formVersion, channel: formChannel } }
+        : attribution,
     })
 
     // Check if all required signers are done → auto-complete
@@ -318,7 +464,15 @@ export class SigningSessionService {
 
     const record = await this.prisma.signatureRecord.findUniqueOrThrow({
       where: { id: session.recordId },
+      include: { package: { select: { formType: true } } },
     })
+
+    // A form has no refusal: an owner who does not want to sign simply does
+    // not sign. Declining a required record would decline the whole package,
+    // and one owner must not be able to close the protocol for everyone.
+    if (record.package.formType) {
+      throw new BadRequestException('בטופס הזה אין סירוב: מי שלא מעוניין לחתום פשוט לא חותם.')
+    }
 
     await this.prisma.signatureRecord.update({
       where: { id: record.id },

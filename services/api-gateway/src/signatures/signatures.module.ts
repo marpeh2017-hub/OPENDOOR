@@ -13,6 +13,7 @@ import { EvidencePackageService }        from './evidence-package.service'
 import { EvidencePdfService }            from './evidence-pdf.service'
 import { SignatureExpiryService }        from './signature-expiry.service'
 import { createSignatureProvider }       from './providers/signature-provider.factory'
+import { SigningEmailSender }            from './signing-email.sender'
 
 @Module({
   imports: [AuthModule, AutomationsModule],
@@ -25,8 +26,18 @@ import { createSignatureProvider }       from './providers/signature-provider.fa
     SigningSessionService,
     SignaturePackageService,
     SignatureExpiryService,
+    SigningEmailSender,
     { provide: 'SIGNATURE_PROVIDER', useFactory: createSignatureProvider },
   ],
-  exports: [ThresholdService, SignaturePackageService, EvidencePackageService],
+  // The session, state-machine and email services are exported for the
+  // forms module, which runs a form package through the same signing flow.
+  exports: [
+    ThresholdService,
+    SignaturePackageService,
+    EvidencePackageService,
+    SigningSessionService,
+    SignatureStateMachineService,
+    SigningEmailSender,
+  ],
 })
 export class SignaturesModule {}

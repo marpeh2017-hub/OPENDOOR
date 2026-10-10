@@ -15,6 +15,7 @@ import { SignatureExpiryService }    from './signature-expiry.service'
 import { EvidencePackageService }    from './evidence-package.service'
 import { StorageService }            from '../storage/storage.service'
 import { CreatePackageDto }          from './dto/create-package.dto'
+import { SignFormDto }               from './dto/sign-form.dto'
 
 @ApiTags('signatures')
 @ApiBearerAuth()
@@ -219,7 +220,7 @@ export class SignaturesController {
    */
   @Throttle({ short: { limit: 3, ttl: 60_000 }, medium: { limit: 10, ttl: 3_600_000 } })
   @Post('portal/:token/otp')
-  @ApiOperation({ summary: 'Request OTP code (sent to owner phone)' })
+  @ApiOperation({ summary: 'Request OTP code (to the owner’s mobile phone, else their email)' })
   requestOtp(@Param('token') token: string, @Ip() ip: string) {
     return this.sessions.requestOtp(token, ip)
   }
@@ -255,15 +256,16 @@ export class SignaturesController {
   @Public()
   @Throttle({ short: { limit: 5, ttl: 60_000 } })
   @Post('portal/:token/sign')
-  @ApiOperation({ summary: 'Execute signing after OTP verification' })
+  @ApiOperation({ summary: 'Execute signing after OTP verification (a form also sends the signer’s row)' })
   async sign(
     @Param('token') token: string,
+    @Body() body: SignFormDto,
     @Ip() ip: string,
     @Headers('user-agent') ua: string,
     @Headers('authorization') authorization?: string,
   ) {
     const portalSession = await this.portalSessions.probe(authorization)
-    return this.sessions.sign(token, ip, ua, portalSession)
+    return this.sessions.sign(token, ip, ua, portalSession, body)
   }
 
   @Public()
