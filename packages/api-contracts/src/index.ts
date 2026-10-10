@@ -32,3 +32,7 @@ export * from './media-slots'
 /* The FAQ's topics and its opening questions: runtime values, shared by the
    website's /faq and chat assistant and the CRM's FAQ editor. */
 export * from './faq'
+/* The representation-appointment protocol's wording, as data: the website's
+   printable form, the portal's signing screen and the CRM's signed copy all
+   read this one text. */
+export * from './representation-protocol'
