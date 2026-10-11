@@ -2,6 +2,7 @@ import { ResidentsStats } from '@/components/residents/residents-stats'
 import { ResidentsFilters } from '@/components/residents/residents-filters'
 import { ResidentsTable } from '@/components/residents/residents-table'
 import { NewResidentButton } from '@/components/residents/new-resident-button'
+import { RegistrationsLink } from '@/components/residents/registrations-link'
 
 export const metadata = { title: 'דיירים' }
 
@@ -13,7 +14,10 @@ export default function ResidentsPage() {
           <h1 className="text-2xl font-bold text-foreground">דיירים</h1>
           <p className="text-sm text-muted-foreground mt-0.5">ניהול פרופילי דיירים וסטטוס חתימות</p>
         </div>
-        <NewResidentButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <RegistrationsLink />
+          <NewResidentButton />
+        </div>
       </div>
 
       <ResidentsStats />
