@@ -12,10 +12,16 @@ const LABELS: Record<FormStatus, { label: string; className: string }> = {
   CANCELLED: { label: 'בוטל', className: 'bg-gray-100 text-gray-700' },
 }
 
-/** A form's status in words, never in colour alone. */
-export function FormStatusBadge({ status }: { status: FormStatus }) {
+/** A form's status in words, never in colour alone. A notice is read, never
+ * signed, so once it is out it says so instead of "בחתימה". */
+export function FormStatusBadge({ status, formType }: { status: FormStatus; formType?: string }) {
   const { label, className } = LABELS[status] ?? LABELS.DRAFT
-  return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${className}`}>{label}</span>
+  const sentNotice = formType === 'ASSEMBLY_NOTICE' && (status === 'SENT' || status === 'PARTIALLY_SIGNED')
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${className}`}>
+      {sentNotice ? 'נשלחה' : label}
+    </span>
+  )
 }
 
 /** A website protocol's neighbours' link: open for signing, or closed by staff. */

@@ -187,7 +187,7 @@ function FormRow({ form, locale }: { form: FormListItem; locale: string }) {
         )}
       </td>
       <td className="px-4 py-3">
-        <FormStatusBadge status={form.status} />
+        <FormStatusBadge status={form.status} formType={form.formType} />
       </td>
       <td className="px-4 py-3 text-xs text-muted-foreground">
         {new Date(form.updatedAt).toLocaleDateString('he-IL')}

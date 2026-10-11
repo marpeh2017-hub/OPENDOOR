@@ -74,6 +74,8 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
     .map((m) => form.records.find((r) => r.ownerId === m.ownerId && r.apartmentId === m.apartmentId))
     .filter((r): r is FormDetail['records'][number] => Boolean(r))
   const candidates = form.records.filter((r) => !members.some((m) => rowKey(m) === rowKey(r)))
+  // In a complex of several buildings "דירה 1" alone could be any of them.
+  const severalBuildings = new Set(form.records.map((r) => r.buildingAddress)).size > 1
 
   const delivery = useMemo(() => {
     const counts = { SMS: 0, EMAIL: 0, WHATSAPP: 0, NONE: 0 }
@@ -316,7 +318,7 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
                     <option value="">בחירת בעל דירה</option>
                     {candidates.map((r) => (
                       <option key={r.recordId} value={`${r.ownerId}:${r.apartmentId}`}>
-                        {r.ownerName} · דירה {r.apartmentNumber}
+                        {r.ownerName} · {severalBuildings ? `${r.buildingAddress}, ` : ''}דירה {r.apartmentNumber}
                       </option>
                     ))}
                   </select>

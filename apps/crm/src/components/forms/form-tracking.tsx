@@ -149,7 +149,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {form.sentAt && <span>נשלח ב-{new Date(form.sentAt).toLocaleDateString('he-IL')}</span>}
-            <FormStatusBadge status={form.status} />
+            <FormStatusBadge status={form.status} formType={form.formType} />
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
