@@ -79,4 +79,24 @@ describe('FormLinkSender', () => {
     expect(sms.sendText).toHaveBeenLastCalledWith(owner.phone, expect.stringContaining('תזכורת: כינוס בעלי הדירות'))
     expect(links.whatsApp(owner, { ...LINK, formType: 'ASSEMBLY_NOTICE', when }).text).toContain('ההודעה המלאה וסדר היום')
   })
+
+  it('names the apartment when an owner gets a link for each of theirs', async () => {
+    const owner = { fullName: 'ישראל', phone: '050-1234567', email: 'a@example.com' }
+    const { links, sms } = sender({ smsConfigured: true })
+    await links.send(owner, { ...LINK, unit: 'דירה 5' })
+    expect(sms.sendText).toHaveBeenLastCalledWith(owner.phone, expect.stringContaining('ממתין לחתימתכם (דירה 5). לקריאה ולחתימה'))
+    expect(links.whatsApp(owner, { ...LINK, formType: 'ORGANIZING_AGREEMENT', unit: 'דירה 5' }).text).toContain(
+      'ממתין לחתימתכם (דירה 5).',
+    )
+
+    const byEmail = sender({ smsConfigured: false })
+    await byEmail.links.send(owner, { ...LINK, unit: 'דירה 5' })
+    expect(byEmail.email.sendText).toHaveBeenCalledWith(
+      owner.email,
+      expect.any(String),
+      expect.arrayContaining(['הקישור הזה הוא לחתימתכם כבעלים של דירה 5. על כל דירה שבבעלותכם נשלח קישור נפרד.']),
+    )
+    await links.send(owner, LINK)
+    expect(sms.sendText).toHaveBeenLastCalledWith(owner.phone, expect.not.stringContaining('(דירה'))
+  })
 })

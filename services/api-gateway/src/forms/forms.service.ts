@@ -6,7 +6,7 @@ import { SigningSessionService } from '../signatures/signing-session.service'
 import { EvidencePackageService } from '../signatures/evidence-package.service'
 import { SigningEmailSender } from '../signatures/signing-email.sender'
 import { SmsService } from '../sms/sms.service'
-import { FormLinkSender, signingUrl, type DeliveryChannel, type LinkCopy } from './form-link.sender'
+import { FormLinkSender, signingUrl, type DeliveryChannel, type LinkCopy, type LinkTarget } from './form-link.sender'
 import {
   FORM_SESSION_TTL_DAYS,
   FORM_TEMPLATES,
@@ -54,6 +54,29 @@ interface RecordRow {
   evidenceDocId: string | null
   owner: { id: string; fullName: string; phone: string | null; email: string | null; nationalId: string | null }
 }
+
+/** A record as a message needs it: whose it is, its apartment, and where it stands. */
+interface Recipient {
+  id: string
+  ownerId: string
+  apartmentId: string
+  status: string
+  openedAt: Date | null
+  owner: LinkTarget
+}
+
+/**
+ * One message to one person: the record whose link it carries, every record
+ * it stands for, and the apartment it names when the person has a link per
+ * apartment. See `messagesFor`.
+ */
+interface Message {
+  record: Recipient
+  records: Recipient[]
+  unit?: string
+}
+
+const RECIPIENT_OWNER = { select: { fullName: true, phone: true, email: true } } as const
 
 /**
  * Digital forms, run as signature packages: the representation-appointment
@@ -258,16 +281,22 @@ export class FormsService {
 
     const records = await this.prisma.signatureRecord.findMany({
       where: { packageId: pkg.id },
-      include: { owner: { select: { fullName: true, phone: true, email: true } } },
+      include: { owner: RECIPIENT_OWNER },
     })
+    // Counted per message: a notice to an owner of two apartments is one.
     const delivery: Record<DeliveryChannel, number> = { SMS: 0, EMAIL: 0, WHATSAPP: 0, UNSENT: 0, NONE: 0, FAILED: 0 }
     const copy = this.copyOf(pkg, form)
-    for (const record of records) {
-      const { token } = await this.sessions.issueSession(record.id, FORM_SESSION_TTL_DAYS)
-      const channel = await this.links.send(record.owner, { ...copy, url: signingUrl(token), reminder: false })
+    for (const message of await this.messagesFor(records, pkg.formType)) {
+      const { token } = await this.sessions.issueSession(message.record.id, FORM_SESSION_TTL_DAYS)
+      const channel = await this.links.send(message.record.owner, {
+        ...copy,
+        ...(message.unit ? { unit: message.unit } : {}),
+        url: signingUrl(token),
+        reminder: false,
+      })
       delivery[channel]++
-      await this.prisma.signatureRecord.update({
-        where: { id: record.id },
+      await this.prisma.signatureRecord.updateMany({
+        where: { id: { in: message.records.map((r) => r.id) } },
         data: { deliveredVia: channel, deliveredAt: channel === 'SMS' || channel === 'EMAIL' ? new Date() : null },
       })
     }
@@ -479,13 +508,9 @@ export class FormsService {
     const pkg = await this.loadPackage(id, tenantId)
     if (!OPEN_STATUSES.includes(pkg.status)) throw new BadRequestException('הטופס אינו פתוח לחתימה')
     const form = this.formOf(pkg)
-    const record = await this.prisma.signatureRecord.findFirst({
-      where: { id: recordId, packageId: pkg.id },
-      include: { owner: { select: { fullName: true, phone: true, email: true } } },
-    })
-    if (!record) throw new NotFoundException('השורה לא נמצאה')
+    const { record, message } = await this.messageFor(pkg.id, pkg.formType, recordId)
     if (record.status === 'SIGNED') throw new BadRequestException('בעל הדירה כבר חתם')
-    const channel = await this.deliverReminder(pkg.id, record, this.copyOf(pkg, form))
+    const channel = await this.deliverReminder(pkg.id, message, this.copyOf(pkg, form))
     if (channel === 'UNSENT') throw new BadRequestException('אין ספק SMS ואין אימייל בתיק. שלחו את התזכורת בווטסאפ.')
     if (channel === 'NONE') throw new BadRequestException('אין בתיק טלפון נייד או אימייל. אפשר להחתים ידנית.')
     if (channel === 'FAILED') throw new BadRequestException('שליחת התזכורת נכשלה. נסו שוב מאוחר יותר.')
@@ -500,22 +525,27 @@ export class FormsService {
     const pkg = await this.loadPackage(id, tenantId)
     if (!OPEN_STATUSES.includes(pkg.status)) throw new BadRequestException('הטופס אינו פתוח לחתימה')
     const form = this.formOf(pkg)
+    // Every record, so an owner who signed for one apartment and not another
+    // is still reminded with the apartment named.
     const records = await this.prisma.signatureRecord.findMany({
-      where: { packageId: pkg.id, status: { not: 'SIGNED' }, ...(isSignable(pkg.formType) ? {} : { openedAt: null }) },
-      include: { owner: { select: { fullName: true, phone: true, email: true } } },
+      where: { packageId: pkg.id },
+      include: { owner: RECIPIENT_OWNER },
     })
+    const waiting = (await this.messagesFor(records, pkg.formType)).filter((m) =>
+      isSignable(pkg.formType) ? m.record.status !== 'SIGNED' : !m.records.some((r) => r.openedAt),
+    )
     const copy = this.copyOf(pkg, form)
     const recent = await this.prisma.signatureEvent.findMany({
       where: { packageId: pkg.id, type: 'REMINDER_SENT', createdAt: { gt: new Date(Date.now() - REMINDER_GAP_MS) } },
       select: { recordId: true },
     })
     const result = { sent: 0, skippedRecent: 0, noChannel: 0, whatsApp: 0, failed: 0 }
-    for (const record of records) {
-      if (recent.some((e) => e.recordId === record.id)) {
+    for (const message of waiting) {
+      if (message.records.some((r) => recent.some((e) => e.recordId === r.id))) {
         result.skippedRecent++
         continue
       }
-      const channel = await this.deliverReminder(pkg.id, record, copy)
+      const channel = await this.deliverReminder(pkg.id, message, copy)
       if (channel === 'SMS' || channel === 'EMAIL') result.sent++
       else if (channel === 'UNSENT') result.whatsApp++
       else if (channel === 'NONE') result.noChannel++
@@ -524,21 +554,24 @@ export class FormsService {
     return result
   }
 
-  private async deliverReminder(
-    packageId: string,
-    record: { id: string; owner: { fullName: string; phone: string | null; email: string | null } },
-    copy: LinkCopy,
-  ): Promise<DeliveryChannel> {
+  private async deliverReminder(packageId: string, message: Message, copy: LinkCopy): Promise<DeliveryChannel> {
     // The live link if there is one, so the link already in the owner's SMS
     // keeps working; a new one only when it expired.
-    const token = await this.sessions.currentToken(record.id, FORM_SESSION_TTL_DAYS)
-    const channel = await this.links.send(record.owner, { ...copy, url: signingUrl(token), reminder: true })
+    const token = await this.sessions.currentToken(message.record.id, FORM_SESSION_TTL_DAYS)
+    const channel = await this.links.send(message.record.owner, {
+      ...copy,
+      ...(message.unit ? { unit: message.unit } : {}),
+      url: signingUrl(token),
+      reminder: true,
+    })
     if (channel === 'SMS' || channel === 'EMAIL') {
-      await this.prisma.signatureRecord.update({
-        where: { id: record.id },
+      await this.prisma.signatureRecord.updateMany({
+        where: { id: { in: message.records.map((r) => r.id) } },
         data: { deliveredVia: channel, deliveredAt: new Date() },
       })
-      await this.sm.logEvent(packageId, 'REMINDER_SENT', { recordId: record.id, actorType: 'SYSTEM', metadata: { channel } })
+      for (const record of message.records) {
+        await this.sm.logEvent(packageId, 'REMINDER_SENT', { recordId: record.id, actorType: 'SYSTEM', metadata: { channel } })
+      }
     }
     return channel
   }
@@ -555,30 +588,32 @@ export class FormsService {
     const pkg = await this.loadPackage(id, tenantId)
     if (!OPEN_STATUSES.includes(pkg.status)) throw new BadRequestException('הטופס אינו פתוח לחתימה')
     const form = this.formOf(pkg)
-    const record = await this.prisma.signatureRecord.findFirst({
-      where: { id: recordId, packageId: pkg.id },
-      include: { owner: { select: { fullName: true, phone: true, email: true } } },
-    })
-    if (!record) throw new NotFoundException('השורה לא נמצאה')
+    const { record, message } = await this.messageFor(pkg.id, pkg.formType, recordId)
     if (record.status === 'SIGNED') throw new BadRequestException('בעל הדירה כבר חתם')
 
-    const token = await this.sessions.currentToken(record.id, FORM_SESSION_TTL_DAYS)
+    const token = await this.sessions.currentToken(message.record.id, FORM_SESSION_TTL_DAYS)
     const url = signingUrl(token)
-    const whatsApp = this.links.whatsApp(record.owner, { ...this.copyOf(pkg, form), url })
+    const whatsApp = this.links.whatsApp(message.record.owner, {
+      ...this.copyOf(pkg, form),
+      ...(message.unit ? { unit: message.unit } : {}),
+      url,
+    })
     if (via === 'WHATSAPP' && !whatsApp.url) throw new BadRequestException('אין בתיק מספר נייד לשליחה בווטסאפ')
 
     if (via === 'WHATSAPP') {
-      await this.prisma.signatureRecord.update({
-        where: { id: record.id },
+      await this.prisma.signatureRecord.updateMany({
+        where: { id: { in: message.records.map((r) => r.id) } },
         data: { deliveredVia: 'WHATSAPP', deliveredAt: new Date() },
       })
     }
-    await this.sm.logEvent(pkg.id, 'LINK_SHARED', {
-      recordId: record.id,
-      actorType: 'USER',
-      actorId: userId,
-      metadata: { via },
-    })
+    for (const shared of message.records) {
+      await this.sm.logEvent(pkg.id, 'LINK_SHARED', {
+        recordId: shared.id,
+        actorType: 'USER',
+        actorId: userId,
+        metadata: { via },
+      })
+    }
     return { url, text: whatsApp.text, whatsappUrl: whatsApp.url }
   }
 
@@ -766,6 +801,60 @@ export class FormsService {
         skipDuplicates: true,
       })
     }
+  }
+
+  /**
+   * Who gets which message. An owner of several apartments in the complex has
+   * a record for each, as the owners' table on paper has a row for each. A
+   * notice reaches them once, on the link of their first apartment, and
+   * opening it counts for all of them (SigningSessionService.openSession). A
+   * form to sign keeps a link per apartment, so each row is signed for, and
+   * each message names its apartment: two identical messages would read as a
+   * copy, and the second apartment would go unsigned.
+   */
+  private async messagesFor(records: Recipient[], formType: string | null): Promise<Message[]> {
+    const apartments = await this.apartmentsFor(records.map((r) => r.apartmentId))
+    const numberOf = (r: Recipient) => ({ apartmentNumber: apartments.get(r.apartmentId)?.apartmentNumber ?? '' })
+    const byOwner = new Map<string, Recipient[]>()
+    for (const record of [...records].sort((a, b) => byApartment(numberOf(a), numberOf(b)))) {
+      byOwner.set(record.ownerId, [...(byOwner.get(record.ownerId) ?? []), record])
+    }
+
+    const messages: Message[] = []
+    for (const own of byOwner.values()) {
+      if (!isSignable(formType)) {
+        messages.push({ record: own[0]!, records: own })
+        continue
+      }
+      // In a complex of several buildings "דירה 1" alone could be any of them.
+      const buildings = new Set(own.map((r) => apartments.get(r.apartmentId)?.buildingAddress ?? ''))
+      for (const record of own) {
+        const apartment = apartments.get(record.apartmentId)
+        const unit =
+          own.length < 2 || !apartment
+            ? null
+            : buildings.size > 1 && apartment.buildingAddress
+              ? `${apartment.buildingAddress}, דירה ${apartment.apartmentNumber}`
+              : `דירה ${apartment.apartmentNumber}`
+        messages.push({ record, records: [record], ...(unit ? { unit } : {}) })
+      }
+    }
+    return messages
+  }
+
+  /** One record's message, among its owner's records on this form. */
+  private async messageFor(packageId: string, formType: string | null, recordId: string) {
+    const record = await this.prisma.signatureRecord.findFirst({
+      where: { id: recordId, packageId },
+      include: { owner: RECIPIENT_OWNER },
+    })
+    if (!record) throw new NotFoundException('השורה לא נמצאה')
+    const own = await this.prisma.signatureRecord.findMany({
+      where: { packageId, ownerId: record.ownerId },
+      include: { owner: RECIPIENT_OWNER },
+    })
+    const message = (await this.messagesFor(own, formType)).find((m) => m.records.some((r) => r.id === record.id))
+    return { record, message: message ?? { record, records: [record] } }
   }
 
   /** Members must be owners on this form, each listed once. */

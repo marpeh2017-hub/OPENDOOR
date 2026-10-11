@@ -115,8 +115,14 @@ export class SigningSessionService {
       include: { package: { include: { records: true } }, owner: true },
     })
 
-    // Track first open time
-    if (!record.openedAt) {
+    // Track first open time. A notice reaches an owner of several apartments
+    // once (FormsService.messagesFor), so opening it counts for each of them.
+    if (record.package.formType && !isSignable(record.package.formType)) {
+      await this.prisma.signatureRecord.updateMany({
+        where: { packageId: record.packageId, ownerId: record.ownerId, openedAt: null },
+        data:  { openedAt: new Date() },
+      })
+    } else if (!record.openedAt) {
       await this.prisma.signatureRecord.update({
         where: { id: record.id },
         data:  { openedAt: new Date() },
@@ -167,6 +173,7 @@ export class SigningSessionService {
   private async formView(
     record: {
       tenantId: string
+      packageId: string
       ownerId: string
       apartmentId: string
       status: string
@@ -179,7 +186,17 @@ export class SigningSessionService {
   ) {
     const form = parseFormData(record.package.formData)
     if (!form) return null
-    const apartmentIds = [record.apartmentId, ...form.representatives.map((r) => r.apartmentId)]
+    // The apartments this link stands for: its own, or for a notice, which an
+    // owner of several apartments gets once, all of theirs.
+    const ownApartmentIds = isSignable(record.package.formType)
+      ? [record.apartmentId]
+      : (
+          await this.prisma.signatureRecord.findMany({
+            where: { packageId: record.packageId, ownerId: record.ownerId },
+            select: { apartmentId: true },
+          })
+        ).map((r) => r.apartmentId)
+    const apartmentIds = [record.apartmentId, ...ownApartmentIds, ...form.representatives.map((r) => r.apartmentId)]
     const [apartments, members] = await Promise.all([
       this.prisma.apartment.findMany({
         where: { id: { in: apartmentIds } },
@@ -208,6 +225,13 @@ export class SigningSessionService {
       signer: {
         fullName: record.owner.fullName,
         apartmentNumber: apartmentNumber(record.apartmentId),
+        ...(isSignable(record.package.formType)
+          ? {}
+          : {
+              apartmentNumbers: ownApartmentIds
+                .map(apartmentNumber)
+                .sort((a, b) => a.localeCompare(b, 'he', { numeric: true })),
+            }),
         isRepresentative: form.representatives.some(
           (r) => r.ownerId === record.ownerId && r.apartmentId === record.apartmentId,
         ),

@@ -77,11 +77,15 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
   // In a complex of several buildings "דירה 1" alone could be any of them.
   const severalBuildings = new Set(form.records.map((r) => r.buildingAddress)).size > 1
 
+  // People, not rows: an owner of two apartments has a row for each. A notice
+  // goes to each person once; a form to sign, once per apartment.
+  const people = new Set(form.records.map((r) => r.ownerId)).size
   const delivery = useMemo(() => {
     const counts = { SMS: 0, EMAIL: 0, WHATSAPP: 0, NONE: 0 }
-    for (const record of form.records) counts[deliveryOf(record, form.channels)]++
+    const messages = isNotice ? [...new Map(form.records.map((r) => [r.ownerId, r])).values()] : form.records
+    for (const record of messages) counts[deliveryOf(record, form.channels)]++
     return counts
-  }, [form.records, form.channels])
+  }, [form.records, form.channels, isNotice])
 
   const dirty =
     JSON.stringify(meeting) !== JSON.stringify(form.meeting) ||
@@ -352,9 +356,16 @@ export function FormSetup({ form, locale }: { form: FormDetail; locale: string }
               נמענים
             </h2>
             <p className="text-sm text-foreground">
-              {isNotice ? 'ההודעה תישלח' : 'הטופס יישלח'} ל-<strong>{form.records.length} בעלי דירות</strong> במתחם, כל
+              {isNotice ? 'ההודעה תישלח' : 'הטופס יישלח'} ל-<strong>{people} בעלי דירות</strong> במתחם, כל
               אחד בקישור אישי.
             </p>
+            {people < form.records.length && (
+              <p className="text-xs text-muted-foreground">
+                {isNotice
+                  ? 'בעלים של כמה דירות במתחם יקבלו הודעה אחת.'
+                  : 'בעלים של כמה דירות במתחם יקבלו קישור לכל דירה, ובכל הודעה כתוב לאיזו דירה היא.'}
+              </p>
+            )}
             <ul className="grid gap-2 sm:grid-cols-2">
               {form.channels.sms && (
                 <li className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm">

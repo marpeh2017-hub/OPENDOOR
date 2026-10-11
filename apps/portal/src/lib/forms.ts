@@ -34,6 +34,9 @@ export interface SigningFormView {
   signer: {
     fullName: string
     apartmentNumber: string
+    /** A notice's only: an owner of several apartments gets it once, and
+     *  this lists them all. */
+    apartmentNumbers?: string[]
     isRepresentative: boolean
     /** Present only for the owner signed in to the personal area. */
     phone?: string

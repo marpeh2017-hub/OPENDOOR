@@ -13,6 +13,11 @@ import { NoticeView } from './notice-view'
  * nothing to sign; opening the link is what tells the company it arrived.
  */
 export function NoticeReading({ initial }: { initial: SigningFormView }) {
+  // An owner of several apartments gets the notice once, for all of them.
+  const units = initial.signer.apartmentNumbers?.length ? initial.signer.apartmentNumbers : [initial.signer.apartmentNumber]
+  const unitsLine =
+    units.length > 1 ? `דירות ${units.slice(0, -1).join(', ')} ו־${units[units.length - 1]}` : `דירה ${units[0]}`
+
   return (
     <div dir="rtl" className="min-h-screen bg-[#FCFCFB] px-4 pb-16 pt-6">
       <div className="mx-auto w-full max-w-2xl space-y-5">
@@ -22,7 +27,7 @@ export function NoticeReading({ initial }: { initial: SigningFormView }) {
 
         <div className="space-y-1">
           <h1 className="text-xl font-bold text-gray-900">שלום {initial.signer.fullName},</h1>
-          <p className="text-sm text-gray-600">זו ההודעה על כינוס בעלי הדירות שנשלחה אליכם, דירה {initial.signer.apartmentNumber}.</p>
+          <p className="text-sm text-gray-600">זו ההודעה על כינוס בעלי הדירות שנשלחה אליכם, {unitsLine}.</p>
         </div>
 
         <NoticeView

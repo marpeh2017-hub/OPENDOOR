@@ -32,6 +32,9 @@ export interface LinkCopy {
   formType?: string | null
   /** The notice's assembly, as it prints: dd.mm.yyyy and HH:MM. */
   when?: { date: string; time: string; place: string }
+  /** The apartment a signing link is for ("דירה 5"), set only for an owner
+   *  of several apartments, who gets a link for each. */
+  unit?: string
 }
 
 /** The signing page for a token, on the portal. */
@@ -120,8 +123,13 @@ function invitation(link: LinkCopy, reminder: boolean): string {
   }
   const what = link.formType === 'ORGANIZING_AGREEMENT' ? 'ההסכם לארגון וליווי' : 'פרוטוקול מינוי הנציגות'
   return reminder
-    ? `תזכורת: ${what} של ${link.compoundName} עדיין ממתין לחתימתכם.`
-    : `${what} של ${link.compoundName} ממתין לחתימתכם.`
+    ? `תזכורת: ${what} של ${link.compoundName} עדיין ממתין לחתימתכם${unitOf(link)}.`
+    : `${what} של ${link.compoundName} ממתין לחתימתכם${unitOf(link)}.`
+}
+
+/** " (דירה 5)" after "ממתין לחתימתכם", for an owner with a link per apartment. */
+function unitOf(link: LinkCopy): string {
+  return link.unit ? ` (${link.unit})` : ''
 }
 
 function action(link: LinkCopy): string {
@@ -131,8 +139,8 @@ function action(link: LinkCopy): string {
 function smsText(link: LinkCopy & { url: string; reminder: boolean }): string {
   if (!link.formType || link.formType === 'REPRESENTATION_PROTOCOL') {
     return link.reminder
-      ? `OpenDoor: תזכורת: פרוטוקול מינוי הנציגות של ${link.compoundName} עדיין ממתין לחתימתכם: ${link.url}`
-      : `OpenDoor: פרוטוקול מינוי הנציגות של ${link.compoundName} ממתין לחתימתכם. לקריאה ולחתימה: ${link.url}`
+      ? `OpenDoor: תזכורת: פרוטוקול מינוי הנציגות של ${link.compoundName} עדיין ממתין לחתימתכם${unitOf(link)}: ${link.url}`
+      : `OpenDoor: פרוטוקול מינוי הנציגות של ${link.compoundName} ממתין לחתימתכם${unitOf(link)}. לקריאה ולחתימה: ${link.url}`
   }
   return `OpenDoor: ${invitation(link, link.reminder)} ${action(link)}: ${link.url}`
 }
@@ -165,6 +173,7 @@ function emailLines(target: LinkTarget, link: LinkCopy & { url: string; reminder
     '',
     opening,
     ...(link.formType === 'ASSEMBLY_NOTICE' && link.when?.place ? [`מקום הכינוס: ${link.when.place}`] : []),
+    ...(link.unit ? [`הקישור הזה הוא לחתימתכם כבעלים של ${link.unit}. על כל דירה שבבעלותכם נשלח קישור נפרד.`] : []),
     '',
     `${action(link)}: ${link.url}`,
     '',

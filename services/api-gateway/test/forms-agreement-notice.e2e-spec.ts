@@ -283,6 +283,103 @@ describe('Organizing agreement and assembly notice (e2e)', () => {
     })
   })
 
+  describe('an owner of two apartments', () => {
+    let pairComplexId: string
+    let both: string
+    let single: string
+    const units: Record<'three' | 'four' | 'five', string> = { three: '', four: '', five: '' }
+
+    beforeAll(async () => {
+      pairComplexId = (await prisma.complex.create({ data: { projectId, name: 'מתחם השתיים' } })).id
+      const building = await prisma.building.create({
+        data: { complexId: pairComplexId, address: 'השתיים', streetNumber: '5', city: 'ירושלים' },
+      })
+      for (const [k, n] of [['three', '3'], ['four', '4'], ['five', '5']] as const) {
+        units[k] = (await prisma.apartment.create({ data: { buildingId: building.id, apartmentNumber: n } })).id
+      }
+      both = (await prisma.owner.create({ data: { tenantId, fullName: 'בעלת שתיים', phone: '0509912503' } })).id
+      single = (await prisma.owner.create({ data: { tenantId, fullName: 'בעל אחת', phone: '0509912504' } })).id
+      await prisma.ownerApartment.createMany({
+        data: [
+          { ownerId: both, apartmentId: units.three },
+          { ownerId: both, apartmentId: units.four },
+          { ownerId: single, apartmentId: units.five },
+        ],
+      })
+    })
+
+    it('gets the notice once, and opening it counts for both apartments', async () => {
+      const made = await api()
+        .post('/api/v1/forms')
+        .set(staff())
+        .send({ templateId: 'assembly-notice', projectId, complexId: pairComplexId, text: ASSEMBLY_NOTICE })
+      expect(made.status).toBe(201)
+      const id = made.body.id as string
+      await api()
+        .patch(`/api/v1/forms/${id}`)
+        .set(staff())
+        .send({ meeting: { meetingDate: '2026-11-02', meetingPlace: 'לובי הבניין' }, fields: { meetingTime: '18:00' } })
+        .expect(200)
+
+      const before = texts.length
+      const sent = await api().post(`/api/v1/forms/${id}/send`).set(staff())
+      expect(sent.status).toBe(201)
+      expect(sent.body.delivery.SMS).toBe(2)
+      expect(texts.slice(before).filter((t) => t.to === '0509912503')).toHaveLength(1)
+      const hers = await prisma.signatureRecord.findMany({ where: { packageId: id, ownerId: both } })
+      expect(hers.map((r) => r.deliveredVia)).toEqual(['SMS', 'SMS'])
+
+      const session = await prisma.signingSession.findFirstOrThrow({ where: { recordId: { in: hers.map((r) => r.id) } } })
+      const view = await api().get(`/api/v1/signatures/portal/${session.token}`)
+      expect(view.body.form.signer.apartmentNumbers).toEqual(['3', '4'])
+      const detail = await api().get(`/api/v1/forms/${id}`).set(staff())
+      expect(detail.body.progress).toMatchObject({ owners: 3, ownersOpened: 2 })
+
+      const reminded = texts.length
+      const remind = await api().post(`/api/v1/forms/${id}/remind`).set(staff())
+      expect(remind.body).toMatchObject({ sent: 1 })
+      expect(texts.slice(reminded).map((t) => t.to)).toEqual(['0509912504'])
+    })
+
+    it('gets a link to sign for each apartment, each message naming its apartment', async () => {
+      const made = await api()
+        .post('/api/v1/forms')
+        .set(staff())
+        .send({ templateId: 'organizing-agreement', projectId, complexId: pairComplexId, text: ORGANIZING_AGREEMENT })
+      expect(made.status).toBe(201)
+      const id = made.body.id as string
+      await api()
+        .patch(`/api/v1/forms/${id}`)
+        .set(staff())
+        .send({ fields: { gush: '30002', helka: '7' }, representatives: [{ ownerId: single, apartmentId: units.five }] })
+        .expect(200)
+
+      const before = texts.length
+      const sent = await api().post(`/api/v1/forms/${id}/send`).set(staff())
+      expect(sent.status).toBe(201)
+      expect(sent.body.delivery.SMS).toBe(3)
+      const out = texts.slice(before)
+      const hers = out.filter((t) => t.to === '0509912503').map((t) => t.text)
+      expect(hers).toHaveLength(2)
+      expect(hers[0]).toContain('ממתין לחתימתכם (דירה 3).')
+      expect(hers[1]).toContain('ממתין לחתימתכם (דירה 4).')
+      expect(out.find((t) => t.to === '0509912504')?.text).not.toContain('(דירה')
+
+      // Signed for one apartment, she is reminded of the other by name.
+      const three = await prisma.signatureRecord.findFirstOrThrow({ where: { packageId: id, apartmentId: units.three } })
+      const token = (await prisma.signingSession.findUniqueOrThrow({ where: { recordId: three.id } })).token
+      await api()
+        .post(`/api/v1/signatures/portal/${token}/sign`)
+        .send({ fullName: 'בעלת שתיים', idNumber: '000000018', signatureImage: PNG, confirmedRead: true })
+        .expect(201)
+      const reminded = texts.length
+      await api().post(`/api/v1/forms/${id}/remind`).set(staff()).expect(201)
+      expect(texts.slice(reminded).filter((t) => t.to === '0509912503').map((t) => t.text)).toEqual([
+        expect.stringContaining('עדיין ממתין לחתימתכם (דירה 4).'),
+      ])
+    })
+  })
+
   describe('cancelling', () => {
     it('tells everyone who opens a link that it was cancelled, those who signed too', async () => {
       const signerToken = await tokenOf(agreementId, owners.first)
