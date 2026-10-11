@@ -11,6 +11,8 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
+  FORM_NAMES,
+  formatFormDate,
   isMobile,
   useCancelForm,
   useRemind,
@@ -21,8 +23,9 @@ import {
 } from '@/hooks/use-forms'
 import { FormStatusBadge } from './form-status'
 import { PaperSignatureDialog } from './paper-signature-dialog'
+import { OrganizerSignatureDialog } from './organizer-signature-dialog'
 
-type Filter = 'all' | 'signed' | 'unsigned'
+type Filter = 'all' | 'signed' | 'unsigned' | 'opened' | 'unopened'
 
 const DELIVERED: Record<string, string> = {
   SMS: 'SMS',
@@ -52,12 +55,27 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
   const [filter, setFilter] = useState<Filter>('all')
   const [paperFor, setPaperFor] = useState<FormRecordRow | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [signingAsOrganizer, setSigningAsOrganizer] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
+  // A notice is opened, never signed: its progress and its filters are about who opened it.
+  const signable = form.signable
+  const isAgreement = form.formType === 'ORGANIZING_AGREEMENT'
   const open = form.status === 'SENT' || form.status === 'PARTIALLY_SIGNED'
   const signed = form.records.filter((r) => r.status === 'SIGNED')
   const unsigned = form.records.filter((r) => r.status !== 'SIGNED')
-  const rows = filter === 'signed' ? signed : filter === 'unsigned' ? unsigned : form.records
+  const opened = form.records.filter((r) => r.openedAt)
+  const unopened = form.records.filter((r) => !r.openedAt)
+  const rows =
+    filter === 'signed'
+      ? signed
+      : filter === 'unsigned'
+        ? unsigned
+        : filter === 'opened'
+          ? opened
+          : filter === 'unopened'
+            ? unopened
+            : form.records
   const membersSigned = form.representatives.filter((m) => m.signed).length
   const { apartments, apartmentsSigned, sharePercent } = form.progress
 
@@ -120,14 +138,14 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
         </Link>
         <span aria-hidden="true"> › </span>
         <span>
-          פרוטוקול מינוי נציגות · {form.meeting.compoundName}
+          {FORM_NAMES[form.formType]} · {form.meeting.compoundName}
         </span>
       </nav>
 
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            {form.meeting.compoundName} · פרוטוקול מינוי נציגות
+            {form.meeting.compoundName} · {FORM_NAMES[form.formType]}
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {form.sentAt && <span>נשלח ב-{new Date(form.sentAt).toLocaleDateString('he-IL')}</span>}
@@ -140,16 +158,16 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
               variant="outline"
               className="gap-2"
               onClick={remindEveryone}
-              disabled={remindAll.isPending || unsigned.length === 0}
+              disabled={remindAll.isPending || (signable ? unsigned.length === 0 : unopened.length === 0)}
             >
               <BellRing size={16} aria-hidden="true" />
-              תזכורת לכל מי שלא חתם
+              {signable ? 'תזכורת לכל מי שלא חתם' : 'תזכורת לכל מי שלא פתח'}
             </Button>
           )}
           <Button className="gap-2" asChild>
             <Link href={`/${locale}/forms/${form.id}/document`}>
               <FileText size={16} aria-hidden="true" />
-              המסמך המאוחד (PDF)
+              {signable ? 'המסמך המאוחד (PDF)' : 'ההודעה להדפסה'}
             </Link>
           </Button>
         </div>
@@ -177,6 +195,42 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
         </p>
       )}
 
+      {isAgreement && (
+        <section
+          aria-labelledby="organizer-heading"
+          className="card-surface flex flex-wrap items-center justify-between gap-3 p-5"
+        >
+          <div>
+            <h2 id="organizer-heading" className="text-base font-bold text-foreground">
+              חתימת המארגן
+            </h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {form.organizer
+                ? `החברה חתמה על שורת ״המארגן״ ב-${formatFormDate(form.organizer.signedDate)}.`
+                : 'החברה חותמת על שורת ״המארגן״ פעם אחת. החתימה תופיע במסמך המאוחד.'}
+            </p>
+          </div>
+          {!form.organizer && form.status !== 'CANCELLED' && (
+            <Button type="button" onClick={() => setSigningAsOrganizer(true)}>
+              חתימה כמארגן
+            </Button>
+          )}
+        </section>
+      )}
+
+      {!signable ? (
+        <div className="card-surface space-y-2 p-5 sm:max-w-sm">
+          <p className="text-sm text-muted-foreground">פתחו את ההודעה</p>
+          <p className="text-2xl font-bold text-foreground">
+            {opened.length}{' '}
+            <span className="text-base font-medium text-muted-foreground">מתוך {form.records.length} בעלי דירות</span>
+          </p>
+          <Progress
+            value={form.records.length ? (opened.length / form.records.length) * 100 : 0}
+            aria-label={`${opened.length} מתוך ${form.records.length} בעלי דירות פתחו את ההודעה`}
+          />
+        </div>
+      ) : (
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card-surface space-y-2 p-5">
           <p className="text-sm text-muted-foreground">חתמו</p>
@@ -194,7 +248,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
           <p className="text-xs text-muted-foreground">מחושב מהבעלות הרשומה בכל דירה</p>
         </div>
         <div className="card-surface space-y-2 p-5">
-          <p className="text-sm text-muted-foreground">חברי הנציגות</p>
+          <p className="text-sm text-muted-foreground">{isAgreement ? 'הנציגים' : 'חברי הנציגות'}</p>
           <p className="text-2xl font-bold text-foreground">
             {membersSigned}{' '}
             <span className="text-base font-medium text-muted-foreground">
@@ -206,6 +260,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
           </p>
         </div>
       </div>
+      )}
 
       <section aria-labelledby="owners-heading" className="card-surface overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -213,12 +268,17 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
             בעלי הדירות
           </h2>
           <div role="tablist" aria-label="סינון" className="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm">
-            {(
-              [
-                ['all', `הכל · ${form.records.length}`],
-                ['signed', `חתמו · ${signed.length}`],
-                ['unsigned', `טרם חתמו · ${unsigned.length}`],
-              ] as const
+            {(signable
+              ? ([
+                  ['all', `הכל · ${form.records.length}`],
+                  ['signed', `חתמו · ${signed.length}`],
+                  ['unsigned', `טרם חתמו · ${unsigned.length}`],
+                ] as const)
+              : ([
+                  ['all', `הכל · ${form.records.length}`],
+                  ['opened', `פתחו · ${opened.length}`],
+                  ['unopened', `טרם פתחו · ${unopened.length}`],
+                ] as const)
             ).map(([value, label]) => (
               <button
                 key={value}
@@ -241,7 +301,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
                 <th scope="col" className="px-4 py-2.5 text-start font-semibold">בעל/ת הדירה</th>
                 <th scope="col" className="px-4 py-2.5 text-start font-semibold">נשלח ב</th>
                 <th scope="col" className="px-4 py-2.5 text-start font-semibold">סטטוס</th>
-                <th scope="col" className="px-4 py-2.5 text-start font-semibold">נחתם</th>
+                <th scope="col" className="px-4 py-2.5 text-start font-semibold">{signable ? 'נחתם' : 'נפתח'}</th>
                 <th scope="col" className="px-4 py-2.5 text-start font-semibold">
                   <span className="sr-only">פעולות</span>
                 </th>
@@ -259,7 +319,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
                   </td>
                   <td className="px-4 py-3">{row.deliveredVia ? DELIVERED[row.deliveredVia] : '—'}</td>
                   <td className="px-4 py-3">
-                    {statusOf(row)}
+                    {statusOf(row, signable)}
                     {row.idMismatch && (
                       <span className="ms-2 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
                         ת.ז שונה מהתיק
@@ -267,7 +327,10 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
                     )}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {row.signedAt ? new Date(row.signedAt).toLocaleDateString('he-IL') : '—'}
+                    {(() => {
+                      const when = signable ? row.signedAt : row.openedAt
+                      return when ? new Date(when).toLocaleDateString('he-IL') : '—'
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     <RowActions
@@ -278,7 +341,7 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
                       onRemind={() => remindOne(row)}
                       onWhatsApp={() => sendWhatsApp(row)}
                       onCopy={() => copyLink(row)}
-                      onPaper={() => setPaperFor(row)}
+                      onPaper={signable ? () => setPaperFor(row) : undefined}
                     />
                   </td>
                 </tr>
@@ -286,10 +349,12 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
             </tbody>
           </table>
         </div>
-        <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-          כל דייר רואה באזור האישי רק את השורה שלו. ת.ז, טלפון ואימייל של כולם מופיעים רק כאן ובמסמך המאוחד,
-          שנמסר גם לחברי הנציגות.
-        </p>
+        {signable && (
+          <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+            כל דייר רואה באזור האישי רק את השורה שלו. ת.ז, טלפון ואימייל של כולם מופיעים רק כאן ובמסמך המאוחד,
+            שנמסר גם לחברי הנציגות.
+          </p>
+        )}
       </section>
 
       {open && (
@@ -300,11 +365,14 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
             onClick={() => setConfirmCancel(true)}
           >
             <XCircle size={15} aria-hidden="true" />
-            ביטול הטופס
+            {signable ? 'ביטול הטופס' : 'ביטול ההודעה'}
           </Button>
         </div>
       )}
 
+      {signingAsOrganizer && (
+        <OrganizerSignatureDialog formId={form.id} onClose={() => setSigningAsOrganizer(false)} />
+      )}
       {paperFor && (
         <PaperSignatureDialog
           formId={form.id}
@@ -316,9 +384,13 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
       <ConfirmDialog
         open={confirmCancel}
         onOpenChange={setConfirmCancel}
-        title="לבטל את הטופס?"
-        description="הקישורים שנשלחו יפסיקו לעבוד, והחתימות שכבר נאספו יישמרו בתיעוד בלבד. אי אפשר לבטל את הביטול."
-        confirmLabel="ביטול הטופס"
+        title={signable ? 'לבטל את הטופס?' : 'לבטל את ההודעה?'}
+        description={
+          signable
+            ? 'הקישורים שנשלחו יפסיקו לעבוד, והחתימות שכבר נאספו יישמרו בתיעוד בלבד. אי אפשר לבטל את הביטול.'
+            : 'הקישורים שנשלחו יפסיקו לעבוד. אי אפשר לבטל את הביטול.'
+        }
+        confirmLabel={signable ? 'ביטול הטופס' : 'ביטול ההודעה'}
         cancelLabel="חזרה"
         destructive
         pending={cancel.isPending}
@@ -329,7 +401,14 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
   )
 }
 
-function statusOf(row: FormRecordRow): string {
+function statusOf(row: FormRecordRow, signable: boolean): string {
+  if (!signable) {
+    if (row.openedAt) return 'פתח/ה'
+    if (row.deliveredVia === 'NONE') return 'בלי טלפון ואימייל'
+    if (row.deliveredVia === 'UNSENT') return 'לשליחה בווטסאפ'
+    if (row.deliveredVia === 'FAILED') return 'לא נשלח'
+    return 'נשלח'
+  }
   if (row.status === 'SIGNED') {
     const how = row.method === 'WET' ? 'נחתם ידנית' : 'חתם/ה'
     return row.isRepresentative ? `${how} · גם כנציגות` : how
@@ -363,7 +442,8 @@ function RowActions({
   onRemind: () => void
   onWhatsApp: () => void
   onCopy: () => void
-  onPaper: () => void
+  /** Absent for a notice: there is nothing to sign on paper. */
+  onPaper?: () => void
 }) {
   if (row.status === 'SIGNED' || !open) return null
   const remindedRecently = row.lastReminderAt && Date.now() - new Date(row.lastReminderAt).getTime() < REMINDER_GAP_MS
@@ -392,9 +472,11 @@ function RowActions({
           <DropdownMenuItem onSelect={onCopy}>
             <Copy size={14} className="ml-2" /> העתקת הודעה עם הקישור
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={onPaper}>
-            <Upload size={14} className="ml-2" /> העלאת טופס חתום
-          </DropdownMenuItem>
+          {onPaper && (
+            <DropdownMenuItem onSelect={onPaper}>
+              <Upload size={14} className="ml-2" /> העלאת טופס חתום
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

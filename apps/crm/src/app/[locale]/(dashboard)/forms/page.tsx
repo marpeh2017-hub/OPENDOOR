@@ -2,21 +2,54 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { FileCheck2, Lock, Plus } from 'lucide-react'
-import { PROTOCOL_CLAUSE_COUNT, REPRESENTATION_PROTOCOL } from '@urban-renewal/api-contracts'
+import { CalendarDays, FileCheck2, Lock, PenLine, Plus } from 'lucide-react'
+import {
+  AGREEMENT_CLAUSE_COUNT,
+  ASSEMBLY_NOTICE,
+  NOTICE_AGENDA_COUNT,
+  ORGANIZING_AGREEMENT,
+  PROTOCOL_CLAUSE_COUNT,
+  REPRESENTATION_PROTOCOL,
+  protocolPlainText,
+} from '@urban-renewal/api-contracts'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { useForms, type FormListItem } from '@/hooks/use-forms'
+import { FORM_NAMES, useForms, type FormListItem } from '@/hooks/use-forms'
 import { FormStatusBadge } from '@/components/forms/form-status'
 import { WebsiteFormsSection } from '@/components/forms/website-forms-section'
 
 /**
  * Forms: the templates the company can send, and the forms on their way to
- * the last signature. One template today, the representation-appointment
- * protocol, whose wording is locked: staff fill in the meeting, never the
- * text. Below them, the protocols owners started on the website for
- * buildings that are not yet projects.
+ * the last signature. Three templates, in the order they meet the owners:
+ * the notice of the assembly, the representation-appointment protocol, and
+ * the organizing agreement. Their wording is locked: staff fill in what each
+ * leaves open, never the text. Below them, the protocols owners started on
+ * the website for buildings that are not yet projects.
  */
+
+const TEMPLATES = [
+  {
+    id: ASSEMBLY_NOTICE.id,
+    icon: CalendarDays,
+    title: ASSEMBLY_NOTICE.title,
+    facts: `${NOTICE_AGENDA_COUNT} נושאים בסדר היום · נשלחת לכל בעלי הדירות · לא נחתמת`,
+    fills: 'ממלאים: מתחם / כתובת, תאריך, שעה, מקום הכינוס',
+  },
+  {
+    id: REPRESENTATION_PROTOCOL.id,
+    icon: FileCheck2,
+    title: REPRESENTATION_PROTOCOL.title,
+    facts: `הנוסח מהמסמך שלכם, מילה במילה · ${PROTOCOL_CLAUSE_COUNT} סעיפים · כל בעל דירה חותם בנפרד, והחתימות מתאחדות לטבלה אחת`,
+    fills: 'ממלאים: שם המתחם, כתובת, תאריך, מקום הישיבה, חברי הנציגות',
+  },
+  {
+    id: ORGANIZING_AGREEMENT.id,
+    icon: PenLine,
+    title: protocolPlainText(ORGANIZING_AGREEMENT.title),
+    facts: `${AGREEMENT_CLAUSE_COUNT} סעיפים · כל בעל דירה חותם בנפרד · החברה חותמת כמארגנת`,
+    fills: 'ממלאים: רחוב, עיר, גוש, חלקה, הנציגים',
+  },
+]
 export default function FormsPage() {
   const { locale } = useParams<{ locale: string }>()
   const { data: forms, isLoading, error } = useForms()
@@ -43,36 +76,35 @@ export default function FormsPage() {
         <h2 id="templates-heading" className="text-base font-semibold text-foreground">
           תבניות
         </h2>
-        <article className="card-surface flex flex-wrap items-start gap-4 p-5">
-          <span
-            aria-hidden="true"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600"
-          >
-            <FileCheck2 size={22} />
-          </span>
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-bold text-foreground">{REPRESENTATION_PROTOCOL.title}</h3>
-              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                <Lock size={12} aria-hidden="true" />
-                נוסח נעול לעריכה
-              </span>
+        {TEMPLATES.map((template) => (
+          <article key={template.id} className="card-surface flex flex-wrap items-start gap-4 p-5">
+            <span
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600"
+            >
+              <template.icon size={22} />
+            </span>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-bold text-foreground">{template.title}</h3>
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                  <Lock size={12} aria-hidden="true" />
+                  נוסח נעול לעריכה
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">{template.facts}</p>
+              <p className="text-sm text-foreground">{template.fills}</p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              הנוסח מהמסמך שלכם, מילה במילה · {PROTOCOL_CLAUSE_COUNT} סעיפים · כל בעל דירה חותם בנפרד, והחתימות
-              מתאחדות לטבלה אחת
-            </p>
-            <p className="text-sm text-foreground">ממלאים: שם המתחם, כתובת, תאריך, מקום הישיבה, חברי הנציגות</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/${locale}/forms/template`}>צפייה בנוסח</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href={`/${locale}/forms/new`}>יצירה לפרויקט</Link>
-            </Button>
-          </div>
-        </article>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/${locale}/forms/template?type=${template.id}`}>צפייה בנוסח</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href={`/${locale}/forms/new?type=${template.id}`}>יצירה לפרויקט</Link>
+              </Button>
+            </div>
+          </article>
+        ))}
       </section>
 
       <section aria-labelledby="forms-heading" className="space-y-3">
@@ -131,10 +163,20 @@ function FormRow({ form, locale }: { form: FormListItem; locale: string }) {
         <p className="font-semibold text-foreground">{form.compoundName || form.title}</p>
         <p className="text-xs text-muted-foreground">{form.address || form.project?.name}</p>
       </td>
-      <td className="px-4 py-3 text-foreground">פרוטוקול מינוי נציגות</td>
+      <td className="px-4 py-3 text-foreground">{FORM_NAMES[form.formType] ?? form.title}</td>
       <td className="px-4 py-3">
         {form.status === 'DRAFT' ? (
           <span className="text-muted-foreground">טרם נשלח</span>
+        ) : form.formType === 'ASSEMBLY_NOTICE' ? (
+          <div className="w-40 space-y-1">
+            <p className="text-xs text-foreground">
+              פתחו {form.progress.ownersOpened} מתוך {form.progress.owners}
+            </p>
+            <Progress
+              value={form.progress.owners ? (form.progress.ownersOpened / form.progress.owners) * 100 : 0}
+              aria-label={`${form.progress.ownersOpened} מתוך ${form.progress.owners} בעלי דירות פתחו את ההודעה`}
+            />
+          </div>
         ) : (
           <div className="w-40 space-y-1">
             <p className="text-xs text-foreground">

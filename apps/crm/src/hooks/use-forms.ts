@@ -1,6 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { RepresentationProtocol } from '@urban-renewal/api-contracts'
+import type { AssemblyNotice, OrganizingAgreement, RepresentationProtocol } from '@urban-renewal/api-contracts'
 import { api } from '@/lib/api-client'
+
+/** The three forms, in the order they meet an owner in the process. */
+export type FormType = 'ASSEMBLY_NOTICE' | 'REPRESENTATION_PROTOCOL' | 'ORGANIZING_AGREEMENT'
+/** A form's wording snapshot; which one, `formType` says. */
+export type FormText = RepresentationProtocol | OrganizingAgreement | AssemblyNotice
+
+/** What staff call each form, in lists and headings. */
+export const FORM_NAMES: Record<FormType, string> = {
+  ASSEMBLY_NOTICE: 'הודעה על כינוס בעלי דירות',
+  REPRESENTATION_PROTOCOL: 'פרוטוקול מינוי נציגות',
+  ORGANIZING_AGREEMENT: 'הסכם לארגון וליווי',
+}
+
+/** The template id each form is made from (its wording's `id`). */
+export const TEMPLATE_IDS: Record<FormType, string> = {
+  ASSEMBLY_NOTICE: 'assembly-notice',
+  REPRESENTATION_PROTOCOL: 'representation-protocol',
+  ORGANIZING_AGREEMENT: 'organizing-agreement',
+}
+
+export function formTypeOf(templateId: string | null | undefined): FormType {
+  const found = (Object.keys(TEMPLATE_IDS) as FormType[]).find((type) => TEMPLATE_IDS[type] === templateId)
+  return found ?? 'REPRESENTATION_PROTOCOL'
+}
 
 /**
  * Digital forms (/forms on the gateway): the representation-appointment
@@ -19,6 +43,8 @@ export interface FormMeeting {
 export interface FormProgress {
   owners: number
   ownersSigned: number
+  /** How many opened their link: the notice's progress, since nobody signs it. */
+  ownersOpened: number
   apartments: number
   apartmentsSigned: number
   sharePercent: number
@@ -30,7 +56,7 @@ export type FormStatus =
 
 export interface FormListItem {
   id: string
-  formType: string
+  formType: FormType
   formVersion: string
   title: string
   status: FormStatus
@@ -68,15 +94,21 @@ export interface FormRecordRow {
 
 export interface FormDetail {
   id: string
-  formType: string
+  formType: FormType
   formVersion: string
   title: string
   status: FormStatus
   documentHash: string | null
   project: { id: string; name: string } | null
   complexId: string
-  text: RepresentationProtocol
+  text: FormText
   meeting: FormMeeting
+  /** The agreement's street, city, block and parcel; the notice's address line and hour. */
+  fields: Record<string, string> | null
+  /** False for the notice, which owners open and never sign. */
+  signable: boolean
+  /** The agreement's company signature, once given. */
+  organizer: { signedDate: string; signedAt: string } | null
   representatives: { ownerId: string; apartmentId: string; fullName: string; apartmentNumber: string; signed: boolean }[]
   records: FormRecordRow[]
   progress: FormProgress
@@ -101,12 +133,17 @@ export interface FormDocumentRow {
 
 export interface FormDocument {
   packageId: string
+  formType: FormType | null
   formVersion: string
   documentHash: string | null
   status: FormStatus
   completedAt: string | null
-  text: RepresentationProtocol
+  text: FormText
   meeting: FormMeeting
+  fields: Record<string, string> | null
+  /** The day the first owner signed: the agreement's determining date. */
+  determiningDate: string | null
+  organizer: { signatureImage: string; signedDate: string } | null
   representatives: {
     fullName: string
     idNumber: string | null
@@ -154,7 +191,7 @@ export function useFormDocument(id: string) {
 export function useCreateForm() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: { templateId: string; projectId: string; complexId: string; text: RepresentationProtocol }) =>
+    mutationFn: (input: { templateId: string; projectId: string; complexId: string; text: FormText }) =>
       api.post<FormDetail>('/forms', input),
     onSuccess: () => qc.invalidateQueries({ queryKey: formKeys.list() }),
   })
@@ -173,7 +210,7 @@ function useDetailMutation<TInput>(id: string, run: (input: TInput) => Promise<F
 }
 
 export function useUpdateForm(id: string) {
-  return useDetailMutation(id, (input: { meeting?: Partial<FormMeeting>; representatives?: { ownerId: string; apartmentId: string }[] }) =>
+  return useDetailMutation(id, (input: { meeting?: Partial<FormMeeting>; fields?: Record<string, string>; representatives?: { ownerId: string; apartmentId: string }[] }) =>
     api.patch<FormDetail>(`/forms/${id}`, input),
   )
 }
@@ -232,6 +269,13 @@ export function usePaperSignature(id: string) {
     const { recordId, ...body } = input
     return api.post<FormDetail>(`/forms/${id}/records/${recordId}/paper`, body)
   })
+}
+
+/** The company signs the agreement's "המארגן" line: once, after sending. */
+export function useOrganizerSignature(id: string) {
+  return useDetailMutation(id, (signatureImage: string) =>
+    api.post<FormDetail>(`/forms/${id}/organizer-signature`, { signatureImage }),
+  )
 }
 
 export function useCancelForm(id: string) {

@@ -1,22 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
-import { REPRESENTATION_PROTOCOL } from '@urban-renewal/api-contracts'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { ASSEMBLY_NOTICE, ORGANIZING_AGREEMENT, REPRESENTATION_PROTOCOL } from '@urban-renewal/api-contracts'
 import { Button } from '@/components/ui/button'
-import { useCreateForm, useFormScopes } from '@/hooks/use-forms'
+import { FORM_NAMES, formTypeOf, useCreateForm, useFormScopes, type FormText, type FormType } from '@/hooks/use-forms'
+
+/** Each template's wording, as the gateway stores it, and what the screen says about who takes part. */
+const TEMPLATES: Record<FormType, { text: FormText; who: string }> = {
+  ASSEMBLY_NOTICE: {
+    text: ASSEMBLY_NOTICE,
+    who: 'בוחרים את המתחם. ההודעה תישלח לכל בעלי הדירות הרשומים בו, כל אחד בקישור משלו.',
+  },
+  REPRESENTATION_PROTOCOL: {
+    text: REPRESENTATION_PROTOCOL,
+    who: 'בוחרים את המתחם. כל בעלי הדירות הרשומים בו יחתמו, כל אחד בשורה משלו.',
+  },
+  ORGANIZING_AGREEMENT: {
+    text: ORGANIZING_AGREEMENT,
+    who: 'בוחרים את המתחם. כל בעלי הדירות הרשומים בו יחתמו, כל אחד בשורה משלו, והחברה תחתום כמארגנת.',
+  },
+}
 
 /**
- * A new form: which complex it is for. The draft is created at once, with a
- * row for every owner in the complex, and the meeting details are filled in
- * on the form's own page.
+ * A new form: which template and which complex it is for. The draft is
+ * created at once, with a row for every owner in the complex, and what the
+ * form leaves open is filled in on the form's own page.
  */
 export default function NewFormPage() {
+  // useSearchParams needs a boundary in the build; the form renders as soon as the address is read.
+  return (
+    <Suspense fallback={null}>
+      <NewForm />
+    </Suspense>
+  )
+}
+
+function NewForm() {
   const { locale } = useParams<{ locale: string }>()
   const router = useRouter()
+  const search = useSearchParams()
   const { data: scopes, isLoading } = useFormScopes()
   const create = useCreateForm()
+  const [type, setType] = useState<FormType>(formTypeOf(search.get('type') ?? undefined))
   const [projectId, setProjectId] = useState('')
   const [complexId, setComplexId] = useState('')
 
@@ -33,12 +60,8 @@ export default function NewFormPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!projectId || !complexId) return
-    const form = await create.mutateAsync({
-      templateId: REPRESENTATION_PROTOCOL.id,
-      projectId,
-      complexId,
-      text: REPRESENTATION_PROTOCOL,
-    })
+    const { text } = TEMPLATES[type]
+    const form = await create.mutateAsync({ templateId: text.id, projectId, complexId, text })
     router.push(`/${locale}/forms/${form.id}`)
   }
 
@@ -56,13 +79,35 @@ export default function NewFormPage() {
       </nav>
 
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{REPRESENTATION_PROTOCOL.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          בוחרים את המתחם. כל בעלי הדירות הרשומים בו יחתמו, כל אחד בשורה משלו.
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">טופס חדש · {FORM_NAMES[type]}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{TEMPLATES[type].who}</p>
       </div>
 
       <form onSubmit={submit} className="card-surface space-y-5 p-6">
+        <fieldset className="space-y-1.5">
+          <legend className="text-sm font-semibold text-foreground">הטופס</legend>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(TEMPLATES) as FormType[]).map((option) => (
+              <label
+                key={option}
+                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm ${
+                  type === option ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-input bg-white text-foreground'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="template"
+                  value={option}
+                  checked={type === option}
+                  onChange={() => setType(option)}
+                  className="h-4 w-4 accent-teal-600"
+                />
+                {FORM_NAMES[option]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
         <div className="space-y-1.5">
           <label htmlFor="form-project" className="text-sm font-semibold text-foreground">
             פרויקט
