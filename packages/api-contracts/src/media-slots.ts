@@ -19,13 +19,15 @@ export const MAX_SLOT_IMAGES = 8
  *
  * Only places the site draws today. Six earlier entries pointed at pictures
  * the site no longer shows and were removed in 2026-10; Michael's photograph
- * was added, which /about shows twice, in its opening and beside his profile.
+ * was added, which /about shows twice, in its opening and beside his profile,
+ * and on 2026-10-11 Ziv Adar's, beside his profile below Michael's.
  * An assignment saved for a removed place stays in the stored document, and
  * nothing on the site reads it.
  */
 export const SITE_IMAGE_SLOTS = [
   { id: 'HERO_JERUSALEM_ARCHITECTURE', label: 'דף הבית: גלריית הפתיחה, תמונות מתחלפות', multiple: true },
   { id: 'ABOUT_MICHAEL_PORTRAIT', label: 'מי אנחנו: התמונה של מיכאל רוזנבך', multiple: false },
+  { id: 'ABOUT_ZIV_PORTRAIT', label: 'מי אנחנו: התמונה של זיו אדר', multiple: false },
   ...Array.from({ length: 8 }, (_, i) => ({ id: `PROCESS_STAGE_${i + 1}`, label: `כך אנחנו עובדים: תמונת שלב ${i + 1}`, multiple: false })),
   { id: 'RESIDENT_MEETING', label: 'כך אנחנו עובדים: כנס דיירים', multiple: false },
 ] as const

@@ -16,10 +16,11 @@ import { PORTAL_DEMO } from './portal-demo'
  * ── WHAT IS NOT HERE, AND WILL NOT BE INVENTED ─────────────────────────────
  *
  * No founding year. No project count. No resident count. No years of
- * experience. No awards. No partners. No offices. No statistics of any kind.
- * No team members beyond Michael Rosenbach, whose biography on /about the
- * company supplied; nothing is added to it by inference. The pages are
- * composed so they read as finished without the rest — a layout that needs
+ * experience for the company. No awards. No partner companies. No offices.
+ * No statistics of any kind. No team members beyond Michael Rosenbach and
+ * the business partner Ziv Adar (added 2026-10-11), whose biographies on
+ * /about the company supplied; nothing is added to them by inference. The
+ * pages are composed so they read as finished without the rest — a layout that needs
  * "over 40 projects" to look complete is a layout that creates pressure to
  * invent the number.
  *
@@ -313,11 +314,32 @@ const aboutBlocks: PageBlock[] = [
     slotId: 'ABOUT_MICHAEL_PORTRAIT',
   },
   {
+    // Ziv Adar, the company's business partner (the owner's words,
+    // 2026-10-11). His biography as the company supplied it, phrased for this
+    // page: no dashes, "לקח חלק" so that "שותף" is not said twice, and
+    // nothing added. Like Michael's, the first sentence is visible and the
+    // rest opens under "לקריאה נוספת"; no quotation was supplied, so none.
+    id: 'about-ziv',
+    type: 'PROFILE',
+    order: 6,
+    hidden: false,
+    name: { he: 'זיו אדר', en: 'Ziv Adar' },
+    summary: {
+      he: 'זיו אדר הוא שותף עסקי בחברה. הוא מביא ניסיון של יותר מ־15 שנה בלב העשייה התכנונית בישראל.',
+      en: 'Ziv Adar is a business partner in the company. He brings more than 15 years at the heart of planning in Israel.',
+    },
+    body: {
+      he: 'הוא כיהן בתפקידי מפתח בצמתי ההכרעה המרכזיים של מערכת התכנון, ביניהם יועץ אישי למנכ״לית מינהל התכנון, סגן מתכננת הותמ״ל וראש צוות בוועדה המחוזית ירושלים. בנוסף לקח חלק במהלכי תכנון לאומיים, ובהם הובלת צוותים בוות״ל וייעוץ לתכנון קווי המטרו בגוש דן, פרויקטים שמעצבים את מפת הנדל״ן העתידית של ישראל.\n\nהיום זיו מלווה יזמים, חברות ובעלי קרקע בתהליכי תכנון, התחדשות עירונית והשבחת קרקעות, ומסייע בקבלת החלטות בעסקאות נדל״ן מורכבות, משלב בדיקת ההיתכנות ועד קידום התכנון בפועל.\n\nהניסיון שצבר מאפשר לו לחבר בין רגולציה מורכבת לבין הזדמנות עסקית, ולהפוך מורכבות תכנונית לערך נדל״ני ממשי.',
+      en: 'He has held key roles at the main decision points of the planning system, among them personal adviser to the Director-General of the Planning Administration, deputy planner of the Committee for Preferred Housing Sites (Vatmal) and team leader at the Jerusalem District Planning and Building Committee. He has also taken part in national planning efforts, including leading teams at the National Infrastructure Committee (Vatal) and advising on the planning of the Tel Aviv metro lines, projects that are shaping the future map of real estate in Israel.\n\nToday Ziv advises developers, companies and landowners on planning, urban renewal and raising land value, and helps them decide on complex real-estate deals, from the feasibility study to actually moving the plan forward.\n\nThe experience he has gained lets him connect complex regulation with business opportunity, and turn planning complexity into real property value.',
+    },
+    slotId: 'ABOUT_ZIV_PORTRAIT',
+  },
+  {
     // The one place on the site where the three facts appear in full. The
     // homepage cuts each to a line and links here.
     id: 'about-facts',
     type: 'VERIFIABLE_FACTS',
-    order: 6,
+    order: 7,
     hidden: false,
     tone: 'inverse',
     heading: { he: 'מה שאפשר לבדוק עלינו', en: 'What you can check about us' },
@@ -369,7 +391,7 @@ const aboutBlocks: PageBlock[] = [
   {
     id: 'about-cta',
     type: 'CTA',
-    order: 7,
+    order: 8,
     hidden: false,
     eyebrow: { he: 'השורה התחתונה', en: 'The bottom line' },
     heading: {

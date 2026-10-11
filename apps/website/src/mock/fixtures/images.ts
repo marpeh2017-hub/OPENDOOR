@@ -178,6 +178,34 @@ export const IMAGE_SLOTS: Record<string, ImageSlotSpec> = {
     },
   },
 
+  /* ── /about, the profile of Ziv Adar, the company's business partner ── */
+  ABOUT_ZIV_PORTRAIT: {
+    id: 'ABOUT_ZIV_PORTRAIT',
+    purpose:
+      'Puts a face to the business partner whose profile follows Michael’s. Until a photograph exists nothing is drawn, for the same reason as Michael’s slot.',
+    // Shown only as the small circle in his profile on /about.
+    orientation: 'portrait',
+    desktopRatio: '1 / 1',
+    mobileRatio: '1 / 1',
+    minResolution: '400 × 400',
+    altIntent: 'Ziv Adar, named.',
+    claim: 'PERSON_PORTRAIT',
+    direction:
+      'A real, recent photograph of Ziv Adar, supplied by the company. Must NOT be: an AI-generated or retouched likeness, a stock model, or a group shot cropped down.',
+    fallback: 'pattern',
+    // Supplied by the company on 2026-10-11: a head-and-shoulders portrait
+    // against a grey wall. Converted to WebP at its own size; not retouched.
+    asset: {
+      id: 'team-ziv-adar',
+      kind: 'image',
+      url: '/images/team/ziv-adar.webp',
+      width: 640,
+      height: 640,
+      imageType: 'PERSON_PORTRAIT',
+      alt: { he: 'זיו אדר', en: 'Ziv Adar' },
+    },
+  },
+
   /* ── 5 ── /how-we-work ───────────────────────────────────────────────── */
   RENEWED_ALONGSIDE_EXISTING: {
     id: 'RENEWED_ALONGSIDE_EXISTING',
