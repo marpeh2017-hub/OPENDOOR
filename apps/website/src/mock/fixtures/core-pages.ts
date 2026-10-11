@@ -1,4 +1,5 @@
 import type { CmsPage, PageBlock } from '@urban-renewal/api-contracts'
+import { PORTAL_DEMO } from './portal-demo'
 
 /**
  * MOCK CONTENT — replaced by the CMS in Phase 2.
@@ -877,20 +878,48 @@ const howWeWorkBlocks: PageBlock[] = [
  * /trust
  * ══════════════════════════════════════════════════════════════════════════ */
 
+/*
+ * Redesigned 2026-10-11, as approved on the design canvas: a light opening
+ * with the documents an owner reads, the working rules as grouped cards, the
+ * documents themselves as the page's one dark band, and the personal area
+ * with its picture and registration. The approved wording is unchanged; the
+ * new lines are the hero's points, the group names, the documents section,
+ * and one sentence about registration.
+ */
 const trustBlocks: PageBlock[] = [
   {
-    id: 'trust-statement',
-    type: 'STATEMENT',
+    id: 'trust-hero',
+    type: 'PAGE_HERO',
     order: 0,
     hidden: false,
-    statement: {
+    eyebrow: { he: 'שקיפות ואמון', en: 'Transparency and trust' },
+    heading: {
       he: 'שקיפות היא לא הבטחה. היא דרך עבודה.',
       en: 'Transparency is not a promise. It is a way of working.',
     },
-    support: {
+    standfirst: {
       he: 'תהליך התחדשות עירונית נמשך שנים, ובמהלכן מתקבלות עשרות החלטות. מה שמאפשר לבעלי הדירות להישאר בשליטה הוא סדר עבודה: מה מתועד, מי רואה מה, ומתי נושא מובא להכרעה.',
       en: 'An urban-renewal process runs for years and involves dozens of decisions. What keeps owners in control is an order of work: what gets recorded, who can see it, and when a matter goes to a decision.',
     },
+    ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },
+    ctaHref: '/eligibility',
+    secondaryCtaLabel: { he: 'המסמכים לקריאה', en: 'Read the documents' },
+    secondaryCtaHref: '/forms',
+    visual: {
+      kind: 'documents',
+      items: [
+        { id: 'doc-protocol', title: { he: 'פרוטוקול מינוי נציגות בעלי דירות', en: 'Representation protocol' } },
+        { id: 'doc-notice', title: { he: 'הודעה על כינוס בעלי דירות', en: 'Notice of an owners’ assembly' } },
+        { id: 'doc-agreement', title: { he: 'הסכם לארגון וליווי עסקת פינוי בינוי', en: 'Organising agreement' } },
+      ],
+      badge: { he: 'נוסח מלא לקריאה', en: 'Full text to read' },
+    },
+    // The three things the standfirst names, as points under the opening.
+    points: [
+      { id: 'trust-pt-recorded', icon: 'document', title: { he: 'מה מתועד', en: 'What is recorded' } },
+      { id: 'trust-pt-sees', icon: 'eye', title: { he: 'מי רואה מה', en: 'Who sees what' } },
+      { id: 'trust-pt-decides', icon: 'scale', title: { he: 'מתי מכריעים', en: 'When decisions are made' } },
+    ],
   },
   {
     // Moved from /about, in full, as this page's opening paragraph. A CHAPTER
@@ -917,9 +946,13 @@ const trustBlocks: PageBlock[] = [
       he: 'אלה כללי העבודה שאנחנו מחזיקים בהם. הם מתארים איך אנחנו עובדים, ואינם הבטחה לתוצאה.',
       en: 'These are the working rules we hold ourselves to. They describe how we work; they are not a promise of an outcome.',
     },
+    // Grouped since 2026-10-11 (information, decisions, contact): the same
+    // seven rules and words, ordered by group.
     items: [
       {
         id: 'tp-documentation',
+        group: { he: 'מידע', en: 'Information' },
+        icon: 'files',
         title: { he: 'תיעוד', en: 'Documentation' },
         body: {
           he: 'פגישות, הכרעות והסכמות נרשמות ונשמרות. בתהליך ארוך, רישום הוא מה שמאפשר לחזור אחורה ולהבין למה הוחלט מה שהוחלט.',
@@ -928,6 +961,8 @@ const trustBlocks: PageBlock[] = [
       },
       {
         id: 'tp-access',
+        group: { he: 'מידע', en: 'Information' },
+        icon: 'eye',
         title: { he: 'גישה למידע', en: 'Access to information' },
         body: {
           he: 'אנחנו עובדים כך שהמידע הנוגע לבעל דירה ולמתחם יהיה נגיש לו. חומר שמוחזק אצל הנציגות מתוקף תפקידה מוגדר ככזה מראש, ולא מתגלה בדיעבד.',
@@ -935,15 +970,19 @@ const trustBlocks: PageBlock[] = [
         },
       },
       {
-        id: 'tp-updates',
-        title: { he: 'עדכונים לבעלי הדירות', en: 'Updates to owners' },
+        id: 'tp-status',
+        group: { he: 'מידע', en: 'Information' },
+        icon: 'pin',
+        title: { he: 'מצב הפרויקט', en: 'Where the project stands' },
         body: {
-          he: 'אנחנו מעדכנים גם כשאין התפתחות דרמטית. שתיקה ארוכה שוחקת אמון יותר מבשורה לא נוחה.',
-          en: 'We send an update even when there is no dramatic development. A long silence erodes trust more than unwelcome news does.',
+          he: 'בעל דירה שישאל באיזה שלב התהליך נמצא, מה הסתיים ומה הבא בתור, יקבל תשובה. איננו מצפים ממנו לחפש אותה.',
+          en: 'An owner who asks which stage the process has reached, what is finished and what comes next will get an answer. We do not expect them to go looking for it.',
         },
       },
       {
         id: 'tp-decisions',
+        group: { he: 'החלטות', en: 'Decisions' },
+        icon: 'scale',
         title: { he: 'קבלת החלטות מסודרת', en: 'Orderly decision-making' },
         body: {
           he: 'ברור מה הנציגות מוסמכת להכריע בו ומה מובא לכלל בעלי הדירות. ההבחנה נקבעת מראש ולא לפי הנוחות של הרגע.',
@@ -951,15 +990,9 @@ const trustBlocks: PageBlock[] = [
         },
       },
       {
-        id: 'tp-coordination',
-        title: { he: 'תיאום בין אנשי המקצוע', en: 'Coordinating the professionals' },
-        body: {
-          he: 'אנחנו מתאמים בין עורך הדין, השמאי, האדריכל והיועצים, ודואגים שיעבדו מול אותו מידע ואותו לוח זמנים. האחריות המקצועית נשארת אצל כל אחד מהם.',
-          en: 'We coordinate between the lawyer, the appraiser, the architect and the consultants, and make sure they work from the same information and the same timeline. Professional responsibility stays with each of them.',
-        },
-      },
-      {
         id: 'tp-comparison',
+        group: { he: 'החלטות', en: 'Decisions' },
+        icon: 'clipboard',
         title: { he: 'השוואת חלופות', en: 'Comparing alternatives' },
         body: {
           he: 'הצעות נבחנות לפי אותם פרמטרים, וההשוואה נשמרת. כך אפשר להסביר בחירה גם שנה אחרי שהתקבלה.',
@@ -967,34 +1000,105 @@ const trustBlocks: PageBlock[] = [
         },
       },
       {
-        id: 'tp-status',
-        title: { he: 'מצב הפרויקט', en: 'Where the project stands' },
+        id: 'tp-updates',
+        group: { he: 'קשר ותיאום', en: 'Contact and coordination' },
+        icon: 'chat',
+        title: { he: 'עדכונים לבעלי הדירות', en: 'Updates to owners' },
         body: {
-          he: 'בעל דירה שישאל באיזה שלב התהליך נמצא, מה הסתיים ומה הבא בתור, יקבל תשובה. איננו מצפים ממנו לחפש אותה.',
-          en: 'An owner who asks which stage the process has reached, what is finished and what comes next will get an answer. We do not expect them to go looking for it.',
+          he: 'אנחנו מעדכנים גם כשאין התפתחות דרמטית. שתיקה ארוכה שוחקת אמון יותר מבשורה לא נוחה.',
+          en: 'We send an update even when there is no dramatic development. A long silence erodes trust more than unwelcome news does.',
+        },
+      },
+      {
+        id: 'tp-coordination',
+        group: { he: 'קשר ותיאום', en: 'Contact and coordination' },
+        icon: 'users',
+        title: { he: 'תיאום בין אנשי המקצוע', en: 'Coordinating the professionals' },
+        body: {
+          he: 'אנחנו מתאמים בין עורך הדין, השמאי, האדריכל והיועצים, ודואגים שיעבדו מול אותו מידע ואותו לוח זמנים. האחריות המקצועית נשארת אצל כל אחד מהם.',
+          en: 'We coordinate between the lawyer, the appraiser, the architect and the consultants, and make sure they work from the same information and the same timeline. Professional responsibility stays with each of them.',
         },
       },
     ],
   },
   {
-    id: 'trust-digital',
-    type: 'PROSE',
+    // The documents themselves, the page's one dark band: what "transparency"
+    // means in practice is that the full text can be read before anyone signs.
+    id: 'trust-documents',
+    type: 'FEATURE_GRID',
     order: 3,
     hidden: false,
+    tone: 'inverse',
+    heading: { he: 'המסמכים פתוחים לקריאה', en: 'The documents are open to read' },
+    intro: {
+      he: 'את הנוסח המלא של המסמכים שבעלי הדירות מקבלים וחותמים עליהם אפשר לקרוא כאן מראש, להדפיס ולשמור.',
+      en: 'The full text of the documents owners receive and sign can be read here in advance, printed and kept.',
+    },
+    items: [
+      {
+        id: 'td-notice',
+        icon: 'calendar',
+        title: { he: 'הודעה על כינוס בעלי דירות', en: 'Notice of an owners’ assembly' },
+        body: {
+          he: 'ההזמנה לכינוס בעלי הדירות במתחם, וסדר היום שלו.',
+          en: 'The invitation to the owners’ assembly in the complex, and its agenda.',
+        },
+        href: '/forms/assembly-notice',
+        linkLabel: { he: 'לקריאת הנוסח המלא', en: 'Read the full text' },
+      },
+      {
+        id: 'td-protocol',
+        icon: 'users',
+        title: { he: 'פרוטוקול מינוי נציגות בעלי דירות', en: 'Representation protocol' },
+        body: {
+          he: 'הפרוטוקול שבו בעלי הדירות ממנים נציגות מטעמם לקידום שלבי הארגון והבדיקה של הפרויקט.',
+          en: 'The protocol in which the owners appoint a representation to advance the project’s organisation and review stages.',
+        },
+        href: '/forms/representation-protocol',
+        linkLabel: { he: 'לקריאת הנוסח המלא', en: 'Read the full text' },
+      },
+      {
+        id: 'td-agreement',
+        icon: 'pen',
+        title: { he: 'הסכם לארגון וליווי עסקת פינוי בינוי', en: 'Organising and accompaniment agreement' },
+        body: {
+          he: 'ההסכם בין בעלי הדירות לחברה המארגנת: ההתחייבויות, התוקף והזכויות.',
+          en: 'The agreement between the owners and the organising company: the undertakings, its term and the owners’ rights.',
+        },
+        href: '/forms/organizing-agreement',
+        linkLabel: { he: 'לקריאת הנוסח המלא', en: 'Read the full text' },
+      },
+    ],
+    linkLabel: { he: 'לכל הטפסים', en: 'All forms' },
+    linkHref: '/forms',
+  },
+  {
+    // The approved text, with one new sentence on registration (2026-10-11),
+    // the homepage's picture of the personal area, and its two ways in.
+    id: 'trust-digital',
+    type: 'PORTAL',
+    order: 4,
+    hidden: false,
     heading: { he: 'האזור האישי', en: 'The personal area' },
-    lead: {
+    intro: {
       he: 'באזור האישי כל בעל דירה רואה במקום אחד את השלב שבו הפרויקט נמצא, את העדכונים, את המסמכים שנוגעים לדירה שלו ואת הפגישות הקרובות.',
       en: 'In the personal area every owner sees in one place which stage the project has reached, the updates, the documents relevant to their apartment, and the meetings coming up.',
     },
     body: {
-      he: 'משם אפשר גם לשלוח הודעות ופניות, ולחתום על מסמכים כשנדרש. הכניסה נעשית בקוד חד־פעמי שנשלח לטלפון הנייד או לאימייל הרשומים אצלנו. סביבה לחברי הנציגות, לניהול ההחלטות והמשימות, עדיין בבנייה.\n\nלצד האזור האישי, הנהלים שלמעלה ממשיכים להתקיים גם בערוצים הרגילים: פגישות, סיכומים כתובים ותקשורת ישירה מול הנציגות.',
-      en: 'From there owners can also send messages and requests, and sign documents when needed. Sign-in is by a one-time code sent to the mobile number or email address we hold. A workspace for representation members, for managing decisions and tasks, is still being built.\n\nAlongside the personal area, the practices above continue through the ordinary channels too: meetings, written summaries, and direct communication with the representation.',
+      he: 'משם אפשר גם לשלוח הודעות ופניות, ולחתום על מסמכים כשנדרש. הכניסה נעשית בקוד חד־פעמי שנשלח לטלפון הנייד או לאימייל הרשומים אצלנו. מי שעוד לא רשום אצלנו יכול לבקש הרשמה. סביבה לחברי הנציגות, לניהול ההחלטות והמשימות, עדיין בבנייה.\n\nלצד האזור האישי, הנהלים שלמעלה ממשיכים להתקיים גם בערוצים הרגילים: פגישות, סיכומים כתובים ותקשורת ישירה מול הנציגות.',
+      en: 'From there owners can also send messages and requests, and sign documents when needed. Sign-in is by a one-time code sent to the mobile number or email address we hold. If we do not have your details yet, you can ask to register. A workspace for representation members, for managing decisions and tasks, is still being built.\n\nAlongside the personal area, the practices above continue through the ordinary channels too: meetings, written summaries, and direct communication with the representation.',
     },
+    ctaLabel: { he: 'כניסה לאזור האישי', en: 'Go to the personal area' },
+    ctaHref: '/portal',
+    secondaryCtaLabel: { he: 'הרשמה לאזור האישי', en: 'Register for the personal area' },
+    secondaryCtaHref: '/portal/register',
+    demo: PORTAL_DEMO,
+    groups: [],
   },
   {
     id: 'trust-resources',
     type: 'EXTERNAL_RESOURCES',
-    order: 4,
+    order: 5,
     hidden: false,
     heading: { he: 'מקורות מידע רשמיים', en: 'Official information sources' },
     intro: {
@@ -1005,7 +1109,7 @@ const trustBlocks: PageBlock[] = [
   {
     id: 'trust-cta',
     type: 'CTA',
-    order: 5,
+    order: 6,
     hidden: false,
     heading: { he: 'יש שאלה שלא נענתה כאן?', en: 'A question this page did not answer?' },
     ctaLabel: { he: 'דברו איתנו על הבניין שלכם', en: 'Talk to us about your building' },

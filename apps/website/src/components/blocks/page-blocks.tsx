@@ -25,6 +25,7 @@ import { NetworkBlockView } from './network-block'
 import { PageHeroBlockView } from './page-hero-block'
 import { ModelsBlockView } from './models-block'
 import { DiagnosisBlockView } from './diagnosis-block'
+import { PortalBlockView } from './portal-block'
 
 /**
  * Renders a CMS page's blocks, in order.
@@ -67,7 +68,7 @@ const SELF_WRAPPING = new Set([
   'EXTERNAL_RESOURCES', 'MEDIA', 'CTA', 'FEATURE_GRID', 'PROCESS',
   'PROJECT_TRANSPARENCY', 'TRUST', 'VERIFIABLE_FACTS', 'TEXT_SECTION',
   'CHAPTER', 'CHECKLIST', 'DOORS', 'FACT_STRIP', 'PROFILE', 'PRINCIPLES',
-  'STAGE_INDEX', 'RISKS', 'NETWORK', 'PAGE_HERO', 'MODELS', 'DIAGNOSIS',
+  'STAGE_INDEX', 'RISKS', 'NETWORK', 'PAGE_HERO', 'MODELS', 'DIAGNOSIS', 'PORTAL',
 ])
 
 export async function PageBlocks({
@@ -112,8 +113,9 @@ export async function PageBlocks({
 
     /* ── PAIRING RULE 2: a STATEMENT that opens a page ────────────────────
      * When a statement is the FIRST block, it is the page's opening and takes
-     * the inverse surface, standing in for a PAGE_HEADER. That is how /trust
-     * begins, and it is why that page needs no separate header block.
+     * the inverse surface, standing in for a PAGE_HEADER. /trust began this
+     * way until 2026-10-11, when it took a PAGE_HERO; the rule stays for any
+     * page that opens on a statement.
      *
      * Because it stands in for the header it also carries the `h1`: a page
      * whose visible title is an `h2` has no `h1` at all, which is exactly the
@@ -258,6 +260,10 @@ async function renderBlockBody(
 
     case 'DIAGNOSIS':
       return <DiagnosisBlockView block={block} t={t} />
+
+    case 'PORTAL':
+      // The homepage renders its own; /trust explains the personal area with it.
+      return <PortalBlockView block={block} t={t} />
 
     case 'CHAPTER':
       // Normally rendered by the sequence rule above, which knows its position.

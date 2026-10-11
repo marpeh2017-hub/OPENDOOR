@@ -1,5 +1,5 @@
 import type {
-  OrganiseVisual, PageHeroBlock, PageHeroVisual, PortraitVisual, ServiceMapVisual,
+  DocumentsVisual, OrganiseVisual, PageHeroBlock, PageHeroVisual, PortraitVisual, ServiceMapVisual,
 } from '@urban-renewal/api-contracts'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
@@ -32,6 +32,9 @@ import { getImageSlot, IMAGE_SLOTS } from '@/mock/fixtures/images'
  * `service-map` puts the owners' building in the middle and what the company
  * does on its four sides; under `sm` the sides become a grid of two under
  * the centre, since four chips around a circle do not fit a phone.
+ * `documents` (/trust) fans the owner's documents like pages on a desk, each
+ * with its real title; it is decoration, since the same titles are links
+ * further down the page.
  */
 export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t: Localizer }) {
   const visual = block.visual ? await renderVisual(block.visual, t) : null
@@ -54,7 +57,7 @@ export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t:
             {t(block.standfirst) && (
               <p className="mt-5 max-w-2xl type-lead text-gray-600">{t(block.standfirst)}</p>
             )}
-            {(block.ctaHref || block.showPhone) && (
+            {(block.ctaHref || block.showPhone || block.secondaryCtaHref) && (
               <div className="mt-8 flex flex-wrap gap-3">
                 {block.ctaHref && t(block.ctaLabel) && (
                   <Link
@@ -62,6 +65,14 @@ export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t:
                     className="inline-flex min-h-[52px] items-center justify-center rounded-md bg-teal-600 px-7 type-body font-semibold text-white transition-colors hover:bg-teal-700 hover:text-white"
                   >
                     {t(block.ctaLabel)}
+                  </Link>
+                )}
+                {block.secondaryCtaHref && t(block.secondaryCtaLabel) && (
+                  <Link
+                    href={block.secondaryCtaHref}
+                    className="inline-flex min-h-[52px] items-center justify-center rounded-md border border-teal-600 bg-white px-6 type-body font-semibold text-teal-700 transition-colors hover:bg-teal-50"
+                  >
+                    {t(block.secondaryCtaLabel)}
                   </Link>
                 )}
                 {block.showPhone && (
@@ -81,7 +92,7 @@ export async function PageHeroBlockView({ block, t }: { block: PageHeroBlock; t:
         </div>
 
         {points.length > 0 && (
-          <ul className="mt-12 grid gap-5 border-t border-gray-200 pt-6 md:grid-cols-3">
+          <ul className="mt-8 grid gap-4 border-t border-gray-200 pt-6 md:grid-cols-3 md:gap-5 lg:mt-12">
             {points.map((point) => (
               <li key={point.id} className="flex items-center gap-3.5">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-600">
@@ -108,9 +119,62 @@ async function renderVisual(visual: PageHeroVisual, t: Localizer): Promise<React
       return <Organise visual={visual} t={t} />
     case 'service-map':
       return <ServiceMap visual={visual} t={t} />
+    case 'documents':
+      return <Documents visual={visual} t={t} />
     default:
       return null
   }
+}
+
+/** Where each page lies, back to front: offset from the start edge, and its tilt. Each page's
+ *  title sits at its start edge, the part the page in front leaves uncovered. */
+const PAGE_POSES = [
+  { start: 'start-0', top: 'top-8', tilt: '-rotate-6 ltr:rotate-6' },
+  { start: 'start-[18%]', top: 'top-3', tilt: 'rotate-3 ltr:-rotate-3' },
+  { start: 'start-[38%]', top: 'top-14', tilt: '' },
+]
+
+function Documents({ visual, t }: { visual: DocumentsVisual; t: Localizer }) {
+  const pages = visual.items.slice(-PAGE_POSES.length)
+  const pose = (index: number) => PAGE_POSES[PAGE_POSES.length - pages.length + index]!
+  return (
+    <div aria-hidden="true" className="mx-auto w-full max-w-[30rem]">
+      <div className="relative h-[17rem] sm:h-[26rem]">
+        {pages.map((page, index) => {
+          const { start, top, tilt } = pose(index)
+          const front = index === pages.length - 1
+          return (
+            <div
+              key={page.id}
+              className={`absolute ${start} ${top} ${tilt} flex h-[14rem] w-[60%] flex-col gap-2 rounded-xl border bg-white p-4 shadow-[0_18px_40px_-20px_rgba(20,49,47,0.45)] sm:h-[21rem] sm:gap-2.5 sm:p-5 ${front ? 'border-teal-200' : 'border-gray-200'}`}
+            >
+              <span className="text-[0.7rem] text-gray-500">בס"ד</span>
+              <span className="mt-1 max-w-[85%] text-sm font-bold leading-snug text-gray-900 underline underline-offset-4">
+                {t(page.title)}
+              </span>
+              <span className="mt-2 h-1.5 w-[92%] rounded-full bg-gray-100" />
+              <span className="h-1.5 w-[80%] rounded-full bg-gray-100" />
+              <span className="h-1.5 w-[88%] rounded-full bg-gray-100" />
+              <span className="h-1.5 w-[64%] rounded-full bg-gray-100" />
+              {front && (
+                <span className="mt-2 grid grid-cols-4 border-s border-t border-gray-300">
+                  {Array.from({ length: 8 }, (_, cell) => (
+                    <span key={cell} className="h-4 border-b border-e border-gray-300" />
+                  ))}
+                </span>
+              )}
+              {front && t(visual.badge) && (
+                <span className="mt-auto inline-flex items-center gap-1.5 self-start rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800">
+                  <LineIcon name="check-circle" size={14} />
+                  {t(visual.badge)}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function ServiceMap({ visual, t }: { visual: ServiceMapVisual; t: Localizer }) {

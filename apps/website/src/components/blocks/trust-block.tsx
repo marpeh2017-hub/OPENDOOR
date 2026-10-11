@@ -1,69 +1,72 @@
-import type { FeatureGridBlock } from '@urban-renewal/api-contracts'
-import { Section } from './section'
+import type { FeatureGridBlock, NarrativeItem } from '@urban-renewal/api-contracts'
+import { Section, SectionHeading } from './section'
 import type { Localizer } from '@/lib/localize'
+import { LineIcon, isLineIcon } from '@/components/brand/line-icon'
 
 /**
- * Trust centre.
+ * Trust centre: the working rules, grouped.
  *
- * ── AN INDEX, NOT A FEATURE GRID ───────────────────────────────────────────
+ * ── CARDS IN GROUPS, NOT A LONG INDEX ──────────────────────────────────────
  *
- * V1 rendered these six as a card grid, which made "how decisions are made"
- * look like a product feature. They are not features; they are the table of
- * contents of a transparency policy. So they are set as NUMBERED ROWS with
- * rules between them — the visual language of a report, not of marketing.
+ * Until 2026-10-11 the rules were numbered rows on the dark surface, the
+ * visual language of a report. Seven of them made the page's longest stretch
+ * (about two screens on a phone), and the owner approved a redesign: the
+ * same words as cards, under three names a reader can scan (information,
+ * decisions, contact and coordination). Consecutive items that share a
+ * `group` sit under it; items without one form a group of their own with no
+ * name. Nothing is ranked, and nothing claims to be exhaustive.
  *
- * The numbering is presentational (`01`–`06`), and it is the row index, not a
- * ranking. Nothing here is ordered by importance and nothing claims to be
- * exhaustive.
- *
- * ── THE ONE DARK MOMENT ON THE PAGE ────────────────────────────────────────
- *
- * The heading sits on the inverse surface. It is used exactly once on the
- * homepage, and it is used here because this is the section where the company
- * states its working principle rather than describing a service. A dark band
- * appearing three or four times would be a stripe pattern; appearing once, it
- * is emphasis.
- *
- * Contrast on the inverse surface was measured, not assumed: white on
- * `#14312F` is 14.8:1, and the muted `gray-300` intro is 8.9:1 — both clear AA
- * for their sizes with room to spare.
+ * The page's one dark band is now its documents section, further down.
  */
 export function TrustBlockView({ block, t }: { block: FeatureGridBlock; t: Localizer }) {
-  return (
-    <Section tone="inverse" size="lg">
-      <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-        <div>
-          <h2 className="max-w-[15ch] type-h2 font-bold text-white text-balance">
-            {t(block.heading)}
-          </h2>
-          {block.intro && (
-            <p className="mt-4 max-w-md type-body text-gray-300">
-              {t(block.intro)}
-            </p>
-          )}
-          <span aria-hidden="true" className="mt-8 block h-0.5 w-16 bg-teal-400" />
-        </div>
+  const groups = groupItems(block.items, t)
 
-        {/* The index. `divide-white/15` rather than a grey token: on the
-            inverse surface a neutral divider goes muddy, where a translucent
-            white stays part of the same material. */}
-        <ol className="divide-y divide-white/15 border-y border-white/15">
-          {block.items.map((item, index) => (
-            <li key={item.id} className="flex gap-5 py-5 sm:gap-7">
-              <span
-                aria-hidden="true"
-                className="pt-0.5 text-xs font-semibold tabular-nums tracking-[0.2em] text-teal-400"
-              >
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <div>
-                <h3 className="type-h3 font-semibold text-white">{t(item.title)}</h3>
-                <p className="mt-1.5 type-body text-gray-300">{t(item.body)}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+  return (
+    <Section tone="sunken" size="lg">
+      <SectionHeading heading={block.heading} intro={block.intro} t={t} />
+
+      <div className="mt-10 grid items-start gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {groups.map((group) => (
+          <div key={group.key} className="space-y-3">
+            {group.label && (
+              <h3 className="flex items-center gap-2.5 type-small font-bold text-teal-700">
+                <span aria-hidden="true" className="h-0.5 w-5 bg-teal-500" />
+                {group.label}
+              </h3>
+            )}
+            <ul className="space-y-2.5 sm:space-y-3">
+              {group.items.map((item) => (
+                <li key={item.id} className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+                  <h4 className="flex items-center gap-3 type-h3 font-bold text-gray-900">
+                    {isLineIcon(item.icon) && (
+                      <span
+                        aria-hidden="true"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600"
+                      >
+                        <LineIcon name={item.icon} size={20} />
+                      </span>
+                    )}
+                    {t(item.title)}
+                  </h4>
+                  <p className="mt-2.5 type-body text-gray-600">{t(item.body)}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </Section>
   )
+}
+
+/** Runs of consecutive items under the same group name. */
+function groupItems(items: readonly NarrativeItem[], t: Localizer) {
+  const groups: { key: string; label: string | null; items: NarrativeItem[] }[] = []
+  for (const item of items) {
+    const label = t(item.group) || null
+    const last = groups[groups.length - 1]
+    if (last && last.label === label) last.items.push(item)
+    else groups.push({ key: item.id, label, items: [item] })
+  }
+  return groups
 }

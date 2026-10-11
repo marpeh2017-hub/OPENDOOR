@@ -17,6 +17,10 @@ import { PortalTeaser, type PortalDemoStrings } from '@/components/brand/portal-
  *
  * The link is an outlined button rather than a filled one: the page has one
  * primary action, and it is "דברו איתנו על הבניין שלכם".
+ *
+ * /trust uses the block too (2026-10-11), with more to say: `body` adds
+ * paragraphs under the intro, and a second link sits beside the first
+ * (registration beside sign-in).
  */
 export async function PortalBlockView({ block, t }: { block: PortalBlock; t: Localizer }) {
   const tUi = await getTranslations('ui')
@@ -44,6 +48,18 @@ export async function PortalBlockView({ block, t }: { block: PortalBlock; t: Loc
         <div>
           <SectionHeading heading={block.heading} intro={block.intro} t={t} />
 
+          {t(block.body) && (
+            <div className="mt-4 max-w-2xl space-y-4">
+              {t(block.body)
+                .split(/\n\s*\n/)
+                .map((paragraph, index) => (
+                  <p key={index} className="type-body text-gray-600">
+                    {paragraph}
+                  </p>
+                ))}
+            </div>
+          )}
+
           {block.buildNotice && (
             <p className="mt-6 max-w-xl border-s-2 border-teal-300 ps-4 type-small text-gray-600">
               {t(block.buildNotice)}
@@ -68,13 +84,25 @@ export async function PortalBlockView({ block, t }: { block: PortalBlock; t: Loc
             </div>
           )}
 
-          {block.ctaLabel && block.ctaHref && (
-            <Link
-              href={block.ctaHref}
-              className="mt-8 inline-flex min-h-12 items-center justify-center rounded-md border border-teal-600 px-6 type-body font-semibold text-teal-600 transition-colors hover:bg-teal-50 hover:text-teal-700"
-            >
-              {t(block.ctaLabel)}
-            </Link>
+          {((block.ctaLabel && block.ctaHref) || (block.secondaryCtaHref && t(block.secondaryCtaLabel))) && (
+            <div className="mt-8 flex flex-wrap gap-3">
+              {block.ctaLabel && block.ctaHref && (
+                <Link
+                  href={block.ctaHref}
+                  className="inline-flex min-h-12 items-center justify-center rounded-md border border-teal-600 px-6 type-body font-semibold text-teal-600 transition-colors hover:bg-teal-50 hover:text-teal-700"
+                >
+                  {t(block.ctaLabel)}
+                </Link>
+              )}
+              {block.secondaryCtaHref && t(block.secondaryCtaLabel) && (
+                <Link
+                  href={block.secondaryCtaHref}
+                  className="inline-flex min-h-12 items-center justify-center px-2 type-body font-semibold text-teal-700 underline underline-offset-4 hover:text-teal-800"
+                >
+                  {t(block.secondaryCtaLabel)}
+                </Link>
+              )}
+            </div>
           )}
         </div>
 

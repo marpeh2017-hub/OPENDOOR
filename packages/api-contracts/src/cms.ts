@@ -454,15 +454,17 @@ export interface FeatureGridBlock extends BlockBase {
   /**
    * Where the subject is stated in full, e.g. the homepage's five-stage
    * process pointing at the eight stages on /how-we-work. Optional, and
-   * rendered only by the renderers that summarise: PROCESS today.
+   * rendered only by the renderers that summarise: PROCESS, and FEATURE_GRID
+   * under its link cards (/trust's documents, pointing at /forms).
    */
   linkLabel?: LocalizedTextOptional
   linkHref?: string
   /**
-   * `inverse` puts VERIFIABLE_FACTS on the dark surface. Honoured by that
-   * renderer only. The homepage keeps it light because the trust index is
-   * already its one dark band; a page with no other dark band, such as /about,
-   * can give the facts that weight instead.
+   * `inverse` puts VERIFIABLE_FACTS on the dark surface, and FEATURE_GRID
+   * (whose link cards then lighten to sit on it). Honoured by those two
+   * renderers only. The homepage keeps the facts light because the trust
+   * index is already its one dark band; a page with no other dark band, such
+   * as /about or /trust, can give a section that weight instead.
    */
   tone?: 'inverse'
 }
@@ -471,6 +473,11 @@ export interface NarrativeItem {
   id: string
   title: LocalizedText
   body: LocalizedText
+  /**
+   * TRUST groups consecutive items that share a group under its name, as
+   * /trust sets its working rules: information, decisions, contact.
+   */
+  group?: LocalizedTextOptional
   /**
    * Icon name from a fixed set, not an arbitrary upload. An editor who can
    * upload an icon per item produces a page with eight visual languages.
@@ -520,9 +527,15 @@ export interface PortalBlock extends BlockBase {
   type: 'PORTAL'
   heading: LocalizedText
   intro?: LocalizedTextOptional
+  /** More than one line, as /trust explains the personal area: plain text,
+   *  paragraphs split on blank lines, under the intro. */
+  body?: LocalizedTextOptional
   groups: PortalAudienceGroup[]
   ctaLabel?: LocalizedTextOptional
   ctaHref?: string
+  /** A second way in beside the first, e.g. registration beside sign-in. */
+  secondaryCtaLabel?: LocalizedTextOptional
+  secondaryCtaHref?: string
   /** Rendered as a qualifier near the heading when the capability is not yet
    *  live, so the section can describe what is being built without claiming it
    *  already works. */
@@ -744,12 +757,15 @@ export interface PageHeroBlock extends BlockBase {
   ctaHref?: string
   /** Shows the company phone beside the action, from site configuration. */
   showPhone?: boolean
+  /** A quieter second action beside the first, e.g. /trust's "המסמכים לקריאה". */
+  secondaryCtaLabel?: LocalizedTextOptional
+  secondaryCtaHref?: string
   visual?: PageHeroVisual
   /** One line each, with an icon, under the opening. */
   points?: PageHeroPoint[]
 }
 
-export type PageHeroVisual = PortraitVisual | OrganiseVisual | ServiceMapVisual
+export type PageHeroVisual = PortraitVisual | OrganiseVisual | ServiceMapVisual | DocumentsVisual
 
 /** A real photograph of a named person, with a line in their words. */
 export interface PortraitVisual {
@@ -780,6 +796,18 @@ export interface ServiceMapVisual {
   center: LocalizedText
   /** Four reads best: they sit on the four sides of the centre. */
   items: { id: string; icon?: string; label: LocalizedText }[]
+}
+
+/**
+ * /trust's opening: the documents an owner reads and signs, drawn as pages
+ * fanned on a desk, each with its real title. Decoration: the same titles
+ * are links further down the page.
+ */
+export interface DocumentsVisual {
+  kind: 'documents'
+  /** Back to front; the last one lies on top and carries `badge`. */
+  items: { id: string; title: LocalizedText }[]
+  badge?: LocalizedTextOptional
 }
 
 export interface PageHeroPoint {

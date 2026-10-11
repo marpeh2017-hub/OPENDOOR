@@ -77,6 +77,9 @@ export const RESIDENT_PORTAL_HREF = '/resident-portal'
  */
 export const PERSONAL_AREA_HREF = '/portal'
 
+/** Registration for the personal area, forwarded the same way (portal/register). */
+export const PORTAL_REGISTER_HREF = '/portal/register'
+
 /** Footer groups. Mirrors §63 without inventing registration numbers or
  *  addresses, which the specification explicitly forbids. */
 export const FOOTER_GROUPS: readonly { titleKey: string; items: readonly NavItem[] }[] = [
