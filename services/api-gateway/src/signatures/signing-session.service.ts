@@ -686,16 +686,35 @@ export class SigningSessionService {
    */
   private async resolveSession(token: string, opts: { viewSignedForm?: boolean } = {}) {
     const session = await this.prisma.signingSession.findUnique({ where: { token } })
-    if (!session) throw new NotFoundException('קישור חתימה לא נמצא')
+    if (!session) throw new NotFoundException('הקישור לא נמצא. בדקו שהעתקתם אותו במלואו.')
     if (session.revokedAt) {
-      const signedForm =
-        opts.viewSignedForm &&
-        (await this.prisma.signatureRecord.count({
-          where: { id: session.recordId, status: 'SIGNED', package: { formType: { not: null } } },
-        })) > 0
-      if (!signedForm) throw new UnauthorizedException('קישור חתימה בוטל')
+      const record = await this.prisma.signatureRecord.findUnique({
+        where: { id: session.recordId },
+        select: { status: true, package: { select: { status: true, formType: true } } },
+      })
+      const signedForm = record?.status === 'SIGNED' && record.package.formType !== null
+      // A cancelled package says so, to those who signed too: their receipt
+      // would otherwise read as if the form still stood. `code` and `formType`
+      // let the page title it ("ההודעה בוטלה", "הטופס בוטל").
+      if (record?.package.status === 'CANCELLED') {
+        throw new GoneException({
+          code: 'CANCELLED',
+          formType: record.package.formType,
+          message: cancelledMessage(record.package.formType, signedForm),
+        })
+      }
+      if (!(opts.viewSignedForm && signedForm)) throw new UnauthorizedException('הקישור הזה כבר לא פעיל.')
     }
-    if (new Date() > session.expiresAt) throw new GoneException('קישור חתימה פג תוקף')
+    if (new Date() > session.expiresAt) throw new GoneException('תוקף הקישור הסתיים.')
     return session
   }
+}
+
+/** What a link of a cancelled package tells the owner who opens it. */
+function cancelledMessage(formType: string | null, signed: boolean): string {
+  if (formType === 'ASSEMBLY_NOTICE') return 'ההודעה הזו בוטלה, ואין צורך לעשות דבר.'
+  if (!formType) return 'המסמך הזה בוטל, ואין צורך לחתום עליו.'
+  return signed
+    ? 'הטופס הזה בוטל. החתימה שלכם נשמרת בתיעוד בלבד, ואין צורך לעשות דבר.'
+    : 'הטופס הזה בוטל, ואין צורך לחתום עליו.'
 }

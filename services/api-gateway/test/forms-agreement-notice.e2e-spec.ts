@@ -282,4 +282,31 @@ describe('Organizing agreement and assembly notice (e2e)', () => {
       ])
     })
   })
+
+  describe('cancelling', () => {
+    it('tells everyone who opens a link that it was cancelled, those who signed too', async () => {
+      const signerToken = await tokenOf(agreementId, owners.first)
+      const otherToken = await tokenOf(agreementId, owners.second)
+      const noticeToken = await tokenOf(noticeId, owners.first)
+      expect((await api().delete(`/api/v1/forms/${agreementId}`).set(staff())).status).toBe(200)
+      expect((await api().delete(`/api/v1/forms/${noticeId}`).set(staff())).status).toBe(200)
+
+      const signer = await api().get(`/api/v1/signatures/portal/${signerToken}`)
+      expect(signer.status).toBe(410)
+      expect(signer.body).toMatchObject({
+        code: 'CANCELLED',
+        formType: 'ORGANIZING_AGREEMENT',
+        message: 'הטופס הזה בוטל. החתימה שלכם נשמרת בתיעוד בלבד, ואין צורך לעשות דבר.',
+      })
+      const other = await api().get(`/api/v1/signatures/portal/${otherToken}`)
+      expect(other.body).toMatchObject({ code: 'CANCELLED', message: 'הטופס הזה בוטל, ואין צורך לחתום עליו.' })
+      const notice = await api().get(`/api/v1/signatures/portal/${noticeToken}`)
+      expect(notice.body).toMatchObject({ code: 'CANCELLED', formType: 'ASSEMBLY_NOTICE', message: 'ההודעה הזו בוטלה, ואין צורך לעשות דבר.' })
+
+      const lateSign = await api()
+        .post(`/api/v1/signatures/portal/${otherToken}/sign`)
+        .send({ fullName: 'שני בדיקה', idNumber: '000000018', signatureImage: PNG, confirmedRead: true })
+      expect(lateSign.status).toBe(410)
+    })
+  })
 })

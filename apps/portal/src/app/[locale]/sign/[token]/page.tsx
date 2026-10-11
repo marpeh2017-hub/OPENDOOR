@@ -121,6 +121,9 @@ export default function SignPage() {
   const [attempts,    setAttempts]    = useState(0)
   const [busy,        setBusy]        = useState(false)
   const [error,       setError]       = useState<string | null>(null)
+  // Why a link cannot open, as the gateway names it: `CANCELLED` with the
+  // package's form type titles the screen "ההודעה בוטלה" / "הטופס בוטל".
+  const [errorKind,   setErrorKind]   = useState<{ code?: string; formType?: string | null } | null>(null)
   const [signedAt,    setSignedAt]    = useState<string | null>(null)
 
   const call = useCallback(async (path: string, method = 'GET', body?: any) => {
@@ -138,7 +141,10 @@ export default function SignPage() {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      throw new Error(data.message ?? `שגיאת שרת ${res.status}`)
+      throw Object.assign(new Error(data.message ?? `שגיאת שרת ${res.status}`), {
+        code: data.code as string | undefined,
+        formType: data.formType as string | null | undefined,
+      })
     }
     return data
   }, [token])
@@ -157,6 +163,7 @@ export default function SignPage() {
       })
       .catch(err => {
         setError(err.message)
+        setErrorKind({ code: err.code, formType: err.formType })
         setStep('error')
       })
   }, [call])
@@ -266,10 +273,19 @@ export default function SignPage() {
             <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center">
               <AlertTriangle className="text-red-500" size={28} />
             </div>
-            <h2 className="text-lg font-bold text-gray-900">קישור לא תקין</h2>
-            <p className="text-sm text-gray-500">{error ?? 'הקישור פג תוקף או אינו תקין.'}</p>
-            <p className="text-xs text-gray-400 mt-2">
-              פנה לחברת הניהול לקבלת קישור חדש.
+            <h2 className="text-lg font-bold text-gray-900">
+              {errorKind?.code !== 'CANCELLED'
+                ? 'הקישור לא זמין'
+                : errorKind.formType === 'ASSEMBLY_NOTICE'
+                  ? 'ההודעה בוטלה'
+                  : errorKind.formType
+                    ? 'הטופס בוטל'
+                    : 'המסמך בוטל'}
+            </h2>
+            <p className="text-sm text-gray-500">{error ?? 'הקישור לא זמין כרגע.'}</p>
+            <p className="text-xs text-gray-500 mt-2">
+              שאלה? דברו איתנו:{' '}
+              <a href="tel:+972548018613" dir="ltr" className="font-semibold text-teal-700">054-8018613</a>
             </p>
           </div>
         )}
