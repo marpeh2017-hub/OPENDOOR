@@ -1248,6 +1248,50 @@ model PublicFormSignature {
   @@map("public_form_signatures")
 }
 
+/// A request for the personal area from someone whose phone and email are on
+/// no resident file, so the sign-in cannot find them. They confirm their
+/// contact with a code; staff approve by putting them on an apartment (an
+/// existing resident file or a new one), after which they sign in as anyone
+/// else does. A building that is not one of ours also becomes a lead.
+model PortalRegistration {
+  id                String    @id @default(cuid())
+  tenantId          String
+  fullName          String
+  /// 05XXXXXXXX, the form the sign-in matches.
+  phone             String
+  email             String?
+  /// Encrypted at the application layer. Optional.
+  idNumber          String?
+  address           String
+  city              String
+  apartmentNumber   String
+  /// OWNER | FAMILY | TENANT: how they relate to the apartment.
+  relation          String
+  /// SMS | EMAIL: what the code proved.
+  verifiedVia       String
+  /// PENDING | APPROVED | REJECTED
+  status            String    @default("PENDING")
+  /// The building the address matched when the request arrived.
+  matchedBuildingId String?
+  /// The lead made for a building that is not one of ours.
+  leadId            String?
+  /// The resident file the approval put them on.
+  residentId        String?
+  decidedById       String?
+  decidedAt         DateTime?
+  decisionNote      String?
+  submissionId      String
+  ip                String?
+  userAgent         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([tenantId, submissionId])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, phone])
+  @@map("portal_registrations")
+}
+
 model SignatureEvidence {
   id           String   @id @default(cuid())
   packageId    String   @unique
