@@ -6,7 +6,10 @@
 #
 #   flyctl deploy --config services/api-gateway/fly.toml --dockerfile services/api-gateway/Dockerfile .
 #
-# run from the repository root, with the trailing dot.
+# run from the root of a FRESH CLONE of the pushed branch, with the trailing
+# dot. Never from a working folder: the image copies packages/db whole, and an
+# untracked draft migration there would be applied to the live database on
+# boot (see docs/DEPLOYMENT.md).
 
 app = "odg-api"
 primary_region = "cdg"   # Paris — closest Fly region to Israel with full service
