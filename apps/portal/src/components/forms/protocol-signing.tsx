@@ -4,9 +4,16 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CheckCircle2, Phone, RefreshCw } from 'lucide-react'
-import { PROTOCOL_CLAUSE_COUNT } from '@urban-renewal/api-contracts'
+import {
+  AGREEMENT_CLAUSE_COUNT,
+  PROTOCOL_CLAUSE_COUNT,
+  protocolPlainText,
+  type OrganizingAgreement,
+  type RepresentationProtocol,
+} from '@urban-renewal/api-contracts'
 import { formatFormDate, type SigningFormView } from '@/lib/forms'
 import { ProtocolView } from './protocol-view'
+import { AgreementView } from './agreement-view'
 import { SignaturePad } from './signature-pad'
 import { isValidIsraeliId } from '@/lib/utils'
 
@@ -29,6 +36,10 @@ type Call = (path: string, method?: string, body?: unknown) => Promise<any>
  */
 export function ProtocolSigning({ initial, call }: { initial: SigningFormView; call: Call }) {
   const form = initial
+  // The organizing agreement is signed the same way (2026-10-11): the same two
+  // steps, its own document and words.
+  const isAgreement = form.type === 'ORGANIZING_AGREEMENT'
+  const documentName = isAgreement ? 'ההסכם' : 'הפרוטוקול'
   const [step, setStep] = useState<Step>(initial.signed ? 'done' : 'read')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,16 +109,27 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
             <div className="space-y-1">
               <h1 className="text-xl font-bold text-gray-900">שלום {form.signer.fullName},</h1>
               <p className="text-sm text-gray-600">
-                זה הנוסח שנשלח אליכם לחתימה, דירה {form.signer.apartmentNumber}. הנוסח המלא, {PROTOCOL_CLAUSE_COUNT} סעיפים.
+                זה הנוסח שנשלח אליכם לחתימה, דירה {form.signer.apartmentNumber}. הנוסח המלא,{' '}
+                {isAgreement ? AGREEMENT_CLAUSE_COUNT : PROTOCOL_CLAUSE_COUNT} סעיפים.
               </p>
             </div>
-            <ProtocolView
-              text={form.text}
-              meeting={form.meeting}
-              members={form.representatives}
-              ownersTable={false}
-              titleLevel={2}
-            />
+            {isAgreement ? (
+              <AgreementView
+                text={form.text as OrganizingAgreement}
+                fields={form.fields}
+                representatives={form.representatives}
+                ownersTable={false}
+                titleLevel={2}
+              />
+            ) : (
+              <ProtocolView
+                text={form.text as RepresentationProtocol}
+                meeting={form.meeting}
+                members={form.representatives}
+                ownersTable={false}
+                titleLevel={2}
+              />
+            )}
             <div className="rounded-xl bg-white p-4 ring-1 ring-border">
               <p className="text-sm text-gray-700">
                 סוף הנוסח. בשלב הבא תמלאו את השורה שלכם בטבלת החתימות ותחתמו.
@@ -226,7 +248,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
                 onChange={(e) => setConfirmed(e.target.checked)}
                 className="mt-0.5 h-5 w-5 shrink-0 accent-teal-600"
               />
-              קראתי את נוסח הפרוטוקול במלואו
+              קראתי את נוסח {documentName} במלואו
             </label>
 
             <button
@@ -248,15 +270,15 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
             </span>
             <div>
               <h1 id="done-heading" className="text-xl font-bold text-gray-900">
-                {initial.signed ? 'כבר חתמתם על הפרוטוקול' : 'החתימה שלכם נקלטה'}
+                {initial.signed ? `כבר חתמתם על ${documentName}` : 'החתימה שלכם נקלטה'}
               </h1>
               <p className="mt-1 text-sm text-gray-600">
-                {initial.signed ? 'השורה שלכם כבר בטבלת החתימות.' : 'תודה. השורה שלכם נוספה לטבלת החתימות של הפרוטוקול.'}
+                {initial.signed ? 'השורה שלכם כבר בטבלת החתימות.' : `תודה. השורה שלכם נוספה לטבלת החתימות של ${documentName}.`}
               </p>
             </div>
             <dl className="divide-y divide-border rounded-lg bg-gray-50 text-start text-sm">
               {[
-                ['מסמך', form.text.title],
+                ['מסמך', protocolPlainText(form.text.title)],
                 ['מתחם', form.meeting.compoundName],
                 ['דירה', form.signer.apartmentNumber],
                 ['נחתם', signedAt ? new Date(signedAt).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }) : ''],

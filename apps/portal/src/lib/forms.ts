@@ -1,4 +1,9 @@
-import type { RepresentationProtocol } from '@urban-renewal/api-contracts'
+import type { AssemblyNotice, OrganizingAgreement, RepresentationProtocol } from '@urban-renewal/api-contracts'
+
+/** The three forms: the notice is read, the protocol and the agreement are signed. */
+export type FormType = 'ASSEMBLY_NOTICE' | 'REPRESENTATION_PROTOCOL' | 'ORGANIZING_AGREEMENT'
+/** A form's wording snapshot; which one, the form's type says. */
+export type FormText = RepresentationProtocol | OrganizingAgreement | AssemblyNotice
 
 /**
  * The digital forms as the gateway serves them to residents: the signing
@@ -17,10 +22,14 @@ export interface FormMeeting {
 
 /** What the signing link shows for a form. */
 export interface SigningFormView {
-  type: string
+  type: FormType
   version: string
-  text: RepresentationProtocol
+  /** False for the notice: there is nothing to sign, only to read. */
+  signable: boolean
+  text: FormText
   meeting: FormMeeting
+  /** The agreement's street, city, block and parcel; the notice's address line and hour. */
+  fields: Record<string, string> | null
   representatives: { fullName: string; apartmentNumber: string }[]
   signer: {
     fullName: string
@@ -37,10 +46,12 @@ export interface SigningFormView {
 
 export interface PortalFormItem {
   packageId: string
+  formType: FormType
   title: string
   compoundName: string
   apartmentNumber: string
-  status: 'PENDING' | 'SIGNED' | 'CLOSED'
+  /** NOTICE: a notice, open to read (nothing to sign). */
+  status: 'PENDING' | 'SIGNED' | 'CLOSED' | 'NOTICE'
   signedAt: string | null
   sentAt: string | null
   /** `/sign/<token>`, while the form waits for this resident's signature. */
@@ -61,11 +72,17 @@ export interface CopyRow {
 
 interface CopyBase {
   packageId: string
+  formType: FormType | null
   formVersion: string
   documentHash: string | null
   status: string
-  text: RepresentationProtocol
+  text: FormText
   meeting: FormMeeting
+  fields: Record<string, string> | null
+  /** The agreement's determining date: the day the first owner signed. */
+  determiningDate: string | null
+  /** The agreement's company signature. */
+  organizer: { signatureImage: string; signedDate: string } | null
   rows: CopyRow[]
   preparerIdNumber: string | null
 }
@@ -90,7 +107,19 @@ export interface CombinedCopy extends CopyBase {
   totals: { owners: number; signed: number }
 }
 
-export type PortalFormCopy = OwnCopy | CombinedCopy
+/** A notice: the same for every owner, its text with the assembly's details. */
+export interface NoticeCopy {
+  kind: 'NOTICE'
+  packageId: string
+  formType: FormType
+  formVersion: string
+  status: string
+  text: AssemblyNotice
+  meeting: FormMeeting
+  fields: Record<string, string> | null
+}
+
+export type PortalFormCopy = OwnCopy | CombinedCopy | NoticeCopy
 
 /** 2026-10-20 → 20.10.2026, the way the protocol's date line is written. */
 export function formatFormDate(iso: string | null | undefined): string {

@@ -28,6 +28,7 @@
 import Image from 'next/image'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ProtocolSigning } from '@/components/forms/protocol-signing'
+import { NoticeReading } from '@/components/forms/notice-reading'
 import { useParams } from 'next/navigation'
 import {
   CheckCircle2, XCircle, RefreshCw, Phone, Shield,
@@ -225,9 +226,10 @@ export default function SignPage() {
 
   /* ── Render ─────────────────────────────────────────────────── */
 
-  // A form (the representation protocol) is signed with the signer's own row
-  // and a drawn signature, in its own three steps. Documents keep the flow
-  // below.
+  // A form (the representation protocol, the organizing agreement) is signed
+  // with the signer's own row and a drawn signature, in its own steps; the
+  // assembly notice is only read. Documents keep the flow below.
+  if (sessionInfo?.form?.type === 'ASSEMBLY_NOTICE') return <NoticeReading initial={sessionInfo.form} />
   if (sessionInfo?.form) return <ProtocolSigning initial={sessionInfo.form} call={call} />
 
   return (
