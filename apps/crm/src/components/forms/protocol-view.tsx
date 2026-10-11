@@ -37,7 +37,8 @@ export interface ProtocolOwnerRow {
  * Used three ways: blank (the template, `meeting` omitted), as a preview
  * while staff fill in a draft (meeting and member names), and as the
  * combined document with every signed row. Each table is blank where it has
- * no rows, as on paper.
+ * no rows, as on paper. A page with its own h1 above the document passes
+ * `titleLevel={2}`.
  */
 export function ProtocolView({
   text,
@@ -46,6 +47,7 @@ export function ProtocolView({
   rows,
   preparedBy,
   verification,
+  titleLevel = 1,
 }: {
   text: RepresentationProtocol
   meeting?: FormMeeting
@@ -54,7 +56,9 @@ export function ProtocolView({
   preparedBy: string
   /** The system's note on how the signatures were made. Not part of the wording. */
   verification?: React.ReactNode
+  titleLevel?: 1 | 2
 }) {
+  const Title = titleLevel === 1 ? 'h1' : 'h2'
   const fieldValue = (key: keyof FormMeeting) => {
     if (!meeting) return null
     return key === 'meetingDate' ? formatFormDate(meeting.meetingDate) : meeting[key]
@@ -72,9 +76,9 @@ export function ProtocolView({
         <Image src="/brand/opendoor-logo.svg" alt="OpenDoor התחדשות עירונית" width={156} height={58} unoptimized className="h-[58px] w-auto" />
       </div>
 
-      <h1 id="protocol-title" className="text-center text-[1.3em] font-bold leading-snug underline underline-offset-4">
+      <Title id="protocol-title" className="text-center text-[1.3em] font-bold leading-snug underline underline-offset-4">
         {text.title}
-      </h1>
+      </Title>
 
       <dl className="mt-8 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2.5 print:mt-6 print:gap-y-1.5">
         {text.meeting.fields.map((field) => {

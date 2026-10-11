@@ -17,3 +17,12 @@ export function FormStatusBadge({ status }: { status: FormStatus }) {
   const { label, className } = LABELS[status] ?? LABELS.DRAFT
   return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${className}`}>{label}</span>
 }
+
+/** A website protocol's neighbours' link: open for signing, or closed by staff. */
+export function WebsiteFormStatusBadge({ status }: { status: 'OPEN' | 'CLOSED' }) {
+  return status === 'OPEN' ? (
+    <span className="inline-flex rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-800">פתוח לחתימה</span>
+  ) : (
+    <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">החתימה נסגרה</span>
+  )
+}

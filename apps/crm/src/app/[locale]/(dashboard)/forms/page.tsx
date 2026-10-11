@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useForms, type FormListItem } from '@/hooks/use-forms'
 import { FormStatusBadge } from '@/components/forms/form-status'
+import { WebsiteFormsSection } from '@/components/forms/website-forms-section'
 
 /**
  * Forms: the templates the company can send, and the forms on their way to
  * the last signature. One template today, the representation-appointment
  * protocol, whose wording is locked: staff fill in the meeting, never the
- * text.
+ * text. Below them, the protocols owners started on the website for
+ * buildings that are not yet projects.
  */
 export default function FormsPage() {
   const { locale } = useParams<{ locale: string }>()
@@ -114,6 +116,8 @@ export default function FormsPage() {
           )}
         </div>
       </section>
+
+      <WebsiteFormsSection locale={locale} />
     </div>
   )
 }
