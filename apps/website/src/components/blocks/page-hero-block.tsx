@@ -148,7 +148,7 @@ function Documents({ visual, t }: { visual: DocumentsVisual; t: Localizer }) {
               key={page.id}
               className={`absolute ${start} ${top} ${tilt} flex h-[14rem] w-[60%] flex-col gap-2 rounded-xl border bg-white p-4 shadow-[0_18px_40px_-20px_rgba(20,49,47,0.45)] sm:h-[21rem] sm:gap-2.5 sm:p-5 ${front ? 'border-teal-200' : 'border-gray-200'}`}
             >
-              <span className="text-[0.7rem] text-gray-500">בס"ד</span>
+              <span className="text-[0.7rem] text-gray-500">{'בס"ד'}</span>
               <span className="mt-1 max-w-[85%] text-sm font-bold leading-snug text-gray-900 underline underline-offset-4">
                 {t(page.title)}
               </span>
