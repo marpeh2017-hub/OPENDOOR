@@ -12,8 +12,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  useComplexes, useCreateBuilding, useUpdateBuilding, type BuildingListItem,
+  useComplexes, useCreateBuilding, useCreateComplex, useUpdateBuilding, type BuildingListItem,
 } from '@/hooks/use-buildings'
+import { useProjects } from '@/hooks/use-projects'
 
 /**
  * Create / edit a building.
@@ -23,14 +24,21 @@ import {
  * separate, separately-audited endpoint, so it is offered as its own action in
  * the row menu rather than as a field here.
  *
+ * A new project has no complex, and a building cannot exist outside one, so
+ * the complex list ends with "מתחם חדש": the complex is created first, then
+ * the building inside it.
+ *
  * `address` is the street NAME; the house number belongs in `streetNumber`.
  */
 
 const NONE = '__none__'
+const NEW = '__new__'
 const CLASSES: Record<string, string> = { A: 'א', B: 'ב', C: 'ג' }
 
 interface FormState {
   complexId:        string
+  newComplexName:   string
+  newComplexProject: string
   address:          string
   streetNumber:     string
   city:             string
@@ -42,7 +50,8 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
-  complexId: NONE, address: '', streetNumber: '', city: '', zipCode: '',
+  complexId: NONE, newComplexName: '', newComplexProject: NONE,
+  address: '', streetNumber: '', city: '', zipCode: '',
   floors: '', totalApartments: '', constructionYear: '', buildingClass: NONE,
 }
 
@@ -68,15 +77,21 @@ export function BuildingFormDialog({
   const [form, setForm] = useState<FormState>(EMPTY)
 
   const { data: complexes, isLoading: complexesLoading } = useComplexes()
+  const { data: projects } = useProjects({ limit: 100 })
   const create = useCreateBuilding()
+  const createComplex = useCreateComplex()
   const update = useUpdateBuilding()
   const mutation = isEdit ? update : create
+  const pending = mutation.isPending || createComplex.isPending
+  const failure = createComplex.error ?? mutation.error
 
   useEffect(() => {
     if (!open) return
     setForm(building
       ? {
           complexId:        building.complexId,
+          newComplexName:   '',
+          newComplexProject: NONE,
           address:          building.address ?? '',
           streetNumber:     building.streetNumber ?? '',
           city:             building.city ?? '',
@@ -88,15 +103,20 @@ export function BuildingFormDialog({
         }
       : EMPTY)
     create.reset()
+    createComplex.reset()
     update.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, building?.id])
 
-  const valid = form.address.trim().length > 0 && (isEdit || form.complexId !== NONE)
+  const newComplex = form.complexId === NEW
+  const complexChosen = newComplex
+    ? form.newComplexName.trim().length > 0 && form.newComplexProject !== NONE
+    : form.complexId !== NONE
+  const valid = form.address.trim().length > 0 && (isEdit || complexChosen)
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!valid) return
+    if (!valid || pending) return
 
     const shared = {
       address:          form.address.trim(),
@@ -111,9 +131,24 @@ export function BuildingFormDialog({
 
     if (isEdit && building) {
       update.mutate({ id: building.id, ...shared }, { onSuccess: () => onOpenChange(false) })
-    } else {
-      create.mutate({ complexId: form.complexId, ...shared }, { onSuccess: () => onOpenChange(false) })
+      return
     }
+
+    let complexId = form.complexId
+    if (newComplex) {
+      try {
+        const made = await createComplex.mutateAsync({
+          projectId: form.newComplexProject,
+          name: form.newComplexName.trim(),
+        })
+        complexId = made.id
+        // A retry after a failed building must not make a second complex.
+        setForm(f => ({ ...f, complexId: made.id, newComplexName: '', newComplexProject: NONE }))
+      } catch {
+        return
+      }
+    }
+    create.mutate({ complexId, ...shared }, { onSuccess: () => onOpenChange(false) })
   }
 
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
@@ -121,7 +156,7 @@ export function BuildingFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(n) => { if (!mutation.isPending) onOpenChange(n) }}>
+    <Dialog open={open} onOpenChange={(n) => { if (!pending) onOpenChange(n) }}>
       <DialogContent className="sm:max-w-lg" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-right">{isEdit ? 'עריכת מבנה' : 'מבנה חדש'}</DialogTitle>
@@ -145,13 +180,40 @@ export function BuildingFormDialog({
                       {c.project.name} · {c.name}
                     </SelectItem>
                   ))}
+                  <SelectItem value={NEW}>מתחם חדש…</SelectItem>
                 </SelectContent>
               </Select>
-              {!complexesLoading && (complexes ?? []).length === 0 && (
+              {!complexesLoading && (complexes ?? []).length === 0 && !newComplex && (
                 <p className="text-xs text-muted-foreground">
-                  אין מתחמים. מבנה נוצר תמיד בתוך מתחם של פרויקט.
+                  אין עדיין מתחמים. בחרו ״מתחם חדש״ כדי ליצור אחד.
                 </p>
               )}
+            </div>
+          )}
+
+          {!isEdit && newComplex && (
+            <div className="space-y-3 rounded-md border border-border p-3">
+              <div className="space-y-1.5">
+                <Label>פרויקט *</Label>
+                <Select value={form.newComplexProject} onValueChange={(v) => set('newComplexProject', v)} dir="rtl">
+                  <SelectTrigger><SelectValue placeholder="בחרו פרויקט" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE} disabled>בחרו פרויקט</SelectItem>
+                    {(projects?.data ?? []).map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="b-complex-name">שם המתחם *</Label>
+                <Input id="b-complex-name" value={form.newComplexName} maxLength={120}
+                  placeholder="למשל: הרצל 45 ו־47"
+                  onChange={(e) => set('newComplexName', e.target.value)} />
+                <p className="text-xs text-muted-foreground">
+                  השם מופיע גם בהודעות שנשלחות לבעלי הדירות, למשל בהזמנה לכינוס.
+                </p>
+              </div>
             </div>
           )}
 
@@ -213,18 +275,18 @@ export function BuildingFormDialog({
             </Select>
           </div>
 
-          {mutation.isError && (
+          {failure && (
             <p className="text-sm text-red-600" role="alert">
-              {mutation.error instanceof Error ? mutation.error.message : 'שמירת המבנה נכשלה'}
+              {failure instanceof Error ? failure.message : 'שמירת המבנה נכשלה'}
             </p>
           )}
 
           <DialogFooter className="gap-2 sm:justify-start">
-            <Button type="submit" disabled={!valid || mutation.isPending}>
-              {mutation.isPending && <Loader2 size={15} className="animate-spin ml-1.5" />}
+            <Button type="submit" disabled={!valid || pending}>
+              {pending && <Loader2 size={15} className="animate-spin ml-1.5" />}
               {isEdit ? 'שמירה' : 'יצירת מבנה'}
             </Button>
-            <Button type="button" variant="outline" disabled={mutation.isPending}
+            <Button type="button" variant="outline" disabled={pending}
               onClick={() => onOpenChange(false)}>ביטול</Button>
           </DialogFooter>
         </form>

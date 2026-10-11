@@ -22,6 +22,23 @@ export class CoordinatesDto {
   lng!: number
 }
 
+/**
+ * A new complex in a project. Buildings live in complexes, and nothing else
+ * creates one, so without this a project made in the CRM could never get a
+ * building, an owner or a form.
+ */
+export class CreateComplexDto {
+  @ApiProperty() @IsString() @MaxLength(80)
+  projectId!: string
+
+  @ApiProperty({ description: 'How staff and the forms name it, e.g. the streets it covers' })
+  @IsString() @MaxLength(120)
+  name!: string
+
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200)
+  address?: string
+}
+
 export class CreateBuildingDto {
   @ApiProperty() @IsString() @MaxLength(80)
   complexId!: string

@@ -129,9 +129,32 @@ describe('Buildings (e2e)', () => {
     expect(res.status).toBe(404)
   })
 
+  it('POST /complexes into a project outside the tenant → 404', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/complexes')
+      .set(auth())
+      .send({ projectId: 'prj_not_in_this_tenant', name: 'מתחם בדיקה' })
+    expect(res.status).toBe(404)
+  })
+
+  it('POST /complexes without a name → 400', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/complexes')
+      .set(auth())
+      .send({ projectId: 'prj_001', name: '   ' })
+    expect(res.status).toBe(400)
+  })
+
   // ── RBAC ──────────────────────────────────────────────────────────────────
   // Write endpoints are MANAGER_ROLES-only. A token that is not a manager must
   // be rejected with 403 — an invalid token is rejected earlier with 401.
+
+  it('unauthenticated POST /complexes → 401', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/complexes')
+      .send({ projectId: 'x', name: 'y' })
+    expect(res.status).toBe(401)
+  })
 
   it('unauthenticated POST /buildings → 401 (never 200)', async () => {
     const res = await request(app.getHttpServer())
@@ -206,5 +229,39 @@ describe('Buildings (e2e)', () => {
     // Leave no test data behind: this row is hard-removed directly, which the
     // API deliberately will not do.
     await prisma.building.delete({ where: { id } })
+  })
+
+  it('creates a complex in a tenant project, lists it, and takes a building', async () => {
+    const projects = await request(app.getHttpServer()).get('/api/v1/projects').set(auth())
+    expect(projects.status).toBe(200)
+    const list = Array.isArray(projects.body) ? projects.body : projects.body.data
+    const projectId = list[0].id
+
+    const created = await request(app.getHttpServer())
+      .post('/api/v1/complexes')
+      .set(auth())
+      .send({ projectId, name: '  מתחם E2E  ', address: 'רחוב בדיקה 1' })
+    expect(created.status).toBe(201)
+    expect(created.body).toMatchObject({ projectId, name: 'מתחם E2E', address: 'רחוב בדיקה 1' })
+    const complexId = created.body.id
+
+    try {
+      const listed = await request(app.getHttpServer())
+        .get(`/api/v1/complexes?projectId=${projectId}`)
+        .set(auth())
+      expect(listed.body.map((c: { id: string }) => c.id)).toContain(complexId)
+
+      const audit = await prisma.auditLog.findFirst({ where: { entity: 'Complex', entityId: complexId } })
+      expect(audit?.action).toBe('CREATE')
+
+      const building = await request(app.getHttpServer())
+        .post('/api/v1/buildings')
+        .set(auth())
+        .send({ complexId, address: 'בדיקת E2E', streetNumber: '1' })
+      expect(building.status).toBe(201)
+    } finally {
+      // Complex → Building cascades; the audit rows stay, as they should.
+      await prisma.complex.delete({ where: { id: complexId } })
+    }
   })
 })

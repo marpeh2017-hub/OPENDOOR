@@ -5,7 +5,7 @@ import { TenantScopeService } from '../common/tenant/tenant-scope.service'
 import { OwnershipService } from '../common/ownership/ownership.service'
 import { DomainError } from '../common/errors/domain-error'
 import type {
-  CreateBuildingDto, UpdateBuildingDto, MoveBuildingDto, SetEntityStatusDto,
+  CreateComplexDto, CreateBuildingDto, UpdateBuildingDto, MoveBuildingDto, SetEntityStatusDto,
   CreateApartmentDto, UpdateApartmentDto, SetApartmentOwnersDto,
   BulkBuildingStatusDto, BulkMoveBuildingsDto,
 } from './dto/building.dto'
@@ -59,6 +59,27 @@ export class BuildingsService {
         _count: { select: { buildings: true } },
       },
       orderBy: { name: 'asc' },
+    })
+  }
+
+  /** Create a complex in one of the tenant's projects. */
+  async createComplex(dto: CreateComplexDto, actor: AuditActor) {
+    const name = dto.name.trim()
+    if (!name) throw DomainError.validation('COMPLEX_NAME_REQUIRED', 'צריך שם למתחם')
+    // Verify the project belongs to this tenant BEFORE writing.
+    const project = await this.scope.assertProject(dto.projectId, actor.tenantId)
+
+    return this.prisma.$transaction(async (tx) => {
+      const complex = await tx.complex.create({
+        data: { projectId: project.id, name, address: dto.address?.trim() || null },
+        select: { id: true, name: true, address: true, status: true, projectId: true },
+      })
+      await this.audit.record(actor, {
+        action: 'CREATE', entity: 'Complex', entityId: complex.id,
+        changes: { after: { name: complex.name, address: complex.address } },
+        metadata: { projectId: project.id },
+      }, tx)
+      return complex
     })
   }
 

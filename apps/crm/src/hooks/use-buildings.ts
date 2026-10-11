@@ -128,6 +128,20 @@ export function useComplexes(projectId?: string) {
   })
 }
 
+/**
+ * A new complex in a project. A building can only be created inside a
+ * complex, and nothing else makes one, so this is the first step for any
+ * project set up in the CRM.
+ */
+export function useCreateComplex() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (dto: { projectId: string; name: string; address?: string }) =>
+      api.post<Pick<ComplexListItem, 'id' | 'name' | 'address' | 'status' | 'projectId'>>('/complexes', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['complexes'] }),
+  })
+}
+
 export interface CreateBuildingDto {
   complexId:         string
   address:           string
