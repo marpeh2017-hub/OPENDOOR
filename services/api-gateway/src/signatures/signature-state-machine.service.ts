@@ -20,6 +20,8 @@ export type SignatureEventType =
   | 'EXPIRED' | 'CANCELLED' | 'COMPLETED' | 'RESENT'
   /** Staff copied a form's personal link, or opened WhatsApp with it. */
   | 'LINK_SHARED'
+  /** The company signed the organizing agreement's "המארגן" line. */
+  | 'ORGANIZER_SIGNED'
 
 const VALID_TRANSITIONS: Record<PackageStatus, PackageStatus[]> = {
   DRAFT:            ['INTERNAL_REVIEW', 'CANCELLED'],

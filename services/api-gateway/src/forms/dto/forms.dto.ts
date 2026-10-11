@@ -5,8 +5,8 @@ import {
 } from 'class-validator'
 
 export class CreateFormDto {
-  @ApiProperty({ example: 'representation-protocol' })
-  @IsString() @IsIn(['representation-protocol'])
+  @ApiProperty({ example: 'representation-protocol', enum: ['representation-protocol', 'organizing-agreement', 'assembly-notice'] })
+  @IsString() @IsIn(['representation-protocol', 'organizing-agreement', 'assembly-notice'])
   templateId!: string
 
   @ApiProperty() @IsString() @MaxLength(40)
@@ -55,6 +55,16 @@ export class UpdateFormDto {
   @ApiPropertyOptional({ type: [FormRepresentativeDto] })
   @IsOptional() @IsArray() @ArrayMaxSize(15) @ValidateNested({ each: true }) @Type(() => FormRepresentativeDto)
   representatives?: FormRepresentativeDto[]
+
+  @ApiPropertyOptional({ description: "The form's own gaps: the agreement's street, city, block and parcel; the notice's address line and hour" })
+  @IsOptional() @IsObject()
+  fields?: Record<string, unknown>
+}
+
+export class OrganizerSignatureDto {
+  @ApiProperty({ description: 'The drawn signature, as a PNG data URL' })
+  @IsString() @MaxLength(95_000)
+  signatureImage!: string
 }
 
 export class ShareLinkDto {

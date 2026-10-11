@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common'
 import {
+  cleanFields,
   cleanMeeting,
   emptyMeeting,
   formHash,
@@ -8,6 +9,7 @@ import {
   israelToday,
   maskIdNumber,
   missingForSending,
+  plainText,
   validateSignerInput,
   validateSnapshot,
   type FormData,
@@ -177,5 +179,54 @@ describe('small helpers', () => {
   it('maskIdNumber keeps the last four digits', () => {
     expect(maskIdNumber('123456782')).toBe('•••••6782')
     expect(maskIdNumber(null)).toBeNull()
+  })
+})
+
+describe('the agreement and the notice', () => {
+  // The real wordings, as the CRM sends them.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { ORGANIZING_AGREEMENT } = require('../../../../packages/api-contracts/src/organizing-agreement')
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { ASSEMBLY_NOTICE } = require('../../../../packages/api-contracts/src/assembly-notice')
+
+  it('accepts each wording under its own template only', () => {
+    expect(() => validateSnapshot(ORGANIZING_AGREEMENT, 'organizing-agreement')).not.toThrow()
+    expect(() => validateSnapshot(ASSEMBLY_NOTICE, 'assembly-notice')).not.toThrow()
+    expect(() => validateSnapshot(ORGANIZING_AGREEMENT, 'assembly-notice')).toThrow(BadRequestException)
+    expect(() => validateSnapshot({ ...ORGANIZING_AGREEMENT, clauses: [] }, 'organizing-agreement')).toThrow(BadRequestException)
+    expect(() => validateSnapshot({ ...ASSEMBLY_NOTICE, agenda: [{ lead: 1 }] }, 'assembly-notice')).toThrow(BadRequestException)
+  })
+
+  it('keeps only a type’s own fields, bounded, and checks the notice’s hour', () => {
+    expect(cleanFields('ORGANIZING_AGREEMENT', { street: '  הרצל 5 ', gush: '30000', extra: 'x' })).toEqual({
+      street: 'הרצל 5',
+      city: '',
+      gush: '30000',
+      helka: '',
+    })
+    expect(cleanFields('ASSEMBLY_NOTICE', { meetingTime: '19:30' }, { compound: 'מתחם א' })).toEqual({
+      compound: 'מתחם א',
+      meetingTime: '19:30',
+    })
+    expect(() => cleanFields('ASSEMBLY_NOTICE', { meetingTime: '7pm' })).toThrow(BadRequestException)
+  })
+
+  it('names what each still needs before sending', () => {
+    const agreement = form({ text: ORGANIZING_AGREEMENT, fields: { street: 'הרצל 5', city: '', gush: '', helka: '1' }, representatives: [] })
+    expect(missingForSending(agreement, 'ORGANIZING_AGREEMENT')).toEqual(['עיר', 'גוש', 'הנציגים'])
+    const notice = form({ text: ASSEMBLY_NOTICE, fields: { compound: 'מתחם א', meetingTime: '' }, representatives: [] })
+    expect(missingForSending(notice, 'ASSEMBLY_NOTICE')).toEqual(['שעת הכינוס'])
+  })
+
+  it('hashes a protocol as before, and an agreement with its fields', () => {
+    const protocol = form()
+    expect(formHash(protocol)).toBe(formHash({ ...protocol, fields: undefined }))
+    const a = form({ fields: { street: 'הרצל 5' } })
+    const b = form({ fields: { street: 'הרצל 7' } })
+    expect(formHash(a)).not.toBe(formHash(b))
+  })
+
+  it('reads a title without its markup', () => {
+    expect(plainText(ORGANIZING_AGREEMENT.title)).toBe('הסכם לארגון וליווי עסקת פינוי בינוי')
   })
 })

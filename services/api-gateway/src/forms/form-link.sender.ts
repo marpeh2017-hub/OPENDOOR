@@ -21,6 +21,19 @@ export interface LinkTarget {
   email: string | null
 }
 
+/**
+ * What a message says about the form behind the link. The protocol's texts
+ * are the ones owners have had since 2026-10-10; the agreement asks for a
+ * signature the same way; the notice invites, with the date and the hour.
+ */
+export interface LinkCopy {
+  compoundName: string
+  /** The stored form type; absent means the protocol. */
+  formType?: string | null
+  /** The notice's assembly, as it prints: dd.mm.yyyy and HH:MM. */
+  when?: { date: string; time: string; place: string }
+}
+
 /** The signing page for a token, on the portal. */
 export function signingUrl(token: string): string {
   const base = (process.env.PORTAL_URL ?? 'http://localhost:3002').replace(/\/+$/, '')
@@ -50,7 +63,7 @@ export class FormLinkSender {
 
   async send(
     target: LinkTarget,
-    link: { url: string; compoundName: string; reminder: boolean },
+    link: LinkCopy & { url: string; reminder: boolean },
   ): Promise<DeliveryChannel> {
     let attempted = false
 
@@ -87,8 +100,8 @@ export class FormLinkSender {
    * send. Null address when the owner has no mobile (the text can still be
    * copied).
    */
-  whatsApp(target: LinkTarget, link: { url: string; compoundName: string }): { text: string; url: string | null } {
-    const text = `שלום ${target.fullName}, פרוטוקול מינוי הנציגות של ${link.compoundName} ממתין לחתימתכם. לקריאה ולחתימה: ${link.url}`
+  whatsApp(target: LinkTarget, link: LinkCopy & { url: string }): { text: string; url: string | null } {
+    const text = `שלום ${target.fullName}, ${invitation(link, false)} ${action(link)}: ${link.url}`
     const phone = normaliseIsraeliPhone(target.phone)
     const url = phone.e164 && phone.isMobile
       ? `https://wa.me/${phone.e164.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`
@@ -97,25 +110,63 @@ export class FormLinkSender {
   }
 }
 
-function smsText(link: { url: string; compoundName: string; reminder: boolean }): string {
-  return link.reminder
-    ? `OpenDoor: תזכורת: פרוטוקול מינוי הנציגות של ${link.compoundName} עדיין ממתין לחתימתכם: ${link.url}`
-    : `OpenDoor: פרוטוקול מינוי הנציגות של ${link.compoundName} ממתין לחתימתכם. לקריאה ולחתימה: ${link.url}`
+/** One sentence on what is waiting: the protocol's, the agreement's, or the notice's invitation. */
+function invitation(link: LinkCopy, reminder: boolean): string {
+  if (link.formType === 'ASSEMBLY_NOTICE') {
+    const when = link.when ? ` ב־${link.when.date} בשעה ${link.when.time}` : ''
+    return reminder
+      ? `תזכורת: כינוס בעלי הדירות של ${link.compoundName}${when}.`
+      : `הוזמנתם לכינוס בעלי הדירות של ${link.compoundName}${when}.`
+  }
+  const what = link.formType === 'ORGANIZING_AGREEMENT' ? 'ההסכם לארגון וליווי' : 'פרוטוקול מינוי הנציגות'
+  return reminder
+    ? `תזכורת: ${what} של ${link.compoundName} עדיין ממתין לחתימתכם.`
+    : `${what} של ${link.compoundName} ממתין לחתימתכם.`
 }
 
-function emailSubject(link: { compoundName: string; reminder: boolean }): string {
-  return `${link.reminder ? 'תזכורת: ' : ''}פרוטוקול מינוי נציגות לחתימה: ${link.compoundName}`
+function action(link: LinkCopy): string {
+  return link.formType === 'ASSEMBLY_NOTICE' ? 'ההודעה המלאה וסדר היום' : 'לקריאה ולחתימה'
 }
 
-function emailLines(target: LinkTarget, link: { url: string; compoundName: string; reminder: boolean }): string[] {
+function smsText(link: LinkCopy & { url: string; reminder: boolean }): string {
+  if (!link.formType || link.formType === 'REPRESENTATION_PROTOCOL') {
+    return link.reminder
+      ? `OpenDoor: תזכורת: פרוטוקול מינוי הנציגות של ${link.compoundName} עדיין ממתין לחתימתכם: ${link.url}`
+      : `OpenDoor: פרוטוקול מינוי הנציגות של ${link.compoundName} ממתין לחתימתכם. לקריאה ולחתימה: ${link.url}`
+  }
+  return `OpenDoor: ${invitation(link, link.reminder)} ${action(link)}: ${link.url}`
+}
+
+function emailSubject(link: LinkCopy & { reminder: boolean }): string {
+  const what =
+    link.formType === 'ASSEMBLY_NOTICE'
+      ? 'הודעה על כינוס בעלי דירות'
+      : link.formType === 'ORGANIZING_AGREEMENT'
+        ? 'הסכם לארגון וליווי לחתימה'
+        : 'פרוטוקול מינוי נציגות לחתימה'
+  return `${link.reminder ? 'תזכורת: ' : ''}${what}: ${link.compoundName}`
+}
+
+function emailLines(target: LinkTarget, link: LinkCopy & { url: string; reminder: boolean }): string[] {
+  let opening: string
+  if (link.formType === 'ASSEMBLY_NOTICE') {
+    opening = invitation(link, link.reminder)
+  } else if (link.formType === 'ORGANIZING_AGREEMENT') {
+    opening = link.reminder
+      ? `זו תזכורת: ההסכם לארגון וליווי עסקת פינוי בינוי של ${link.compoundName} עדיין ממתין לחתימתכם.`
+      : `נשלח אליכם לחתימה ההסכם לארגון וליווי עסקת פינוי בינוי של ${link.compoundName}.`
+  } else {
+    opening = link.reminder
+      ? `זו תזכורת: פרוטוקול מינוי נציגות בעלי הדירות של ${link.compoundName} עדיין ממתין לחתימתכם.`
+      : `נשלח אליכם לחתימה פרוטוקול מינוי נציגות בעלי הדירות של ${link.compoundName}.`
+  }
   return [
     `שלום ${target.fullName},`,
     '',
-    link.reminder
-      ? `זו תזכורת: פרוטוקול מינוי נציגות בעלי הדירות של ${link.compoundName} עדיין ממתין לחתימתכם.`
-      : `נשלח אליכם לחתימה פרוטוקול מינוי נציגות בעלי הדירות של ${link.compoundName}.`,
+    opening,
+    ...(link.formType === 'ASSEMBLY_NOTICE' && link.when?.place ? [`מקום הכינוס: ${link.when.place}`] : []),
     '',
-    `לקריאה ולחתימה: ${link.url}`,
+    `${action(link)}: ${link.url}`,
     '',
     'הקישור אישי, ואין להעבירו לאחרים. בכל שאלה: 054-8018613.',
     '',

@@ -6,25 +6,34 @@ import { SigningSessionService } from '../signatures/signing-session.service'
 import { EvidencePackageService } from '../signatures/evidence-package.service'
 import { SigningEmailSender } from '../signatures/signing-email.sender'
 import { SmsService } from '../sms/sms.service'
-import { FormLinkSender, signingUrl, type DeliveryChannel } from './form-link.sender'
+import { FormLinkSender, signingUrl, type DeliveryChannel, type LinkCopy } from './form-link.sender'
 import {
   FORM_SESSION_TTL_DAYS,
   FORM_TEMPLATES,
+  FORM_TYPES,
   MAX_REPRESENTATIVES,
+  cleanFields,
   cleanMeeting,
   emptyMeeting,
   formHash,
   isIsoDate,
+  isSignable,
   isValidIsraeliId,
+  israelToday,
   missingForSending,
+  needsRepresentatives,
   parseFormData,
   parseSignerData,
+  plainText,
   validateSnapshot,
   type FormData,
   type FormMeeting,
   type FormRepresentative,
   type StoredSignerData,
 } from './form-data'
+
+/** A drawn signature: a PNG data URL, 90KB at most (as an owner's). */
+const MAX_SIGNATURE_LENGTH = 90 * 1024
 
 const OPEN_STATUSES = ['SENT', 'PARTIALLY_SIGNED']
 /** One reminder a day per owner, however often the button is pressed. */
@@ -47,8 +56,10 @@ interface RecordRow {
 }
 
 /**
- * Digital forms, run as signature packages (the representation-appointment
- * protocol first).
+ * Digital forms, run as signature packages: the representation-appointment
+ * protocol, the organizing agreement (signed the same way, plus its gaps and
+ * the company's signature on the organiser's line), and the assembly notice
+ * (sent the same way, opened and never signed).
  *
  * A form is made for one complex (מתחם): its signers are every active owner
  * of every apartment in the complex's buildings, one record per owner and
@@ -127,7 +138,13 @@ export class FormsService {
 
     const complex = await this.prisma.complex.findFirst({
       where: { id: dto.complexId, projectId: dto.projectId, project: { tenantId } },
-      select: { id: true, name: true, address: true, projectId: true, buildings: { select: { address: true, streetNumber: true } } },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        projectId: true,
+        buildings: { select: { address: true, streetNumber: true, city: true } },
+      },
     })
     if (!complex) throw new NotFoundException('המתחם לא נמצא בפרויקט')
 
@@ -147,13 +164,14 @@ export class FormsService {
       text,
       meeting,
       representatives: [],
+      ...(formType === FORM_TYPES.REPRESENTATION_PROTOCOL ? {} : { fields: this.startingFields(formType, complex, meeting) }),
     }
 
     const pkg = await this.prisma.signaturePackage.create({
       data: {
         tenantId,
         projectId: complex.projectId,
-        title: `${text.title} · ${complex.name}`,
+        title: `${plainText(text.title)} · ${complex.name}`,
         status: 'DRAFT',
         signingOrder: 'PARALLEL',
         verificationMethod: 'SMS_OTP',
@@ -180,10 +198,10 @@ export class FormsService {
     return this.get(pkg.id, tenantId)
   }
 
-  /** The meeting's details and the representation members. Drafts only. */
+  /** The meeting's details, the form's own gaps, and the representatives. Drafts only. */
   async update(
     id: string,
-    dto: { meeting?: Partial<FormMeeting>; representatives?: FormRepresentative[] },
+    dto: { meeting?: Partial<FormMeeting>; fields?: Record<string, unknown>; representatives?: FormRepresentative[] },
     tenantId: string,
   ) {
     const pkg = await this.loadPackage(id, tenantId)
@@ -191,7 +209,11 @@ export class FormsService {
     const form = this.formOf(pkg)
 
     form.meeting = cleanMeeting(dto.meeting, form.meeting)
+    if (pkg.formType !== FORM_TYPES.REPRESENTATION_PROTOCOL) {
+      form.fields = cleanFields(pkg.formType!, dto.fields, form.fields)
+    }
     if (dto.representatives) {
+      if (!needsRepresentatives(pkg.formType)) throw new BadRequestException('בהודעה אין נציגים')
       form.representatives = await this.checkRepresentatives(dto.representatives, pkg.id)
     }
     await this.prisma.signaturePackage.update({
@@ -208,7 +230,7 @@ export class FormsService {
     if (pkg.status !== 'DRAFT') throw new BadRequestException('הטופס כבר נשלח')
     const form = this.formOf(pkg)
 
-    const missing = missingForSending(form)
+    const missing = missingForSending(form, pkg.formType!)
     if (missing.length) {
       throw new BadRequestException({
         code: 'FORM_INCOMPLETE',
@@ -218,9 +240,11 @@ export class FormsService {
     }
 
     // The owners as they are now: anyone added since the draft was made
-    // signs too, anyone no longer an owner does not.
+    // signs (or is notified) too, anyone no longer an owner is not.
     await this.syncRecords(pkg.id, form.complexId, tenantId)
-    form.representatives = await this.checkRepresentatives(form.representatives, pkg.id)
+    if (needsRepresentatives(pkg.formType)) {
+      form.representatives = await this.checkRepresentatives(form.representatives, pkg.id)
+    }
 
     await this.prisma.signaturePackage.update({
       where: { id: pkg.id },
@@ -237,13 +261,10 @@ export class FormsService {
       include: { owner: { select: { fullName: true, phone: true, email: true } } },
     })
     const delivery: Record<DeliveryChannel, number> = { SMS: 0, EMAIL: 0, WHATSAPP: 0, UNSENT: 0, NONE: 0, FAILED: 0 }
+    const copy = this.copyOf(pkg, form)
     for (const record of records) {
       const { token } = await this.sessions.issueSession(record.id, FORM_SESSION_TTL_DAYS)
-      const channel = await this.links.send(record.owner, {
-        url: signingUrl(token),
-        compoundName: form.meeting.compoundName,
-        reminder: false,
-      })
+      const channel = await this.links.send(record.owner, { ...copy, url: signingUrl(token), reminder: false })
       delivery[channel]++
       await this.prisma.signatureRecord.update({
         where: { id: record.id },
@@ -261,7 +282,7 @@ export class FormsService {
   async list(tenantId: string, projectId?: string) {
     const packages = await this.prisma.signaturePackage.findMany({
       where: { tenantId, formType: { not: null }, ...(projectId ? { projectId } : {}), status: { not: 'CANCELLED' } },
-      include: { records: { select: { ownerId: true, apartmentId: true, status: true } } },
+      include: { records: { select: { ownerId: true, apartmentId: true, status: true, openedAt: true } } },
       orderBy: { createdAt: 'desc' },
     })
     const projects = await this.prisma.project.findMany({
@@ -370,6 +391,10 @@ export class FormsService {
       completedAt: pkg.completedAt,
       // What the system can send by itself; WhatsApp from the CRM always works.
       channels: { sms: this.sms.isConfigured, email: this.email.isConfigured },
+      fields: form.fields ?? null,
+      signable: isSignable(pkg.formType),
+      // The agreement's company signature: whether it is there, never the image.
+      organizer: form.organizer ? { signedDate: form.organizer.signedDate, signedAt: form.organizer.signedAt } : null,
     }
   }
 
@@ -385,7 +410,7 @@ export class FormsService {
     return this.buildDocument(pkg)
   }
 
-  async buildDocument(pkg: { id: string; formData: string | null; formVersion: string | null; documentHash: string | null; status: string; completedAt: Date | null; tenantId: string }) {
+  async buildDocument(pkg: { id: string; formType?: string | null; formData: string | null; formVersion: string | null; documentHash: string | null; status: string; completedAt: Date | null; tenantId: string }) {
     const form = this.formOf(pkg)
     const records = await this.recordsOf(pkg.id)
     const apartments = await this.apartmentsFor(records.map((r) => r.apartmentId))
@@ -422,15 +447,21 @@ export class FormsService {
     })
 
     const rows = records.filter((r) => r.status === 'SIGNED').map(rowOf).sort(byApartment)
+    // The agreement's determining date is the day the first owner signed.
+    const signedDates = rows.map((r) => r.signedDate).filter((d): d is string => Boolean(d)).sort()
 
     return {
       packageId: pkg.id,
+      formType: pkg.formType ?? null,
       formVersion: pkg.formVersion,
       documentHash: pkg.documentHash,
       status: pkg.status,
       completedAt: pkg.completedAt,
       text: form.text,
       meeting: form.meeting,
+      fields: form.fields ?? null,
+      determiningDate: signedDates[0] ?? null,
+      organizer: form.organizer ? { signatureImage: form.organizer.signatureImage, signedDate: form.organizer.signedDate } : null,
       representatives,
       rows,
       totals: { owners: records.length, signed: rows.length },
@@ -454,22 +485,26 @@ export class FormsService {
     })
     if (!record) throw new NotFoundException('השורה לא נמצאה')
     if (record.status === 'SIGNED') throw new BadRequestException('בעל הדירה כבר חתם')
-    const channel = await this.deliverReminder(pkg.id, record, form.meeting.compoundName)
+    const channel = await this.deliverReminder(pkg.id, record, this.copyOf(pkg, form))
     if (channel === 'UNSENT') throw new BadRequestException('אין ספק SMS ואין אימייל בתיק. שלחו את התזכורת בווטסאפ.')
     if (channel === 'NONE') throw new BadRequestException('אין בתיק טלפון נייד או אימייל. אפשר להחתים ידנית.')
     if (channel === 'FAILED') throw new BadRequestException('שליחת התזכורת נכשלה. נסו שוב מאוחר יותר.')
     return { sent: true, channel }
   }
 
-  /** "תזכורת לכל מי שלא חתם": each unsigned owner with a channel, once a day. */
+  /**
+   * "תזכורת לכל מי שלא חתם": each unsigned owner with a channel, once a day.
+   * For a notice, which nobody signs, everyone who has not opened it yet.
+   */
   async remindAll(id: string, tenantId: string) {
     const pkg = await this.loadPackage(id, tenantId)
     if (!OPEN_STATUSES.includes(pkg.status)) throw new BadRequestException('הטופס אינו פתוח לחתימה')
     const form = this.formOf(pkg)
     const records = await this.prisma.signatureRecord.findMany({
-      where: { packageId: pkg.id, status: { not: 'SIGNED' } },
+      where: { packageId: pkg.id, status: { not: 'SIGNED' }, ...(isSignable(pkg.formType) ? {} : { openedAt: null }) },
       include: { owner: { select: { fullName: true, phone: true, email: true } } },
     })
+    const copy = this.copyOf(pkg, form)
     const recent = await this.prisma.signatureEvent.findMany({
       where: { packageId: pkg.id, type: 'REMINDER_SENT', createdAt: { gt: new Date(Date.now() - REMINDER_GAP_MS) } },
       select: { recordId: true },
@@ -480,7 +515,7 @@ export class FormsService {
         result.skippedRecent++
         continue
       }
-      const channel = await this.deliverReminder(pkg.id, record, form.meeting.compoundName)
+      const channel = await this.deliverReminder(pkg.id, record, copy)
       if (channel === 'SMS' || channel === 'EMAIL') result.sent++
       else if (channel === 'UNSENT') result.whatsApp++
       else if (channel === 'NONE') result.noChannel++
@@ -492,12 +527,12 @@ export class FormsService {
   private async deliverReminder(
     packageId: string,
     record: { id: string; owner: { fullName: string; phone: string | null; email: string | null } },
-    compoundName: string,
+    copy: LinkCopy,
   ): Promise<DeliveryChannel> {
     // The live link if there is one, so the link already in the owner's SMS
     // keeps working; a new one only when it expired.
     const token = await this.sessions.currentToken(record.id, FORM_SESSION_TTL_DAYS)
-    const channel = await this.links.send(record.owner, { url: signingUrl(token), compoundName, reminder: true })
+    const channel = await this.links.send(record.owner, { ...copy, url: signingUrl(token), reminder: true })
     if (channel === 'SMS' || channel === 'EMAIL') {
       await this.prisma.signatureRecord.update({
         where: { id: record.id },
@@ -529,7 +564,7 @@ export class FormsService {
 
     const token = await this.sessions.currentToken(record.id, FORM_SESSION_TTL_DAYS)
     const url = signingUrl(token)
-    const whatsApp = this.links.whatsApp(record.owner, { url, compoundName: form.meeting.compoundName })
+    const whatsApp = this.links.whatsApp(record.owner, { ...this.copyOf(pkg, form), url })
     if (via === 'WHATSAPP' && !whatsApp.url) throw new BadRequestException('אין בתיק מספר נייד לשליחה בווטסאפ')
 
     if (via === 'WHATSAPP') {
@@ -563,6 +598,7 @@ export class FormsService {
     tenantId: string,
   ) {
     const pkg = await this.loadPackage(id, tenantId)
+    if (!isSignable(pkg.formType)) throw new BadRequestException('בהודעה אין מה לחתום')
     if (!OPEN_STATUSES.includes(pkg.status)) throw new BadRequestException('הטופס אינו פתוח לחתימה')
     const record = await this.prisma.signatureRecord.findFirst({ where: { id: recordId, packageId: pkg.id } })
     if (!record) throw new NotFoundException('השורה לא נמצאה')
@@ -609,6 +645,31 @@ export class FormsService {
       metadata: { form: { version: pkg.formVersion, channel: 'MANUAL' }, documentId: document.id },
     })
     await this.completeIfDone(pkg.id, pkg.status, tenantId)
+    return this.get(pkg.id, tenantId)
+  }
+
+  /* ─── The organiser's signature ───────────────────────────────── */
+
+  /**
+   * The agreement's "המארגן" line: the company signs once, after the form
+   * went out (its words are then fixed), by a staff member who manages
+   * forms drawing the signature in the CRM. Not part of the document hash,
+   * which covers what the owners sign; logged like a signature.
+   */
+  async signAsOrganizer(id: string, signatureImage: string, userId: string, tenantId: string) {
+    const pkg = await this.loadPackage(id, tenantId)
+    if (pkg.formType !== FORM_TYPES.ORGANIZING_AGREEMENT) throw new BadRequestException('חתימת המארגן שייכת להסכם הארגון והליווי')
+    if (!['SENT', 'PARTIALLY_SIGNED', 'COMPLETED'].includes(pkg.status)) {
+      throw new BadRequestException('המארגן חותם אחרי שההסכם נשלח לבעלי הדירות')
+    }
+    if (!signatureImage.startsWith('data:image/png;base64,') || signatureImage.length > MAX_SIGNATURE_LENGTH) {
+      throw new BadRequestException('החתימה אינה תקינה')
+    }
+    const form = this.formOf(pkg)
+    if (form.organizer) throw new BadRequestException('המארגן כבר חתם על ההסכם')
+    form.organizer = { signatureImage, signedDate: israelToday(), signedAt: new Date().toISOString(), signedById: userId }
+    await this.prisma.signaturePackage.update({ where: { id: pkg.id }, data: { formData: JSON.stringify(form) } })
+    await this.sm.logEvent(pkg.id, 'ORGANIZER_SIGNED', { actorType: 'USER', actorId: userId })
     return this.get(pkg.id, tenantId)
   }
 
@@ -772,6 +833,41 @@ export class FormsService {
   private buildingAddresses(buildings: { address: string; streetNumber: string | null }[]): string {
     return [...new Set(buildings.map((b) => [b.address, b.streetNumber].filter(Boolean).join(' ')))].join(', ')
   }
+
+  /**
+   * A new form's own gaps, from what the system knows: the agreement's street
+   * and city from the complex's buildings (when they agree), the notice's
+   * address line from the complex. Block and parcel are left for staff.
+   */
+  private startingFields(
+    formType: string,
+    complex: { name: string; buildings: { address: string; streetNumber: string | null; city: string | null }[] },
+    meeting: FormMeeting,
+  ): Record<string, string> {
+    if (formType === FORM_TYPES.ASSEMBLY_NOTICE) {
+      return { compound: [complex.name, meeting.address].filter(Boolean).join(', '), meetingTime: '' }
+    }
+    const cities = [...new Set(complex.buildings.map((b) => b.city?.trim()).filter(Boolean))]
+    return { street: this.buildingAddresses(complex.buildings), city: cities.length === 1 ? cities[0]! : '', gush: '', helka: '' }
+  }
+
+  /** What a link's message says about this form: its kind, and the notice's assembly. */
+  private copyOf(pkg: { formType: string | null }, form: FormData): LinkCopy {
+    const [y, m, d] = form.meeting.meetingDate.split('-')
+    return {
+      compoundName: form.meeting.compoundName,
+      formType: pkg.formType,
+      ...(pkg.formType === FORM_TYPES.ASSEMBLY_NOTICE
+        ? {
+            when: {
+              date: y && m && d ? `${d}.${m}.${y}` : '',
+              time: form.fields?.meetingTime ?? '',
+              place: form.meeting.meetingPlace,
+            },
+          }
+        : {}),
+    }
+  }
 }
 
 function key(r: { ownerId: string; apartmentId: string }): string {
@@ -787,7 +883,10 @@ function byApartment(a: { apartmentNumber: string }, b: { apartmentNumber: strin
  * the share of ownership signed (each apartment counting once, split by its
  * owners' shares), which is how a majority in pinui-binui is counted.
  */
-function progressOf(records: { ownerId: string; apartmentId: string; status: string }[], shares: Map<string, number>) {
+function progressOf(
+  records: { ownerId: string; apartmentId: string; status: string; openedAt?: Date | null }[],
+  shares: Map<string, number>,
+) {
   const apartments = new Map<string, { total: number; signed: number }>()
   let signedShare = 0
   for (const record of records) {
@@ -803,6 +902,8 @@ function progressOf(records: { ownerId: string; apartmentId: string; status: str
   return {
     owners: records.length,
     ownersSigned: records.filter((r) => r.status === 'SIGNED').length,
+    // A notice is read, not signed: how many opened their link.
+    ownersOpened: records.filter((r) => r.openedAt).length,
     apartments: apartmentCount,
     apartmentsSigned: [...apartments.values()].filter((a) => a.total > 0 && a.signed === a.total).length,
     sharePercent: apartmentCount ? Math.round((signedShare / apartmentCount) * 1000) / 10 : 0,

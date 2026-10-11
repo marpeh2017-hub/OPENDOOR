@@ -62,4 +62,21 @@ describe('FormLinkSender', () => {
     expect(message.url).toBe(`https://wa.me/972501234567?text=${encodeURIComponent(message.text)}`)
     expect(links.whatsApp({ fullName: 'ישראל', phone: null, email: null }, LINK).url).toBeNull()
   })
+
+  it('words the agreement’s and the notice’s messages for what they are', async () => {
+    const owner = { fullName: 'ישראל', phone: '050-1234567', email: null }
+    const { links, sms } = sender({ smsConfigured: true })
+    await links.send(owner, { ...LINK, formType: 'ORGANIZING_AGREEMENT' })
+    expect(sms.sendText).toHaveBeenLastCalledWith(owner.phone, expect.stringContaining('ההסכם לארגון וליווי של מתחם א ממתין לחתימתכם'))
+
+    const when = { date: '01.11.2026', time: '19:30', place: 'לובי הבניין' }
+    await links.send(owner, { ...LINK, formType: 'ASSEMBLY_NOTICE', when })
+    expect(sms.sendText).toHaveBeenLastCalledWith(
+      owner.phone,
+      expect.stringContaining('הוזמנתם לכינוס בעלי הדירות של מתחם א ב־01.11.2026 בשעה 19:30'),
+    )
+    await links.send(owner, { ...LINK, formType: 'ASSEMBLY_NOTICE', when, reminder: true })
+    expect(sms.sendText).toHaveBeenLastCalledWith(owner.phone, expect.stringContaining('תזכורת: כינוס בעלי הדירות'))
+    expect(links.whatsApp(owner, { ...LINK, formType: 'ASSEMBLY_NOTICE', when }).text).toContain('ההודעה המלאה וסדר היום')
+  })
 })

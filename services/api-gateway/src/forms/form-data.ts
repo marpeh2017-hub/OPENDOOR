@@ -22,12 +22,54 @@ import { normaliseIsraeliPhone } from '../messaging/phone'
 export const FORM_TYPES = {
   /** "פרוטוקול מינוי נציגות בעלי דירות לקידום פרויקט פינוי-בינוי". */
   REPRESENTATION_PROTOCOL: 'REPRESENTATION_PROTOCOL',
+  /** "הסכם לארגון וליווי עסקת פינוי בינוי": signed by each owner, like the protocol. */
+  ORGANIZING_AGREEMENT: 'ORGANIZING_AGREEMENT',
+  /** "הודעה על כינוס בעלי דירות": sent to each owner, and nothing to sign. */
+  ASSEMBLY_NOTICE: 'ASSEMBLY_NOTICE',
 } as const
 export type FormType = (typeof FORM_TYPES)[keyof typeof FORM_TYPES]
 
 /** The template id the CRM sends, mapped to the stored form type. */
 export const FORM_TEMPLATES: Record<string, FormType> = {
   'representation-protocol': FORM_TYPES.REPRESENTATION_PROTOCOL,
+  'organizing-agreement': FORM_TYPES.ORGANIZING_AGREEMENT,
+  'assembly-notice': FORM_TYPES.ASSEMBLY_NOTICE,
+}
+
+/** Whether owners sign it. The notice is only read. */
+export function isSignable(formType: string | null | undefined): boolean {
+  return formType !== FORM_TYPES.ASSEMBLY_NOTICE
+}
+
+/** Whether staff choose representatives from the owners: the protocol names them, the agreement is signed through them. */
+export function needsRepresentatives(formType: string | null | undefined): boolean {
+  return formType === FORM_TYPES.REPRESENTATION_PROTOCOL || formType === FORM_TYPES.ORGANIZING_AGREEMENT
+}
+
+/**
+ * The gaps each form fills in for its complex, besides the meeting details
+ * the protocol has always had: the agreement's street, city, block and
+ * parcel, and the notice's address line and hour (its date and place are
+ * the meeting's). Labels are the ones staff see and missing fields are
+ * named by.
+ */
+export const FORM_FIELDS: Record<FormType, readonly { key: string; label: string; max: number }[]> = {
+  REPRESENTATION_PROTOCOL: [],
+  ORGANIZING_AGREEMENT: [
+    { key: 'street', label: 'רחוב', max: 120 },
+    { key: 'city', label: 'עיר', max: 60 },
+    { key: 'gush', label: 'גוש', max: 20 },
+    { key: 'helka', label: 'חלקה', max: 40 },
+  ],
+  ASSEMBLY_NOTICE: [
+    { key: 'compound', label: 'מתחם / כתובת', max: 200 },
+    { key: 'meetingTime', label: 'שעת הכינוס', max: 5 },
+  ],
+}
+
+/** "**bold**" and "__underline__" taken out: a document title as plain words. */
+export function plainText(markup: string): string {
+  return markup.replace(/\*\*|__/g, '')
 }
 
 /** How long a form's personal link stays valid: forms take weeks, not days. */
@@ -62,6 +104,19 @@ export interface FormData {
   text: ProtocolSnapshot
   meeting: FormMeeting
   representatives: FormRepresentative[]
+  /** The form's own gaps (FORM_FIELDS); absent on a protocol. */
+  fields?: Record<string, string>
+  /** The agreement's "המארגן" line, signed by the company after sending. */
+  organizer?: OrganizerSignature
+}
+
+export interface OrganizerSignature {
+  /** The drawn signature, as a PNG data URL. */
+  signatureImage: string
+  /** yyyy-mm-dd, the date beside it on the signature line. */
+  signedDate: string
+  signedAt: string
+  signedById: string
 }
 
 /** What a signer filled in on their row, as stored (ID number encrypted). */
@@ -98,6 +153,34 @@ export function validateSnapshot(text: unknown, templateId: string): ProtocolSna
   if (t.id !== templateId) throw bad('template mismatch')
   if (typeof t.version !== 'string' || !/^[\w.-]{1,32}$/.test(t.version)) throw bad('version')
   if (typeof t.title !== 'string' || !t.title.trim()) throw bad('title')
+  if (Buffer.byteLength(JSON.stringify(t), 'utf8') > MAX_SNAPSHOT_BYTES) throw bad('too large')
+
+  const strings = (value: unknown) => Array.isArray(value) && value.length > 0 && value.every((v) => typeof v === 'string')
+  if (templateId === 'organizing-agreement') {
+    const clauses = t.clauses
+    if (!Array.isArray(clauses) || clauses.length === 0) throw bad('clauses')
+    for (const clause of clauses) {
+      const c = clause as { number?: unknown; text?: unknown }
+      if (typeof c.number !== 'number' || typeof c.text !== 'string') throw bad('clause')
+    }
+    if (!strings(t.signatureRow)) throw bad('signatureRow')
+    const tables = [t.representativesTable, t.ownersTable] as { columns?: unknown }[]
+    if (tables.some((table) => !Array.isArray(table?.columns) || table.columns.length === 0)) throw bad('tables')
+    if (typeof t.parties !== 'string' || typeof t.organizer !== 'string') throw bad('parties')
+    return t as ProtocolSnapshot
+  }
+  if (templateId === 'assembly-notice') {
+    if (!Array.isArray(t.fields) || t.fields.length === 0) throw bad('fields')
+    const agenda = t.agenda
+    if (!Array.isArray(agenda) || agenda.length === 0) throw bad('agenda')
+    for (const item of agenda) {
+      const a = item as { lead?: unknown; text?: unknown }
+      if (typeof a.lead !== 'string' || typeof a.text !== 'string') throw bad('agenda item')
+    }
+    if (!strings(t.intro) || !Array.isArray(t.contacts)) throw bad('letter')
+    return t as ProtocolSnapshot
+  }
+
   const parts = t.parts
   if (!Array.isArray(parts) || parts.length === 0) throw bad('parts')
   for (const part of parts) {
@@ -112,8 +195,29 @@ export function validateSnapshot(text: unknown, templateId: string): ProtocolSna
   if (typeof preparedBy?.name !== 'string' || typeof preparedBy.line !== 'string' || !preparedBy.line.includes('{preparer}')) {
     throw bad('preparedBy')
   }
-  if (Buffer.byteLength(JSON.stringify(t), 'utf8') > MAX_SNAPSHOT_BYTES) throw bad('too large')
   return t as ProtocolSnapshot
+}
+
+/**
+ * Trims and bounds a form's own gaps, keeping only the keys its type has.
+ * Empty values are allowed in a draft; the notice's hour, when given, is
+ * HH:MM.
+ */
+export function cleanFields(
+  formType: string,
+  input: Record<string, unknown> | undefined,
+  current: Record<string, string> = {},
+): Record<string, string> {
+  const fields = FORM_FIELDS[formType as FormType] ?? []
+  const out: Record<string, string> = {}
+  for (const field of fields) {
+    const value = input?.[field.key]
+    out[field.key] = typeof value === 'string' ? value.trim().slice(0, field.max) : (current[field.key] ?? '')
+  }
+  if (out.meetingTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(out.meetingTime)) {
+    throw new BadRequestException('שעת הכינוס אינה תקינה')
+  }
+  return out
 }
 
 /** Trims and bounds the meeting details. Empty values are allowed in a draft. */
@@ -132,9 +236,22 @@ export function cleanMeeting(input: Partial<FormMeeting> | undefined, current: F
   }
 }
 
-/** What is still missing before a form can go out, in the protocol's words. */
-export function missingForSending(form: FormData): string[] {
+/** What is still missing before a form can go out, in each document's words. */
+export function missingForSending(form: FormData, formType: string = FORM_TYPES.REPRESENTATION_PROTOCOL): string[] {
   const missing: string[] = []
+  const fields = form.fields ?? {}
+  if (formType === FORM_TYPES.ORGANIZING_AGREEMENT) {
+    for (const field of FORM_FIELDS.ORGANIZING_AGREEMENT) if (!fields[field.key]) missing.push(field.label)
+    if (form.representatives.length === 0) missing.push('הנציגים')
+    return missing
+  }
+  if (formType === FORM_TYPES.ASSEMBLY_NOTICE) {
+    if (!fields.compound) missing.push('מתחם / כתובת')
+    if (!form.meeting.meetingDate) missing.push('תאריך הכינוס')
+    if (!fields.meetingTime) missing.push('שעת הכינוס')
+    if (!form.meeting.meetingPlace) missing.push('מקום הכינוס')
+    return missing
+  }
   if (!form.meeting.compoundName) missing.push('שם המתחם')
   if (!form.meeting.address) missing.push('כתובת')
   if (!form.meeting.meetingDate) missing.push('תאריך')
@@ -168,8 +285,11 @@ export function parseSignerData(raw: string | null | undefined): StoredSignerDat
  * same.
  */
 export function formHash(form: FormData): string {
+  // `fields` only when the form has them, so a protocol hashes as it always has.
   return createHash('sha256')
-    .update(canonicalJson({ text: form.text, meeting: form.meeting, representatives: form.representatives }))
+    .update(
+      canonicalJson({ text: form.text, meeting: form.meeting, representatives: form.representatives, fields: form.fields }),
+    )
     .digest('hex')
 }
 

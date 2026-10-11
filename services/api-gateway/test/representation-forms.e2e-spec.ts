@@ -397,6 +397,8 @@ describe('Representation protocol forms (e2e)', () => {
     expect(res.body.progress).toEqual({
       owners: 4,
       ownersSigned: 2,
+      // The owner who signed through the link opened it; the paper signer did not.
+      ownersOpened: 1,
       apartments: 3,
       apartmentsSigned: 1,
       sharePercent: 50,

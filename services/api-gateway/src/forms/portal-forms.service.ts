@@ -4,7 +4,7 @@ import { FieldEncryptionService } from '../crypto/field-encryption.service'
 import { SigningSessionService } from '../signatures/signing-session.service'
 import type { PortalScope } from '../portal/portal-scope.service'
 import { FormsService } from './forms.service'
-import { FORM_SESSION_TTL_DAYS, maskIdNumber, parseFormData, parseSignerData } from './form-data'
+import { FORM_SESSION_TTL_DAYS, isSignable, maskIdNumber, parseFormData, parseSignerData, plainText } from './form-data'
 
 const VISIBLE_STATUSES = ['SENT', 'PARTIALLY_SIGNED', 'COMPLETED']
 const OPEN_STATUSES = ['SENT', 'PARTIALLY_SIGNED']
@@ -49,12 +49,15 @@ export class PortalFormsService {
     for (const record of records) {
       const form = parseFormData(record.package.formData)
       const open = OPEN_STATUSES.includes(record.package.status) && record.status !== 'SIGNED'
+      const signable = isSignable(record.package.formType)
       result.push({
         packageId: record.package.id,
-        title: form?.text.title ?? record.package.title,
+        formType: record.package.formType,
+        title: form ? plainText(form.text.title) : record.package.title,
         compoundName: form?.meeting.compoundName ?? '',
         apartmentNumber: apartments.find((a) => a.id === record.apartmentId)?.apartmentNumber ?? '',
-        status: record.status === 'SIGNED' ? 'SIGNED' : open ? 'PENDING' : 'CLOSED',
+        // A notice has nothing to sign: it is there to read while it is open.
+        status: !signable ? (open ? 'NOTICE' : 'CLOSED') : record.status === 'SIGNED' ? 'SIGNED' : open ? 'PENDING' : 'CLOSED',
         signedAt: record.signedAt,
         sentAt: sentEvents.find((e) => e.packageId === record.package.id)?.createdAt ?? null,
         // The live link, never a reissued one: reissuing would kill the link
@@ -75,6 +78,20 @@ export class PortalFormsService {
     const pkg = records[0].package
     const form = parseFormData(pkg.formData)
     if (!form) throw new NotFoundException('הטופס לא נמצא')
+
+    // A notice is the same for every owner: its text with the assembly's details.
+    if (!isSignable(pkg.formType)) {
+      return {
+        kind: 'NOTICE' as const,
+        packageId: pkg.id,
+        formType: pkg.formType,
+        formVersion: pkg.formVersion,
+        status: pkg.status,
+        text: form.text,
+        meeting: form.meeting,
+        fields: form.fields ?? null,
+      }
+    }
 
     const isRepresentative = form.representatives.some((m) =>
       records.some((r) => r.ownerId === m.ownerId && r.apartmentId === m.apartmentId),
@@ -97,14 +114,25 @@ export class PortalFormsService {
     ])
     const apartmentNumber = (id: string) => apartments.find((a) => a.id === id)?.apartmentNumber ?? ''
 
+    const first = await this.prisma.signatureRecord.findFirst({
+      where: { packageId: pkg.id, status: 'SIGNED' },
+      orderBy: { signedAt: 'asc' },
+      select: { signerData: true },
+    })
+
     return {
       kind: 'OWN' as const,
       packageId: pkg.id,
+      formType: pkg.formType,
       formVersion: pkg.formVersion,
       documentHash: pkg.documentHash,
       status: pkg.status,
       text: form.text,
       meeting: form.meeting,
+      fields: form.fields ?? null,
+      // The agreement's determining date, and the company's signature on it.
+      determiningDate: parseSignerData(first?.signerData)?.signedDate ?? null,
+      organizer: form.organizer ? { signatureImage: form.organizer.signatureImage, signedDate: form.organizer.signedDate } : null,
       // Names and apartments, as the protocol prints them; members' ID
       // numbers are for the company and the representation.
       representatives: form.representatives.map((m) => ({
@@ -151,6 +179,7 @@ export class PortalFormsService {
         package: {
           select: {
             id: true,
+            formType: true,
             title: true,
             status: true,
             formData: true,

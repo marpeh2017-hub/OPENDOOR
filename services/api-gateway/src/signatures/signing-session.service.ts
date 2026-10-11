@@ -23,6 +23,7 @@ import { SigningEmailSender } from './signing-email.sender'
 import { maskEmail } from '../auth/email-otp.sender'
 import { maskPhone } from '../sms/sms.service'
 import {
+  isSignable,
   israelToday,
   maskIdNumber,
   parseFormData,
@@ -195,8 +196,11 @@ export class SigningSessionService {
     return {
       type: record.package.formType,
       version: record.package.formVersion,
+      // A notice is read, not signed: the screen shows it and nothing to fill in.
+      signable: isSignable(record.package.formType),
       text: form.text,
       meeting: form.meeting,
+      fields: form.fields ?? null,
       representatives: form.representatives.map((r) => ({
         fullName: members.find((m) => m.id === r.ownerId)?.fullName ?? '',
         apartmentNumber: apartmentNumber(r.apartmentId),
@@ -431,6 +435,9 @@ export class SigningSessionService {
     await this.assertSigningOrderAllowed(record)
 
     if (record.status === 'SIGNED') throw new BadRequestException('מסמך כבר חתום')
+    if (record.package.formType && !isSignable(record.package.formType)) {
+      throw new BadRequestException('בהודעה אין מה לחתום')
+    }
     if (!['SENT', 'PARTIALLY_SIGNED'].includes(record.package.status)) {
       throw new BadRequestException('חבילת החתימות אינה פתוחה לחתימה')
     }

@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { STAFF_ROLES } from '../auth/roles.constants'
 import { FormsService } from './forms.service'
-import { CreateFormDto, PaperSignatureDto, ShareLinkDto, UpdateFormDto } from './dto/forms.dto'
+import { CreateFormDto, OrganizerSignatureDto, PaperSignatureDto, ShareLinkDto, UpdateFormDto } from './dto/forms.dto'
 
 /** The roles that may create, send and sign for forms: those of signature packages. */
 const FORM_MANAGERS = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'LAWYER'] as const
@@ -105,6 +105,13 @@ export class FormsController {
     @Request() req: any,
   ) {
     return this.forms.markSignedOnPaper(id, recordId, dto, req.user.userId, req.user.tenantId)
+  }
+
+  @Post(':id/organizer-signature')
+  @Roles(...FORM_MANAGERS)
+  @ApiOperation({ summary: 'The company signs the organizing agreement (once, after sending)' })
+  signAsOrganizer(@Param('id') id: string, @Body() dto: OrganizerSignatureDto, @Request() req: any) {
+    return this.forms.signAsOrganizer(id, dto.signatureImage, req.user.userId, req.user.tenantId)
   }
 
   @Delete(':id')
