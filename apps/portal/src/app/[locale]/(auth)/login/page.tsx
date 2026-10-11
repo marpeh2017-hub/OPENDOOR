@@ -59,6 +59,13 @@ export default async function LoginPage({
           <OtpLoginForm locale={locale} />
         </div>
 
+        <p className="mt-4 text-center text-sm text-gray-600">
+          הטלפון או האימייל שלכם לא רשומים אצלנו?{' '}
+          <a href={`/${locale}/register`} className="font-medium text-teal-700 underline">
+            הרשמה לאזור האישי
+          </a>
+        </p>
+
         <p className="mt-4 text-center text-xs text-gray-600">
           בכניסה אתם מאשרים את{' '}
           <a href={`/${locale}/terms`} className="text-teal-700 underline">תנאי השימוש</a>

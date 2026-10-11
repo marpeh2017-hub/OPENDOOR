@@ -49,6 +49,8 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
   const [otp, setOtp] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** The code was right but no resident file holds this phone or address: registration is the way in. */
+  const [notRegistered, setNotRegistered] = useState(false)
   const [options, setOptions] = useState<SelectionOption[]>([])
   const [selectionToken, setSelectionToken] = useState('')
 
@@ -91,6 +93,7 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setNotRegistered(false)
     setIsLoading(true)
     const { ok, data } = method === 'phone'
       ? await post('/api/auth/otp/verify', { phone: normalisedPhone, code: otp })
@@ -99,6 +102,7 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
 
     if (!ok) {
       setError(data?.message ?? 'הקוד שגוי או שפג תוקפו.')
+      setNotRegistered(data?.code === 'RESIDENT_NOT_FOUND')
       return
     }
 
@@ -132,6 +136,14 @@ export function OtpLoginForm({ locale = 'he' }: { locale?: string }) {
   const errorBanner = error && (
     <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
       {error}
+      {notRegistered && (
+        <>
+          {' '}
+          <a href={`/${locale}/register`} className="font-semibold underline">
+            להרשמה לאזור האישי
+          </a>
+        </>
+      )}
     </p>
   )
 

@@ -8,22 +8,10 @@ import { PROTOCOL_CLAUSE_COUNT } from '@urban-renewal/api-contracts'
 import { formatFormDate, type SigningFormView } from '@/lib/forms'
 import { ProtocolView } from './protocol-view'
 import { SignaturePad } from './signature-pad'
+import { isValidIsraeliId } from '@/lib/utils'
 
 type Step = 'read' | 'details' | 'done'
 type Call = (path: string, method?: string, body?: unknown) => Promise<any>
-
-/** The Israeli ID number's check digit, as the gateway checks it. */
-function isValidIsraeliId(raw: string): boolean {
-  const digits = raw.replace(/\D/g, '')
-  if (!/^\d{5,9}$/.test(digits)) return false
-  const padded = digits.padStart(9, '0')
-  let sum = 0
-  for (let i = 0; i < 9; i++) {
-    const product = Number(padded[i]) * ((i % 2) + 1)
-    sum += product > 9 ? product - 9 : product
-  }
-  return sum % 10 === 0
-}
 
 /**
  * Signing a form from the personal link: the representation-appointment
