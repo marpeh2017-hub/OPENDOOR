@@ -230,6 +230,7 @@ describe('Website representation protocols (e2e)', () => {
       expect.objectContaining({ fullName: 'שכן הבדיקה', signed: true, idNumber: '000000018' }),
     ])
     expect(doc.body.lead).toMatchObject({ firstName: 'יוזמת' })
+    expect(doc.body.shareUrl).toMatch(new RegExp(`/he/forms/join/${shareToken}$`))
   })
 
   it('finds nothing for another tenant’s staff', async () => {
@@ -249,5 +250,14 @@ describe('Website representation protocols (e2e)', () => {
       .send(neighbour({ apartmentNumber: '11', idNumber: '000000026' }))
     expect(res.status).toBe(410)
     expect((await api().get(`/api/v1/public/forms/${shareToken}`)).body.open).toBe(false)
+    const notes = await prisma.leadActivity.findMany({ where: { leadId: form.leadId! }, select: { type: true } })
+    expect(notes.map((n) => n.type)).toContain('public_protocol_closed')
+  })
+
+  it('reopens the link', async () => {
+    const form = await prisma.publicForm.findUniqueOrThrow({ where: { shareToken } })
+    const reopened = await api().patch(`/api/v1/website-forms/${form.id}`).set(staff()).send({ status: 'OPEN' })
+    expect(reopened.body).toEqual({ status: 'OPEN' })
+    expect((await api().get(`/api/v1/public/forms/${shareToken}`)).body.open).toBe(true)
   })
 })

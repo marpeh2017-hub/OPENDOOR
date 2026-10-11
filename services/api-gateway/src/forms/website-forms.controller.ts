@@ -36,6 +36,6 @@ export class WebsiteFormsController {
   @Roles(...FORM_MANAGERS)
   @ApiOperation({ summary: 'Close or reopen the neighbours’ link' })
   setStatus(@Param('id') id: string, @Body() dto: PublicFormStatusDto, @Request() req: any) {
-    return this.forms.setStatus(id, dto.status, req.user.tenantId)
+    return this.forms.setStatus(id, dto.status, req.user.userId, req.user.tenantId)
   }
 }

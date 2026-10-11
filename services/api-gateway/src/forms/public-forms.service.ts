@@ -264,6 +264,9 @@ export class PublicFormsService {
       status: form.status,
       formVersion: form.formVersion,
       createdAt: form.createdAt,
+      // For staff to send on to more neighbours; the website builds the same.
+      shareUrl: `${this.websiteUrl()}/he/forms/join/${form.shareToken}`,
+      preparerIdNumber: process.env.PROTOCOL_PREPARER_ID_NUMBER?.trim() || null,
       text: data.text,
       building: data.building,
       meeting: data.meeting,
@@ -273,10 +276,28 @@ export class PublicFormsService {
     }
   }
 
-  async setStatus(id: string, status: 'OPEN' | 'CLOSED', tenantId: string) {
-    const form = await this.prisma.publicForm.findFirst({ where: { id, tenantId }, select: { id: true } })
+  /** Closing stops new rows; the link then says signing has closed. Noted on the lead. */
+  async setStatus(id: string, status: 'OPEN' | 'CLOSED', userId: string, tenantId: string) {
+    const form = await this.prisma.publicForm.findFirst({
+      where: { id, tenantId },
+      select: { id: true, status: true, leadId: true },
+    })
     if (!form) throw new NotFoundException('הטופס לא נמצא')
-    await this.prisma.publicForm.update({ where: { id }, data: { status } })
+    if (form.status === status) return { status }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.publicForm.update({ where: { id }, data: { status } })
+      if (form.leadId) {
+        await tx.leadActivity.create({
+          data: {
+            leadId: form.leadId,
+            type: status === 'CLOSED' ? 'public_protocol_closed' : 'public_protocol_reopened',
+            note: status === 'CLOSED' ? 'הקישור לחתימת השכנים נסגר' : 'הקישור לחתימת השכנים נפתח מחדש',
+            metadata: { publicFormId: id },
+            createdById: userId,
+          },
+        })
+      }
+    })
     return { status }
   }
 
@@ -287,6 +308,10 @@ export class PublicFormsService {
     const form = await this.prisma.publicForm.findUnique({ where: { shareToken } })
     if (!form) throw new NotFoundException('הקישור לא נמצא')
     return form
+  }
+
+  private websiteUrl(): string {
+    return (process.env.WEBSITE_URL?.trim() || 'http://localhost:3003').replace(/\/+$/, '')
   }
 
   private dataOf(raw: string): PublicFormData {
