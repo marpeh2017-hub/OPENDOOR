@@ -23,8 +23,36 @@ import { Section } from './section'
  * A native <details>: keyboard and screen-reader support without script, and
  * the text is in the page for search engines and reader mode open or closed.
  * Its summary is a 44px target styled as a quiet button.
+ *
+ * ── TWO PEOPLE IN A ROW ────────────────────────────────────────────────────
+ *
+ * Since 2026-10-11 /about has Ziv Adar's profile right after Michael's. Each
+ * in its own section sat twice as far from the other as any two sections on
+ * the page, so profiles in a row share one section (`ProfileGroupView`, by
+ * the page's pairing rule) and each card keeps its id as the anchor.
  */
 export async function ProfileBlockView({ block, t }: { block: ProfileBlock; t: Localizer }) {
+  return (
+    <Section id={block.id} size="sm" className="scroll-mt-16">
+      <ProfileCard block={block} t={t} />
+    </Section>
+  )
+}
+
+/** Profiles that follow one another: one section, the cards close together. */
+export async function ProfileGroupView({ blocks, t }: { blocks: ProfileBlock[]; t: Localizer }) {
+  return (
+    <Section size="sm">
+      <div className="space-y-5">
+        {blocks.map((block) => (
+          <ProfileCard key={block.id} block={block} t={t} id={block.id} />
+        ))}
+      </div>
+    </Section>
+  )
+}
+
+async function ProfileCard({ block, t, id }: { block: ProfileBlock; t: Localizer; id?: string }) {
   const tUi = await getTranslations('ui')
   const slot =
     block.slotId && block.slotId in IMAGE_SLOTS
@@ -37,64 +65,62 @@ export async function ProfileBlockView({ block, t }: { block: ProfileBlock; t: L
   const hasMore = Boolean(t(block.quote)) || paragraphs.length > 0
 
   return (
-    <Section id={block.id} size="sm" className="scroll-mt-16">
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-5 sm:gap-7">
-          {/* Shown as served when it comes from storage (a photograph chosen
-              in the CRM): the image optimiser is not configured for it. */}
-          {portrait && (
-            <Image
-              src={portrait.url}
-              alt=""
-              width={portrait.width ?? 960}
-              height={portrait.height ?? 960}
-              unoptimized={!portrait.url.startsWith('/')}
-              sizes="6rem"
-              className="h-20 w-20 shrink-0 rounded-full bg-white object-cover ring-1 ring-gray-200 sm:h-24 sm:w-24"
-            />
-          )}
-          <div className="min-w-0 flex-[999_1_20rem]">
-            <h2 className="type-h3 font-bold text-gray-900">{t(block.name)}</h2>
-            <p className="mt-1 type-body text-gray-600">{t(block.summary)}</p>
-          </div>
-        </div>
-
-        {hasMore && (
-          <details className="group mt-5">
-            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-teal-600 px-4 type-body font-semibold text-teal-600 hover:bg-teal-50 hover:text-teal-700 [&::-webkit-details-marker]:hidden">
-              <span className="group-open:hidden">{tUi('readMore')}</span>
-              <span className="hidden group-open:inline">{tUi('readLess')}</span>
-              <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="group-open:rotate-180 motion-safe:transition-transform"
-              >
-                <path d="M4 6l4 4 4-4" />
-              </svg>
-            </summary>
-
-            <div className="mt-6 max-w-3xl space-y-4">
-              {t(block.quote) && (
-                <blockquote className="m-0 border-s-2 border-teal-500 ps-5">
-                  <p className="type-lead font-semibold text-gray-900">{t(block.quote)}</p>
-                </blockquote>
-              )}
-              {paragraphs.map((paragraph, index) => (
-                <p key={index} className="type-body text-gray-600">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </details>
+    <div id={id} className="scroll-mt-16 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+      <div className="flex flex-wrap items-center gap-5 sm:gap-7">
+        {/* Shown as served when it comes from storage (a photograph chosen
+            in the CRM): the image optimiser is not configured for it. */}
+        {portrait && (
+          <Image
+            src={portrait.url}
+            alt=""
+            width={portrait.width ?? 960}
+            height={portrait.height ?? 960}
+            unoptimized={!portrait.url.startsWith('/')}
+            sizes="6rem"
+            className="h-20 w-20 shrink-0 rounded-full bg-white object-cover ring-1 ring-gray-200 sm:h-24 sm:w-24"
+          />
         )}
+        <div className="min-w-0 flex-[999_1_20rem]">
+          <h2 className="type-h3 font-bold text-gray-900">{t(block.name)}</h2>
+          <p className="mt-1 type-body text-gray-600">{t(block.summary)}</p>
+        </div>
       </div>
-    </Section>
+
+      {hasMore && (
+        <details className="group mt-5">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-teal-600 px-4 type-body font-semibold text-teal-600 hover:bg-teal-50 hover:text-teal-700 [&::-webkit-details-marker]:hidden">
+            <span className="group-open:hidden">{tUi('readMore')}</span>
+            <span className="hidden group-open:inline">{tUi('readLess')}</span>
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="group-open:rotate-180 motion-safe:transition-transform"
+            >
+              <path d="M4 6l4 4 4-4" />
+            </svg>
+          </summary>
+
+          <div className="mt-6 max-w-3xl space-y-4">
+            {t(block.quote) && (
+              <blockquote className="m-0 border-s-2 border-teal-500 ps-5">
+                <p className="type-lead font-semibold text-gray-900">{t(block.quote)}</p>
+              </blockquote>
+            )}
+            {paragraphs.map((paragraph, index) => (
+              <p key={index} className="type-body text-gray-600">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
   )
 }

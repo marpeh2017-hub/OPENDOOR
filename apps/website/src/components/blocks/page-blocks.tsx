@@ -17,7 +17,7 @@ import { ChapterBlockView } from './chapter-block'
 import { ChecklistBlockView } from './checklist-block'
 import { DoorsBlockView } from './doors-block'
 import { FactStripBlockView } from './fact-strip-block'
-import { ProfileBlockView } from './profile-block'
+import { ProfileBlockView, ProfileGroupView } from './profile-block'
 import { PrinciplesBlockView } from './principles-block'
 import { StageIndexBlockView } from './stage-index-block'
 import { RisksBlockView } from './risks-block'
@@ -129,6 +129,23 @@ export async function PageBlocks({
           </div>
         </Section>,
       )
+      continue
+    }
+
+    /* ── PAIRING RULE 3: profiles in a row are one group ───────────────────
+     * People one after the other (Michael, then Ziv Adar, on /about) are the
+     * company's people, not separate sections: one section, the cards close
+     * together. Apart, each brought its own section rhythm and the two sat
+     * twice as far apart as any other two sections on the page. */
+    if (block.type === 'PROFILE' && next?.type === 'PROFILE') {
+      const run = [block]
+      let following = visible[index + 1]
+      while (following?.type === 'PROFILE') {
+        run.push(following)
+        index += 1
+        following = visible[index + 1]
+      }
+      rendered.push(<ProfileGroupView key={block.id} blocks={run} t={t} />)
       continue
     }
 
