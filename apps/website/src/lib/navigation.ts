@@ -58,6 +58,10 @@ export const NAV_ITEMS: readonly NavItem[] = [
 /** The representation-appointment protocol's full text, under /forms. */
 export const REPRESENTATION_PROTOCOL_HREF = '/forms/representation-protocol'
 
+/** The owners' assembly notice and the organizing agreement, under /forms. */
+export const ASSEMBLY_NOTICE_HREF = '/forms/assembly-notice'
+export const ORGANIZING_AGREEMENT_HREF = '/forms/organizing-agreement'
+
 /**
  * The page that EXPLAINS the residents' personal area: how access works, and
  * how to reach us if signing in does not. It is not the sign-in itself.

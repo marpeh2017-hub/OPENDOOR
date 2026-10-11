@@ -23,6 +23,8 @@ const EXCLUDED_PATHS = [
   // A document page: the bubble would sit over the protocol's text, and it
   // does not belong on the printed form either.
   '/forms/representation-protocol',
+  '/forms/assembly-notice',
+  '/forms/organizing-agreement',
   // The neighbours' signing page: a form, and nothing to sell there.
   '/forms/join',
 ]

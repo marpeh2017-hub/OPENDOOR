@@ -1,10 +1,15 @@
 import { localeAlternates } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { PROTOCOL_CLAUSE_COUNT } from '@urban-renewal/api-contracts'
+import { AGREEMENT_CLAUSE_COUNT, NOTICE_AGENDA_COUNT, PROTOCOL_CLAUSE_COUNT } from '@urban-renewal/api-contracts'
 import { Link } from '@/i18n/navigation'
 import { LineIcon } from '@/components/brand/line-icon'
-import { PERSONAL_AREA_HREF, REPRESENTATION_PROTOCOL_HREF } from '@/lib/navigation'
+import {
+  ASSEMBLY_NOTICE_HREF,
+  ORGANIZING_AGREEMENT_HREF,
+  PERSONAL_AREA_HREF,
+  REPRESENTATION_PROTOCOL_HREF,
+} from '@/lib/navigation'
 import { CONTACT } from '@/lib/site-config'
 
 /**
@@ -13,6 +18,10 @@ import { CONTACT } from '@/lib/site-config'
  *
  * Each form is a card: what it is, three facts about it, and two ways in, the
  * full text or straight to the print dialog (also how a visitor saves a PDF).
+ * The three documents come in the order they meet an owner in the process:
+ * the notice of the first assembly, the protocol appointing the
+ * representation, then the organizing agreement signed through it (added
+ * 2026-10-11 at the owner's request).
  * Under the forms, how signing works; beside them, the same dark help card as
  * the FAQ, for an owner who did not get a link.
  *
@@ -37,7 +46,32 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
   setRequestLocale(locale)
   const t = await getTranslations('pages.forms')
 
-  const facts = [t('clauses', { count: PROTOCOL_CLAUSE_COUNT }), t('signsSeparately'), t('notBinding')]
+  const forms: FormCardProps[] = [
+    {
+      id: 'form-assembly-notice',
+      icon: 'calendar',
+      title: t('noticeTitle'),
+      summary: t('noticeSummary'),
+      facts: [t('noticeTopics', { count: NOTICE_AGENDA_COUNT }), t('noticeSentToAll'), t('noticeNoSignature')],
+      href: ASSEMBLY_NOTICE_HREF,
+    },
+    {
+      id: 'form-representation-protocol',
+      icon: 'document',
+      title: t('protocolTitle'),
+      summary: t('protocolSummary'),
+      facts: [t('clauses', { count: PROTOCOL_CLAUSE_COUNT }), t('signsSeparately'), t('notBinding')],
+      href: REPRESENTATION_PROTOCOL_HREF,
+    },
+    {
+      id: 'form-organizing-agreement',
+      icon: 'pen',
+      title: t('agreementTitle'),
+      summary: t('agreementSummary'),
+      facts: [t('clauses', { count: AGREEMENT_CLAUSE_COUNT }), t('signsSeparately'), t('agreementValidity')],
+      href: ORGANIZING_AGREEMENT_HREF,
+    },
+  ]
   const steps = [1, 2, 3].map((step) => ({
     title: t(`step${step}Title`),
     body: t(`step${step}Body`),
@@ -61,55 +95,9 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
       <section className="bg-surface-page">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:px-8 lg:pt-12">
           <div className="space-y-10">
-            <article
-              aria-labelledby="form-representation-protocol"
-              className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8"
-            >
-              <div className="flex items-start gap-4">
-                <span
-                  aria-hidden="true"
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600"
-                >
-                  <LineIcon name="document" size={26} />
-                </span>
-                <div>
-                  <h2
-                    id="form-representation-protocol"
-                    className="text-balance type-h3 font-bold text-gray-900"
-                  >
-                    {t('protocolTitle')}
-                  </h2>
-                  <p className="mt-2 max-w-prose type-body text-gray-600">{t('protocolSummary')}</p>
-                </div>
-              </div>
-
-              <ul className="mt-6 flex flex-wrap gap-2">
-                {facts.map((fact) => (
-                  <li
-                    key={fact}
-                    className="rounded-full bg-surface-sunken px-3.5 py-1.5 type-small font-semibold text-gray-700"
-                  >
-                    {fact}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link
-                  href={REPRESENTATION_PROTOCOL_HREF}
-                  className="inline-flex min-h-12 items-center justify-center rounded-md bg-teal-600 px-6 py-2.5 type-body font-bold text-white transition-colors hover:bg-teal-700 hover:text-white"
-                >
-                  {t('read')}
-                </Link>
-                <Link
-                  href={`${REPRESENTATION_PROTOCOL_HREF}?print=1`}
-                  className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-md border border-teal-600 bg-white px-5 py-2.5 type-body font-bold text-teal-700 transition-colors hover:bg-teal-50"
-                >
-                  <LineIcon name="printer" size={20} />
-                  {t('print')}
-                </Link>
-              </div>
-            </article>
+            {forms.map((form) => (
+              <FormCard key={form.id} {...form} readLabel={t('read')} printLabel={t('print')} />
+            ))}
 
             <article
               aria-labelledby="form-start-representation"
@@ -200,6 +188,64 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
         </div>
       </section>
     </>
+  )
+}
+
+interface FormCardProps {
+  id: string
+  icon: 'calendar' | 'document' | 'pen'
+  title: string
+  summary: string
+  facts: string[]
+  href: string
+}
+
+/** One form: what it is, three facts, and the full text or the print dialog. */
+function FormCard({ id, icon, title, summary, facts, href, readLabel, printLabel }: FormCardProps & { readLabel: string; printLabel: string }) {
+  return (
+    <article aria-labelledby={id} className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+      <div className="flex items-start gap-4">
+        <span
+          aria-hidden="true"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600"
+        >
+          <LineIcon name={icon} size={26} />
+        </span>
+        <div>
+          <h2 id={id} className="text-balance type-h3 font-bold text-gray-900">
+            {title}
+          </h2>
+          <p className="mt-2 max-w-prose type-body text-gray-600">{summary}</p>
+        </div>
+      </div>
+
+      <ul className="mt-6 flex flex-wrap gap-2">
+        {facts.map((fact) => (
+          <li
+            key={fact}
+            className="rounded-full bg-surface-sunken px-3.5 py-1.5 type-small font-semibold text-gray-700"
+          >
+            {fact}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-7 flex flex-wrap gap-3">
+        <Link
+          href={href}
+          className="inline-flex min-h-12 items-center justify-center rounded-md bg-teal-600 px-6 py-2.5 type-body font-bold text-white transition-colors hover:bg-teal-700 hover:text-white"
+        >
+          {readLabel}
+        </Link>
+        <Link
+          href={`${href}?print=1`}
+          className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-md border border-teal-600 bg-white px-5 py-2.5 type-body font-bold text-teal-700 transition-colors hover:bg-teal-50"
+        >
+          <LineIcon name="printer" size={20} />
+          {printLabel}
+        </Link>
+      </div>
+    </article>
   )
 }
 
