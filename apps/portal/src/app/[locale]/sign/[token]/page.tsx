@@ -8,7 +8,7 @@
  *   2. OTP_REQ   — show masked phone, request OTP button
  *   3. OTP_ENTRY — 6-digit OTP input with countdown and resend
  *   4. REVIEW    — display document details, legal disclaimer
- *   5. SIGNING   — confirm button ("אני מאשר/ת")
+ *   5. SIGNING   — confirm button ("אישור החתימה")
  *   6. SUCCESS   — confirmation with timestamp
  *   7. DECLINED  — confirmation of decline
  *   8. ERROR     — invalid/expired token or terminal error
@@ -195,7 +195,7 @@ export default function SignPage() {
       setAttempts(a => a + 1)
       setError(err.message)
       if (attempts >= 4) {
-        setError('חסמת את הגישה לאחר 5 ניסיונות — בקש קוד חדש')
+        setError('אחרי 5 ניסיונות הקוד נחסם. בקשו קוד חדש.')
         setStep('otp_req')
         setOtp('')
       }
@@ -309,7 +309,7 @@ export default function SignPage() {
               disabled
               className="w-full rounded-xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-400 cursor-not-allowed"
             >
-              שלח קוד אימות (לא זמין עדיין)
+              שליחת קוד אימות (עוד לא זמין)
             </button>
           </div>
         )}
@@ -324,8 +324,8 @@ export default function SignPage() {
               <h2 className="text-lg font-bold text-gray-900">אימות זהות</h2>
               <p className="text-sm text-gray-500">
                 {sessionInfo?.packageTitle
-                  ? <>נשלח קוד אימות לחתימה על<br /><span className="font-medium text-gray-700">{sessionInfo.packageTitle}</span></>
-                  : 'נשלח קוד אימות לטלפון הרשום במערכת'
+                  ? <>קוד אימות לחתימה על<br /><span className="font-medium text-gray-700">{sessionInfo.packageTitle}</span><br />יישלח לטלפון או לאימייל שבתיק.</>
+                  : 'קוד אימות יישלח לטלפון או לאימייל שבתיק.'
                 }
               </p>
             </div>
@@ -343,7 +343,7 @@ export default function SignPage() {
             >
               {busy
                 ? <RefreshCw size={16} className="animate-spin" />
-                : 'שלח קוד אימות'
+                : 'שליחת קוד אימות'
               }
             </button>
 
@@ -363,16 +363,16 @@ export default function SignPage() {
               className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ChevronLeft size={16} />
-              חזור
+              חזרה
             </button>
 
             <div className="flex flex-col items-center text-center gap-2">
               <div className="h-16 w-16 rounded-full bg-teal-50 flex items-center justify-center mb-2">
                 <Shield className="text-teal-500" size={28} />
               </div>
-              <h2 className="text-lg font-bold text-gray-900">הזן קוד אימות</h2>
+              <h2 className="text-lg font-bold text-gray-900">הזינו את קוד האימות</h2>
               <p className="text-sm text-gray-500">
-                שלחנו קוד SMS לטלפון הרשום
+                שלחנו לכם קוד אימות.
               </p>
             </div>
 
@@ -390,7 +390,7 @@ export default function SignPage() {
                 seconds={OTP_EXPIRY_SEC}
                 onExpire={() => {
                   setOtpExpired(true)
-                  setError('קוד OTP פג תוקף — בקש קוד חדש')
+                  setError('תוקף הקוד הסתיים. בקשו קוד חדש.')
                 }}
               />
             </div>
@@ -400,7 +400,7 @@ export default function SignPage() {
               disabled={otp.length !== 6 || busy || otpExpired}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
-              {busy ? <RefreshCw size={16} className="animate-spin" /> : 'אמת קוד'}
+              {busy ? <RefreshCw size={16} className="animate-spin" /> : 'אימות הקוד'}
             </button>
 
             <button
@@ -408,7 +408,7 @@ export default function SignPage() {
               disabled={busy}
               className="w-full text-center text-sm text-teal-600 hover:text-teal-700 disabled:opacity-60"
             >
-              לא קיבלת קוד? שלח שוב
+              לא הגיע קוד? שליחה חוזרת
             </button>
           </div>
         )}
@@ -421,18 +421,16 @@ export default function SignPage() {
                 <FileText className="text-blue-500" size={28} />
               </div>
               <h2 className="text-lg font-bold text-gray-900">עיון במסמך</h2>
-              <p className="text-sm text-gray-500">אנא קרא את הפרטים לפני החתימה</p>
+              <p className="text-sm text-gray-500">קראו את הפרטים לפני החתימה.</p>
             </div>
 
             <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <span className="text-gray-400 shrink-0">מסמך:</span>
-                <span className="font-medium text-gray-800">{sessionInfo?.packageTitle ?? '—'}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-gray-400 shrink-0">פרויקט:</span>
-                <span className="font-medium text-gray-800">{sessionInfo?.packageId ?? '—'}</span>
-              </div>
+              {sessionInfo?.packageTitle && (
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-400 shrink-0">מסמך:</span>
+                  <span className="font-medium text-gray-800">{sessionInfo.packageTitle}</span>
+                </div>
+              )}
               {sessionInfo?.expiresAt && (
                 <div className="flex items-start gap-2">
                   <span className="text-gray-400 shrink-0">תוקף:</span>
@@ -446,8 +444,8 @@ export default function SignPage() {
             <div className="rounded-xl bg-amber-50 border border-amber-100 p-4 text-xs text-amber-800 space-y-1">
               <p className="font-semibold">הצהרה משפטית</p>
               <p>
-                לחיצה על "אני מאשר/ת את החתימה" מהווה חתימה אלקטרונית מחייבת
-                בהתאם לחוק חתימה אלקטרונית, התשס"א-2001.
+                לחיצה על "אישור החתימה" מהווה חתימה אלקטרונית מחייבת
+                בהתאם לחוק חתימה אלקטרונית, התשס"א־2001.
               </p>
             </div>
 
@@ -461,18 +459,18 @@ export default function SignPage() {
               onClick={() => setStep('signing')}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
             >
-              אני מאשר/ת לחתום
+              המשך לחתימה
             </button>
 
             <button
               onClick={() => {
-                const reason = prompt('סיבת הסירוב (אופציונלי):') ?? 'declined'
+                const reason = prompt('סיבת הסירוב (לא חובה):') ?? 'declined'
                 executeDecline(reason)
               }}
               disabled={busy}
               className="w-full text-center text-sm text-red-500 hover:text-red-700 disabled:opacity-60"
             >
-              אני מסרב/ת לחתום
+              סירוב לחתימה
             </button>
           </div>
         )}
@@ -509,7 +507,7 @@ export default function SignPage() {
                 ? <RefreshCw size={18} className="animate-spin" />
                 : <>
                     <CheckCircle2 size={18} />
-                    אני מאשר/ת את החתימה
+                    אישור החתימה
                   </>
               }
             </button>
@@ -519,7 +517,7 @@ export default function SignPage() {
               disabled={busy}
               className="w-full text-center text-sm text-gray-400 hover:text-gray-600"
             >
-              חזור לעיון
+              חזרה לעיון
             </button>
           </div>
         )}
@@ -531,10 +529,10 @@ export default function SignPage() {
               <CheckCircle2 className="text-green-500" size={40} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">חתמת בהצלחה!</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">החתימה נקלטה</h2>
               <p className="text-sm text-gray-500">
                 {sessionInfo?.packageTitle
-                  ? <>חתמת על <strong>{sessionInfo.packageTitle}</strong></>
+                  ? <>חתמתם על <strong>{sessionInfo.packageTitle}</strong>.</>
                   : 'המסמך נחתם בהצלחה'
                 }
               </p>
@@ -545,17 +543,13 @@ export default function SignPage() {
                 <span className="font-medium" dir="ltr">{signedAt}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>שיטת אימות:</span>
-                <span className="font-medium">SMS OTP</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>ספק:</span>
-                <span className="font-medium">OpenDoor NATIVE</span>
+                <span>אימות:</span>
+                <span className="font-medium">קוד חד־פעמי</span>
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              חתימה זו מוכרת בדין בהתאם לחוק חתימה אלקטרונית, התשס&quot;א-2001.
-              שמור עותק מדף זה לצרכיך.
+              חתימה זו מוכרת בדין בהתאם לחוק חתימה אלקטרונית, התשס&quot;א־2001.
+              שמרו עותק מהדף הזה לצרכיכם.
             </p>
           </div>
         )}
@@ -567,13 +561,14 @@ export default function SignPage() {
               <XCircle className="text-gray-400" size={40} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">סירבת לחתימה</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">הסירוב נרשם</h2>
               <p className="text-sm text-gray-500">
-                הסירוב שלך נרשם במערכת. נציג יצור איתך קשר בקרוב.
+                רשמנו את הסירוב, ונציג שלנו יחזור אליכם בקרוב.
               </p>
             </div>
             <p className="text-xs text-gray-400">
-              אם שינית את דעתך, פנה לחברת הניהול לקבלת קישור חתימה חדש.
+              שיניתם את דעתכם? דברו איתנו ונשלח קישור חדש:{' '}
+              <a href="tel:+972548018613" dir="ltr" className="font-semibold text-teal-700">054-8018613</a>
             </p>
           </div>
         )}
@@ -582,7 +577,7 @@ export default function SignPage() {
 
       {/* Footer */}
       <p className="mt-8 text-xs text-gray-400 text-center">
-        מאובטח על ידי OpenDoor · חתימה אלקטרונית חוקית
+        מאובטח על ידי OpenDoor{step === 'error' || step === 'declined' ? '' : ' · חתימה אלקטרונית חוקית'}
       </p>
     </div>
   )
