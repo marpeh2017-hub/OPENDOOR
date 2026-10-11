@@ -36,3 +36,9 @@ export * from './faq'
    printable form, the portal's signing screen and the CRM's signed copy all
    read this one text. */
 export * from './representation-protocol'
+/* The owners' assembly notice and the organizing agreement, as data, read
+   the same way by the website, the portal and the CRM; and the fill-in gaps
+   their text leaves for each complex. */
+export * from './document-fields'
+export * from './assembly-notice'
+export * from './organizing-agreement'
