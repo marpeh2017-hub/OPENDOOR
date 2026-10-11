@@ -59,6 +59,8 @@ const CHANNELS: readonly MessageChannel[] = ['WHATSAPP', 'SMS']
 
 export interface LeadAlert {
   id: string
+  /** The first line, when this is not a website enquiry (a personal-area registration). */
+  heading?: string
   firstName: string
   lastName: string
   phone: string
@@ -158,7 +160,7 @@ export class LeadNotificationService {
   private compose(lead: LeadAlert): string {
     const name = `${lead.firstName} ${lead.lastName}`.trim() || 'ללא שם'
     const lines = [
-      'פנייה חדשה מהאתר',
+      lead.heading ?? 'פנייה חדשה מהאתר',
       '',
       `שם: ${name}`,
       `טלפון: ${lead.phone}`,

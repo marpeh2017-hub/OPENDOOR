@@ -27,7 +27,7 @@ const optionalTrim = ({ value }: { value: unknown }) =>
 const IL_PHONE = /^(?:\+?972[-\s]?|0)(?:[23489]|5[0-9]|7[0-9])[-\s]?\d{3}[-\s]?\d{4}$/
 
 // PROTOCOL: an owner started the representation protocol on the website.
-export const PUBLIC_LEAD_KINDS = ['CONTACT', 'ELIGIBILITY', 'PROTOCOL'] as const
+export const PUBLIC_LEAD_KINDS = ['CONTACT', 'ELIGIBILITY', 'PROTOCOL', 'PORTAL_REGISTRATION'] as const
 export const PUBLIC_LEAD_TYPES = [
   'OWNER', 'REPRESENTATIVE', 'LAWYER', 'DEVELOPER', 'GENERAL',
 ] as const
