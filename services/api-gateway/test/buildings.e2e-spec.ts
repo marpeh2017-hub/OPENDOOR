@@ -149,6 +149,18 @@ describe('Buildings (e2e)', () => {
   // Write endpoints are MANAGER_ROLES-only. A token that is not a manager must
   // be rejected with 403 — an invalid token is rejected earlier with 401.
 
+  it('PATCH /complexes/:id for another tenant → 404, and without a token → 401', async () => {
+    const foreign = await request(app.getHttpServer())
+      .patch('/api/v1/complexes/cx_not_in_this_tenant')
+      .set(auth())
+      .send({ name: 'שם' })
+    expect(foreign.status).toBe(404)
+    const anonymous = await request(app.getHttpServer())
+      .patch('/api/v1/complexes/cx_not_in_this_tenant')
+      .send({ name: 'שם' })
+    expect(anonymous.status).toBe(401)
+  })
+
   it('unauthenticated POST /complexes → 401', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/complexes')
@@ -259,6 +271,21 @@ describe('Buildings (e2e)', () => {
         .set(auth())
         .send({ complexId, address: 'בדיקת E2E', streetNumber: '1' })
       expect(building.status).toBe(201)
+
+      const renamed = await request(app.getHttpServer())
+        .patch(`/api/v1/complexes/${complexId}`)
+        .set(auth())
+        .send({ name: '  מתחם E2E חדש  ' })
+      expect(renamed.status).toBe(200)
+      expect(renamed.body.name).toBe('מתחם E2E חדש')
+      const renameAudit = await prisma.auditLog.findFirst({ where: { entity: 'Complex', entityId: complexId, action: 'UPDATE' } })
+      expect(renameAudit).toBeTruthy()
+
+      const blank = await request(app.getHttpServer())
+        .patch(`/api/v1/complexes/${complexId}`)
+        .set(auth())
+        .send({ name: ' ' })
+      expect(blank.status).toBe(400)
     } finally {
       // Complex → Building cascades; the audit rows stay, as they should.
       await prisma.complex.delete({ where: { id: complexId } })

@@ -142,6 +142,19 @@ export function useCreateComplex() {
   })
 }
 
+/** Rename a complex. Forms already made keep the name they were made with. */
+export function useUpdateComplex() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      api.patch<Pick<ComplexListItem, 'id' | 'name' | 'address' | 'status' | 'projectId'>>(`/complexes/${id}`, { name }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['complexes'] })
+      qc.invalidateQueries({ queryKey: buildingKeys.lists() })
+    },
+  })
+}
+
 export interface CreateBuildingDto {
   complexId:         string
   address:           string

@@ -9,7 +9,7 @@ import { STAFF_ROLES, MANAGER_ROLES } from '../auth/roles.constants'
 import { actorFrom, tenantFrom } from '../common/actor'
 import { mapDomainErrors } from '../common/errors/domain-error'
 import {
-  CreateComplexDto, CreateBuildingDto, UpdateBuildingDto, MoveBuildingDto, SetEntityStatusDto,
+  CreateComplexDto, UpdateComplexDto, CreateBuildingDto, UpdateBuildingDto, MoveBuildingDto, SetEntityStatusDto,
   CreateApartmentDto, UpdateApartmentDto, SetApartmentOwnersDto,
   BulkBuildingStatusDto, BulkMoveBuildingsDto,
 } from './dto/building.dto'
@@ -121,6 +121,13 @@ export class ComplexesController {
   @ApiOperation({ summary: 'Create a complex in a project (manager+)' })
   create(@Body() dto: CreateComplexDto, @Request() req: any) {
     return mapDomainErrors(() => this.buildings.createComplex(dto, actorFrom(req)))
+  }
+
+  @Patch(':id')
+  @Roles(...MANAGER_ROLES)
+  @ApiOperation({ summary: 'Rename a complex or set its address (manager+)' })
+  update(@Param('id') id: string, @Body() dto: UpdateComplexDto, @Request() req: any) {
+    return mapDomainErrors(() => this.buildings.updateComplex(id, dto, actorFrom(req)))
   }
 }
 

@@ -39,6 +39,15 @@ export class CreateComplexDto {
   address?: string
 }
 
+/** Rename a complex, or set its address line. */
+export class UpdateComplexDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(120)
+  name?: string
+
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200)
+  address?: string
+}
+
 export class CreateBuildingDto {
   @ApiProperty() @IsString() @MaxLength(80)
   complexId!: string

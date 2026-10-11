@@ -5,7 +5,7 @@ import { TenantScopeService } from '../common/tenant/tenant-scope.service'
 import { OwnershipService } from '../common/ownership/ownership.service'
 import { DomainError } from '../common/errors/domain-error'
 import type {
-  CreateComplexDto, CreateBuildingDto, UpdateBuildingDto, MoveBuildingDto, SetEntityStatusDto,
+  CreateComplexDto, UpdateComplexDto, CreateBuildingDto, UpdateBuildingDto, MoveBuildingDto, SetEntityStatusDto,
   CreateApartmentDto, UpdateApartmentDto, SetApartmentOwnersDto,
   BulkBuildingStatusDto, BulkMoveBuildingsDto,
 } from './dto/building.dto'
@@ -80,6 +80,33 @@ export class BuildingsService {
         metadata: { projectId: project.id },
       }, tx)
       return complex
+    })
+  }
+
+  /**
+   * Rename a complex (or change its address line). Forms already made keep
+   * the name they were made with: it is part of what was sent.
+   */
+  async updateComplex(id: string, dto: UpdateComplexDto, actor: AuditActor) {
+    const before = await this.scope.assertComplex(id, actor.tenantId)
+    const name = dto.name === undefined ? undefined : dto.name.trim()
+    if (name === '') throw DomainError.validation('COMPLEX_NAME_REQUIRED', 'צריך שם למתחם')
+
+    return this.prisma.$transaction(async (tx) => {
+      const after = await tx.complex.update({
+        where: { id },
+        data: {
+          ...(name !== undefined && { name }),
+          ...(dto.address !== undefined && { address: dto.address.trim() || null }),
+        },
+        select: { id: true, name: true, address: true, status: true, projectId: true },
+      })
+      await this.audit.record(actor, {
+        action: 'UPDATE', entity: 'Complex', entityId: id,
+        changes: { before: { name: before.name }, after: { name: after.name, address: after.address } },
+        metadata: { projectId: before.projectId },
+      }, tx)
+      return after
     })
   }
 

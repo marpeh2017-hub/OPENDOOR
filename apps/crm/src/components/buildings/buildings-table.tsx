@@ -4,7 +4,7 @@ import { Fragment, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Building2, ChevronDown, Search, Users, Plus, Pencil, Archive, ArchiveRestore,
-  MoveRight, MoreHorizontal, Percent,
+  MoveRight, MoreHorizontal, Percent, TextCursorInput,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +24,7 @@ import { cn, formatStreetAddress } from '@/lib/utils'
 import {
   useBuildings, useBuilding, useSetBuildingStatus, useBulkBuildingStatus,
   useArchiveApartment, useSetApartmentStatus,
-  type BuildingListItem, type BuildingApartment,
+  type BuildingListItem, type BuildingApartment, type BuildingComplexRef,
 } from '@/hooks/use-buildings'
 import { useProjects } from '@/hooks/use-projects'
 import { useIsManager } from '@/hooks/use-auth'
@@ -32,6 +32,7 @@ import { BuildingFormDialog } from './building-form-dialog'
 import { ApartmentFormDialog } from './apartment-form-dialog'
 import { ApartmentOwnersDialog } from './apartment-owners-dialog'
 import { MoveBuildingsDialog } from './move-buildings-dialog'
+import { RenameComplexDialog } from './rename-complex-dialog'
 
 const SIGNATURE_CFG: Record<string, { label: string; cls: string }> = {
   SIGNED:        { label: 'חתם',         cls: 'bg-green-100 text-green-700 border-green-200' },
@@ -284,6 +285,7 @@ export function BuildingsTable() {
   const [formOpen,  setFormOpen]  = useState(false)
   const [editB,     setEditB]     = useState<BuildingListItem | undefined>()
   const [moveIds,   setMoveIds]   = useState<string[] | null>(null)
+  const [renameCx,  setRenameCx]  = useState<BuildingComplexRef | null>(null)
   const [archiveB,  setArchiveB]  = useState<BuildingListItem | null>(null)
   const [bulkArchive, setBulkArchive] = useState(false)
 
@@ -486,6 +488,9 @@ export function BuildingsTable() {
                               <DropdownMenuItem onSelect={() => setMoveIds([b.id])}>
                                 <MoveRight size={14} className="ml-2" /> העברה למתחם אחר
                               </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setRenameCx(b.complex)}>
+                                <TextCursorInput size={14} className="ml-2" /> שינוי שם המתחם
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {archived ? (
                                 <DropdownMenuItem
@@ -527,6 +532,8 @@ export function BuildingsTable() {
       </div>
 
       <BuildingFormDialog open={formOpen} onOpenChange={setFormOpen} building={editB} />
+
+      <RenameComplexDialog complex={renameCx} onOpenChange={(o) => { if (!o) setRenameCx(null) }} />
 
       <MoveBuildingsDialog
         open={Boolean(moveIds)}
