@@ -1197,6 +1197,57 @@ model SignatureRecord {
   @@map("signature_records")
 }
 
+/// A representation protocol started on the website by an owner of a
+/// building that is not (yet) a project: the initiator's meeting details and
+/// proposed members, and every row signed through the neighbours' link
+/// (`shareToken`). The wording is a snapshot the gateway accepts only when
+/// it hashes to an approved version. Nothing here is verified: staff check
+/// ownership against the land registry before relying on it, and the CRM
+/// says so on the document.
+model PublicForm {
+  id          String   @id @default(cuid())
+  tenantId    String
+  /// The lead the initiator's submission created (public lead intake).
+  leadId      String?
+  formType    String
+  formVersion String
+  /// JSON: the wording snapshot, the building, the meeting, the members.
+  formData    String
+  shareToken  String   @unique
+  /// OPEN: neighbours can sign. CLOSED: staff closed the link.
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  signatures  PublicFormSignature[]
+
+  @@index([tenantId, createdAt])
+  @@index([leadId])
+  @@map("public_forms")
+}
+
+/// One row of a website protocol's owners' table, as the signer typed it.
+model PublicFormSignature {
+  id              String     @id @default(cuid())
+  publicFormId    String
+  publicForm      PublicForm @relation(fields: [publicFormId], references: [id], onDelete: Cascade)
+  apartmentNumber String
+  fullName        String
+  /// Encrypted at the application layer.
+  idNumber        String
+  phone           String?
+  email           String?
+  /// The drawn signature, as a PNG data URL.
+  signatureImage  String
+  isInitiator     Boolean    @default(false)
+  ip              String?
+  userAgent       String?
+  signedAt        DateTime   @default(now())
+
+  @@index([publicFormId])
+  @@map("public_form_signatures")
+}
+
 model SignatureEvidence {
   id           String   @id @default(cuid())
   packageId    String   @unique
