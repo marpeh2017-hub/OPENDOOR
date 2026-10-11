@@ -18,7 +18,9 @@ import { CONTACT } from '@/lib/site-config'
  *
  * Signing never happens here. An owner signs through the personal link we
  * send, or in the personal area, so the page explains and links, and collects
- * nothing.
+ * nothing. The one way in that is not a link from us is the start card: an
+ * owner whose building is not yet a project starts the protocol on its own
+ * page (the owner's decision, 2026-10-10).
  */
 async function pageMetadata({
   params,
@@ -107,6 +109,32 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
                   {t('print')}
                 </Link>
               </div>
+            </article>
+
+            <article
+              aria-labelledby="form-start-representation"
+              className="rounded-2xl border border-teal-200 bg-teal-50 p-6 sm:p-8"
+            >
+              <div className="flex items-start gap-4">
+                <span
+                  aria-hidden="true"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-teal-600"
+                >
+                  <LineIcon name="users" size={26} />
+                </span>
+                <div>
+                  <h2 id="form-start-representation" className="text-balance type-h3 font-bold text-gray-900">
+                    {t('startCardTitle')}
+                  </h2>
+                  <p className="mt-2 max-w-prose type-body text-gray-700">{t('startCardBody')}</p>
+                </div>
+              </div>
+              <Link
+                href="/forms/representation-protocol/start"
+                className="mt-6 inline-flex min-h-12 items-center justify-center rounded-md bg-teal-600 px-6 py-2.5 type-body font-bold text-white transition-colors hover:bg-teal-700 hover:text-white"
+              >
+                {t('startCardAction')}
+              </Link>
             </article>
 
             <section aria-labelledby="how-signing-works">

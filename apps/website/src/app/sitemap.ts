@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const page = await getPageBySlug(slug)
     if (page && !page.seo?.he?.noIndex) add(`/${slug}`, page.updatedAt)
   }
-  for (const route of ['/projects', '/contact', '/eligibility', '/forms', REPRESENTATION_PROTOCOL_HREF])
+  for (const route of ['/projects', '/contact', '/eligibility', '/forms', REPRESENTATION_PROTOCOL_HREF, '/forms/representation-protocol/start'])
     add(route)
   const projects = await getPublishedProjects()
   for (const project of projects)
