@@ -39,7 +39,12 @@ export class PublicLeadsService {
     private readonly notifications: LeadNotificationService,
   ) {}
 
-  private async resolveTenantId(): Promise<string> {
+  /**
+   * The tenant public submissions belong to. Public, for the website's
+   * protocol forms, which create their lead through `submit` and then need
+   * to find it.
+   */
+  async resolveTenantId(): Promise<string> {
     const id = process.env.PUBLIC_LEAD_TENANT_ID?.trim()
     const slug = process.env.PUBLIC_LEAD_TENANT_SLUG?.trim()
 

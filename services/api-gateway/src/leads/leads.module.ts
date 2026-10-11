@@ -22,5 +22,7 @@ import { LeadNotificationService } from './lead-notification.service'
   imports: [AutomationsModule, MessagingModule],
   controllers: [LeadsController, PublicLeadsController],
   providers: [LeadsService, PublicLeadsService, LeadNotificationService],
+  // The website's protocol forms create their lead through the same intake.
+  exports: [PublicLeadsService],
 })
 export class LeadsModule {}

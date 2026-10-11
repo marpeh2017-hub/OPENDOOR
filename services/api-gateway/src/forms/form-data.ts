@@ -173,6 +173,28 @@ export function formHash(form: FormData): string {
     .digest('hex')
 }
 
+/** The SHA-256 of a wording snapshot on its own, keys sorted. */
+export function snapshotHash(text: unknown): string {
+  return createHash('sha256').update(canonicalJson(text)).digest('hex')
+}
+
+/**
+ * The wordings the PUBLIC endpoints accept, by hash. A protocol started on
+ * the website is shown to neighbours through a shared link, so a stranger
+ * must not be able to put words of their own in front of them: the website
+ * sends the wording from @urban-renewal/api-contracts, and the gateway keeps
+ * it only if it is one of these. When the wording changes there, add the new
+ * hash here; the forms e2e suite fails until you do.
+ */
+export const APPROVED_SNAPSHOT_HASHES: Record<string, readonly string[]> = {
+  // REPRESENTATION_PROTOCOL, version 2026-10-07 (clause 10 approved 2026-10-10).
+  'representation-protocol': ['e5add53189ba7b61b86abd4c7be31b57dde1fb8c6c72804d22683936402a9489'],
+}
+
+export function isApprovedSnapshot(text: unknown, templateId: string): boolean {
+  return (APPROVED_SNAPSHOT_HASHES[templateId] ?? []).includes(snapshotHash(text))
+}
+
 function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
   if (value && typeof value === 'object') {
