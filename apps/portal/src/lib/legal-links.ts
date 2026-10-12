@@ -24,3 +24,8 @@ export function websiteTermsUrl(portalLocale: string): string {
 export function websitePrivacyUrl(portalLocale: string): string {
   return `${WEBSITE_URL}/${websiteLocale(portalLocale)}/privacy`
 }
+
+/** The accessibility statement covers the personal area too. */
+export function websiteAccessibilityUrl(portalLocale: string): string {
+  return `${WEBSITE_URL}/${websiteLocale(portalLocale)}/accessibility`
+}

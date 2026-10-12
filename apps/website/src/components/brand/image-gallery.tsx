@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
+import { A11Y_EVENT, a11yMotionStopped } from '@/components/a11y/a11y-prefs'
 
 interface GalleryImage { id: string; src: string; alt: string }
 interface Labels { gallery: string; previous: string; next: string; pause: string; play: string; image: string }
@@ -31,15 +32,18 @@ export function ImageGallery({ images, labels, priority = false }: {
 
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const motion = () => setReduced(preference.matches)
+    // The system setting, or "עצירת אנימציות" in the accessibility menu.
+    const motion = () => setReduced(preference.matches || a11yMotionStopped())
     const visibility = () => setPageVisible(!document.hidden)
     motion(); visibility()
     preference.addEventListener('change', motion)
+    window.addEventListener(A11Y_EVENT, motion)
     document.addEventListener('visibilitychange', visibility)
     const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.15 })
     if (root.current) observer.observe(root.current)
     return () => {
       preference.removeEventListener('change', motion)
+      window.removeEventListener(A11Y_EVENT, motion)
       document.removeEventListener('visibilitychange', visibility)
       observer.disconnect()
     }

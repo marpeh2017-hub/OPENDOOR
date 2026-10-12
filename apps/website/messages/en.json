@@ -465,5 +465,24 @@
     "state": "State: {state}",
     "indexBanner": "Development preview. Test cards only; none of these is published.",
     "indexTitle": "Projects · preview"
+  },
+  "a11y": {
+    "open": "Accessibility menu",
+    "title": "Accessibility menu",
+    "close": "Close the accessibility menu",
+    "textSize": "Text size",
+    "textSize0": "Normal text size",
+    "textSize1": "Large text size",
+    "textSize2": "Extra large text size",
+    "textSizeGlyph0": "A",
+    "textSizeGlyph1": "A+",
+    "textSizeGlyph2": "A++",
+    "contrast": "High contrast",
+    "links": "Highlight links",
+    "font": "Readable font",
+    "spacing": "Line spacing",
+    "motion": "Stop animations",
+    "reset": "Reset",
+    "statement": "Accessibility statement"
   }
 }

@@ -296,3 +296,69 @@ html:has(header.sticky) {
 html:has([data-bottom-nav]) {
   scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
+
+/**
+ * Accessibility menu adjustments.
+ *
+ * The accessibility menu on the website and in the personal area sets these
+ * classes on <html>, one per adjustment a visitor turned on, and keeps the
+ * choice in their browser (localStorage "odg-a11y"). An inline script in each
+ * root layout puts the classes back before the first paint, so a page never
+ * shows in the default style first.
+ */
+
+/* Text size. The type scale and the spacing are in rem, so the whole page
+   grows with the root, as with the browser's own zoom. */
+html.a11y-text-1:root {
+  font-size: 112.5%;
+}
+html.a11y-text-2:root {
+  font-size: 125%;
+}
+
+/* High contrast. A filter rather than recoloured classes: the pages mix light
+   and dark bands, and forcing text colours would put dark text on a dark band
+   somewhere. On the outermost page regions only, never <html> or <body>: a
+   filter makes an element the containing block of its fixed descendants,
+   which would unpin the bottom navigation and the floating buttons. */
+html.a11y-contrast :is(main, header, footer, [data-a11y-surface]):not(:is(main, header, footer, [data-a11y-surface]) *) {
+  filter: contrast(1.3);
+}
+
+/* Highlighted links: every link underlined and outlined, on any background. */
+html.a11y-links a {
+  text-decoration-line: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 3px !important;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Readable font: a plain system face for all text. */
+html.a11y-font body,
+html.a11y-font body :not(svg, svg *) {
+  font-family: Arial, Helvetica, "Segoe UI", sans-serif !important;
+}
+
+/* Line spacing, toward the text-spacing values of WCAG 1.4.12. */
+html.a11y-spacing body :is(p, li, dt, dd, label, blockquote, td, th, h1, h2, h3, h4, h5, h6) {
+  line-height: 1.8 !important;
+  letter-spacing: 0.04em !important;
+  word-spacing: 0.16em !important;
+}
+
+/* Stop animations: what prefers-reduced-motion does, on request. Galleries
+   that advance by script read the class too. */
+html.a11y-motion *,
+html.a11y-motion *::before,
+html.a11y-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* The personal area's accessibility button rides above its bottom navigation. */
+html:has([data-bottom-nav]) [data-a11y-fab] {
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}

@@ -87,7 +87,7 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
     'w-full min-h-11 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600'
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FCFCFB] px-4 pb-16 pt-6">
+    <div dir="rtl" data-a11y-surface className="min-h-screen bg-[#FCFCFB] px-4 pb-16 pt-6">
       <div className="mx-auto w-full max-w-2xl space-y-5">
         <header className="flex items-center justify-between gap-3">
           <Image src="/brand/opendoor-logo.svg" alt="OpenDoor התחדשות עירונית" width={118} height={44} unoptimized priority className="h-11 w-auto" />

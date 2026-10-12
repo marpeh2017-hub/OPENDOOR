@@ -9,6 +9,8 @@ import { SiteHeader } from '@/components/layout/site-header'
 import { SiteFooter } from '@/components/layout/site-footer'
 import { SkipLink } from '@/components/layout/skip-link'
 import { SiteChatWidget } from '@/components/faq/site-chat-widget'
+import { AccessibilityMenu } from '@/components/a11y/accessibility-menu'
+import { A11Y_BOOT_SCRIPT } from '@/components/a11y/a11y-prefs'
 import '@urban-renewal/design-system/src/globals.css'
 // Imported after the shared sheet so its corrections win. See the file.
 import '../globals.css'
@@ -157,6 +159,9 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} className={heebo.variable} suppressHydrationWarning>
       <body className="min-h-dvh bg-surface-page font-sans text-gray-800 antialiased">
+        {/* The visitor's accessibility settings, before the first paint. A
+            fixed string from a11y-prefs.ts; no visitor input reaches it. */}
+        <script dangerouslySetInnerHTML={{ __html: A11Y_BOOT_SCRIPT }} />
         <script
           type="application/ld+json"
           // Static values from site-config, serialised by JSON.stringify: no
@@ -174,6 +179,7 @@ export default async function LocaleLayout({
           </main>
           <SiteFooter />
           <SiteChatWidget />
+          <AccessibilityMenu />
         </NextIntlClientProvider>
       </body>
     </html>

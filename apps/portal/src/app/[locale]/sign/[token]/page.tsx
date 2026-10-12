@@ -264,6 +264,7 @@ export default function SignPage() {
   return (
     <div
       dir="rtl"
+      data-a11y-surface
       className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex flex-col items-center justify-start pt-10 pb-20 px-4"
     >
       {/* Logo / brand */}
