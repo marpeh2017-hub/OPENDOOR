@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { Accessibility, Check, X } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import {
   A11Y_TOGGLES, DEFAULT_A11Y, applyA11y, readA11y, saveA11y, type A11yPrefs,
@@ -11,9 +11,11 @@ import {
 const TEXT_LEVELS = [0, 1, 2] as const
 
 /**
- * The accessibility menu: a round button fixed to the start corner (the
- * right in Hebrew; the chat sits in the other corner) that opens a small
- * panel of adjustments. Approved 2026-10-12 as drawn: text size, high
+ * The accessibility menu: a round button in the end corner (left in Hebrew),
+ * above the chat button where the chat shows (globals.css, "The end corner"),
+ * that opens a small panel of adjustments. Not the start corner: a button
+ * there sits over the start of every line it passes, as the chat once did
+ * over the footer's phone number. Approved 2026-10-12 as drawn: text size, high
  * contrast, highlighted links, readable font, line spacing, stopping
  * animations, reset, and the accessibility statement.
  *
@@ -28,6 +30,7 @@ const TEXT_LEVELS = [0, 1, 2] as const
  */
 export function AccessibilityMenu() {
   const t = useTranslations('a11y')
+  const endIsLeft = useLocale() === 'he'
   const [open, setOpen] = useState(false)
   const [prefs, setPrefs] = useState<A11yPrefs>(DEFAULT_A11Y)
   const id = useId()
@@ -73,8 +76,15 @@ export function AccessibilityMenu() {
   const idle = 'border-gray-300 bg-white text-gray-800 hover:border-teal-600'
 
   return (
+    // z-[44]: under the chat (45), whose open panel covers this button rather
+    // than the other way round; both under the mobile nav drawer (50).
     <div
-      className="fixed start-4 z-[46] flex flex-col items-start bottom-[calc(max(1rem,env(safe-area-inset-bottom))+var(--cookie-notice-h,0px))] sm:start-6 print:hidden"
+      data-a11y-fab-site
+      className={`fixed z-[44] flex flex-col items-end print:hidden ${
+        endIsLeft
+          ? 'left-[max(1rem,env(safe-area-inset-left))] sm:left-[max(1.5rem,env(safe-area-inset-left))]'
+          : 'right-[max(1rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))]'
+      }`}
     >
       {open && (
         <div

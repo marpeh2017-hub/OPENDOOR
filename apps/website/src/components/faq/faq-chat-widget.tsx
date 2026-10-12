@@ -135,9 +135,14 @@ export function FaqChatWidget() {
     // Hebrew site, right on the English one. Pinned to the start, it sat over
     // the beginning of every line it passed, including the footer's phone
     // number and the forms' consent boxes.
+    //
+    // data-chat-launcher lets the accessibility button stack above this one,
+    // and both rise by --cookie-notice-h while the cookie notice is open
+    // (globals.css, "The end corner").
     <div
       dir="rtl"
-      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] z-[45] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] ${
+      data-chat-launcher
+      className={`fixed bottom-[calc(max(1rem,env(safe-area-inset-bottom))+var(--cookie-notice-h,0px))] z-[45] sm:bottom-[calc(max(1.5rem,env(safe-area-inset-bottom))+var(--cookie-notice-h,0px))] ${
         endIsLeft
           ? 'left-[max(1rem,env(safe-area-inset-left))] sm:left-[max(1.5rem,env(safe-area-inset-left))]'
           : 'right-[max(1rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))]'

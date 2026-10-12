@@ -92,15 +92,19 @@ export function AccessibilityMenu({ locale, statementHref }: { locale: string; s
   const idle = 'border-gray-300 bg-white text-gray-800 hover:border-teal-600'
 
   return (
+    // dir="ltr" on the wrapper only, so the button stays pinned to the left
+    // edge when the panel opens and widens the column; the panel carries the
+    // reading direction.
     <div
       data-a11y-fab
-      dir={locale === 'en' ? 'ltr' : 'rtl'}
+      dir="ltr"
       className="fixed left-4 z-40 flex flex-col items-start bottom-[max(1rem,env(safe-area-inset-bottom))] sm:left-6 print:hidden"
     >
       {open && (
         <div
           ref={panel}
           id={`${id}-panel`}
+          dir={locale === 'en' ? 'ltr' : 'rtl'}
           role="dialog"
           aria-labelledby={`${id}-title`}
           className="mb-3 max-h-[calc(100dvh-8rem)] w-[min(19rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-xl"

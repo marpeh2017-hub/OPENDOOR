@@ -357,3 +357,25 @@ html:root {
     }
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * THE END CORNER: chat, accessibility menu, cookie notice
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * The accessibility button shares the chat's corner, the end of the line
+ * (left in Hebrew), because a button pinned to the start sits over the start
+ * of every line it passes. Above the chat button where the chat shows
+ * (Hebrew pages outside the legal and form pages), in the corner itself
+ * elsewhere. While the cookie notice is open, both rise above it by its
+ * height (--cookie-notice-h, set by the notice), and so does the space
+ * scrolling keeps clear at the bottom (WCAG 2.2, 2.4.11).
+ */
+[data-a11y-fab-site] {
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--cookie-notice-h, 0px));
+}
+html:has([data-chat-launcher]) [data-a11y-fab-site] {
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 4.25rem + var(--cookie-notice-h, 0px));
+}
+html[data-cookie-notice] {
+  scroll-padding-bottom: calc(var(--cookie-notice-h, 0px) + 1rem);
+}
