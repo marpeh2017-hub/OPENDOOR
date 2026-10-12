@@ -12,11 +12,17 @@ import { TrendingUp, TrendingDown } from 'lucide-react'
 import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
 import { useDashboardStats } from '@/hooks/use-dashboard'
 import { useProjects, type Project } from '@/hooks/use-projects'
+import { ReportBuilder } from '@/components/reports/report-builder'
 
 /**
  * Reports.
  *
- * Every figure on this screen is derived from live API data:
+ * The report generator (ReportBuilder) leads the screen: any report the
+ * user's role may run, filtered, previewed and exported to Excel through
+ * POST /reports/run and /reports/export. It loads on its own, so it is there
+ * even when the figures below fail to.
+ *
+ * Every figure below it is derived from live API data:
  *   - KPIs and the signature trend come from GET /dashboard/stats.
  *   - Lead distribution comes from `leadsByStatus` on the same payload.
  *   - Stage distribution and the project table are aggregated from
@@ -28,7 +34,6 @@ import { useProjects, type Project } from '@/hooks/use-projects'
  *     counts.
  *   - Estimated revenue per project — `Project.estimatedBudget` exists in the
  *     schema but is not exposed by GET /projects.
- *   - Excel export — needs GET /reports/export.
  */
 
 const STAGE_LABELS: Record<string, string> = {
@@ -155,6 +160,7 @@ export default function ReportsPage() {
             <p className="text-sm text-muted-foreground mt-0.5">ניתוח ביצועים ומגמות</p>
           </div>
         </div>
+        <ReportBuilder />
         <div className="card-surface"><RowsSkeleton rows={8} /></div>
       </div>
     )
@@ -162,11 +168,20 @@ export default function ReportsPage() {
 
   if (stats.isError || !stats.data) {
     return (
-      <QueryError
-        message="שגיאה בטעינת הדוחות"
-        error={stats.error}
-        onRetry={() => stats.refetch()}
-      />
+      <div className="space-y-6">
+        <div className="page-header">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">דוחות</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">ניתוח ביצועים ומגמות</p>
+          </div>
+        </div>
+        <ReportBuilder />
+        <QueryError
+          message="שגיאה בטעינת נתוני הסקירה"
+          error={stats.error}
+          onRetry={() => stats.refetch()}
+        />
+      </div>
     )
   }
 
@@ -182,6 +197,8 @@ export default function ReportsPage() {
           </p>
         </div>
       </div>
+
+      <ReportBuilder />
 
       {/* KPI Row — live from /dashboard/stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
