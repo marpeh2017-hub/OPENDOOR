@@ -237,7 +237,11 @@ export function ProtocolSigning({ initial, call }: { initial: SigningFormView; c
 
             {form.signer.isRepresentative && (
               <p className="rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-900">
-                אתם גם חברי נציגות: החתימה הזו נכנסת לשתי הטבלאות, טבלת הנציגות וטבלת בעלי הדירות.
+                {/* The agreement has no representation table: its representatives
+                    sign the "נציגות הדיירים" line at its end (approved 2026-10-12). */}
+                {isAgreement
+                  ? 'אתם גם בנציגות: החתימה הזו נכנסת גם לשורת ״נציגות הדיירים״ בסוף ההסכם, וגם לטבלת בעלי הדירות.'
+                  : 'אתם גם חברי נציגות: החתימה הזו נכנסת לשתי הטבלאות, טבלת הנציגות וטבלת בעלי הדירות.'}
               </p>
             )}
 
