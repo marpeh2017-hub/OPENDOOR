@@ -127,7 +127,15 @@ export const REPORTS: Record<ReportType, ReportDefinition> = {
         key: 'missing', label: 'חסר בתיק', kind: 'select',
         options: [{ value: 'phone', label: 'טלפון' }, { value: 'email', label: 'אימייל' }, { value: 'nationalId', label: 'תעודת זהות' }],
       },
-      { key: 'includeInactive', label: 'כולל בעלים בארכיון', kind: 'boolean' },
+      // The owners screen's own two filters, with its values, so its export matches it.
+      {
+        key: 'status', label: 'סטטוס', kind: 'select',
+        options: [{ value: 'ACTIVE', label: 'פעילים' }, { value: 'INACTIVE', label: 'לא פעילים' }],
+      },
+      {
+        key: 'estate', label: 'עיזבונות', kind: 'select',
+        options: [{ value: 'ESTATE', label: 'עיזבונות בלבד' }, { value: 'REGULAR', label: 'ללא עיזבונות' }],
+      },
     ],
     columns: [
       { key: 'fullName', label: 'שם', width: 26, default: true },
@@ -236,7 +244,7 @@ export class ReportCatalog {
   private async owners(f: Filters, tenantId: string): Promise<ReportRows> {
     const str = (key: string) => (typeof f[key] === 'string' && f[key] ? String(f[key]) : undefined)
     const projectId = str('projectId'), complexId = str('complexId'), buildingId = str('buildingId')
-    const search = str('search'), missing = str('missing')
+    const search = str('search'), missing = str('missing'), status = str('status'), estate = str('estate')
     const conditions: object[] = []
     if (search) {
       conditions.push({ OR: [
@@ -250,7 +258,8 @@ export class ReportCatalog {
     }
     const where = {
       tenantId,
-      ...(f.includeInactive === true ? {} : { isActive: true }),
+      ...(status === 'ACTIVE' ? { isActive: true } : status === 'INACTIVE' ? { isActive: false } : {}),
+      ...(estate === 'ESTATE' ? { isEstate: true } : estate === 'REGULAR' ? { isEstate: false } : {}),
       ...(conditions.length ? { AND: conditions } : {}),
     }
 

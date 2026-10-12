@@ -26,6 +26,7 @@ import {
 import { useProjects } from '@/hooks/use-projects'
 import { useIsManager } from '@/hooks/use-auth'
 import { OwnerFormDialog } from './owner-form-dialog'
+import { ExportButton } from '@/components/reports/export-button'
 
 /**
  * Owners register.
@@ -106,6 +107,12 @@ export function OwnersTable() {
 
         <div className="flex-1" />
         {data && <span className="text-sm text-muted-foreground">{data.length} בעלים</span>}
+        {/* The same filters as the list, so the file holds what the screen shows;
+            a row per owner and apartment, with the share. */}
+        <ExportButton
+          type="owners"
+          filters={{ search: search.trim(), projectId, status, estate }}
+        />
         {canWrite && (
           <Button size="sm" className="gap-1.5"
             onClick={() => { setEditOwner(undefined); setFormOpen(true) }}>

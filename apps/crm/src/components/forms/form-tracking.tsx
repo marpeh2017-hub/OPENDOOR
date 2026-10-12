@@ -24,6 +24,7 @@ import {
 import { FormStatusBadge } from './form-status'
 import { PaperSignatureDialog } from './paper-signature-dialog'
 import { OrganizerSignatureDialog } from './organizer-signature-dialog'
+import { ExportButton } from '@/components/reports/export-button'
 
 type Filter = 'all' | 'signed' | 'unsigned' | 'opened' | 'unopened'
 
@@ -164,6 +165,9 @@ export function FormTracking({ form, locale }: { form: FormDetail; locale: strin
               {signable ? 'תזכורת לכל מי שלא חתם' : 'תזכורת לכל מי שלא פתח'}
             </Button>
           )}
+          {/* Who signed, per apartment, with shares and the majority so far: for
+              the representatives and the lawyer. */}
+          <ExportButton type="form-signatures" filters={{ packageId: form.id }} />
           <Button className="gap-2" asChild>
             <Link href={`/${locale}/forms/${form.id}/document`}>
               <FileText size={16} aria-hidden="true" />

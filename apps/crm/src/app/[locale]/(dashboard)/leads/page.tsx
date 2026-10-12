@@ -5,6 +5,7 @@ import { Search, TrendingUp } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { LeadsKanban } from '@/components/leads/leads-kanban'
 import { useLeads } from '@/hooks/use-leads'
+import { ExportButton } from '@/components/reports/export-button'
 
 /** Stages that count as "still in the pipeline" (mirrors Prisma `LeadStatus`). */
 const OPEN_STAGES = new Set(['NEW', 'CONTACTED', 'MEETING_SCHEDULED', 'INTERESTED', 'NEGOTIATION'])
@@ -80,6 +81,8 @@ export default function LeadsPage() {
               <option value="OTHER">אחר</option>
             </select>
           </label>
+          {/* The board's search and source, every lead (not the board's 200). */}
+          <ExportButton type="leads" filters={{ search: deferredSearch, source }} />
         </div>
       </div>
 

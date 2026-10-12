@@ -197,6 +197,12 @@ describe('Reports (e2e)', () => {
       expect(res.body.rows).toEqual([{ fullName: 'יוסי בדיקה', phone: '' }])
     })
 
+    it("takes the owners screen's status and estate filters", async () => {
+      expect((await run({ type: 'owners', filters: { status: 'ACTIVE' } }).expect(200)).body.total).toBe(3)
+      expect((await run({ type: 'owners', filters: { status: 'INACTIVE' } }).expect(200)).body.total).toBe(0)
+      expect((await run({ type: 'owners', filters: { estate: 'ESTATE' } }).expect(200)).body.total).toBe(0)
+    })
+
     it("never lists another tenant's owners", async () => {
       const res = await run({ type: 'owners' }).expect(200)
       expect(JSON.stringify(res.body)).not.toContain('זר מדייר אחר')
