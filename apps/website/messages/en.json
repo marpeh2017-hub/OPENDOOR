@@ -484,5 +484,21 @@
     "motion": "Stop animations",
     "reset": "Reset",
     "statement": "Accessibility statement"
+  },
+  "cookies": {
+    "label": "Cookie notice",
+    "notice": "This site only uses the cookies it needs to work, such as remembering your language. No tracking or advertising cookies.",
+    "ok": "Got it",
+    "policy": "Privacy policy",
+    "settings": "Cookie settings",
+    "intro": "These are the cookies and data this site keeps in your browser.",
+    "necessary": "Necessary",
+    "necessaryStatus": "Always on",
+    "necessaryBody": "Your language choice, a note that you have seen the cookie notice, and the accessibility settings you chose.",
+    "necessaryChat": "A conversation with the site's assistant is kept only until you close the tab.",
+    "marketing": "Measurement and marketing",
+    "marketingStatus": "None on this site",
+    "marketingBody": "This site uses no tracking cookies, pixels or analytics tools. If any are added in future, we will ask for your consent first.",
+    "close": "Close"
   }
 }

@@ -10,6 +10,7 @@ import { SiteFooter } from '@/components/layout/site-footer'
 import { SkipLink } from '@/components/layout/skip-link'
 import { SiteChatWidget } from '@/components/faq/site-chat-widget'
 import { AccessibilityMenu } from '@/components/a11y/accessibility-menu'
+import { CookieNotice } from '@/components/legal/cookie-notice'
 import { A11Y_BOOT_SCRIPT } from '@/components/a11y/a11y-prefs'
 import '@urban-renewal/design-system/src/globals.css'
 // Imported after the shared sheet so its corrections win. See the file.
@@ -180,6 +181,7 @@ export default async function LocaleLayout({
           <SiteFooter />
           <SiteChatWidget />
           <AccessibilityMenu />
+          <CookieNotice />
         </NextIntlClientProvider>
       </body>
     </html>

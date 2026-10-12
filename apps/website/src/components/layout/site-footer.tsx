@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation'
 import { FOOTER_GROUPS } from '@/lib/navigation'
 import { CONTACT } from '@/lib/site-config'
 import { BrandMark } from '@/components/brand/brand-mark'
+import { CookieSettings } from '@/components/legal/cookie-settings'
 
 /**
  * Site footer.
@@ -77,6 +78,7 @@ export async function SiteFooter() {
             <Link href="/accessibility" className="inline-flex min-h-[24px] items-center py-1 text-xs text-gray-600 hover:text-teal-700">
               {tFooter('accessibility')}
             </Link>
+            <CookieSettings />
           </nav>
         </div>
       </div>
