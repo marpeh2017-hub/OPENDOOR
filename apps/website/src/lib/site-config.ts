@@ -67,8 +67,12 @@ export const ACCESSIBILITY = {
   /** Date of the technical audit described in the statement. */
   auditDate: '14 בספטמבר 2026',
   auditDateEn: '14 September 2026',
-  statementDate: '14 בספטמבר 2026',
-  statementDateEn: '14 September 2026',
+  /** The second check, against what WCAG 2.2 added, after the accessibility
+   *  menu and the cookie notice were built. */
+  wcag22CheckDate: '12 באוקטובר 2026',
+  wcag22CheckDateEn: '12 October 2026',
+  statementDate: '12 באוקטובר 2026',
+  statementDateEn: '12 October 2026',
   premises:
     'משרדי החברה נגישים לאנשים עם מוגבלות. לבירור לגבי התאמה מסוימת לפני ההגעה, ניתן לפנות לרכז הנגישות בפרטים שלהלן.',
   premisesEn:
