@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Download, FileText, History, Loader2, Trash2, Upload } from 'lucide-react'
+import { Download, FileText, History, Loader2, Trash2, Upload, Users } from 'lucide-react'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -12,10 +12,11 @@ import {
 import { QueryError, EmptyState, RowsSkeleton } from '@/components/ui/query-states'
 import { useDocuments, useDeleteDocument, fetchDownloadUrl } from '@/hooks/use-documents'
 import { useProjects } from '@/hooks/use-projects'
-import { useIsManager, useCanWriteDocuments } from '@/hooks/use-auth'
+import { useIsManager, useCanWriteDocuments, useCanShareDocuments } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { UploadDocumentDialog } from './upload-document-dialog'
 import { DocumentVersionsDialog } from './document-versions-dialog'
+import { ShareDocumentDialog } from './share-document-dialog'
 
 /** Mirrors the DocumentCategory enum accepted by GET /documents?category=. */
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -78,6 +79,10 @@ export function DocumentsLibrary() {
   const [uploadOpen, setUploadOpen] = useState(false)
   /** The document whose version history is open, if any. */
   const [versionsFor, setVersionsFor] = useState<{ id: string; title: string } | null>(null)
+  // Mirrors RESIDENT_SHARE_ROLES on POST /documents/:id/residents.
+  const canShare = useCanShareDocuments()
+  /** The document being shared with residents, if any. */
+  const [shareFor, setShareFor] = useState<{ id: string; title: string; projectId: string | null } | null>(null)
 
   const projectName = useMemo(() => {
     const map = new Map<string, string>()
@@ -230,6 +235,17 @@ export function DocumentsLibrary() {
                         >
                           <History size={15} />
                         </button>
+                        {canShare && (
+                          <button
+                            type="button"
+                            aria-label={`שיתוף ${doc.title} עם דיירים`}
+                            title="שיתוף עם דיירים"
+                            onClick={() => setShareFor({ id: doc.id, title: doc.title, projectId: doc.projectId })}
+                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
+                          >
+                            <Users size={15} />
+                          </button>
+                        )}
                         {canDelete && (
                           <button
                             type="button"
@@ -265,6 +281,10 @@ export function DocumentsLibrary() {
         open={versionsFor !== null}
         onOpenChange={(next) => { if (!next) setVersionsFor(null) }}
       />
+
+      {canShare && (
+        <ShareDocumentDialog document={shareFor} onOpenChange={(next) => { if (!next) setShareFor(null) }} />
+      )}
 
       {deleteDoc.isError && <QueryError message="מחיקת המסמך נכשלה" error={deleteDoc.error} />}
     </div>

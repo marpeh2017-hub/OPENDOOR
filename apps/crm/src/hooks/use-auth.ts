@@ -91,6 +91,22 @@ export function useCanWriteDocuments(): boolean {
 }
 
 /**
+ * Mirrors RESIDENT_SHARE_ROLES in
+ * services/api-gateway/src/auth/roles.constants.ts: who may share a document
+ * with residents or stop sharing it. Narrower than writing documents: a
+ * developer's representative may upload, but never hands a file to the
+ * owners' personal area.
+ */
+const RESIDENT_SHARE_ROLES = [
+  'SUPER_ADMIN', 'COMPANY_ADMIN', 'PROJECT_MANAGER', 'RESIDENT_RELATIONS_MANAGER', 'FIELD_AGENT', 'LAWYER',
+]
+
+export function useCanShareDocuments(): boolean {
+  const { data } = useCurrentUser()
+  return Boolean(data?.role && RESIDENT_SHARE_ROLES.includes(data.role))
+}
+
+/**
  * Mirrors IMPORT_ROLES in
  * services/api-gateway/src/auth/roles.constants.ts.
  *

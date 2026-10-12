@@ -585,6 +585,23 @@ describe('Resident portal documents (e2e)', () => {
       expect(res.body[0].residentId).toBe(A.residentId)
       expect(res.body[0].apartmentNumber).toBe('1')
     })
+
+    it("lists a resident's shared documents for their card, and only within the tenant", async () => {
+      const shared = await makeDocument(A, 'AlphaOnTheCard')
+      const notShared = await makeDocument(A, 'AlphaNotOnTheCard')
+      await api().post(shareApi(shared.id)).set(asManagerA())
+        .send({ residentId: A.residentId }).expect(201)
+
+      const card = await api().get(`/api/v1/documents?residentId=${A.residentId}`).set(asManagerA()).expect(200)
+      const ids = card.body.map((d: { id: string }) => d.id)
+      expect(ids).toContain(shared.id)
+      expect(ids).not.toContain(notShared.id)
+
+      // Another tenant's manager, asking about this resident, gets nothing.
+      const foreign = await api().get(`/api/v1/documents?residentId=${A.residentId}`)
+        .set({ Authorization: `Bearer ${managerBToken}` }).expect(200)
+      expect(foreign.body).toEqual([])
+    })
   })
 
   // ══════════════════════════════════════════════════════════════════════════

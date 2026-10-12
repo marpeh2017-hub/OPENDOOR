@@ -41,18 +41,71 @@ export const documentKeys = {
   lists:    ()           => [...documentKeys.all(), 'list'] as const,
   list:     (f: object)  => [...documentKeys.lists(), f] as const,
   versions: (id: string) => [...documentKeys.all(), 'versions', id] as const,
+  shares:   (id: string) => [...documentKeys.all(), 'shares', id] as const,
 }
 
-export function useDocuments(params?: { projectId?: string; category?: string }) {
+/** `residentId`: only the documents shared with that resident. */
+export function useDocuments(
+  params?: { projectId?: string; category?: string; residentId?: string },
+  options?: { enabled?: boolean },
+) {
   const q = new URLSearchParams()
-  if (params?.projectId) q.set('projectId', params.projectId)
-  if (params?.category)  q.set('category',  params.category)
+  if (params?.projectId)  q.set('projectId',  params.projectId)
+  if (params?.category)   q.set('category',   params.category)
+  if (params?.residentId) q.set('residentId', params.residentId)
 
   return useQuery({
     queryKey: documentKeys.list(params ?? {}),
     queryFn:  () => api.get<DocumentMeta[]>(`/documents?${q.toString()}`),
     staleTime: 30_000,
+    enabled:  options?.enabled ?? true,
   })
+}
+
+/* ─── Sharing with residents ─────────────────────────────────────────────
+ * A shared document appears in the resident's personal area, where they can
+ * download it. GET/POST/DELETE /documents/:id/residents; each grant and each
+ * withdrawal is audited by the API. */
+
+/** One resident a document is shared with (GET /documents/:id/residents). */
+export interface DocumentShare {
+  residentId:      string
+  name:            string
+  apartmentNumber: string
+  isActive:        boolean
+  sharedAt:        string
+}
+
+export function useDocumentShares(documentId: string | null) {
+  return useQuery({
+    queryKey: documentKeys.shares(documentId ?? ''),
+    queryFn:  () => api.get<DocumentShare[]>(`/documents/${documentId}/residents`),
+    enabled:  Boolean(documentId),
+  })
+}
+
+function useShareMutation<V extends { documentId: string; residentId: string }>(
+  call: (v: V) => Promise<unknown>,
+) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: call,
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: documentKeys.shares(v.documentId) })
+      // The resident card lists documents by residentId.
+      qc.invalidateQueries({ queryKey: documentKeys.lists() })
+    },
+  })
+}
+
+export function useShareDocument() {
+  return useShareMutation((v: { documentId: string; residentId: string }) =>
+    api.post(`/documents/${v.documentId}/residents`, { residentId: v.residentId }))
+}
+
+export function useUnshareDocument() {
+  return useShareMutation((v: { documentId: string; residentId: string }) =>
+    api.delete(`/documents/${v.documentId}/residents/${v.residentId}`))
 }
 
 /**

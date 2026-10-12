@@ -194,11 +194,16 @@ export class DocumentsController {
     name: 'includeVersions', required: false,
     description: 'Include superseded versions. Default false — the library shows current documents only.',
   })
+  @ApiQuery({
+    name: 'residentId', required: false,
+    description: 'Only documents shared with this resident (their personal area shows the same list).',
+  })
   findAll(
     @Request() req: any,
     @Query('projectId') projectId?: string,
     @Query('category') category?: DocumentCategory,
     @Query('includeVersions') includeVersions?: string,
+    @Query('residentId') residentId?: string,
   ) {
     const tenantId = this.tenantId(req)
     // Superseded versions are hidden by default: a corrected נסח טאבו should
@@ -212,6 +217,9 @@ export class DocumentsController {
         ...(all ? {} : { isLatest: true }),
         ...(projectId ? { projectId } : {}),
         ...(category ? { category } : {}),
+        // The resident card's documents tab. The document is tenant-scoped
+        // above, so a resident id from another tenant matches nothing.
+        ...(residentId ? { residentDocuments: { some: { residentId } } } : {}),
       },
       select: {
         id: true, title: true, category: true, status: true,
