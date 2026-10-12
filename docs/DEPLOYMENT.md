@@ -35,7 +35,7 @@ version.
 | Piece | Platform | Why |
 |---|---|---|
 | API gateway (NestJS) | Fly.io | Long-lived process, Redis connection, Prisma pool, runs migrations on boot. Not a serverless fit. |
-| website / crm / portal / web (Next) | Vercel | Four separate projects from one repo, each with its own root directory. |
+| website / crm / portal (Next) | Vercel | Three separate projects from one repo, each with its own root directory. `apps/web`, the original CRM-sales site, is retired and is **not deployed** (`docs/ODG_WEBSITE_PHASE1_PLAN.md`: wrong audience; its screens show sample names and ID numbers). |
 | PostgreSQL | Supabase or Fly Postgres | Must be reachable from Fly and must support `prisma migrate deploy`. |
 | Redis | Upstash or Fly Redis | Sessions, OTP storage, rate limiting. **Not optional** — see the note below. |
 
@@ -61,7 +61,7 @@ site and the forms already print) and email sign-in codes all wait on it.
 3. Fly (API) → deploy, verify health, note the `*.fly.dev` hostname
    - 3a. First tenant and CRM admin (bootstrap), once
    - 3b. Import and publish the four CMS pages, once
-4. Vercel (four apps) → deploy, verify, note the `*.vercel.app` hostnames
+4. Vercel (three apps) → deploy, verify, note the `*.vercel.app` hostnames
 5. Wire the origins: set `*_URL` on Fly and `NEXT_PUBLIC_API_URL` on Vercel, redeploy both
 6. DNS → point the real hostnames, add custom domains, wait for certificates
 7. Update the origins again to the real hostnames, redeploy
@@ -155,14 +155,15 @@ text only, not sections.
 
 ## 4. Front ends on Vercel
 
-Four projects, same repository, each with a different **Root Directory**:
+Three projects, same repository, each with a different **Root Directory**:
 
 | Project | Root Directory | Domain |
 |---|---|---|
 | website | `apps/website` | `odg.co.il`, `www.odg.co.il` |
 | crm | `apps/crm` | `crm.odg.co.il` |
 | portal | `apps/portal` | `portal.odg.co.il` |
-| web | `apps/web` | `app.odg.co.il` |
+
+Do not create a project for `apps/web`: it is retired (see Shape).
 
 Each already has a `vercel.json` with the workspace-aware build command. Leave
 Vercel's framework detection on; do not override the build command in the UI or
@@ -172,13 +173,14 @@ it will ignore the file.
 
 On **Fly** (all four required in production — the gateway now refuses to boot
 without them rather than falling back to `localhost` in a credentialed CORS
-allowlist):
+allowlist). `WEB_URL` belongs to the retired `apps/web`; it is still required,
+so it gets the CRM's address:
 
 ```
 WEBSITE_URL=https://odg.co.il
 CRM_URL=https://crm.odg.co.il
 PORTAL_URL=https://portal.odg.co.il
-WEB_URL=https://app.odg.co.il
+WEB_URL=https://crm.odg.co.il
 ```
 
 On **Vercel**, per project, the gateway's address. The portal additionally needs
@@ -213,7 +215,6 @@ the custom domain — prefer their value over the placeholder here.
 | `www` | CNAME | `cname.vercel-dns.com` | website |
 | `crm` | CNAME | `cname.vercel-dns.com` | CRM |
 | `portal` | CNAME | `cname.vercel-dns.com` | portal |
-| `app` | CNAME | `cname.vercel-dns.com` | web |
 | `api` | CNAME | `odg-api.fly.dev` | API gateway |
 
 Certificates issue automatically on both platforms once the records resolve;
