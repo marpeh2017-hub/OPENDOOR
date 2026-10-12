@@ -279,3 +279,20 @@
 .skip-link:focus {
   top: 0;
 }
+
+/**
+ * Focus not hidden by sticky or fixed bars (WCAG 2.2, 2.4.11).
+ *
+ * The website and the personal area keep a header stuck to the top, and the
+ * personal area a navigation bar fixed to the bottom. Without scroll padding,
+ * tabbing back up the page or following an anchor scrolls the target to the
+ * very edge, under the bar, and a keyboard user loses sight of where focus
+ * went. 5.5rem clears either header at every text size the accessibility
+ * menu offers, since both are sized in rem.
+ */
+html:has(header.sticky) {
+  scroll-padding-top: 5.5rem;
+}
+html:has([data-bottom-nav]) {
+  scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}

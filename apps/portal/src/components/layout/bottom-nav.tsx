@@ -20,7 +20,7 @@ export function BottomNav() {
   // home indicator. Offsetting the whole nav would leave a strip of page
   // showing beneath it.
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border pb-[env(safe-area-inset-bottom)]">
+    <nav data-bottom-nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-lg mx-auto flex items-center justify-around h-16">
         {tabs.map(({ href, icon: Icon, label }) => {
           const isActive = pathname.startsWith(href)

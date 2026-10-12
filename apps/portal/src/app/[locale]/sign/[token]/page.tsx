@@ -46,13 +46,32 @@ function cn(...classes: (string | undefined | false)[]) {
 function OtpInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
   const inputs = useRef<(HTMLInputElement | null)[]>([])
 
+  // A whole code, pasted or filled in by the phone from the SMS, is spread
+  // across the boxes from where it landed: nobody has to retype a code digit
+  // by digit (WCAG 2.2, 3.3.8). Only the first box takes more than one
+  // character, for the phone's autofill; the others take a paste.
+  function spread(idx: number, digits: string) {
+    const next = (value.slice(0, idx) + digits).slice(0, 6)
+    onChange(next)
+    inputs.current[Math.min(next.length, 5)]?.focus()
+  }
+
   function handleChange(idx: number, val: string) {
-    const digit = val.replace(/\D/g, '').slice(-1)
+    const digits = val.replace(/\D/g, '')
+    if (digits.length > 1) return spread(idx, digits)
+    const digit = digits.slice(-1)
     const chars = value.split('')
     chars[idx]  = digit
     const next  = chars.join('').slice(0, 6)
     onChange(next)
     if (digit && idx < 5) inputs.current[idx + 1]?.focus()
+  }
+
+  function handlePaste(idx: number, e: React.ClipboardEvent<HTMLInputElement>) {
+    const digits = e.clipboardData.getData('text').replace(/\D/g, '')
+    if (!digits) return
+    e.preventDefault()
+    spread(idx, digits)
   }
 
   function handleKeyDown(idx: number, e: React.KeyboardEvent<HTMLInputElement>) {
@@ -62,7 +81,7 @@ function OtpInput({ value, onChange, disabled }: { value: string; onChange: (v: 
   }
 
   return (
-    <div className="flex gap-2 justify-center" dir="ltr">
+    <div role="group" aria-label="קוד אימות" className="flex gap-2 justify-center" dir="ltr">
       {Array.from({ length: 6 }).map((_, idx) => (
         <input
           key={idx}
@@ -70,9 +89,12 @@ function OtpInput({ value, onChange, disabled }: { value: string; onChange: (v: 
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={1}
+          maxLength={idx === 0 ? 6 : 1}
+          autoComplete={idx === 0 ? 'one-time-code' : 'off'}
+          aria-label={`ספרה ${idx + 1} מתוך 6`}
           value={value[idx] ?? ''}
           onChange={e => handleChange(idx, e.target.value)}
+          onPaste={e => handlePaste(idx, e)}
           onKeyDown={e => handleKeyDown(idx, e)}
           disabled={disabled}
           className={cn(
