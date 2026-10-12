@@ -21,5 +21,7 @@ import { WebsiteFormsController } from './website-forms.controller'
   imports: [SignaturesModule, PortalModule, LeadsModule],
   controllers: [FormsController, PortalFormsController, PublicFormsController, WebsiteFormsController],
   providers: [FormsService, PortalFormsService, FormLinkSender, PublicFormsService],
+  // The signatures report reads a form's rows and progress from here.
+  exports: [FormsService],
 })
 export class FormsModule {}
