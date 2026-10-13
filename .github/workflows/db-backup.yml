@@ -1,0 +1,72 @@
+# Nightly encrypted copy of the production database, kept in Cloudflare R2.
+#
+# Supabase's free plan keeps no backups of its own, and docs/RISK_REGISTER.md
+# (R10) asks for automated backups AND a tested restore before launch. How to
+# restore is in docs/DEPLOYMENT.md, "Backups".
+#
+# Scheduled workflows run only from the repository's default branch (main), so
+# the nightly schedule starts once this file is on main. "Run workflow" works
+# from any branch, which is how to test it.
+#
+# Repository secrets:
+#   BACKUP_DATABASE_URL    Supabase connection string in its "Session pooler"
+#                          form. GitHub's runners have no IPv6, and Supabase's
+#                          direct address is IPv6-only.
+#   BACKUP_PASSPHRASE      Encrypts the file. Keep it beside FIELD_ENCRYPTION_KEY:
+#                          without it no backup can be opened.
+#   BACKUP_S3_ENDPOINT     https://<account id>.r2.cloudflarestorage.com
+#   BACKUP_S3_BUCKET       A bucket of its own (e.g. odg-backups), with a
+#                          lifecycle rule that deletes objects after 30 days.
+#   BACKUP_S3_ACCESS_KEY   An R2 API token limited to that bucket.
+#   BACKUP_S3_SECRET_KEY
+
+name: Nightly database backup
+
+on:
+  schedule:
+    - cron: '30 1 * * *'   # 01:30 UTC, 03:30 or 04:30 in Israel
+  workflow_dispatch:
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install the PostgreSQL client
+        # From the PostgreSQL project's own repository, so pg_dump is at least
+        # as new as the server: an older pg_dump refuses to dump a newer server.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client
+
+      - name: Dump and encrypt
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          test -n "$DATABASE_URL" || { echo "BACKUP_DATABASE_URL is not set"; exit 1; }
+          test -n "$BACKUP_PASSPHRASE" || { echo "BACKUP_PASSPHRASE is not set"; exit 1; }
+          pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file db.dump
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
+            --symmetric --cipher-algo AES256 --output db.dump.gpg db.dump 3<<<"$BACKUP_PASSPHRASE"
+          rm db.dump
+          ls -l db.dump.gpg
+
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # Send checksums only when required, which R2 accepts from every
+          # AWS CLI version.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+        run: aws s3 cp db.dump.gpg "s3://${BUCKET}/db/$(date -u +%Y-%m-%dT%H%MZ).dump.gpg" --endpoint-url "$ENDPOINT" --only-show-errors
