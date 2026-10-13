@@ -52,7 +52,11 @@ export function useFeasibility(projectId: string) {
     queryKey: key(projectId),
     queryFn: async () => {
       try {
-        return await api.get<FeasibilityProfile>(`/projects/${projectId}/feasibility`)
+        // The gateway answers a project without a profile with 200 and an
+        // empty body, which the client reads as undefined. React Query refuses
+        // undefined data and showed an error instead of the "open a profile"
+        // form, so normalise it to null like the 404 below.
+        return (await api.get<FeasibilityProfile | null>(`/projects/${projectId}/feasibility`)) ?? null
       } catch (error: any) {
         // A project without a profile is an expected first-run state, not an
         // error screen. All other failures stay visible and retryable.
