@@ -69,7 +69,9 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --filter "@urban-renewal/website..." --filter "@urban-renewal/db"
+      # The whole workspace: the import script runs from the website but loads
+      # the API's projection code and its Prisma client.
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @urban-renewal/db db:generate
       - name: Import and publish the four CMS pages
         env:
