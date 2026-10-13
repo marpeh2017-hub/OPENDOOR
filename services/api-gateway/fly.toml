@@ -20,6 +20,18 @@ primary_region = "cdg"   # Paris — closest Fly region to Israel with full serv
 [env]
   NODE_ENV = "production"
   PORT = "4000"
+  # The four public origins, required in production (CORS, links in messages).
+  # WEB_URL belongs to the retired apps/web and carries the CRM's address.
+  WEBSITE_URL = "https://odg.co.il"
+  CRM_URL = "https://crm.odg.co.il"
+  PORTAL_URL = "https://portal.odg.co.il"
+  WEB_URL = "https://crm.odg.co.il"
+  # The tenant that owns website enquiries: the bootstrap slug, the same value
+  # as CMS_TENANT_SLUG in apps/website/fly.toml.
+  PUBLIC_LEAD_TENANT_SLUG = "opendoor"
+  # Required in production, and "false" really sends. The gateway also refuses
+  # to start without an SMS provider's credentials (docs/DEPLOYMENT.md).
+  MESSAGING_SIMULATE = "false"
   # Fly terminates TLS at its edge and forwards over the private network, so the
   # client IP arrives in X-Forwarded-For with exactly one proxy hop in front.
   # Rate limiting keys on that header, and an unset TRUST_PROXY would bucket
