@@ -150,7 +150,8 @@ function Step1({ form, set }: { form: FormData; set: (k: keyof FormData, v: stri
 }
 
 function Step2({ form, set }: { form: FormData; set: (k: keyof FormData, v: string) => void }) {
-  const { data: users = [] } = useUsers()
+  // A switched-off account cannot sign in, so it cannot manage a project.
+  const users = (useUsers().data ?? []).filter(u => u.isActive)
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -195,6 +196,7 @@ function Step2({ form, set }: { form: FormData; set: (k: keyof FormData, v: stri
 }
 
 function Step3({ form, set }: { form: FormData; set: (k: keyof FormData, v: string) => void }) {
+  const manager = (useUsers().data ?? []).find(u => u.id === form.projectManager)
   return (
     <div className="space-y-6">
       <div>
@@ -227,7 +229,7 @@ function Step3({ form, set }: { form: FormData; set: (k: keyof FormData, v: stri
           ['כתובת',        [form.address, form.city].filter(Boolean).join(', ') || '—'],
           ['יחידות',       form.totalUnits ? `${form.totalUnits} דירות` : '—'],
           ['שלב פתיחה',    STAGES.find(s => s.value === form.stage)?.label ?? '—'],
-          ['מנהל פרויקט',  form.projectManager || '—'],
+          ['מנהל פרויקט',  manager ? `${manager.firstName} ${manager.lastName}` : '—'],
           ['סף חתימות',    `${form.signatureThreshold}%`],
         ].map(([label, value]) => (
           <div key={label} className="flex items-center justify-between text-sm">

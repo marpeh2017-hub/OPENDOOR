@@ -104,11 +104,17 @@ function TeamDialog({
                 <SelectTrigger><SelectValue placeholder="ללא" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>ללא</SelectItem>
-                  {(users ?? []).map(u => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.firstName} {u.lastName} · {ROLE_LABELS[u.role] ?? u.role}
-                    </SelectItem>
-                  ))}
+                  {/* Active users only, plus whoever already holds a slot, so a
+                      switched-off assignee still shows by name and can be
+                      replaced. */}
+                  {(users ?? [])
+                    .filter(u => u.isActive || Object.values(slots).includes(u.id))
+                    .map(u => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.firstName} {u.lastName} · {ROLE_LABELS[u.role] ?? u.role}
+                        {!u.isActive && ' · לא פעיל'}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -153,7 +159,7 @@ function AddMemberDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const available = (users ?? []).filter(u => !existing.has(u.id))
+  const available = (users ?? []).filter(u => u.isActive && !existing.has(u.id))
 
   return (
     <Dialog open={open} onOpenChange={(n) => { if (!add.isPending) onOpenChange(n) }}>
