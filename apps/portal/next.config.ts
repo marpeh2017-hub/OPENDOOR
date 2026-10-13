@@ -1,7 +1,17 @@
 import type { NextConfig } from 'next'
+import path from 'node:path'
 import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
+
+/**
+ * Fly.io images build with NEXT_OUTPUT=standalone (apps/Dockerfile.next). See
+ * apps/website/next.config.ts. Local and Vercel builds are unchanged.
+ */
+const standalone: Partial<NextConfig> =
+  process.env.NEXT_OUTPUT === 'standalone'
+    ? { output: 'standalone', outputFileTracingRoot: path.join(process.cwd(), '..', '..') }
+    : {}
 
 /**
  * Security headers. Next sets none of its own, so without this every response
@@ -21,6 +31,8 @@ const securityHeaders = [
 ]
 
 const config: NextConfig = {
+  ...standalone,
+
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

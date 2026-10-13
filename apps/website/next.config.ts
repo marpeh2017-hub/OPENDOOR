@@ -1,7 +1,20 @@
 import type { NextConfig } from 'next'
+import path from 'node:path'
 import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
+
+/**
+ * Fly.io images build with NEXT_OUTPUT=standalone (apps/Dockerfile.next): a
+ * self-contained server.js plus only the node_modules it uses. Tracing starts
+ * at the repository root, or the workspace packages and pnpm's store would be
+ * left out of the image. Local and Vercel builds don't set the variable and are
+ * unchanged.
+ */
+const standalone: Partial<NextConfig> =
+  process.env.NEXT_OUTPUT === 'standalone'
+    ? { output: 'standalone', outputFileTracingRoot: path.join(process.cwd(), '..', '..') }
+    : {}
 
 /**
  * Security headers for the public marketing site.
@@ -36,6 +49,8 @@ const securityHeaders = [
 ]
 
 const config: NextConfig = {
+  ...standalone,
+
   // Keep a local integration dev preview separate from a running built preview.
   distDir: process.env.WEBSITE_PREVIEW === 'true' ? '.next-preview' : '.next',
 

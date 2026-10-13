@@ -1,0 +1,22 @@
+# Build contexts for the Fly images (the API and the three Next.js apps) are the
+# repository root. Deploys run from a fresh clone (docs/DEPLOYMENT.md); this
+# keeps the context small and keeps local secrets and build output out of any
+# image built by hand.
+**/node_modules
+**/.next
+**/.next-preview
+**/dist
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+.git
+.github
+tmp
+artifacts
+.playwright-mcp
+.codex*
+.agents
+**/.env
+**/.env.*
+!.env.example
+!.env.production.example

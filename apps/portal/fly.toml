@@ -1,0 +1,45 @@
+# Fly.io deployment for the owners' personal area: portal.odg.co.il.
+#
+# Build context is the REPOSITORY ROOT of a fresh clone, and the image recipe is
+# shared by the three Next.js apps:
+#
+#   flyctl deploy --config apps/portal/fly.toml --dockerfile apps/Dockerfile.next .
+#
+# The GitHub workflow "Deploy to Fly" runs exactly that. See docs/DEPLOYMENT.md.
+
+app = "odg-portal"
+primary_region = "cdg"   # Paris, beside the API
+
+[build]
+  dockerfile = "../Dockerfile.next"
+
+  # Compiled into the pages by `next build`. Changing one needs a new deploy.
+  [build.args]
+    APP = "portal"
+    NEXT_PUBLIC_API_URL = "https://api.odg.co.il"
+
+[env]
+  # Where the portal's own server forwards API calls (sign-in and the BFF).
+  API_GATEWAY_URL = "https://api.odg.co.il"
+  # The legal links in the portal's footer point at the website.
+  WEBSITE_URL = "https://odg.co.il"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # Idle, the machine stops and costs nothing; an owner's first visit starts it
+  # again within a few seconds.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    path = "/he/login"
+    method = "GET"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

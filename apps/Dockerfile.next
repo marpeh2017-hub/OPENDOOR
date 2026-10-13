@@ -1,0 +1,61 @@
+# One image recipe for the three Next.js apps on Fly.io: website, crm, portal.
+#
+# Build context is the REPOSITORY ROOT of a fresh clone, as for the API's image,
+# and the app is chosen by the APP build argument, which each app's fly.toml
+# sets. The GitHub workflow "Deploy to Fly" runs it; by hand it would be:
+#
+#   flyctl deploy --config apps/website/fly.toml --dockerfile apps/Dockerfile.next .
+#
+# NEXT_PUBLIC_* values are compiled into the pages by `next build`, so they are
+# BUILD arguments here (set in fly.toml under [build.args]), not runtime
+# settings: changing one means deploying again. Runtime settings go in fly.toml
+# [env], and secrets through `flyctl secrets set`.
+
+FROM node:20-alpine AS base
+RUN npm install -g pnpm@9.15.2
+# The musl builds of Next's compiler and of sharp expect the glibc shim.
+RUN apk add --no-cache libc6-compat
+
+# ── Build ─────────────────────────────────────────────────────────────────────
+FROM base AS builder
+WORKDIR /app
+ARG APP
+COPY . .
+RUN test -n "$APP" && pnpm install --frozen-lockfile --filter "@urban-renewal/${APP}..."
+
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_PORTAL_URL
+ARG NEXT_PUBLIC_WEBSITE_URL
+ARG NEXT_PUBLIC_MAP_PROVIDER
+ARG NEXT_PUBLIC_MAP_STYLE_URL
+ARG NEXT_PUBLIC_MAP_API_KEY
+# The website reads the CMS while it prerenders, so its build needs the tenant.
+ARG CMS_TENANT_SLUG
+ENV NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
+
+# An argument that was not passed must stay UNSET rather than become an empty
+# string: the apps read several of these with `??`, which keeps "" and skips
+# the fallback.
+RUN for v in NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_PORTAL_URL NEXT_PUBLIC_WEBSITE_URL \
+             NEXT_PUBLIC_MAP_PROVIDER NEXT_PUBLIC_MAP_STYLE_URL NEXT_PUBLIC_MAP_API_KEY CMS_TENANT_SLUG; do \
+      eval "[ -n \"\${$v}\" ] || unset $v"; \
+    done; \
+    pnpm --filter "@urban-renewal/${APP}" build
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+# Only the standalone server, its traced node_modules and the static assets.
+# No source, no dev dependencies, no other app.
+FROM node:20-alpine AS runner
+WORKDIR /app
+ARG APP
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 APP=${APP}
+RUN apk add --no-cache libc6-compat && addgroup -S nextjs && adduser -S nextjs -G nextjs
+
+COPY --from=builder --chown=nextjs:nextjs /app/apps/${APP}/.next/standalone ./
+COPY --from=builder --chown=nextjs:nextjs /app/apps/${APP}/.next/static ./apps/${APP}/.next/static
+COPY --from=builder --chown=nextjs:nextjs /app/apps/${APP}/public ./apps/${APP}/public
+
+USER nextjs
+EXPOSE 3000
+CMD ["sh", "-c", "exec node apps/${APP}/server.js"]
