@@ -114,6 +114,11 @@ Two buckets:
 
 ### 5. Fly: the four apps and their secrets
 
+GitHub shows a workflow's **Run workflow** button only once the workflow file
+is on the default branch, and the nightly backup runs only from there. So
+first merge `feat/odg-website-phase1` into `main` (Pull requests → New →
+Merge). From then on `main` is what goes live.
+
 1. fly.io → Tokens → create an **organization** token. In GitHub → Settings →
    Secrets and variables → Actions, add it as `FLY_API_TOKEN`.
 2. GitHub → Actions → **Deploy to Fly** → Run workflow → `create-apps`. It
