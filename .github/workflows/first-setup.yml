@@ -1,0 +1,85 @@
+# The two one-time steps after the API's first deploy, run from GitHub so they
+# need no terminal and no database address on anyone's laptop.
+#
+#   bootstrap-admin    creates the tenant and its first CRM administrator
+#   import-cms-pages   imports and publishes /about, /why-organizer,
+#                      /how-we-work and /trust (docs/DEPLOYMENT.md, step 4)
+#
+# Order: deploy the API (it migrates the database), run bootstrap-admin, run
+# import-cms-pages, THEN deploy the website, whose build reads those pages.
+# Both are safe to re-run: neither changes what already exists.
+#
+# Repository secrets:
+#   PROD_DATABASE_URL         the production database (Supabase "Session pooler")
+#   BOOTSTRAP_ADMIN_EMAIL     the first administrator's email
+#   BOOTSTRAP_ADMIN_PASSWORD  at least 12 characters; delete this secret once
+#                             the administrator has signed in and changed it
+
+name: First-time setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: Which step
+        type: choice
+        options: [bootstrap-admin, import-cms-pages]
+
+env:
+  # Must equal CMS_TENANT_SLUG in apps/website/fly.toml and
+  # PUBLIC_LEAD_TENANT_SLUG on the API.
+  TENANT_SLUG: opendoor
+
+jobs:
+  bootstrap-admin:
+    if: inputs.step == 'bootstrap-admin'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter "@urban-renewal/api-gateway..." --filter "@urban-renewal/db"
+      - run: pnpm --filter @urban-renewal/db db:generate
+      - run: pnpm --filter @urban-renewal/api-gateway build
+      - name: Create the tenant and its first administrator
+        # The password needs 12+ characters with a lowercase letter, an
+        # uppercase letter and a digit; the script says which is missing.
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          BOOTSTRAP_TENANT_NAME: OpenDoor Group
+          BOOTSTRAP_TENANT_SLUG: ${{ env.TENANT_SLUG }}
+          BOOTSTRAP_ADMIN_EMAIL: ${{ secrets.BOOTSTRAP_ADMIN_EMAIL }}
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+        run: pnpm --filter @urban-renewal/api-gateway bootstrap
+
+  import-cms-pages:
+    if: inputs.step == 'import-cms-pages'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter "@urban-renewal/website..." --filter "@urban-renewal/db"
+      - run: pnpm --filter @urban-renewal/db db:generate
+      - name: Import and publish the four CMS pages
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          CMS_IMPORT_TENANT: ${{ env.TENANT_SLUG }}
+        # Each import reads back what the website would be served and aborts,
+        # leaving the page unpublished, if anything differs from the fixture.
+        run: |
+          mkdir -p "$RUNNER_TEMP/cms"
+          for page in about why-organizer how-we-work trust; do
+            pnpm --silent --filter @urban-renewal/website exec tsx scripts/export-page-fixture.ts "$page" > "$RUNNER_TEMP/cms/$page.json"
+            pnpm --filter @urban-renewal/website exec tsx ../../services/api-gateway/scripts/import-cms-page.ts "$RUNNER_TEMP/cms/$page.json" --publish
+          done
