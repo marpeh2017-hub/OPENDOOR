@@ -1,0 +1,93 @@
+# Deploys to Fly.io from a clean checkout of this repository, which is the only
+# safe place to deploy from: a working folder can hold draft migrations that
+# would reach the live database (docs/DEPLOYMENT.md).
+#
+# Run it from GitHub: Actions → "Deploy to Fly" → Run workflow, choose the
+# branch and what to deploy. Nothing deploys on its own.
+#
+# "create-apps" is the very first run: it creates the four Fly apps named in
+# the fly.toml files, deploys nothing, and leaves existing apps alone. Their
+# secrets are then set in the Fly dashboard before the first real deploy.
+#
+# Needs one repository secret: FLY_API_TOKEN (fly.io → Tokens → create an
+# organization token). Optional repository variable FLY_ORG (default: personal).
+
+name: Deploy to Fly
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to deploy
+        type: choice
+        default: all
+        options: [all, api, website, crm, portal, create-apps]
+
+# One deploy at a time: a second run waits instead of racing the first.
+concurrency:
+  group: deploy-fly
+  cancel-in-progress: false
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  create-apps:
+    if: inputs.target == 'create-apps'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Fly app names are global. If one is taken, change `app = ...` in that
+      # fly.toml (and its *.fly.dev address in docs/DEPLOYMENT.md) and re-run.
+      - name: Create the apps that don't exist yet
+        env:
+          FLY_ORG: ${{ vars.FLY_ORG || 'personal' }}
+        run: |
+          for config in services/api-gateway/fly.toml apps/website/fly.toml apps/crm/fly.toml apps/portal/fly.toml; do
+            app=$(sed -n 's/^app = "\(.*\)"/\1/p' "$config")
+            if flyctl status --app "$app" >/dev/null 2>&1; then
+              echo "$app already exists, left as it is"
+            else
+              flyctl apps create "$app" --org "$FLY_ORG"
+            fi
+          done
+
+  api:
+    if: inputs.target == 'all' || inputs.target == 'api'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # The new machine runs `prisma migrate deploy` when it boots (start.sh),
+      # so this is also the step that changes the live database's schema.
+      - run: flyctl deploy --remote-only --config services/api-gateway/fly.toml --dockerfile services/api-gateway/Dockerfile .
+
+  # The front ends wait for the API when both are deployed together, because
+  # the website's build reads the CMS through it. Chosen alone, they run alone.
+  website:
+    needs: api
+    if: always() && needs.api.result != 'failure' && needs.api.result != 'cancelled' && (inputs.target == 'all' || inputs.target == 'website')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config apps/website/fly.toml --dockerfile apps/Dockerfile.next .
+
+  crm:
+    needs: api
+    if: always() && needs.api.result != 'failure' && needs.api.result != 'cancelled' && (inputs.target == 'all' || inputs.target == 'crm')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config apps/crm/fly.toml --dockerfile apps/Dockerfile.next .
+
+  portal:
+    needs: api
+    if: always() && needs.api.result != 'failure' && needs.api.result != 'cancelled' && (inputs.target == 'all' || inputs.target == 'portal')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config apps/portal/fly.toml --dockerfile apps/Dockerfile.next .
